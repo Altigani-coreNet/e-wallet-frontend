@@ -1,0 +1,66 @@
+/* 
+ * NO CUSTOM CSS - Let Metronic theme handle everything
+ * All layout, responsive behavior, and styling comes from:
+ * - /assets/css/style.bundle.css
+ * - /assets/plugins/global/plugins.bundle.css
+ * - /assets/js/scripts.bundle.js
+ */
+
+#root, #kt_app_root, #kt_app_page{
+    width: 90%;
+}
+
+/* Landing page should be 100% width */
+body.app-blank #kt_app_root {
+    width: 100% !important;
+}
+
+#kt_app_wrapper, #kt_app_main, #kt_app_content, #kt_app_content_container {
+    width: 100%;
+}
+
+#kt_app_sidebar_menu_wrapper {
+    height: 95vh !important; /* or your desired width */
+}
+
+/* Hide parent sections (POS, Sales) when sidebar is minimized, show only internal links */
+body.app-sidebar-minimize .menu-item.menu-accordion > span.menu-link:first-child {
+    display: none !important;
+}
+
+/* Show submenu items directly when minimized - remove parent wrapper styling */
+body.app-sidebar-minimize .menu-item.menu-accordion {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+body.app-sidebar-minimize .menu-item.menu-accordion > .menu-sub.menu-sub-accordion {
+    display: block !important;
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Ensure submenu items are visible */
+body.app-sidebar-minimize .menu-sub .menu-item {
+    display: block !important;
+}
+
+@media (max-width: 768px) {
+    #root {
+        width: 100%;
+    }
+    #kt_app_root {
+        width: 100%;
+    }
+    
+    #kt_app_page {
+        width: 100%;
+    }
+    #kt_app_wrapper {
+        width: 100%;
+    }
+    #kt_app_footer {
+        width: 100%;
+    }
+}

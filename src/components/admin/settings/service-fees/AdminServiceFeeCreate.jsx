@@ -1,0 +1,132 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import { useToolbar } from '../../../../contexts/ToolbarContext';
+import { createServiceFee } from '../../../../services/adminServiceFeesService';
+
+const AdminServiceFeeCreate = () => {
+    const { setTitle, setActions } = useToolbar();
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        name: '',
+        type: '',
+        fees: ''
+    });
+    const [errors, setErrors] = useState({});
+
+    useEffect(() => {
+        setTitle('Create Service Fee');
+        setActions(null);
+    }, [setTitle, setActions]);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: null }));
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setErrors({});
+
+        const response = await createServiceFee(formData);
+        setLoading(false);
+
+        if (response.success) {
+            toast.success('Service fee created successfully');
+            navigate('/admin/settings/service-fees');
+        } else {
+            toast.error(response.error || 'Failed to create service fee');
+            if (response.errors) {
+                setErrors(response.errors);
+            }
+        }
+    };
+
+    return (
+        <>
+                <div className="card">
+                    <div className="card-header">
+                        <h3 className="card-title">Service Fee Information</h3>
+                    </div>
+                    <form onSubmit={handleSubmit}>
+                        <div className="card-body">
+                            <div className="row mb-6">
+                                <div className="col-lg-6">
+                                    <label className="form-label required">Name</label>
+                                    <input 
+                                        type="text"
+                                        name="name"
+                                        className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                    {errors.name && <div className="invalid-feedback">{errors.name[0]}</div>}
+                                </div>
+                                <div className="col-lg-6">
+                                    <label className="form-label required">Type</label>
+                                    <input 
+                                        type="text"
+                                        name="type"
+                                        className={`form-control ${errors.type ? 'is-invalid' : ''}`}
+                                        value={formData.type}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                    {errors.type && <div className="invalid-feedback">{errors.type[0]}</div>}
+                                </div>
+                            </div>
+                            <div className="row mb-6">
+                                <div className="col-lg-6">
+                                    <label className="form-label required">Fees</label>
+                                    <input 
+                                        type="number"
+                                        name="fees"
+                                        step="0.01"
+                                        min="0"
+                                        className={`form-control ${errors.fees ? 'is-invalid' : ''}`}
+                                        value={formData.fees}
+                                        onChange={handleChange}
+                                        required
+                                    />
+                                    {errors.fees && <div className="invalid-feedback">{errors.fees[0]}</div>}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="card-footer d-flex justify-content-end py-6 px-9">
+                            <button 
+                                type="button" 
+                                className="btn btn-light btn-active-light-primary me-2"
+                                onClick={() => navigate('/admin/settings/service-fees')}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="submit" 
+                                className="btn btn-primary"
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2"></span>
+                                        Creating...
+                                    </>
+                                ) : (
+                                    'Create Service Fee'
+                                )}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+        </>
+    );
+};
+
+export default AdminServiceFeeCreate;
+
+

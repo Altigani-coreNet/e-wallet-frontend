@@ -1,0 +1,51 @@
+/* Skeleton Loading Styles */
+
+.skeleton {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.skeleton-text {
+    height: 16px;
+    min-width: 80px;
+}
+
+.skeleton-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 3px;
+}
+
+.skeleton-badge {
+    width: 80px;
+    height: 24px;
+    border-radius: 6px;
+}
+
+.skeleton-actions {
+    width: 120px;
+    height: 32px;
+    margin-left: auto;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .skeleton {
+        background: linear-gradient(90deg, #2a2a2a 25%, #1a1a1a 50%, #2a2a2a 75%);
+        background-size: 200% 100%;
+    }
+}
+
+

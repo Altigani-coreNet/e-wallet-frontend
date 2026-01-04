@@ -1,0 +1,265 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import axios from 'axios';
+import { ADMIN_ENDPOINTS, APP_CONFIG } from '../../../utils/constants';
+import { setToken, setUser, removeToken } from '../../../utils/api';
+import useAuthStore from '../../../stores/authStore';
+
+const AdminLogin = () => {
+    const navigate = useNavigate();
+    
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+    });
+
+    const [formErrors, setFormErrors] = useState({});
+    const [loading, setLoading] = useState(false);
+
+    // Clear any stale tokens on mount to prevent redirect loop
+    useEffect(() => {
+        const token = localStorage.getItem(APP_CONFIG.TOKEN_KEY);
+        const user = localStorage.getItem(APP_CONFIG.USER_KEY);
+        
+        // If we're on login page, ensure auth state is cleared
+        if (token || user) {
+            console.log('⚠️ Clearing existing tokens on admin login page');
+            removeToken(); // Use the proper removeToken function
+        }
+    }, []);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        
+        // Clear field error when user types
+        if (formErrors[name]) {
+            setFormErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }));
+        }
+    };
+
+    const validate = () => {
+        const errors = {};
+        
+        if (!formData.email) {
+            errors.email = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            errors.email = 'Email is invalid';
+        }
+        
+        if (!formData.password) {
+            errors.password = 'Password is required';
+        }
+        
+        return errors;
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        const errors = validate();
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
+            return;
+        }
+
+        setLoading(true);
+        setFormErrors({});
+
+        try {
+            // Call admin-specific login endpoint
+            const response = await axios.post(ADMIN_ENDPOINTS.LOGIN, {
+                email: formData.email,
+                password: formData.password,
+            });
+
+            // Handle both 'success' and 'status' response formats
+            const isSuccess = response.data.success === true || response.data.status === true;
+
+            if (isSuccess) {
+                const responseData = response.data.data || response.data;
+                const { token, access_token, admin, user, roles = [], permissions = [], scopes = [], regions = [] } = responseData;
+                
+                // Use access_token or token (support both formats)
+                const authToken = token || access_token;
+                
+                // Extract custom_region flag (support both spellings: custom_region and custom_regeon)
+                const adminData = admin || user || {};
+                const customRegion = adminData.custom_region === true || adminData.custom_regeon === true;
+                
+                // Get regions list if custom_region is true
+                const regionsList = customRegion && Array.isArray(regions) && regions.length > 0 
+                    ? regions 
+                    : (Array.isArray(adminData.regions) ? adminData.regions : []);
+                
+                // Merge roles/permissions/regions into user object so store/localStorage can hydrate them
+                const mergedUser = {
+                    ...adminData,
+                    roles: Array.isArray(roles) ? roles : (admin?.roles || user?.roles || []),
+                    permissions: Array.isArray(permissions) && permissions.length > 0 ? permissions : (Array.isArray(scopes) ? scopes : (admin?.permissions || user?.permissions || [])),
+                    custom_region: customRegion,
+                    custom_regeon: customRegion, // Support both spellings
+                    regions: regionsList,
+                    is_admin: true,
+                };
+
+                // Store admin token and data
+                setToken(authToken);
+                setUser(mergedUser);
+                
+                // Set default axios header
+                axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+
+                // Sync to global auth store immediately
+                try {
+                    useAuthStore.getState().syncProfileData(mergedUser, null);
+                } catch (e) {
+                    // no-op if store unavailable
+                }
+                
+                console.log('Admin login successful:', { admin: mergedUser, hasToken: !!authToken });
+                
+                toast.success('Admin login successful!');
+                navigate('/admin/dashboard');
+            } else {
+                throw new Error(response.data.message || 'Login failed');
+            }
+        } catch (err) {
+            console.error('Admin login error:', err);
+            const errorMessage = err.response?.data?.message || err.message || 'Login failed';
+            toast.error(errorMessage);
+            setFormErrors({ submit: errorMessage });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <>
+            {/* Page background image */}
+            <style>{`
+                body {
+                    background-image: url('/assets/media/auth/bg4.jpg');
+                }
+                [data-bs-theme="dark"] body {
+                    background-image: url('/assets/media/auth/bg4-dark.jpg');
+                }
+            `}</style>
+            
+            <div className="d-flex flex-column flex-root" id="kt_app_root" style={{ minHeight: '100vh' }}>
+                <div className="d-flex flex-column flex-lg-row" style={{ minHeight: '100vh' }}>
+                    {/* Left side - Branding - Hidden on small screens - 50% width */}
+                    <div className="d-none d-lg-flex justify-content-center align-items-center" style={{ flex: '1', minHeight: '100vh' }}>
+                        <div className="d-flex flex-column flex-center p-10">
+                            <img 
+                                className="theme-light-show mx-auto mw-100 w-150px w-lg-300px mb-10 mb-lg-20" 
+                                src="/faspay_logo.png" 
+                                alt="FasPOS Logo" 
+                            />
+                            <img 
+                                className="theme-dark-show mx-auto mw-100 w-150px w-lg-300px mb-10 mb-lg-20" 
+                                src="/faspay_logo.png" 
+                                alt="FasPOS Logo" 
+                            />
+                            <h1 className="text-gray-800 fs-2qx fw-bold text-center mb-7">
+                                FasPOS Admin Panel
+                            </h1>
+                            <div className="text-dark fs-base text-center fw-semibold">
+                                Complete administrative control over merchants, terminals, users, and transactions across the entire platform.
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right side - Login Form - 50% width on desktop, 100% on mobile */}
+                    <div className="d-flex justify-content-center align-items-center p-12" style={{ flex: '1', minHeight: '100vh' }}>
+                        <div className="bg-body d-flex flex-column flex-center rounded-4 w-md-600px py-15 px-10">
+                            <div className="d-flex flex-center flex-column align-items-stretch w-md-400px">
+                                <div className="d-flex flex-center flex-column flex-column-fluid py-10">
+                                    
+                                    <form className="form w-100" onSubmit={handleSubmit}>
+                                        <div className="text-center mb-13">
+                                            <h1 className="text-dark fw-bolder mb-3">Admin Sign In</h1>
+                                            <div className="text-gray-500 fw-semibold fs-6">Enter your admin credentials</div>
+                                        </div>
+
+                                        {/* Error Messages */}
+                                        {formErrors.submit && (
+                                            <div className="alert alert-danger">
+                                                <div className="d-flex align-items-center">
+                                                    <i className="ki-duotone ki-shield-cross fs-2hx text-danger me-4">
+                                                        <span className="path1"></span>
+                                                        <span className="path2"></span>
+                                                        <span className="path3"></span>
+                                                    </i>
+                                                    <div className="d-flex flex-column">
+                                                        <h4 className="mb-1 text-dark">Access Denied</h4>
+                                                        <span>{formErrors.submit}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Email Field */}
+                                        <div className="fv-row mb-10">
+                                            <input
+                                                type="text"
+                                                name="email"
+                                                placeholder="Email Address"
+                                                autoComplete="off"
+                                                className={`form-control bg-transparent ${formErrors.email ? 'is-invalid' : ''}`}
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                            />
+                                            {formErrors.email && (
+                                                <div className="invalid-feedback">{formErrors.email}</div>
+                                            )}
+                                        </div>
+
+                                        {/* Password Field */}
+                                        <div className="fv-row mb-8">
+                                            <input
+                                                type="password"
+                                                name="password"
+                                                placeholder="Password"
+                                                className={`form-control bg-transparent ${formErrors.password ? 'is-invalid' : ''}`}
+                                                value={formData.password}
+                                                onChange={handleChange}
+                                            />
+                                        {formErrors.password && (
+                                            <div className="invalid-feedback">{formErrors.password}</div>
+                                        )}
+                                    </div>
+
+                                    {/* Submit Button */}
+                                    <div className="d-grid mb-10">
+                                        <button type="submit" className="btn btn-primary" disabled={loading}>
+                                            <span className={loading ? 'd-none' : 'indicator-label'}>Sign In</span>
+                                            {loading && (
+                                                <span className="indicator-progress" style={{ display: 'block' }}>
+                                                    Signing In...
+                                                    <span className="spinner-border spinner-border-sm align-middle ms-2"></span>
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+                                    </form>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+};
+
+export default AdminLogin;
+

@@ -1,0 +1,34 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useCan } from '../../../utils/permissions';
+
+const BatchActions = ({ batch }) => {
+    const navigate = useNavigate();
+    const canView = useCan('pos.batches.view_batches');
+
+    const handleView = () => {
+        navigate(`/merchant/batches/${batch.id}`);
+    };
+
+    return (
+        <div className="d-flex justify-content-end">
+            {canView && (
+                <button
+                    onClick={handleView}
+                    className="btn btn-sm btn-light btn-active-light-primary"
+                    title="View Details"
+                >
+                    <i className="ki-duotone ki-eye fs-5">
+                        <span className="path1"></span>
+                        <span className="path2"></span>
+                        <span className="path3"></span>
+                    </i>
+                    View
+                </button>
+            )}
+        </div>
+    );
+};
+
+export default BatchActions;
+

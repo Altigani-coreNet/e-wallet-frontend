@@ -1,0 +1,461 @@
+import React, { useState, useEffect } from 'react';
+import { getUserInfo, updateProfile, changePassword, uploadProfileImage } from '../../services/profileService';
+import { toast } from 'react-toastify';
+
+const ProfileInfo = () => {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
+    const [updating, setUpdating] = useState(false);
+    const [changingPassword, setChangingPassword] = useState(false);
+    
+    // Profile form state
+    const [profileForm, setProfileForm] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        profile_image: null
+    });
+    
+    // Password form state
+    const [passwordForm, setPasswordForm] = useState({
+        current_password: '',
+        password: '',
+        password_confirmation: ''
+    });
+    
+    // Preview for profile image
+    const [imagePreview, setImagePreview] = useState(null);
+
+    useEffect(() => {
+        fetchUserInfo();
+    }, []);
+
+    const fetchUserInfo = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            
+            const response = await getUserInfo();
+            
+            if (response.status && response.data) {
+                const userData = response.data.user;
+                setUser(userData);
+                setProfileForm({
+                    name: userData.name || '',
+                    email: userData.email || '',
+                    phone: userData.phone || '',
+                    profile_image: null
+                });
+                setImagePreview(userData.profile_image);
+            }
+        } catch (err) {
+            console.error('Error fetching user info:', err);
+            setError(err.response?.data?.message || err.message || 'Failed to load user information');
+            toast.error(err.response?.data?.message || 'Failed to load user information');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleProfileInputChange = (e) => {
+        const { name, value } = e.target;
+        setProfileForm(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setProfileForm(prev => ({
+                ...prev,
+                profile_image: file
+            }));
+            
+            // Create preview
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleCancelImage = () => {
+        setProfileForm(prev => ({
+            ...prev,
+            profile_image: null
+        }));
+        setImagePreview(user?.profile_image);
+    };
+
+    const handleRemoveImage = () => {
+        setProfileForm(prev => ({
+            ...prev,
+            profile_image: null
+        }));
+        setImagePreview('/assets/media/avatars/300-1.jpg');
+    };
+
+    const handleProfileSubmit = async (e) => {
+        e.preventDefault();
+        setUpdating(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const formData = {
+                name: profileForm.name,
+                email: profileForm.email,
+                phone: profileForm.phone
+            };
+
+            // If there's a new image, upload it first
+            if (profileForm.profile_image) {
+                await uploadProfileImage(profileForm.profile_image);
+            }
+
+            const response = await updateProfile(formData);
+            
+            if (response.status) {
+                setSuccess('Profile updated successfully!');
+                toast.success('Profile updated successfully!');
+                await fetchUserInfo();
+                
+                // Clear success message after 3 seconds
+                setTimeout(() => setSuccess(null), 3000);
+            }
+        } catch (err) {
+            console.error('Error updating profile:', err);
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to update profile';
+            setError(errorMsg);
+            toast.error(errorMsg);
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    const handlePasswordInputChange = (e) => {
+        const { name, value } = e.target;
+        setPasswordForm(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handlePasswordSubmit = async (e) => {
+        e.preventDefault();
+        setChangingPassword(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const response = await changePassword(passwordForm);
+            
+            if (response.status) {
+                setSuccess('Password changed successfully!');
+                toast.success('Password changed successfully!');
+                setPasswordForm({
+                    current_password: '',
+                    password: '',
+                    password_confirmation: ''
+                });
+                
+                // Clear success message after 3 seconds
+                setTimeout(() => setSuccess(null), 3000);
+            }
+        } catch (err) {
+            console.error('Error changing password:', err);
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to change password';
+            setError(errorMsg);
+            toast.error(errorMsg);
+        } finally {
+            setChangingPassword(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="alert alert-warning">
+                No user data available.
+            </div>
+        );
+    }
+
+    return (
+        <div className="container-fluid">
+            {/* Profile Update Form */}
+            <div className="row">
+                {/* Profile Picture Card */}
+                <div className="col-md-4">
+                    <div className="card card-flush h-md-100">
+                        <div className="card-header">
+                            <div className="card-title">
+                                <h2>Profile Picture</h2>
+                            </div>
+                        </div>
+                        <div className="card-body text-center pt-0">
+                            <div className="text-center mb-10">
+                                <div className="image-input image-input-outline" data-kt-image-input="true">
+                                    <div 
+                                        className="image-input-wrapper w-150px h-150px" 
+                                        style={{ 
+                                            backgroundImage: `url('${imagePreview || '/assets/media/avatars/300-1.jpg'}')`,
+                                            backgroundSize: 'cover',
+                                            backgroundPosition: 'center'
+                                        }}
+                                    ></div>
+                                    <label 
+                                        className="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-35px h-35px bg-body shadow" 
+                                        data-kt-image-input-action="change" 
+                                        data-bs-toggle="tooltip" 
+                                        title="Change avatar"
+                                    >
+                                        <i className="bi bi-pencil-fill fs-7"></i>
+                                        <input 
+                                            type="file" 
+                                            accept=".png, .jpg, .jpeg, .gif"
+                                            onChange={handleImageChange}
+                                        />
+                                    </label>
+                                    {profileForm.profile_image && (
+                                        <span 
+                                            className="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-35px h-35px bg-body shadow" 
+                                            data-kt-image-input-action="cancel" 
+                                            data-bs-toggle="tooltip" 
+                                            title="Cancel avatar"
+                                            onClick={handleCancelImage}
+                                            style={{ cursor: 'pointer' }}
+                                        >
+                                            <i className="bi bi-x fs-2"></i>
+                                        </span>
+                                    )}
+                                    <span 
+                                        className="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-35px h-35px bg-body shadow" 
+                                        data-kt-image-input-action="remove" 
+                                        data-bs-toggle="tooltip" 
+                                        title="Remove avatar"
+                                        onClick={handleRemoveImage}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <i className="bi bi-x fs-2"></i>
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="text-center mb-10">
+                                <div className="d-flex align-items-center justify-content-center">
+                                    <div className="d-flex flex-column">    
+                                        <a href="#" className="fs-4 fw-bold text-gray-900 text-hover-primary mb-1">
+                                            {user.name}
+                                        </a>
+                                        <div className="fs-6 fw-semibold text-gray-400">
+                                            {user.email}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Profile Information Form */}
+                <div className="col-lg-8">
+                    {success && (
+                        <div className="alert alert-success alert-dismissible fade show" role="alert">
+                            {success}
+                            <button 
+                                type="button" 
+                                className="btn-close" 
+                                onClick={() => setSuccess(null)}
+                                aria-label="Close"
+                            ></button>
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="alert alert-danger alert-dismissible fade show" role="alert">
+                            {error}
+                            <button 
+                                type="button" 
+                                className="btn-close" 
+                                onClick={() => setError(null)}
+                                aria-label="Close"
+                            ></button>
+                        </div>
+                    )}
+
+                    <div className="card">
+                        <div className="card-header">
+                            <div className="card-title">
+                                <h2>Profile Information</h2>
+                            </div>
+                        </div>
+                        <div className="card-body">
+                            <form onSubmit={handleProfileSubmit}>
+                                <div className="row mb-6">
+                                    <label className="col-lg-4 col-form-label required fw-semibold fs-6">
+                                        Full Name
+                                    </label>
+                                    <div className="col-lg-8">
+                                        <input 
+                                            type="text" 
+                                            name="name" 
+                                            className="form-control form-control-solid" 
+                                            placeholder="Enter full name" 
+                                            value={profileForm.name}
+                                            onChange={handleProfileInputChange}
+                                            required 
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="row mb-6">
+                                    <label className="col-lg-4 col-form-label required fw-semibold fs-6">
+                                        Email Address
+                                    </label>
+                                    <div className="col-lg-8">
+                                        <input 
+                                            type="email" 
+                                            name="email" 
+                                            className="form-control form-control-solid" 
+                                            placeholder="Enter email address" 
+                                            value={profileForm.email}
+                                            onChange={handleProfileInputChange}
+                                            required 
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="row mb-6">
+                                    <label className="col-lg-4 col-form-label fw-semibold fs-6">
+                                        Phone Number
+                                    </label>
+                                    <div className="col-lg-8">
+                                        <input 
+                                            type="text" 
+                                            name="phone" 
+                                            className="form-control form-control-solid" 
+                                            placeholder="Enter phone number" 
+                                            value={profileForm.phone}
+                                            onChange={handleProfileInputChange}
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="card-footer d-flex justify-content-end py-6 px-9">
+                                    <button type="submit" className="btn btn-primary" disabled={updating}>
+                                        {updating ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                Updating...
+                                            </>
+                                        ) : (
+                                            'Update Profile'
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Change Password Form */}
+            <div className="row mt-8">
+                <div className="col-md-4"></div>
+                <div className="col-md-8">
+                    <div className="card">
+                        <div className="card-header">
+                            <div className="card-title">
+                                <h2>Change Password</h2>
+                            </div>
+                        </div>
+                        <div className="card-body">
+                            <form onSubmit={handlePasswordSubmit}>
+                                <div className="row mb-6">
+                                    <label className="col-lg-4 col-form-label required fw-semibold fs-6">
+                                        Current Password
+                                    </label>
+                                    <div className="col-lg-8">
+                                        <input 
+                                            type="password" 
+                                            name="current_password" 
+                                            className="form-control form-control-solid" 
+                                            placeholder="Enter current password" 
+                                            value={passwordForm.current_password}
+                                            onChange={handlePasswordInputChange}
+                                            required 
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="row mb-6">
+                                    <label className="col-lg-4 col-form-label required fw-semibold fs-6">
+                                        New Password
+                                    </label>
+                                    <div className="col-lg-8">
+                                        <input 
+                                            type="password" 
+                                            name="password" 
+                                            className="form-control form-control-solid" 
+                                            placeholder="Enter new password" 
+                                            value={passwordForm.password}
+                                            onChange={handlePasswordInputChange}
+                                            required 
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="row mb-6">
+                                    <label className="col-lg-4 col-form-label required fw-semibold fs-6">
+                                        Confirm New Password
+                                    </label>
+                                    <div className="col-lg-8">
+                                        <input 
+                                            type="password" 
+                                            name="password_confirmation" 
+                                            className="form-control form-control-solid" 
+                                            placeholder="Confirm new password" 
+                                            value={passwordForm.password_confirmation}
+                                            onChange={handlePasswordInputChange}
+                                            required 
+                                        />
+                                    </div>
+                                </div>
+                                
+                                <div className="card-footer d-flex justify-content-end py-6 px-9">
+                                    <button type="submit" className="btn btn-primary" disabled={changingPassword}>
+                                        {changingPassword ? (
+                                            <>
+                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                                Changing Password...
+                                            </>
+                                        ) : (
+                                            'Change Password'
+                                        )}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default ProfileInfo;
+
