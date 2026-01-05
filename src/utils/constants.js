@@ -1,10 +1,10 @@
 // API Base URLs
 export const  BASE_DOMAIN = 'https://dev.corenetpay.com';
-export const AUTH_SERVICE_BASE = `{BASE_DOMAIN}/api/coreservice`;
-export const SOFTPOS_API_BASE = `{BASE_DOMAIN}/api/softpos`;
+export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
+export const SOFTPOS_API_BASE = `${BASE_DOMAIN}/api/softpos`;
 // PayTabs Node service base (for QR testing)
-export const PAYTABS_API_BASE = `{BASE_DOMAIN}/api/paytabs`;
-export const POS_API_BASE = `{BASE_DOMAIN}/api/pos`;
+export const PAYTABS_API_BASE = `${BASE_DOMAIN}/api/paytabs`;
+export const POS_API_BASE = `${BASE_DOMAIN}/api/pos`;
 
 // Frontend Base URL
 export const FRONTEND_BASE_URL = BASE_DOMAIN;
