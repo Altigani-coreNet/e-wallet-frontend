@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import classNames from 'classnames';
 import Swal from 'sweetalert2';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -9,7 +9,7 @@ import useAuthStore from '../../stores/authStore';
 // Step Components
 import AccountDetails from './steps/AccountDetails';
 import AccountVerification from './steps/AccountVerification';
-import MerchantProfile from './steps/MerchantProfile';
+import PartnerProfile from './steps/MerchantProfile';
 import BusinessDocuments from './steps/BusinessDocuments';
 import CompletionStep from './steps/CompletionStep';
 
@@ -23,8 +23,8 @@ const steps = [
         description: 'Verify Your Account & Set Your Passport'
     },
     {
-        title: 'Merchant Profile',
-        description: 'Setup Your Merchant Profile Details'
+        title: 'Partner Profile',
+        description: 'Setup Your Partner Profile Details'
     },
     {
         title: 'Business Documents',
@@ -37,9 +37,9 @@ const steps = [
 ];
 
 // LocalStorage key for saving registration progress
-const REGISTRATION_STORAGE_KEY = 'merchant_registration_progress';
+const REGISTRATION_STORAGE_KEY = 'partner_registration_progress';
 
-const MerchantRegister = () => {
+const PartnerRegister = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     // Read plan_id from URL (e.g. ?plan_id=3). If missing, leave null and let backend fall back.
@@ -68,13 +68,21 @@ const MerchantRegister = () => {
 
     // Check if step is provided in URL query params (for redirect from login)
     const stepFromUrl = searchParams.get('step');
-    const initialStep = stepFromUrl ? parseInt(stepFromUrl, 10) : 0;
+    
+    // Get initial step from store first, then URL, then default to 0
+    const storeStep = storeCurrentStep || 0;
+    const initialStep = stepFromUrl ? parseInt(stepFromUrl, 10) : storeStep;
 
     // Initialize state first (before useEffect hooks that reference them)
-    const [currentStep, setCurrentStep] = useState(initialStep); // Start at step from URL or 0
+    const [currentStep, setCurrentStep] = useState(initialStep); // Start at step from URL, store, or 0
     const [fieldErrors, setFieldErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
-    const [formData, setFormData] = useState({
+    
+    // Ref for AccountVerification's internal previous handler
+    const accountVerificationPreviousRef = useRef(null);
+    
+    // Initialize formData from store if available, otherwise use defaults
+    const defaultFormData = {
         // Account Details
         email: '',
         first_name: '',
@@ -85,9 +93,10 @@ const MerchantRegister = () => {
         plan_id: planIdFromUrl ? Number(planIdFromUrl) : undefined,
         
         // Company Profile Details
+        name: '',
         owner_name: '',
         business_name: '',
-        business_type: '',
+        partner_category_id: '',
         business_phone: '',
         business_address: '',
         country: '',
@@ -113,20 +122,31 @@ const MerchantRegister = () => {
         trade_license: null,
         tax_certification: null,
         user_id_document: null,
+        partner_id: '',
         
         // Terms and Conditions
         accept_terms: false
-    });
+    };
+    
+    // Merge store formData with defaults, preserving plan_id from URL if present
+    const initialFormData = {
+        ...defaultFormData,
+        ...(storeFormData || {}),
+        // Ensure plan_id from URL takes precedence if provided
+        ...(planIdFromUrl ? { plan_id: Number(planIdFromUrl) } : {})
+    };
+    
+    const [formData, setFormData] = useState(initialFormData);
 
-    // Debug: log plan id coming from URL and initial state
+    // Debug: log plan id coming from URL and initial state (do not reset step - respect URL step or store)
     useEffect(() => {
-        console.log('MerchantRegister - planIdFromUrl:', planIdFromUrl);
-        console.log('MerchantRegister - initial formData.plan_id:', formData.plan_id);
+        console.log('PartnerRegister - planIdFromUrl:', planIdFromUrl);
+        console.log('PartnerRegister - initial formData.plan_id:', formData.plan_id);
     }, [planIdFromUrl]);
 
     // Debug: log whenever plan_id changes in formData
     useEffect(() => {
-        console.log('MerchantRegister - formData.plan_id changed to:', formData.plan_id);
+        console.log('PartnerRegister - formData.plan_id changed to:', formData.plan_id);
     }, [formData.plan_id]);
 
     // Helper function to save progress (both localStorage and store)
@@ -167,10 +187,11 @@ const MerchantRegister = () => {
         }
     };
 
-    // Helper function to clear saved progress
+    // Helper function to clear saved progress (store + both localStorage keys so "Start new" and "Register another" start empty)
     const clearProgress = () => {
         try {
             localStorage.removeItem(REGISTRATION_STORAGE_KEY);
+            localStorage.removeItem('registration-storage'); // Zustand persist key so store rehydrates empty
             clearRegistration();
             console.log('Registration progress cleared');
         } catch (error) {
@@ -178,7 +199,7 @@ const MerchantRegister = () => {
         }
     };
 
-    // Load saved progress on component mount and show continue button
+    // Load saved progress on component mount and restore directly from store
     useEffect(() => {
         // Get current auth state
         const currentAuth = useAuthStore.getState();
@@ -189,9 +210,9 @@ const MerchantRegister = () => {
             const loggedInUser = currentAuth.user;
             const loggedInToken = currentAuth.token;
             
-            console.log('=== USER LOGGED IN BUT NO MERCHANT ===');
+            console.log('=== USER LOGGED IN BUT NO PARTNER ===');
             console.log('User:', loggedInUser);
-            console.log('Starting at step 2 (Merchant Profile)');
+            console.log('Starting at step 2 (Partner Profile)');
             console.log('=====================================');
             
             // Pre-fill form with user data
@@ -203,10 +224,11 @@ const MerchantRegister = () => {
                 nationality: loggedInUser.nationality || '1',
                 // Preserve plan from URL if present when pre-filling from logged-in user
                 plan_id: planIdFromUrl ? Number(planIdFromUrl) : formData.plan_id,
-                // Leave merchant fields empty for user to fill
+                // Leave partner fields empty for user to fill
+                name: '',
                 owner_name: '',
                 business_name: '',
-                business_type: '',
+                partner_category_id: '',
                 business_phone: '',
                 business_address: '',
                 country: '',
@@ -226,12 +248,13 @@ const MerchantRegister = () => {
                 trade_license: null,
                 tax_certification: null,
                 user_id_document: null,
+                partner_id: '',
                 accept_terms: false
             };
             
-            // Set form data and step
+            // Set form data and step (step 2 = Partner Profile)
             setFormData(userFormData);
-            setCurrentStep(2); // Step 2 = Merchant Profile (index 2)
+            setCurrentStep(2);
             
             // Save token to registration store
             if (loggedInToken) {
@@ -248,84 +271,95 @@ const MerchantRegister = () => {
                 localStorage.setItem(REGISTRATION_STORAGE_KEY, JSON.stringify(progressData));
             }
             
-            // Show message
+            // Show alert with two options: proceed (stay on current step) or start new
             Swal.fire({
                 icon: 'info',
-                title: 'Complete Your Merchant Registration',
-                text: 'Please complete your merchant profile to continue.',
-                timer: 3000,
-                showConfirmButton: false,
-                toast: true,
-                position: 'top-end'
+                title: 'Complete Your Partner Registration',
+                text: 'Please complete your partner profile to continue.',
+                showCancelButton: true,
+                confirmButtonText: 'Proceed to register',
+                cancelButtonText: 'Start new registration'
+            }).then((result) => {
+                if (result.dismiss === Swal.DismissReason.cancel) {
+                    handleStartNew();
+                }
             });
             
             return; // Don't check for saved progress if user is logged in
         }
         
-        // Check store first
-        const storeProgress = loadProgressFromStore();
-        
-        // Also check localStorage as backup
+        // Read localStorage first so we can prefer the furthest step when both exist (fix: refresh on step 4 must not restore to step 3)
         let localStorageProgress = null;
         try {
             const savedData = localStorage.getItem(REGISTRATION_STORAGE_KEY);
-            if (savedData) {
-                localStorageProgress = JSON.parse(savedData);
-            }
-        } catch (error) {
-            console.error('Error loading from localStorage:', error);
+            if (savedData) localStorageProgress = JSON.parse(savedData);
+        } catch (e) {
+            console.error('Error loading from localStorage:', e);
+        }
+        const localStep = localStorageProgress && typeof localStorageProgress.currentStep === 'number' ? localStorageProgress.currentStep : -1;
+        const localHasProgress = localStep >= 0 && localStorageProgress && localStorageProgress.formData;
+
+        // If URL has ?step=N, use that step so the user lands on the correct step
+        const urlStepParam = searchParams.get('step');
+        const urlStepNum = urlStepParam !== null && urlStepParam !== '' ? parseInt(urlStepParam, 10) : null;
+        const validUrlStep = urlStepNum !== null && !Number.isNaN(urlStepNum) && urlStepNum >= 0 && urlStepNum < steps.length ? urlStepNum : null;
+
+        // If we have valid progress in store (or localStorage with higher step), restore it
+        const storeHasProgress = storeCurrentStep > 0 && storeFormData && Object.keys(storeFormData).length > 0;
+        const useLocal = localHasProgress && (localStep > (storeCurrentStep || 0));
+        let restoreStep = useLocal ? localStep : (storeCurrentStep || 0);
+        const restoreFormData = useLocal ? (localStorageProgress.formData || {}) : (storeFormData || {});
+        // URL step takes precedence so e.g. /merchant/register?step=2 opens step 2
+        if (validUrlStep !== null) {
+            restoreStep = validUrlStep;
         }
 
-        // Use store progress if available, otherwise use localStorage
-        const savedProgress = storeProgress || localStorageProgress;
-        
-        if (savedProgress) {
-            // Check if saved progress is recent (within 30 days)
-            const savedDate = new Date(savedProgress.savedAt);
+        // When we have saved progress (store or localStorage), show the continue modal so user can choose Proceed or Start new
+        if (storeHasProgress || localHasProgress) {
+            if (restoreStep > 0) {
+                const daysSinceSave = localStorageProgress && localStorageProgress.savedAt
+                    ? (new Date() - new Date(localStorageProgress.savedAt)) / (1000 * 60 * 60 * 24) : 0;
+                if (useLocal && daysSinceSave >= 30) {
+                    clearProgress();
+                } else {
+                    const restoredFormData = {
+                        ...restoreFormData,
+                        ...(planIdFromUrl && !restoreFormData.plan_id ? { plan_id: Number(planIdFromUrl) } : {}),
+                    };
+                    const progressForModal = {
+                        currentStep: restoreStep,
+                        formData: restoredFormData,
+                        token: useLocal && localStorageProgress ? localStorageProgress.token : registrationToken,
+                        user: useLocal && localStorageProgress ? localStorageProgress.user : registrationUser,
+                        savedAt: localStorageProgress && localStorageProgress.savedAt ? localStorageProgress.savedAt : new Date().toISOString(),
+                    };
+                    console.log('=== FOUND SAVED PROGRESS (showing continue modal) ===');
+                    console.log('Step:', restoreStep, steps[restoreStep]?.title || 'Unknown');
+                    setSavedProgressData(progressForModal);
+                    setShowContinueModal(true);
+                    return;
+                }
+            }
+        }
+
+        // Fallback: only localStorage progress and no store (e.g. store not rehydrated yet)
+        if (localStorageProgress) {
+            const savedDate = new Date(localStorageProgress.savedAt);
             const daysSinceSave = (new Date() - savedDate) / (1000 * 60 * 60 * 24);
-            
             if (daysSinceSave < 30) {
-                // Ensure plan_id is preserved from URL if not already in saved data
-                if (!savedProgress.formData?.plan_id && planIdFromUrl) {
-                    savedProgress.formData = {
-                        ...(savedProgress.formData || {}),
+                if (!localStorageProgress.formData?.plan_id && planIdFromUrl) {
+                    localStorageProgress.formData = {
+                        ...(localStorageProgress.formData || {}),
                         plan_id: Number(planIdFromUrl),
                     };
                 }
-
-                console.log('=== FOUND SAVED PROGRESS ===');
-                console.log('Saved step:', savedProgress.currentStep);
-                console.log('Step name:', steps[savedProgress.currentStep]?.title || 'Unknown');
-                console.log('Has token:', !!savedProgress.token);
-                console.log('============================');
-                
-                // Show modal with continue button instead of auto-restoring
-                setSavedProgressData(savedProgress);
+                setSavedProgressData(localStorageProgress);
                 setShowContinueModal(true);
             } else {
-                // Progress is too old, clear it
                 clearProgress();
             }
-        } else if (registrationToken || (storeCurrentStep > 0 && Object.keys(storeFormData).length > 0)) {
-            // If no saved progress but we have token or step progress from store, create progress data
-            const progressData = {
-                currentStep: storeCurrentStep || 0,
-                formData: {
-                    ...(storeFormData || {}),
-                    ...(planIdFromUrl ? { plan_id: Number(planIdFromUrl) } : {}),
-                },
-                savedAt: new Date().toISOString(),
-                token: registrationToken,
-                user: registrationUser
-            };
-            console.log('=== CREATING PROGRESS FROM STORE ===');
-            console.log('Store step:', storeCurrentStep);
-            console.log('Progress data:', progressData);
-            console.log('===================================');
-            setSavedProgressData(progressData);
-            setShowContinueModal(true);
         }
-    }, []); // Run only on mount - check for logged-in user first, then saved progress
+    }, []); // Run only on mount
 
     // Handle continue registration
     const handleContinueRegistration = () => {
@@ -394,9 +428,10 @@ const MerchantRegister = () => {
             nationality: '1',
             // When starting new, keep plan from URL if any so user’s choice is not lost
             plan_id: planIdFromUrl ? Number(planIdFromUrl) : undefined,
+            name: '',
             owner_name: '',
             business_name: '',
-            business_type: '',
+            partner_category_id: '',
             business_phone: '',
             business_address: '',
             country: '',
@@ -416,7 +451,8 @@ const MerchantRegister = () => {
             trade_license: null,
             tax_certification: null,
             user_id_document: null,
-            accept_terms: false
+            accept_terms: false,
+            partner_id: ''
         });
     };
 
@@ -525,14 +561,11 @@ const MerchantRegister = () => {
                 } else {
                     if (response.status === 422 && data.errors) {
                         setFieldErrors(data.errors);
-                        const errorMessages = Object.entries(data.errors).map(([field, errors]) => {
-                            return `${field.charAt(0).toUpperCase() + field.slice(1)}: ${errors[0]}`;
-                        });
                         
                         await Swal.fire({
                             icon: 'error',
-                            title: 'Please Fix the Following Errors',
-                            html: errorMessages.join('<br>'),
+                            title: 'Oops!',
+                            text: 'Some required information is missing. Please review the highlighted fields.',
                             confirmButtonText: 'OK'
                         });
                     } else {
@@ -552,24 +585,18 @@ const MerchantRegister = () => {
                 });
             }
         } else if (currentStep === 2) {
-            // Company Profile step - Send merchant details before going to Business Documents
+            // Company Profile step - Send partner details before going to Business Documents
             
             // Client-side validation for required fields including accept_terms
             const validationErrors = {};
             
             // Check required fields
             const requiredFields = {
+                name: 'Partner Name',
                 owner_name: 'Owner Name',
-                business_name: 'Business Name',
-                business_type: 'Business Type',
-                business_phone: 'Business Phone',
+                partner_category_id: 'Partner Category',
                 business_address: 'Business Address',
-                country: 'Country',
-                city: 'City',
-                trade_license_number: 'Trade License Number',
-                trade_license_start_date: 'Trade License Start Date',
-                trade_license_expired_date: 'Trade License Expired Date',
-                tax_number: 'Tax Number'
+                country: 'Country'
             };
             
             // Validate required fields
@@ -594,11 +621,11 @@ const MerchantRegister = () => {
             setIsLoading(true);
             
             try {
-                console.log('=== MERCHANT REGISTRATION DEBUG ===');
+                console.log('=== PARTNER REGISTRATION DEBUG ===');
                 console.log('Full formData:', formData);
                 console.log('City value:', formData.city);
                 console.log('Country value:', formData.country);
-                console.log('Business type value:', formData.business_type);
+                console.log('Partner category value:', formData.partner_category_id);
                 console.log('Business name:', formData.business_name);
                 console.log('Owner name:', formData.owner_name);
                 console.log('Accept terms:', formData.accept_terms);
@@ -607,7 +634,7 @@ const MerchantRegister = () => {
                 // Get bearer token from localStorage or sessionStorage
                 const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
                 
-                const response = await fetch(AUTH_ENDPOINTS.REGISTER_MERCHANT, {
+                const response = await fetch(AUTH_ENDPOINTS.REGISTER_PARTNER, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -626,28 +653,13 @@ const MerchantRegister = () => {
                             : {}),
                         
                         // Company Profile Details
+                        name: formData.name,
                         owner_name: formData.owner_name,
-                        business_name: formData.business_name,
-                        business_type: formData.business_type,
+                        business_name: formData.business_name || formData.name,
+                        partner_category_id: formData.partner_category_id,
                         business_phone: formData.business_phone,
                         business_address: formData.business_address,
                         country: formData.country,
-                        city: formData.city,
-                        
-                        // Trade License Details
-                        trade_license_number: formData.trade_license_number,
-                        trade_license_start_date: formData.trade_license_start_date,
-                        trade_license_expired_date: formData.trade_license_expired_date,
-                        trade_license_authority: formData.trade_license_authority,
-                        
-                        // Tax Details
-                        tax_number: formData.tax_number,
-                        tax_certified_number: formData.tax_certified_number,
-                        tax_id_number: formData.tax_id_number,
-                        vat_number: formData.vat_number,
-                        tax_registration_date: formData.tax_registration_date,
-                        tax_authority: formData.tax_authority,
-                        annual_turnover: formData.annual_turnover,
                         
                         // Terms and Conditions
                         accept_terms: formData.accept_terms
@@ -655,13 +667,21 @@ const MerchantRegister = () => {
                 });
 
                 const data = await response.json();
-                console.log('Merchant registration response:', data);
+                console.log('Partner registration response:', data);
 
                 if (data.success || data.status) {
+                    const partnerId = data?.data?.partner_id || '';
+                    const formDataWithPartner = partnerId ? { ...formData, partner_id: partnerId } : formData;
+                    if (partnerId) {
+                        setFormData(prev => ({
+                            ...prev,
+                            partner_id: partnerId
+                        }));
+                    }
                     await Swal.fire({
                         icon: 'success',
                         title: 'Success!',
-                        text: 'Merchant details saved successfully!',
+                        text: 'Partner details saved successfully!',
                         timer: 2000,
                         showConfirmButton: false
                     });
@@ -671,7 +691,7 @@ const MerchantRegister = () => {
                     // Progress will be saved by useEffect watching currentStep
                     // But also save immediately to ensure it's saved
                     setTimeout(() => {
-                        saveProgress(nextStep, formData);
+                        saveProgress(nextStep, formDataWithPartner);
                     }, 100);
                 } else {
                     if (response.status === 422 && data.errors) {
@@ -680,16 +700,16 @@ const MerchantRegister = () => {
                         await Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: data.message || 'Failed to save merchant details. Please try again.',
+                            text: data.message || 'Failed to save partner details. Please try again.',
                         });
                     }
                 }
             } catch (error) {
-                console.error('Error saving merchant details:', error);
+                console.error('Error saving partner details:', error);
                 await Swal.fire({
                     icon: 'error',
                     title: 'Error',
-                    text: 'An error occurred while saving merchant details. Please try again.',
+                    text: 'An error occurred while saving partner details. Please try again.',
                 });
             } finally {
                 setIsLoading(false);
@@ -762,7 +782,12 @@ const MerchantRegister = () => {
     };
 
     const handlePrevious = () => {
-        if (currentStep > 0) {
+        // If we're on step 1 (AccountVerification), check if it has an internal handler
+        if (currentStep === 1 && accountVerificationPreviousRef.current) {
+            // AccountVerification will handle going back internally (selection screen -> step 0, or verification -> selection)
+            accountVerificationPreviousRef.current();
+        } else if (currentStep > 0) {
+            // Normal previous: go back one step
             setCurrentStep(currentStep - 1);
         }
     };
@@ -815,21 +840,30 @@ const MerchantRegister = () => {
             case 0:
                 return <AccountDetails {...commonProps} />;
             case 1:
-                return <AccountVerification {...commonProps} onNextStep={() => {
-                    const nextStep = currentStep + 1; // This will be step 2
-                    console.log(`AccountVerification: Moving from step ${currentStep} to step ${nextStep}`);
-                    setCurrentStep(nextStep);
-                    // Save will happen automatically via useEffect, but also save immediately to ensure correct step
-                    setTimeout(() => {
-                        saveProgress(nextStep, formData);
-                    }, 100);
-                }} />;
+                return <AccountVerification 
+                    {...commonProps} 
+                    onNextStep={() => {
+                        const nextStep = currentStep + 1; // This will be step 2
+                        console.log(`AccountVerification: Moving from step ${currentStep} to step ${nextStep}`);
+                        setCurrentStep(nextStep);
+                        // Save will happen automatically via useEffect, but also save immediately to ensure correct step
+                        setTimeout(() => {
+                            saveProgress(nextStep, formData);
+                        }, 100);
+                    }}
+                    onPreviousRef={accountVerificationPreviousRef}
+                    onPreviousToStep0={() => {
+                        // Called when AccountVerification wants to go back to step 0
+                        setCurrentStep(0);
+                    }}
+                    onStartNewRegistration={handleStartNew}
+                />;
             case 2:
-                return <MerchantProfile {...commonProps} />;
+                return <PartnerProfile {...commonProps} />;
             case 3:
                 return <BusinessDocuments {...commonProps} />;
             case 4:
-                return <CompletionStep />;
+                return <CompletionStep onRegisterAnother={handleStartNew} />;
             default:
                 return null;
         }
@@ -907,20 +941,19 @@ const MerchantRegister = () => {
                 </div>
 
                 {/* Main Content */}
-                <div className="d-flex flex-column flex-lg-row-fluid py-10 min-vh-100">
-                    <div className="d-flex flex-center flex-column flex-column-fluid">
-                        <div className="w-lg-700px p-10 p-lg-15 mx-auto">
+                <div className="d-flex flex-column flex-lg-row-fluid py-10 min-vh-100 min-w-0 overflow-hidden">
+                    <div className="d-flex flex-center flex-column flex-column-fluid min-w-0">
+                        <div className="w-lg-700px p-5 p-lg-10 p-xl-15 mx-auto w-100" style={{ maxWidth: '100%' }}>
                             <form className="my-auto pb-5" noValidate>
                                 {renderStepContent()}
 
                                 {currentStep < steps.length - 1 && (
-                                    <div className="d-flex flex-stack pt-15">
-                                        <div className="mr-2">
+                                    <div className="d-flex flex-row flex-nowrap justify-content-between align-items-center gap-2 pt-15">
+                                        <div>
                                             {currentStep > 0 && (
                                                 <button
                                                     type="button"
-                                                    className="btn btn-lg btn-light-primary me-3"
-                                                    disabled={currentStep > 0}
+                                                    className="btn btn-lg btn-light-primary"
                                                     onClick={handlePrevious}
                                                 >
                                                     <span className="svg-icon svg-icon-4 me-1">
@@ -964,5 +997,5 @@ const MerchantRegister = () => {
     );
 };
 
-export default MerchantRegister;
+export default PartnerRegister;
 

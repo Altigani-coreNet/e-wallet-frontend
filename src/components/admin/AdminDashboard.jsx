@@ -5,17 +5,22 @@ import html2pdf from 'html2pdf.js';
 import { ADMIN_ENDPOINTS } from '../../utils/constants';
 import { getToken } from '../../utils/api';
 import { useToolbar } from '../../contexts/ToolbarContext';
-import AdminDashboardStatistics from './dashboard/AdminDashboardStatistics';
+import AdminDashboardStatistics from '../../pages/payment-getway/dashboard/AdminDashboardStatistics';
 import AdminDashboardFilters from './dashboard/AdminDashboardFilters';
-import DashboardCharts from '../merchant/DashboardCharts';
+import SubscriptionWidget from '../../pages/payment-getway/dashboard/SubscriptionWidget';
 import AdminLatestTransactions from './dashboard/AdminLatestTransactions';
-import TerminalStatusWidget from './dashboard/TerminalStatusWidget';
 import {
     fetchAdminDashboardOverview,
-    fetchAdminDashboardTerminalStatus,
-    fetchAdminDashboardCharts,
     fetchAdminDashboardLatestTransactions,
+    fetchAdminDashboardSubscriptions,
 } from '../../services/adminDashboardService';
+
+/**
+ * When true, does not request subscription dashboard (transaction chart, top partners) or latest transactions.
+ * Those endpoints were returning 401; `apiClient` treats any 401 as logout + redirect to admin login.
+ * Set to false when the backend accepts your token for these routes.
+ */
+const SKIP_DASHBOARD_CHART_AND_LATEST_TX = true;
 
 const createInitialFilters = () => ({
     datetime_from: '',
@@ -34,7 +39,6 @@ const AdminDashboard = () => {
     const [filters, setFilters] = useState(() => createInitialFilters());
     const [appliedFilters, setAppliedFilters] = useState(() => createInitialFilters());
     const [exporting, setExporting] = useState(false);
-    const [chartPeriod, setChartPeriod] = useState('daily');
     const [terminalDetails, setTerminalDetails] = useState({});
     const [terminalDetailsLoading, setTerminalDetailsLoading] = useState(false);
     const terminalFetchQueue = useRef(new Set());
@@ -57,22 +61,14 @@ const AdminDashboard = () => {
         },
     });
 
-    const terminalStatusQuery = useQuery({
-        queryKey: ['admin-dashboard-terminal-status', filtersForData],
-        queryFn: () => fetchAdminDashboardTerminalStatus(filtersForData),
+    const subscriptionsQuery = useQuery({
+        queryKey: ['admin-dashboard-subscriptions', filtersForData],
+        queryFn: () => fetchAdminDashboardSubscriptions(filtersForData),
+        enabled: !SKIP_DASHBOARD_CHART_AND_LATEST_TX,
         keepPreviousData: true,
+        retry: false,
         onError: (err) => {
-            const message = err?.response?.data?.message || err?.message || 'Failed to load terminal status.';
-            toast.error(message);
-        },
-    });
-
-    const chartsQuery = useQuery({
-        queryKey: ['admin-dashboard-charts', filtersForData, chartPeriod],
-        queryFn: () => fetchAdminDashboardCharts({ ...filtersForData, period: chartPeriod }),
-        keepPreviousData: true,
-        onError: (err) => {
-            const message = err?.response?.data?.message || err?.message || 'Failed to load dashboard charts.';
+            const message = err?.response?.data?.message || err?.message || 'Failed to load subscription data.';
             toast.error(message);
         },
     });
@@ -80,7 +76,9 @@ const AdminDashboard = () => {
     const latestTransactionsQuery = useQuery({
         queryKey: ['admin-dashboard-latest-transactions', appliedFilters],
         queryFn: () => fetchAdminDashboardLatestTransactions(appliedFilters),
+        enabled: !SKIP_DASHBOARD_CHART_AND_LATEST_TX,
         keepPreviousData: true,
+        retry: false,
         onError: (err) => {
             const message = err?.response?.data?.message || err?.message || 'Failed to load latest transactions.';
             toast.error(message);
@@ -88,25 +86,13 @@ const AdminDashboard = () => {
     });
 
     const isOverviewLoading = overviewQuery.isLoading || overviewQuery.isFetching;
-    const isTerminalStatusLoading = terminalStatusQuery.isLoading || terminalStatusQuery.isFetching;
-    const isChartsLoading = chartsQuery.isLoading || chartsQuery.isFetching;
+    const isSubscriptionsLoading = subscriptionsQuery.isLoading || subscriptionsQuery.isFetching;
     const isLatestTransactionsLoading =
         latestTransactionsQuery.isLoading ||
         latestTransactionsQuery.isFetching ||
         terminalDetailsLoading;
-    const queryStates = [overviewQuery, terminalStatusQuery, chartsQuery, latestTransactionsQuery];
+    const queryStates = [overviewQuery, subscriptionsQuery, latestTransactionsQuery];
     const isRefreshing = queryStates.some((query) => query.isFetching && !query.isLoading);
-
-    const hasAppliedRange = useMemo(
-        () => Boolean(appliedFilters.datetime_from || appliedFilters.datetime_to),
-        [appliedFilters.datetime_from, appliedFilters.datetime_to]
-    );
-
-    useEffect(() => {
-        if (hasAppliedRange && chartPeriod !== 'daily') {
-            setChartPeriod('daily');
-        }
-    }, [hasAppliedRange, chartPeriod]);
 
     useEffect(() => {
         setTitle('Admin Dashboard');
@@ -138,14 +124,12 @@ const AdminDashboard = () => {
 
     const handleApplyFilters = useCallback(() => {
         setAppliedFilters(() => ({ ...filters }));
-        setChartPeriod('daily');
     }, [filters]);
 
     const handleClearFilters = useCallback(() => {
         const resetFilters = createInitialFilters();
         setFilters(resetFilters);
         setAppliedFilters(resetFilters);
-        setChartPeriod('daily');
     }, []);
 
     const handleTransactionLimitChange = useCallback((newLimit) => {
@@ -330,11 +314,9 @@ const AdminDashboard = () => {
                 credentials: 'include',
             });
 
-            // Check content type first
             const contentType = response.headers.get('content-type') || '';
-            
+
             if (!response.ok) {
-                // Try to parse error message from response
                 let errorMessage = 'Failed to export dashboard data';
                 try {
                     if (contentType.includes('application/json')) {
@@ -344,23 +326,18 @@ const AdminDashboard = () => {
                         errorMessage = response.statusText || errorMessage;
                     }
                 } catch (e) {
-                    // If response is not JSON, use status text
                     errorMessage = response.statusText || errorMessage;
                 }
                 throw new Error(errorMessage);
             }
 
-            // Verify we got CSV, not JSON (shouldn't happen if response.ok, but check anyway)
             if (contentType.includes('application/json')) {
-                // Backend returned JSON instead of CSV
                 const errorData = await response.json();
                 throw new Error(errorData.message || errorData.error || 'Export failed: Unexpected response format');
             }
 
-            // Get the CSV blob
             const blob = await response.blob();
-            
-            // Get filename from Content-Disposition header or use default
+
             let filename = `admin_dashboard_export_${new Date().toISOString().split('T')[0]}.csv`;
             const contentDisposition = response.headers.get('content-disposition');
             if (contentDisposition) {
@@ -402,16 +379,16 @@ const AdminDashboard = () => {
                 margin: [10, 10, 10, 10],
                 filename: `admin_dashboard_${new Date().toISOString().split('T')[0]}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
+                html2canvas: {
                     scale: 2,
                     useCORS: true,
                     logging: false,
                     letterRendering: true
                 },
-                jsPDF: { 
-                    unit: 'mm', 
-                    format: 'a4', 
-                    orientation: 'portrait' 
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait'
                 },
                 pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
             };
@@ -426,12 +403,16 @@ const AdminDashboard = () => {
 
     const handleRefresh = useCallback(async () => {
         try {
-            await Promise.all([
+            const tasks = [
                 queryClient.invalidateQueries({ queryKey: ['admin-dashboard-overview'] }),
-                queryClient.invalidateQueries({ queryKey: ['admin-dashboard-terminal-status'] }),
-                queryClient.invalidateQueries({ queryKey: ['admin-dashboard-charts'] }),
-                queryClient.invalidateQueries({ queryKey: ['admin-dashboard-latest-transactions'] }),
-            ]);
+            ];
+            if (!SKIP_DASHBOARD_CHART_AND_LATEST_TX) {
+                tasks.push(
+                    queryClient.invalidateQueries({ queryKey: ['admin-dashboard-subscriptions'] }),
+                    queryClient.invalidateQueries({ queryKey: ['admin-dashboard-latest-transactions'] }),
+                );
+            }
+            await Promise.all(tasks);
             toast.success('Dashboard data refreshed');
         } catch (err) {
             console.error('Refresh error:', err);
@@ -486,7 +467,7 @@ const AdminDashboard = () => {
                     </i>
                     Print Dashboard
                 </button>
-                
+
                 <button
                     className="btn btn-sm btn-success"
                     onClick={handleExportExcel}
@@ -540,34 +521,35 @@ const AdminDashboard = () => {
                 isCollapsed={filtersCollapsed}
             />
 
-            <AdminDashboardStatistics 
+            <AdminDashboardStatistics
                 data={overviewQuery.data}
+                subscriptionData={subscriptionsQuery.data}
                 loading={isOverviewLoading}
+                subscriptionLoading={isSubscriptionsLoading}
             />
 
-            <div className="row gy-5 gx-xl-10">
-                <div className="col-xl-8 mb-5 mb-xl-10">
-                    <DashboardCharts 
-                        data={chartsQuery.data?.chart}
-                        todayStats={chartsQuery.data?.todayStats}
-                        hasRange={hasAppliedRange}
-                        loading={isChartsLoading}
-                        activePeriod={chartPeriod}
-                        onPeriodChange={setChartPeriod}
-                    />
+            {!SKIP_DASHBOARD_CHART_AND_LATEST_TX ? (
+                <div className="row gy-5 g-xl-10">
+                    <div className="col-xl-12">
+                        <SubscriptionWidget
+                            data={subscriptionsQuery.data}
+                            loading={isSubscriptionsLoading}
+                        />
+                    </div>
                 </div>
-                
-                <div className="col-xl-4 mb-xl-10">
-                    <TerminalStatusWidget
-                        data={terminalStatusQuery.data}
-                        loading={isTerminalStatusLoading}
-                    />
+            ) : (
+                <div className="alert alert-light border border-dashed border-gray-300 mb-5" role="status">
+                    <span className="text-gray-700">
+                        Transaction chart, partner list, and latest transactions are turned off for now so optional APIs are not called (avoids 401 logout). Set{' '}
+                        <code className="fs-8">SKIP_DASHBOARD_CHART_AND_LATEST_TX</code> to <code className="fs-8">false</code> in{' '}
+                        <code className="fs-8">AdminDashboard.jsx</code> when those endpoints are fixed.
+                    </span>
                 </div>
-            </div>
+            )}
 
             <div className="row gy-5 g-xl-10">
                 <div className="col-xl-12">
-                    <AdminLatestTransactions 
+                    <AdminLatestTransactions
                         transactions={enrichedLatestTransactions}
                         limit={transactionsLimit}
                         onLimitChange={handleTransactionLimitChange}
@@ -580,4 +562,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-

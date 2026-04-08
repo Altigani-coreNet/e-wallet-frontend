@@ -354,19 +354,19 @@ const AdminTaxesIndex = () => {
                             <table className="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
                                 <thead>
                                     <tr className="fw-bold text-muted">
-                                        <th className="min-w-50px" style={{ cursor: 'pointer' }} onClick={() => handleSort('id')} className="user-select-none">
+                                        <th className="min-w-50px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('id')}>
                                             ID {getSortIcon('id')}
                                         </th>
-                                        <th className="min-w-150px" style={{ cursor: 'pointer' }} onClick={() => handleSort('merchant_id')} className="user-select-none">
+                                        <th className="min-w-150px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('merchant_id')}>
                                             Merchant {getSortIcon('merchant_id')}
                                         </th>
-                                        <th className="min-w-150px" style={{ cursor: 'pointer' }} onClick={() => handleSort('name')} className="user-select-none">
+                                        <th className="min-w-150px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>
                                             Name {getSortIcon('name')}
                                         </th>
-                                        <th className="min-w-100px" style={{ cursor: 'pointer' }} onClick={() => handleSort('rate')} className="user-select-none">
+                                        <th className="min-w-100px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('rate')}>
                                             Rate (%) {getSortIcon('rate')}
                                         </th>
-                                        <th className="min-w-150px" style={{ cursor: 'pointer' }} onClick={() => handleSort('type')} className="user-select-none">
+                                        <th className="min-w-150px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('type')}>
                                             Type {getSortIcon('type')}
                                         </th>
                                         <th className="min-w-150px">Country</th>
@@ -443,19 +443,19 @@ const AdminTaxesIndex = () => {
                         <table className="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
                         <thead>
                             <tr className="fw-bold text-muted">
-                                <th className="min-w-50px" style={{ cursor: 'pointer' }} onClick={() => handleSort('id')} className="user-select-none">
+                                <th className="min-w-50px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('id')}>
                                     ID {getSortIcon('id')}
                                 </th>
-                                <th className="min-w-150px" style={{ cursor: 'pointer' }} onClick={() => handleSort('merchant_id')} className="user-select-none">
+                                <th className="min-w-150px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('merchant_id')}>
                                     Merchant {getSortIcon('merchant_id')}
                                 </th>
-                                <th className="min-w-150px" style={{ cursor: 'pointer' }} onClick={() => handleSort('name')} className="user-select-none">
+                                <th className="min-w-150px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>
                                     Name {getSortIcon('name')}
                                 </th>
-                                <th className="min-w-100px" style={{ cursor: 'pointer' }} onClick={() => handleSort('rate')} className="user-select-none">
+                                <th className="min-w-100px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('rate')}>
                                     Rate (%) {getSortIcon('rate')}
                                 </th>
-                                <th className="min-w-150px" style={{ cursor: 'pointer' }} onClick={() => handleSort('type')} className="user-select-none">
+                                <th className="min-w-150px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('type')}>
                                     Type {getSortIcon('type')}
                                 </th>
                                 <th className="min-w-150px">Country</th>

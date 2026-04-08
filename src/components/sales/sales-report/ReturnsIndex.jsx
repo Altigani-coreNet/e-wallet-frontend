@@ -331,6 +331,13 @@ const ReturnsIndex = () => {
 
         if (method === 'cash') return 'badge-light-primary';
         if (method === 'card') return 'badge-light-info';
+        if (method === 'payment_link' || method === 'payment link') {
+            return 'badge-light-warning';
+        }
+        if (method === 'qr_code' || method === 'qr code') {
+            return 'badge-light-warning';
+        }
+        // Legacy support for old combined value
         if (method === 'payment link qr code' || method === 'payment_link_qr_code') {
             return 'badge-light-warning';
         }

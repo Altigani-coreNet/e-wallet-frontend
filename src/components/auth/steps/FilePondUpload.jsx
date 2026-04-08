@@ -3,7 +3,7 @@ import { FilePond, registerPlugin } from 'react-filepond';
 import FilePondPluginFileValidateType from 'filepond-plugin-file-validate-type';
 import FilePondPluginFileValidateSize from 'filepond-plugin-file-validate-size';
 import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
-import { AUTH_SERVICE_BASE } from '../../../utils/constants';
+import { AUTH_SERVICE_BASE, SOFTPOS_API_BASE } from '../../../utils/constants';
 
 // Import FilePond styles
 import 'filepond/dist/filepond.min.css';
@@ -135,17 +135,27 @@ const FilePondUpload = ({
     };
 
     // Server configuration
+    const isCompanyLogoUpload = name === 'company_logo';
+    const uploadUrl = isCompanyLogoUpload
+        ? `${SOFTPOS_API_BASE}/upload-partner-compnay/profile`
+        : `${AUTH_SERVICE_BASE}/upload-partner-file`;
+
     const serverConfig = {
         process: {
-            url: `${AUTH_SERVICE_BASE}/upload-merchant-file`,
+            url: uploadUrl,
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || ''}`
             },
-            ondata: (formData) => {
+            ondata: (payload) => {
                 // Add field name to form data
-                formData.append('field_name', name);
-                return formData;
+                payload.append('field_name', name);
+                const partnerId = formData?.partner_id || formData?.partnerId || '';
+                if (partnerId) {
+                    payload.append('partner_id', partnerId);
+                    payload.append('parent_id', partnerId);
+                }
+                return payload;
             },
             onload: (response) => {
                 try {
@@ -414,7 +424,8 @@ const FilePondUpload = ({
                     allowRevert={true}
                     instantUpload={true}
                     checkValidity={true}
-                    imagePreviewHeight={isImage ? 120 : undefined}
+                    imagePreviewHeight={isImage ? 120 : 0}
+                    allowImagePreview={isImage}
                     oninit={handleInit}
                     onaddfile={handleAddFile}
                     onprocessfile={handleProcessFile}

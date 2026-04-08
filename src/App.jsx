@@ -22,7 +22,7 @@ const queryClient = new QueryClient({
 
 // Auth Components
 import Login from './components/auth/Login';
-import MerchantRegister from './components/auth/MerchantRegister';
+import PartnerRegister from './components/auth/MerchantRegister';
 import ForgotPassword from './components/auth/ForgotPassword';
 
 // Layout Components
@@ -305,6 +305,25 @@ import AdminUnitsIndex from './components/admin/units/AdminUnitsIndex';
 import AdminUnitView from './components/admin/units/AdminUnitView';
 import AdminProductsIndex from './components/admin/products/AdminProductsIndex';
 import AdminProductView from './components/admin/products/AdminProductView';
+
+// E-payment gateway & services catalog (Auth / SoftPos service APIs)
+import PgServiceCategoriesPage from './pages/payment-getway/ServiceCategoriesPage';
+import PgServiceSubCategoriesPage from './pages/payment-getway/ServiceSubCategoriesPage';
+import PgServicesPage from './pages/payment-getway/ServicesPage';
+import PgServiceCreate from './pages/payment-getway/ServiceCreate';
+import PgServiceEdit from './pages/payment-getway/ServiceEdit';
+import PgServiceWizard from './pages/payment-getway/ServiceWizard';
+import PgServiceShow from './pages/payment-getway/services/ServiceShow';
+import PgServiceProducts from './pages/payment-getway/products/ServiceProducts';
+import PgGatewayProductsIndex from './pages/payment-getway/products/Products';
+import PgGatewayProductCreate from './pages/payment-getway/products/ProductCreate';
+import PgGatewayProductEdit from './pages/payment-getway/products/ProductEdit';
+import AdminEPaymentGatewayComingSoon from './pages/payment-getway/AdminEPaymentGatewayComingSoon';
+import AdminPartnersIndex from './pages/payment-getway/AdminPartnersIndex';
+import AdminContentProviderCreate from './pages/payment-getway/AdminContentProviderCreate';
+import AdminContentProviderView from './pages/payment-getway/AdminContentProviderView';
+import AdminContentProviderEdit from './pages/payment-getway/AdminContentProviderEdit';
+import AdminServiceCategoryView from './pages/payment-getway/service-categories/AdminServiceCategoryView';
 import AdminWarehousesIndex from './components/admin/warehouses/AdminWarehousesIndex';
 import AdminWarehouseView from './components/admin/warehouses/AdminWarehouseView';
 
@@ -691,7 +710,7 @@ function App() {
             <Route path="/500" element={<Error500 />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/merchant/register" element={<MerchantRegister />} />
+            <Route path="/merchant/register" element={<PartnerRegister />} />
 
             {/* Public Invoice Routes - No Authentication Required */}
             {/* POS (cashier) sale invoice */}
@@ -716,6 +735,31 @@ function App() {
                             <AdminDashboard />
                         </PermissionRoute>
                     } />
+
+                    {/* E-payment gateway & services catalog */}
+                    <Route path="settings/e-payment-gateway" element={<AdminEPaymentGatewayComingSoon />} />
+
+                    <Route path="partners" element={<AdminPartnersIndex />} />
+                    <Route path="partners/create" element={<AdminContentProviderCreate />} />
+                    <Route path="partners/:id/edit" element={<AdminContentProviderEdit />} />
+                    <Route path="partners/:id" element={<AdminContentProviderView />} />
+
+                    <Route path="service/category/type/:categoryType" element={<PgServiceCategoriesPage />} />
+                    <Route path="service/category" element={<Navigate to="/admin/service/category/type/service" replace />} />
+                    <Route path="service/category/:id" element={<AdminServiceCategoryView />} />
+                    <Route path="service/sub-category" element={<Navigate to="/admin/service/sub-categories" replace />} />
+                    <Route path="service/sub-categories" element={<PgServiceSubCategoriesPage />} />
+
+                    <Route path="services/create/wizard" element={<PgServiceWizard />} />
+                    <Route path="services/create" element={<PgServiceCreate />} />
+                    <Route path="services/:id/edit" element={<PgServiceEdit />} />
+                    <Route path="services/:id/products" element={<PgServiceProducts />} />
+                    <Route path="services/:id" element={<PgServiceShow />} />
+                    <Route path="services" element={<PgServicesPage />} />
+
+                    <Route path="service-products/create" element={<PgGatewayProductCreate />} />
+                    <Route path="service-products/:id/edit" element={<PgGatewayProductEdit />} />
+                    <Route path="service-products" element={<PgGatewayProductsIndex />} />
                     
                     {/* Merchant Management */}
                     <Route path="merchants" element={

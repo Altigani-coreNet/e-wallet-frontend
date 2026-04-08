@@ -8,6 +8,7 @@ import { SidebarProvider } from '../../../contexts/SidebarContext';
 
 const AdminLayout = () => {
     const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     // Reinitialize Metronic components when layout mounts
     useEffect(() => {
         // Initialize theme mode first
@@ -72,6 +73,16 @@ const AdminLayout = () => {
         }, 100);
     }, []);
 
+    // Track window width for responsive layout
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     // Monitor sidebar minimize state
     useEffect(() => {
         const checkSidebarState = () => {
@@ -131,9 +142,9 @@ const AdminLayout = () => {
     return (
         <SidebarProvider>
             {/* Begin::App */}
-            <div className="d-flex flex-column flex-root app-root" id="kt_app_root" style={{ width: isSidebarMinimized ? '100%' : '90%' }}>
+            <div className="d-flex flex-column flex-root app-root" id="kt_app_root" style={{ width: windowWidth <= 1024 ? '100%' : (isSidebarMinimized ? '100%' : '90%') }}>
                 {/* Begin::Page */}
-                <div className="app-page flex-column flex-column-fluid" id="kt_app_page" style={{ width: isSidebarMinimized ? '93%' : '90%' }}>
+                <div className="app-page flex-column flex-column-fluid" id="kt_app_page" style={{ width: windowWidth <= 1024 ? '100%' : (isSidebarMinimized ? '93%' : '90%') }}>
                     {/* Begin::Header */}
                     <AdminHeader />
                     {/* End::Header */}
@@ -169,7 +180,7 @@ const AdminLayout = () => {
                                 <div className="app-container container-fluid d-flex flex-column flex-md-row flex-center flex-md-stack py-3">
                                     <div className="text-dark order-2 order-md-1">
                                         <span className="text-muted fw-semibold me-1">2025©</span>
-                                        <a href="#" className="text-gray-800 text-hover-primary">Corenet Tech</a>
+                                        <a href="#" className="text-gray-800 text-hover-primary">FastPay - Payment Gateway</a>
                                     </div>
                                     <ul className="menu menu-gray-600 menu-hover-primary fw-semibold order-1">
                                         <li className="menu-item">

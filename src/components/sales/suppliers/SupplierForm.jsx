@@ -21,11 +21,11 @@ const SupplierForm = ({ formData, onChange, errors, onSubmit, isSubmitting, isEd
                     <div className="row g-4">
                         {/* Name */}
                         <div className="col-md-6">
-                            <label className="form-label required">Supplier Name</label>
+                            <label className="form-label">Supplier Name <span className="text-danger">*</span></label>
                             <input
                                 type="text"
                                 name="name"
-                                className={`form-control form-control-solid ${errors.name ? 'is-invalid' : ''}`}
+                                className={`form-control form-control-solid ${errors.name ? 'is-invalid border-danger' : ''}`}
                                 placeholder="Enter supplier name"
                                 value={formData.name || ''}
                                 onChange={handleChange}
@@ -38,14 +38,15 @@ const SupplierForm = ({ formData, onChange, errors, onSubmit, isSubmitting, isEd
 
                         {/* Company Name */}
                         <div className="col-md-6">
-                            <label className="form-label">Company Name</label>
+                            <label className="form-label">Company Name <span className="text-danger">*</span></label>
                             <input
                                 type="text"
                                 name="company_name"
-                                className={`form-control form-control-solid ${errors.company_name ? 'is-invalid' : ''}`}
+                                className={`form-control form-control-solid ${errors.company_name ? 'is-invalid border-danger' : ''}`}
                                 placeholder="Enter company name"
                                 value={formData.company_name || ''}
                                 onChange={handleChange}
+                                required
                             />
                             {errors.company_name && (
                                 <div className="invalid-feedback">{errors.company_name[0]}</div>
@@ -54,11 +55,11 @@ const SupplierForm = ({ formData, onChange, errors, onSubmit, isSubmitting, isEd
 
                         {/* Email */}
                         <div className="col-md-6">
-                            <label className="form-label required">Email</label>
+                            <label className="form-label">Email <span className="text-danger">*</span></label>
                             <input
                                 type="email"
                                 name="email"
-                                className={`form-control form-control-solid ${errors.email ? 'is-invalid' : ''}`}
+                                className={`form-control form-control-solid ${errors.email ? 'is-invalid border-danger' : ''}`}
                                 placeholder="Enter email address"
                                 value={formData.email || ''}
                                 onChange={handleChange}
@@ -71,11 +72,11 @@ const SupplierForm = ({ formData, onChange, errors, onSubmit, isSubmitting, isEd
 
                         {/* Phone Number */}
                         <div className="col-md-6">
-                            <label className="form-label required">Phone Number</label>
+                            <label className="form-label">Phone Number <span className="text-danger">*</span></label>
                             <input
                                 type="text"
                                 name="phone_number"
-                                className={`form-control form-control-solid ${errors.phone_number ? 'is-invalid' : ''}`}
+                                className={`form-control form-control-solid ${errors.phone_number ? 'is-invalid border-danger' : ''}`}
                                 placeholder="Enter phone number"
                                 value={formData.phone_number || ''}
                                 onChange={handleChange}
@@ -92,7 +93,7 @@ const SupplierForm = ({ formData, onChange, errors, onSubmit, isSubmitting, isEd
                             <input
                                 type="text"
                                 name="vat_number"
-                                className={`form-control form-control-solid ${errors.vat_number ? 'is-invalid' : ''}`}
+                                className={`form-control form-control-solid ${errors.vat_number ? 'is-invalid border-danger' : ''}`}
                                 placeholder="Enter VAT number"
                                 value={formData.vat_number || ''}
                                 onChange={handleChange}
@@ -104,14 +105,15 @@ const SupplierForm = ({ formData, onChange, errors, onSubmit, isSubmitting, isEd
 
                         {/* Address */}
                         <div className="col-md-12">
-                            <label className="form-label">Address</label>
+                            <label className="form-label">Address <span className="text-danger">*</span></label>
                             <textarea
                                 name="address"
-                                className={`form-control form-control-solid ${errors.address ? 'is-invalid' : ''}`}
+                                className={`form-control form-control-solid ${errors.address ? 'is-invalid border-danger' : ''}`}
                                 placeholder="Enter address"
                                 rows="3"
                                 value={formData.address || ''}
                                 onChange={handleChange}
+                                required
                             />
                             {errors.address && (
                                 <div className="invalid-feedback">{errors.address[0]}</div>
@@ -120,14 +122,15 @@ const SupplierForm = ({ formData, onChange, errors, onSubmit, isSubmitting, isEd
 
                         {/* City */}
                         <div className="col-md-4">
-                            <label className="form-label">City</label>
+                            <label className="form-label">City <span className="text-danger">*</span></label>
                             <input
                                 type="text"
                                 name="city"
-                                className={`form-control form-control-solid ${errors.city ? 'is-invalid' : ''}`}
+                                className={`form-control form-control-solid ${errors.city ? 'is-invalid border-danger' : ''}`}
                                 placeholder="Enter city"
                                 value={formData.city || ''}
                                 onChange={handleChange}
+                                required
                             />
                             {errors.city && (
                                 <div className="invalid-feedback">{errors.city[0]}</div>
@@ -140,7 +143,7 @@ const SupplierForm = ({ formData, onChange, errors, onSubmit, isSubmitting, isEd
                             <input
                                 type="text"
                                 name="state"
-                                className={`form-control form-control-solid ${errors.state ? 'is-invalid' : ''}`}
+                                className={`form-control form-control-solid ${errors.state ? 'is-invalid border-danger' : ''}`}
                                 placeholder="Enter state"
                                 value={formData.state || ''}
                                 onChange={handleChange}
@@ -156,7 +159,7 @@ const SupplierForm = ({ formData, onChange, errors, onSubmit, isSubmitting, isEd
                             <input
                                 type="text"
                                 name="postal_code"
-                                className={`form-control form-control-solid ${errors.postal_code ? 'is-invalid' : ''}`}
+                                className={`form-control form-control-solid ${errors.postal_code ? 'is-invalid border-danger' : ''}`}
                                 placeholder="Enter postal code"
                                 value={formData.postal_code || ''}
                                 onChange={handleChange}
@@ -172,7 +175,7 @@ const SupplierForm = ({ formData, onChange, errors, onSubmit, isSubmitting, isEd
                             <input
                                 type="text"
                                 name="country"
-                                className={`form-control form-control-solid ${errors.country ? 'is-invalid' : ''}`}
+                                className={`form-control form-control-solid ${errors.country ? 'is-invalid border-danger' : ''}`}
                                 placeholder="Enter country"
                                 value={formData.country || ''}
                                 onChange={handleChange}

@@ -23,7 +23,7 @@ api.interceptors.request.use((config) => {
  * Get all products with pagination and filters
  */
 export const getProducts = async (params = {}) => {
-    const response = await api.get(ADMIN_ENDPOINTS.PRODUCTS, { params });
+    const response = await api.get(ADMIN_ENDPOINTS.POS_PRODUCTS, { params });
     return response.data;
 };
 
@@ -31,7 +31,7 @@ export const getProducts = async (params = {}) => {
  * Export products data
  */
 export const exportProducts = async (params = {}) => {
-    const response = await api.get(ADMIN_ENDPOINTS.PRODUCTS_EXPORT, { params });
+    const response = await api.get(ADMIN_ENDPOINTS.POS_PRODUCTS_EXPORT, { params });
     return response.data;
 };
 
@@ -39,7 +39,7 @@ export const exportProducts = async (params = {}) => {
  * Get product details by ID
  */
 export const getProductById = async (id) => {
-    const response = await api.get(ADMIN_ENDPOINTS.PRODUCT_DETAILS(id));
+    const response = await api.get(ADMIN_ENDPOINTS.POS_PRODUCT_DETAILS(id));
     return response.data;
 };
 

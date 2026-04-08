@@ -83,6 +83,12 @@ const SupplierCreate = () => {
             const errorMessage = error?.response?.data?.message || '';
             if (error?.response?.status === 406 || errorCode === 'PLAN_SUPPLIERS_LIMIT_REACHED' || errorMessage.toLowerCase().includes('limit reached')) {
                 setShowPlanUpgradeModal(true);
+            } else if (error?.response?.status === 422) {
+                // Handle validation errors (422)
+                if (error?.response?.data?.errors) {
+                    setErrors(error.response.data.errors);
+                }
+                toast.error(error?.response?.data?.message || 'Validation failed. Please check the form.');
             } else {
                 toast.error('An unexpected error occurred');
             }

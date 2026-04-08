@@ -259,7 +259,8 @@ const SalesFiltersPanel = ({ filters, setFilters }) => {
                             <option value="">All</option>
                             <option value="cash">Cash</option>
                             <option value="card">Card</option>
-                            <option value="payment_link_qr_code">Payment Link QR Code</option>
+                            <option value="payment_link">Payment Link</option>
+                            <option value="qr_code">QR Code</option>
                         </select>
                     </div>
 

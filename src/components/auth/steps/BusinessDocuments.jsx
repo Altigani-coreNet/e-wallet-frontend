@@ -47,7 +47,7 @@ const BusinessDocuments = ({ formData, setFormData, fieldErrors = {} }) => {
                     <FilePondUpload
                         title="Trade License"
                         name="trade_license"
-                        accept=".pdf,.jpg,.jpeg,.png"
+                        accept=".pdf"
                         formData={formData}
                         setFormData={setFormData}
                         merchantCode={merchantCode}
@@ -63,7 +63,7 @@ const BusinessDocuments = ({ formData, setFormData, fieldErrors = {} }) => {
                     <FilePondUpload
                         title="Tax Certification"
                         name="tax_certification"
-                        accept=".pdf,.jpg,.jpeg,.png"
+                        accept=".pdf"
                         formData={formData}
                         setFormData={setFormData}
                         merchantCode={merchantCode}
@@ -79,7 +79,7 @@ const BusinessDocuments = ({ formData, setFormData, fieldErrors = {} }) => {
                     <FilePondUpload
                         title="User ID Document"
                         name="user_id_document"
-                        accept=".pdf,.jpg,.jpeg,.png"
+                        accept=".pdf"
                         formData={formData}
                         setFormData={setFormData}
                         merchantCode={merchantCode}

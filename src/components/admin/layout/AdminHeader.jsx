@@ -105,7 +105,7 @@ const AdminHeader = () => {
                 {/* Begin::Mobile logo */}
                 <div className="d-flex align-items-center flex-grow-1 flex-lg-grow-0">
                     <Link to="/admin/dashboard" className="d-lg-none">
-                        <img alt="Logo" src="/logo.png" className="h-30px" />
+                        <img alt="Logo" src="/faspay_logo_1.png" className="h-30px" />
                     </Link>
                 </div>
                 {/* End::Mobile logo */}

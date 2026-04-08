@@ -110,24 +110,24 @@ export const apiRequest = async (url, method = 'GET', data = null, params = null
         }
         
         // Handle 401 Unauthorized - redirect to appropriate login
-        if (error.response?.status === 401) {
-            console.warn('🔒 Unauthorized - Token may be invalid or expired');
+        // if (error.response?.status === 401) {
+        //     console.warn('🔒 Unauthorized - Token may be invalid or expired');
             
-            // Determine redirect path based on current route
-            const currentPath = window.location.pathname;
-            const isAdminRoute = currentPath.startsWith('/admin');
-            const redirectPath = isAdminRoute ? '/admin/login' : '/login';
+        //     // Determine redirect path based on current route
+        //     const currentPath = window.location.pathname;
+        //     const isAdminRoute = currentPath.startsWith('/admin');
+        //     const redirectPath = isAdminRoute ? '/admin/login' : '/login';
             
-            // Trigger logout event with redirect path
-            window.dispatchEvent(new CustomEvent('unauthorized', { 
-                detail: { redirectPath } 
-            }));
+        //     // Trigger logout event with redirect path
+        //     window.dispatchEvent(new CustomEvent('unauthorized', { 
+        //         detail: { redirectPath } 
+        //     }));
             
-            // Clear token from localStorage
-            localStorage.removeItem('admin_dashboard_token');
-            localStorage.removeItem('admin_dashboard_user');
-            localStorage.removeItem('admin_dashboard_merchant');
-        }
+        //     // Clear token from localStorage
+        //     localStorage.removeItem('admin_dashboard_token');
+        //     localStorage.removeItem('admin_dashboard_user');
+        //     localStorage.removeItem('admin_dashboard_merchant');
+        // }
         
         // Extract error message and validation errors
         let errorMessage = error.message;

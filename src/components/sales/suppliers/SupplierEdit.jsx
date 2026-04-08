@@ -105,7 +105,15 @@ const SupplierEdit = () => {
             }
         } catch (error) {
             console.error('Error updating supplier:', error);
-            toast.error('An unexpected error occurred');
+            if (error?.response?.status === 422) {
+                // Handle validation errors (422)
+                if (error?.response?.data?.errors) {
+                    setErrors(error.response.data.errors);
+                }
+                toast.error(error?.response?.data?.message || 'Validation failed. Please check the form.');
+            } else {
+                toast.error('An unexpected error occurred');
+            }
         } finally {
             setIsSubmitting(false);
         }

@@ -7,12 +7,13 @@ import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth
 import { AUTH_ENDPOINTS } from '../../../utils/constants';
 import useRegistrationStore from '../../../stores/useRegistrationStore';
 
-const AccountVerification = ({ formData, setFormData, onNextStep }) => {
+const AccountVerification = ({ formData, setFormData, onNextStep, onPreviousStep, onPreviousRef, onPreviousToStep0, onStartNewRegistration }) => {
     // Use registration store to save token
     const { setRegistrationToken, updateRegistrationProgress } = useRegistrationStore();
     
     const [isVerifying, setIsVerifying] = useState(false);
-    const [verificationStep, setVerificationStep] = useState('email');
+    const [verificationMethod, setVerificationMethod] = useState(null); // null = selection, 'email' or 'phone' = chosen method
+    const [verificationStep, setVerificationStep] = useState(null); // null = selection screen, 'email'/'phone' = verifying, 'password' = password setup
     const [verificationToken, setVerificationToken] = useState(null);
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false);
@@ -100,10 +101,54 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
             }
             confirmationResultRef.current = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
             startResendTimer();
-            // Removed resetVerificationInputs() - inputs are reset before step change
         } catch (error) {
             console.error('SMS send error:', error);
-            await Swal.fire({ icon: 'error', title: 'SMS Failed', text: 'Failed to send code.' });
+            
+            // Parse Firebase error code for better error messages
+            let errorMessage = 'Failed to send verification code. Please try again or select email verification instead.';
+            let errorTitle = 'SMS Failed';
+            
+            if (error.code) {
+                switch (error.code) {
+                    case 'auth/invalid-app-credential':
+                        errorTitle = 'Error';
+                        errorMessage = 'There was an error sending the message. Please try again or use email verification instead.';
+                        break;
+                    case 'auth/invalid-phone-number':
+                        errorTitle = 'Invalid Phone Number';
+                        errorMessage = 'The phone number format is invalid. Please check and try again.';
+                        break;
+                    case 'auth/too-many-requests':
+                        errorTitle = 'Too Many Requests';
+                        errorMessage = 'Too many SMS requests. Please wait a few minutes before trying again.';
+                        break;
+                    case 'auth/quota-exceeded':
+                        errorTitle = 'Quota Exceeded';
+                        errorMessage = 'SMS quota exceeded. Please contact support or try again later.';
+                        break;
+                    case 'auth/captcha-check-failed':
+                        errorTitle = 'reCAPTCHA Error';
+                        errorMessage = 'reCAPTCHA verification failed. Please refresh the page and try again.';
+                        break;
+                    default:
+                        errorMessage = error.message || errorMessage;
+                }
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            const result = await Swal.fire({ 
+                icon: 'error', 
+                title: errorTitle,
+                html: errorMessage.replace(/\n/g, '<br>'),
+                showCancelButton: true,
+                confirmButtonText: 'Proceed registration',
+                cancelButtonText: 'Start new registration',
+                width: '500px'
+            });
+            if (result.dismiss === Swal.DismissReason.cancel && typeof onStartNewRegistration === 'function') {
+                onStartNewRegistration();
+            }
         }
     };
 
@@ -119,8 +164,36 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
         });
     };
 
-    const isPasswordValid = () => {
-        return Object.values(passwordValidation).every(value => value === true);
+    // Password strength: only length/upper/lower/number/special, independent of confirmation
+    const isPasswordStrong = () => {
+        const { length, uppercase, lowercase, number, special } = passwordValidation;
+        return length && uppercase && lowercase && number && special;
+    };
+
+    // Confirmation validity: only checks if it matches password (and both not empty)
+    const isConfirmationValid = () => {
+        return (
+            passwordData.password &&
+            passwordData.password_confirmation &&
+            passwordData.password === passwordData.password_confirmation
+        );
+    };
+
+    // Helpers to control when the password fields show valid/invalid state
+    const getPasswordInputClass = () => {
+        // Before the user starts typing, don't show valid/invalid state on the main password field
+        if (!passwordData.password) {
+            return 'form-control form-control-lg form-control-solid';
+        }
+        return `form-control form-control-lg form-control-solid ${isPasswordStrong() ? 'is-valid' : 'is-invalid'}`;
+    };
+
+    const getPasswordConfirmationClass = () => {
+        // Confirmation field stays neutral until the user starts typing in it
+        if (!passwordData.password_confirmation) {
+            return 'form-control form-control-lg form-control-solid';
+        }
+        return `form-control form-control-lg form-control-solid ${isConfirmationValid() ? 'is-valid' : 'is-invalid'}`;
     };
 
     const handlePasswordChange = (e) => {
@@ -135,17 +208,10 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
         }
     };
 
-    // Function to mask email (show first 4 and last 4 characters)
+    // Function to display email (no masking)
     const maskEmail = (email) => {
-        if (!email) return '';
-        const [username, domain] = email.split('@');
-        if (!domain) return email;
-
-        const maskedUsername = username.length > 4
-            ? `${username.slice(0, 4)}****${username.slice(-4)}`
-            : username;
-
-        return `${maskedUsername}@${domain}`;
+        // Show full email without masking, as requested
+        return email || '';
     };
 
     // Function to mask phone (show only last 4 digits)
@@ -154,9 +220,9 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
         return `****-****-${phone.slice(-4)}`;
     };
 
-    // Get masked value based on verification step
+    // Get masked value based on verification method
     const getMaskedValue = () => {
-        if (verificationStep === 'email') {
+        if (verificationMethod === 'email') {
             return maskEmail(formData.email);
         }
         return maskPhone(formData.phone);
@@ -170,13 +236,13 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
 
     // Function to send verification code
     const sendVerificationCode = useCallback(async () => {
-        if (isResendDisabled || isResending) return;
+        if (isResendDisabled || isResending || !verificationMethod) return;
         
         setIsResending(true);
         setIsResendDisabled(true);
         
         try {
-            if (verificationStep === 'email') {
+            if (verificationMethod === 'email') {
                 const response = await fetch(AUTH_ENDPOINTS.REGISTER_SEND_CODE, {
                     method: 'POST',
                     headers: {
@@ -202,7 +268,7 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
                         throw new Error(data.message || 'Failed to send verification code');
                     }
                 }
-            } else {
+            } else if (verificationMethod === 'phone') {
                 await sendSmsOtp(formData.phone);
             }
         } catch (error) {
@@ -216,7 +282,7 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
         } finally {
             setIsResending(false);
         }
-    }, [verificationStep, formData.email, formData.first_name, formData.last_name, formData.phone]);
+    }, [verificationMethod, formData.email, formData.first_name, formData.last_name, formData.phone]);
 
     // Reset verification input fields
     const resetVerificationInputs = () => {
@@ -244,37 +310,54 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
         };
     }, [resendTimer]);
 
-    // Reset loading state when verification step changes
+    // Reset loading state when verification method changes
     useEffect(() => {
         setIsResending(false);
         setIsResendDisabled(false);
         setIsRegistering(false);
         setResendTimer(0);
-    }, [verificationStep]);
+    }, [verificationMethod]);
 
-    // Send code when component mounts or verification step changes
+    // Reset verification inputs when verification step matches method (verification UI is shown)
     useEffect(() => {
-        if (verificationStep !== 'password') {
-            sendVerificationCode();
-            // Only reset on initial email step, not when transitioning to phone
-            // (phone step reset is handled in handleVerificationComplete)
-            if (verificationStep === 'email') {
-                resetVerificationInputs();
-            }
+        if (verificationMethod && verificationStep === verificationMethod && verificationStep !== 'password') {
+            resetVerificationInputs();
         }
-    }, [verificationStep, sendVerificationCode]);
+    }, [verificationMethod, verificationStep]);
+
+    // Send verification code when verification step is set and matches the selected method
+    // This happens after the component re-renders with the verification UI (so reCAPTCHA container exists)
+    useEffect(() => {
+        // Only send if:
+        // 1. Method is selected
+        // 2. Step matches method (we're on verification screen)
+        // 3. Not on password step
+        // 4. Haven't already sent code (no token for email, no confirmation result for phone)
+        const shouldSendCode = verificationMethod && 
+                              verificationStep === verificationMethod && 
+                              verificationStep !== 'password' &&
+                              ((verificationMethod === 'email' && !verificationToken) || 
+                               (verificationMethod === 'phone' && !confirmationResultRef.current));
+        
+        if (shouldSendCode) {
+            // Small delay to ensure DOM is ready (especially for reCAPTCHA container)
+            const timer = setTimeout(() => {
+                sendVerificationCode();
+            }, 300);
+            return () => clearTimeout(timer);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [verificationMethod, verificationStep]); // sendVerificationCode is stable useCallback, safe to omit
 
     const handleVerificationComplete = async (code) => {
-        if (!verificationToken) {
-            if (verificationStep === 'email') {
-                await Swal.fire({ icon: 'error', title: 'Error', text: 'No verification token found. Please resend the email code.', confirmButtonText: 'OK' });
-                return;
-            }
+        if (!verificationToken && verificationMethod === 'email') {
+            await Swal.fire({ icon: 'error', title: 'Error', text: 'No verification token found. Please resend the email code.', confirmButtonText: 'OK' });
+            return;
         }
 
         setIsVerifying(true);
         try {
-            if (verificationStep === 'email') {
+            if (verificationMethod === 'email') {
                 const response = await fetch(AUTH_ENDPOINTS.REGISTER_VERIFY_CODE, {
                     method: 'POST',
                     headers: {
@@ -285,17 +368,14 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
                 const data = await response.json();
                 if (data.success) {
                     await Swal.fire({ icon: 'success', title: 'Email Verified', text: 'Email verification successful.', confirmButtonText: 'Continue' });
-                    // Reset inputs BEFORE changing step and sending SMS
                     resetVerificationInputs();
-                    setVerificationStep('phone');
-                    setVerificationToken(null);
-                    // Send SMS after step change
-                    sendSmsOtp(formData.phone);
+                    // Go directly to password setup after email verification
+                    setVerificationStep('password');
                 } else {
                     await Swal.fire({ icon: 'error', title: 'Invalid Code', text: data.message || 'Incorrect email code.', confirmButtonText: 'Try Again' });
                     resetVerificationInputs();
                 }
-            } else {
+            } else if (verificationMethod === 'phone') {
                 if (!code || code.length !== 6) {
                     await Swal.fire({ icon: 'error', title: 'Invalid Code', text: 'Please enter the 6-digit SMS code.', confirmButtonText: 'OK' });
                     return;
@@ -306,6 +386,7 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
                 }
                 await confirmationResultRef.current.confirm(code);
                 await Swal.fire({ icon: 'success', title: 'Phone Verified', text: 'Phone verification successful.', confirmButtonText: 'Continue' });
+                // Go directly to password setup after phone verification
                 setVerificationStep('password');
             }
         } catch (error) {
@@ -322,14 +403,174 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
         }
     };
 
+    // Handle going back to selection screen
+    const handleGoBackToSelection = () => {
+        // Reset verification state
+        setVerificationStep(null);
+        setVerificationToken(null);
+        setVerificationMethod(null);
+        confirmationResultRef.current = null;
+        resetVerificationInputs();
+        setIsResending(false);
+        setIsResendDisabled(false);
+        setResendTimer(0);
+    };
+
+    // Handle Previous button click from parent
+    // If on verification screen -> go to selection
+    // If on selection screen -> go to step 0
+    const handlePreviousFromParent = useCallback(() => {
+        // Check if we're on verification screen (step matches method and not password)
+        if (verificationMethod && verificationStep === verificationMethod && verificationStep !== 'password') {
+            // We're on verification screen, go back to selection
+            setVerificationStep(null);
+            setVerificationToken(null);
+            setVerificationMethod(null);
+            confirmationResultRef.current = null;
+            resetVerificationInputs();
+            setIsResending(false);
+            setIsResendDisabled(false);
+            setResendTimer(0);
+        } else {
+            // We're on selection screen, go back to step 0
+            if (onPreviousToStep0) {
+                onPreviousToStep0();
+            }
+        }
+    }, [verificationMethod, verificationStep, onPreviousToStep0]);
+
+    // Set the handler on the ref so parent can call it
+    useEffect(() => {
+        if (onPreviousRef) {
+            onPreviousRef.current = handlePreviousFromParent;
+        }
+        return () => {
+            if (onPreviousRef) {
+                onPreviousRef.current = null;
+            }
+        };
+    }, [handlePreviousFromParent, onPreviousRef]);
+
+    // Show verification method selection screen first
+    // Show selection if step is null (initial state) or if method is selected but step doesn't match yet (user can change mind)
+    // Don't show selection if we're actively verifying (step matches method) or on password step
+    const isSelectingMethod = verificationStep === null || (verificationMethod && verificationStep !== verificationMethod && verificationStep !== 'password');
+    
+    if (isSelectingMethod) {
+        return (
+            <div className="w-100 min-w-0 overflow-hidden">
+                <div className="pb-6 pb-lg-15">
+                    <h2 className="fw-bolder text-dark fs-4 fs-lg-2">Step 2: Account Verification & Security Setup</h2>
+                    <div className="text-muted fw-bold fs-7 fs-lg-6">
+                        Choose your preferred verification method. We'll send you a code to verify your account.
+                    </div>
+                </div>
+
+                <div className="text-center mb-6 mb-lg-10">
+                    <span className="flex justify-center items-center mb-5">
+                        <img alt="Verification" className="mh-75px mh-lg-125px" 
+                             src="/assets/media/svg/misc/smartphone.svg" />
+                    </span>
+                </div>
+
+                <div className="mb-10">
+                    <label className="form-label fw-bolder text-dark fs-6 mb-5">
+                        Select Verification Method
+                    </label>
+                    
+                    {/*begin::Option - Email*/}
+                    <input 
+                        type="radio" 
+                        className="btn-check" 
+                        name="verificationMethod" 
+                        value="email" 
+                        checked={verificationMethod === 'email'}
+                        onChange={(e) => {
+                            setVerificationMethod(e.target.value);
+                        }}
+                        id="verificationEmail"
+                    />
+                    <label 
+                        className="btn btn-outline btn-outline-dashed btn-active-light-primary p-5 p-md-7 d-flex flex-column flex-sm-row align-items-start align-items-sm-center mb-5" 
+                        htmlFor="verificationEmail"
+                    >
+                        <i className="fas fa-envelope text-primary fs-2x fs-md-4x me-0 me-sm-4 mb-3 mb-sm-0 flex-shrink-0"></i>
+                        <span className="d-block fw-semibold text-start min-w-0">
+                            <span className="text-gray-900 fw-bold d-block fs-5 fs-md-3">Email Verification</span>
+                            <span className="text-muted fw-semibold fs-7 fs-md-6 text-break">
+                                We'll send a verification code to: {maskEmail(formData.email)}
+                            </span>
+                        </span>
+                    </label>
+                    {/*end::Option - Email*/}
+
+                    {/*begin::Option - Phone*/}
+                    <input 
+                        type="radio" 
+                        className="btn-check" 
+                        name="verificationMethod" 
+                        value="phone" 
+                        checked={verificationMethod === 'phone'}
+                        onChange={(e) => {
+                            setVerificationMethod(e.target.value);
+                        }}
+                        id="verificationPhone"
+                    />
+                    <label 
+                        className="btn btn-outline btn-outline-dashed btn-active-light-primary p-5 p-md-7 d-flex flex-column flex-sm-row align-items-start align-items-sm-center" 
+                        htmlFor="verificationPhone"
+                    >
+                        <i className="fas fa-phone text-primary fs-2x fs-md-4x me-0 me-sm-4 mb-3 mb-sm-0 flex-shrink-0"></i>
+                        <span className="d-block fw-semibold text-start min-w-0">
+                            <span className="text-gray-900 fw-bold d-block fs-5 fs-md-3">Phone Verification</span>
+                            <span className="text-muted fw-semibold fs-7 fs-md-6 text-break">
+                                We'll send a verification code to: {maskPhone(formData.phone)}
+                            </span>
+                        </span>
+                    </label>
+                    {/*end::Option - Phone*/}
+
+                    <div className="text-center mt-10">
+                        <button
+                            type="button"
+                            className="btn btn-lg btn-primary w-100 mb-5"
+                            disabled={!verificationMethod || isResending}
+                            onClick={() => {
+                                if (verificationMethod) {
+                                    // Set the step to match the method
+                                    // The code will be sent automatically via useEffect after component re-renders
+                                    setVerificationStep(verificationMethod);
+                                }
+                            }}
+                        >
+                            {isResending ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    Sending Code...
+                                </>
+                            ) : (
+                                <>
+                                    Continue with {verificationMethod === 'email' ? 'Email' : verificationMethod === 'phone' ? 'Phone' : ''} Verification
+                                    <span className="svg-icon svg-icon-4 ms-1">
+                                        <i className="fas fa-arrow-right"></i>
+                                    </span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     // Show success message and next button when account is created
     if (accountCreated) {
         return (
-            <div className="w-100">
-                <div className="pb-10 pb-lg-15">
-                    <h2 className="fw-bolder text-dark">Account Created Successfully!</h2>
-                    <div className="text-muted fw-bold fs-6">
-                        Your account has been created and you can now proceed to register your merchant
+            <div className="w-100 min-w-0 overflow-hidden">
+                <div className="pb-6 pb-lg-15">
+                    <h2 className="fw-bolder text-dark fs-4 fs-lg-2">Account Created Successfully!</h2>
+                    <div className="text-muted fw-bold fs-7 fs-lg-6">
+                        Your account has been created and you can now proceed to register your partner
                     </div>
                 </div>
 
@@ -343,7 +584,7 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
                         <div className="d-flex flex-column">
                             <span className="fw-bold fs-6">Welcome {userData?.name}!</span>
                             <span className="fs-7">Your account has been created successfully.</span>
-                            <span className="fs-7 mt-1">You can now proceed to register your merchant details or check your email for the next steps.</span>
+                            <span className="fs-7 mt-1">You can now proceed to register your partner details or check your email for the next steps.</span>
                         </div>
                     </div>
                 </div>
@@ -360,7 +601,7 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
                             }
                         }}
                     >
-                        Continue to Merchant Registration
+                        Continue to Partner Registration
                         <span className="svg-icon svg-icon-4 ms-1">
                             <i className="fas fa-arrow-right"></i>
                         </span>
@@ -372,11 +613,11 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
 
     if (verificationStep === 'password') {
         return (
-            <div className="w-100">
-                <div className="pb-10 pb-lg-15">
-                    <h2 className="fw-bolder text-dark">Step 2: Account Verification & Security Setup</h2>
-                    <div className="text-muted fw-bold fs-6">
-                        Final step: Create a secure password to complete your account setup and protect your merchant account
+            <div className="w-100 min-w-0 overflow-hidden">
+                <div className="pb-6 pb-lg-15">
+                    <h2 className="fw-bolder text-dark fs-4 fs-lg-2">Step 2: Account Verification & Security Setup</h2>
+                    <div className="text-muted fw-bold fs-7 fs-lg-6">
+                        Final step: Create a secure password to complete your account setup and protect your partner account
                     </div>
                 </div>
 
@@ -385,7 +626,7 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
                     <div className="position-relative">
                         <input
                             type={showPassword ? "text" : "password"}
-                            className={`form-control form-control-lg form-control-solid ${isPasswordValid() ? 'is-valid' : 'is-invalid'}`}
+                            className={getPasswordInputClass()}
                             placeholder="Enter password"
                             name="password"
                             value={passwordData.password}
@@ -408,7 +649,7 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
                     <div className="position-relative">
                         <input
                             type={showPasswordConfirmation ? "text" : "password"}
-                            className={`form-control form-control-lg form-control-solid ${passwordValidation.match ? 'is-valid' : 'is-invalid'}`}
+                            className={getPasswordConfirmationClass()}
                             placeholder="Confirm password"
                             name="password_confirmation"
                             value={passwordData.password_confirmation}
@@ -430,26 +671,30 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
                     )}
                 </div>
                 <div className="fv-row mb-8">
-                <div className="password-validation mt-3">
-                        <div className={`validation-item ${passwordValidation.length ? 'text-success' : 'text-danger'}`}>
-                            <i className={`fas fa-${passwordValidation.length ? 'check' : 'times'} me-2`}></i>
+                    <div className="password-validation mt-3">
+                        <div className={`validation-item ${passwordValidation.length ? 'text-success' : passwordData.password ? 'text-danger' : 'text-gray-500'}`}>
+                            <i className={`fas me-2 ${passwordValidation.length ? 'fa-check' : passwordData.password ? 'fa-times' : ''}`}></i>
                             At least 8 characters
                         </div>
-                        <div className={`validation-item ${passwordValidation.uppercase ? 'text-success' : 'text-danger'}`}>
-                            <i className={`fas fa-${passwordValidation.uppercase ? 'check' : 'times'} me-2`}></i>
+                        <div className={`validation-item ${passwordValidation.uppercase ? 'text-success' : passwordData.password ? 'text-danger' : 'text-gray-500'}`}>
+                            <i className={`fas me-2 ${passwordValidation.uppercase ? 'fa-check' : passwordData.password ? 'fa-times' : ''}`}></i>
                             One uppercase letter
                         </div>
-                        <div className={`validation-item ${passwordValidation.lowercase ? 'text-success' : 'text-danger'}`}>
-                            <i className={`fas fa-${passwordValidation.lowercase ? 'check' : 'times'} me-2`}></i>
+                        <div className={`validation-item ${passwordValidation.lowercase ? 'text-success' : passwordData.password ? 'text-danger' : 'text-gray-500'}`}>
+                            <i className={`fas me-2 ${passwordValidation.lowercase ? 'fa-check' : passwordData.password ? 'fa-times' : ''}`}></i>
                             One lowercase letter
                         </div>
-                        <div className={`validation-item ${passwordValidation.number ? 'text-success' : 'text-danger'}`}>
-                            <i className={`fas fa-${passwordValidation.number ? 'check' : 'times'} me-2`}></i>
+                        <div className={`validation-item ${passwordValidation.number ? 'text-success' : passwordData.password ? 'text-danger' : 'text-gray-500'}`}>
+                            <i className={`fas me-2 ${passwordValidation.number ? 'fa-check' : passwordData.password ? 'fa-times' : ''}`}></i>
                             One number
                         </div>
-                        <div className={`validation-item ${passwordValidation.special ? 'text-success' : 'text-danger'}`}>
-                            <i className={`fas fa-${passwordValidation.special ? 'check' : 'times'} me-2`}></i>
+                        <div className={`validation-item ${passwordValidation.special ? 'text-success' : passwordData.password ? 'text-danger' : 'text-gray-500'}`}>
+                            <i className={`fas me-2 ${passwordValidation.special ? 'fa-check' : passwordData.password ? 'fa-times' : ''}`}></i>
                             One special character
+                        </div>
+                        <div className={`validation-item  ${passwordValidation.match ? 'text-success' : (passwordData.password || passwordData.password_confirmation) ? 'text-danger' : 'text-gray-500'}`}>
+                            <i className={`fas me-2 ${passwordValidation.match ? 'fa-check' : (passwordData.password || passwordData.password_confirmation) ? 'fa-times' : ''}`}></i>
+                            Password and confirmation must match
                         </div>
                     </div>
                 </div>
@@ -460,7 +705,8 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
                         className="btn btn-lg btn-primary w-100 mb-5"
                         disabled={isRegistering}
                         onClick={async () => {
-                            if (!isPasswordValid()) {
+                            // Require strong password AND matching confirmation
+                            if (!isPasswordStrong() || !isConfirmationValid()) {
                                 return;
                             }
 
@@ -495,7 +741,7 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
                                         
                                         // Save token to registration store
                                         // Note: We save step 1 here (current step) because user hasn't moved to step 2 yet
-                                        // The step will be updated to 2 when they click "Continue to Merchant Registration"
+                                        // The step will be updated to 2 when they click "Continue to Partner Registration"
                                         setRegistrationToken(token, userData);
                                         updateRegistrationProgress(1, formData); // Save current step (1)
                                     }
@@ -547,34 +793,36 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
         );
     }
 
-    return (
-        <div className="w-100">
-            <div className="pb-10 pb-lg-15">
-                <h2 className="fw-bolder text-dark">Step 2: Account Verification & Security Setup</h2>
-                <div className="text-muted fw-bold fs-6">
-                    {verificationStep === 'email' 
-                        ? 'We\'ll verify your email address, phone number, and help you create a secure password for your account. This ensures your account is protected and you can receive important notifications.' 
-                        : 'Now verify your phone number to complete the verification process and proceed to password setup.'}
+    // Only show verification UI if method is selected and step matches
+    if (verificationMethod && verificationStep === verificationMethod && verificationStep !== 'password') {
+        return (
+            <div className="w-100 min-w-0 overflow-hidden">
+                <div className="pb-6 pb-lg-15">
+                    <h2 className="fw-bolder text-dark fs-4 fs-lg-2">Step 2: Account Verification & Security Setup</h2>
+                    <div className="text-muted fw-bold fs-7 fs-lg-6">
+                        {verificationMethod === 'email' 
+                            ? 'We\'ve sent a verification code to your email address. Enter the code below to verify your account and proceed to password setup.' 
+                            : 'We\'ve sent a verification code to your phone number. Enter the code below to verify your account and proceed to password setup.'}
+                    </div>
                 </div>
-            </div>
 
-            <div className="text-center mb-10">
+            <div className="text-center mb-6 mb-lg-10">
                 <span className="flex justify-center items-center mb-5">
-                    <img alt="Verification" className="mh-125px" 
+                    <img alt="Verification" className="mh-75px mh-lg-125px" 
                          src="/assets/media/svg/misc/smartphone.svg" />
                 </span>
 
                 <div className="alert alert-primary mb-5">
-                    {verificationStep === 'email' ? (
-                        <div className="d-flex flex-column">
-                            <span className="fw-bold fs-6">A verification code has been sent to your email:</span>
-                            <span className="fs-7">{getMaskedValue()}</span>
+                    {verificationMethod === 'email' ? (
+                        <div className="d-flex flex-column min-w-0">
+                            <span className="fw-bold fs-7 fs-md-6">A verification code has been sent to your email:</span>
+                            <span className="fs-7 text-break">{getMaskedValue()}</span>
                             <span className="fs-7 mt-2">Please check your inbox (and spam folder) and enter the code below.</span>
                         </div>
                     ) : (
-                        <div className="d-flex flex-column">
-                            <span className="fw-bold fs-6">A verification code has been sent to your phone:</span>
-                            <span className="fs-7">{getMaskedValue()}</span>
+                        <div className="d-flex flex-column min-w-0">
+                            <span className="fw-bold fs-7 fs-md-6">A verification code has been sent to your phone:</span>
+                            <span className="fs-7 text-break">{getMaskedValue()}</span>
                             <span className="fs-7 mt-2">Please check your SMS messages and enter the code below.</span>
                         </div>
                     )}
@@ -587,7 +835,7 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
                 </div>
 
                 <VerificationInput 
-                    key={verificationStep} // Force remount when step changes
+                    key={verificationMethod} // Force remount when method changes
                     ref={verificationInputRef}
                     length={6}
                     onComplete={handleVerificationComplete}
@@ -602,32 +850,46 @@ const AccountVerification = ({ formData, setFormData, onNextStep }) => {
                 )}
 
                 <div className="text-center mt-5">
-                    <button
-                        type="button"
-                        className={`btn ${isResendDisabled ? 'btn-secondary' : 'btn-link'}`}
-                        disabled={isResendDisabled || isResending}
-                        onClick={() => {
-                            sendVerificationCode();
-                            resetVerificationInputs();
-                        }}
-                    >
-                        {isResending ? (
-                            <>
-                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                Sending Code...
-                            </>
-                        ) : isResendDisabled ? (
-                            `Resend Code in ${resendTimer}s`
-                        ) : (
-                            'Resend Code'
-                        )}
-                    </button>
+                    <div className="d-flex flex-column gap-3 align-items-center">
+                        <button
+                            type="button"
+                            className={`btn ${isResendDisabled ? 'btn-secondary' : 'btn-link'}`}
+                            disabled={isResendDisabled || isResending}
+                            onClick={() => {
+                                sendVerificationCode();
+                                resetVerificationInputs();
+                            }}
+                        >
+                            {isResending ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    Sending Code...
+                                </>
+                            ) : isResendDisabled ? (
+                                `Resend Code in ${resendTimer}s`
+                            ) : (
+                                'Resend Code'
+                            )}
+                        </button>
+                        
+                        <button
+                            type="button"
+                            className="btn btn-light btn-sm"
+                            onClick={handleGoBackToSelection}
+                        >
+                            <i className="fas fa-arrow-left me-2"></i>
+                            Back to Change Method
+                        </button>
+                    </div>
                 </div>
             </div>
             <div id="recaptcha-container" style={{ minHeight: 1 }}></div>
         </div>
-    );
+        );
+    }
+
+    // Fallback - should not reach here, but return null if we do
+    return null;
 };
 
 export default AccountVerification;
-

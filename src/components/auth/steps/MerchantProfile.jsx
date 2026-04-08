@@ -1,26 +1,25 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { AUTH_ENDPOINTS } from '../../../utils/constants';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AUTH_ENDPOINTS, ADMIN_ENDPOINTS } from '../../../utils/constants';
 
-const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
+const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
     const [countries, setCountries] = useState([]);
     const [filteredCountries, setFilteredCountries] = useState([]);
     const [cities, setCities] = useState([]);
     const [filteredCities, setFilteredCities] = useState([]);
-    const [businessTypes, setBusinessTypes] = useState([]);
+    const [partnerCategories, setPartnerCategories] = useState([]);
+    const [partnerCategorySearchTerm, setPartnerCategorySearchTerm] = useState('');
     const [countrySearchTerm, setCountrySearchTerm] = useState('');
     const [citySearchTerm, setCitySearchTerm] = useState('');
     const [showCountryList, setShowCountryList] = useState(false);
+    const [showPartnerCategoryList, setShowPartnerCategoryList] = useState(false);
     const [showCityList, setShowCityList] = useState(false);
     const [selectedCountry, setSelectedCountry] = useState(null);
+    const [selectedPartnerCategory, setSelectedPartnerCategory] = useState(null);
     const [selectedCity, setSelectedCity] = useState(null);
-    const countrySearchRef = useRef(null);
-    const citySearchRef = useRef(null);
-    const startDateRef = useRef(null);
-    const expiredDateRef = useRef(null);
     const [loading, setLoading] = useState({
         countries: false,
         cities: false,
-        businessTypes: false,
+        partnerCategories: false,
         terms: false
     });
     
@@ -185,20 +184,64 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
         setShowCityList(false);
     };
 
-    // Fetch business types
-    const fetchBusinessTypes = async () => {
-        setLoading(prev => ({ ...prev, businessTypes: true }));
+    const fetchPartnerCategories = async (searchTerm = '') => {
+        setLoading(prev => ({ ...prev, partnerCategories: true }));
         try {
-            const response = await fetch(AUTH_ENDPOINTS.BUSINESS_TYPES_SELECT);
+            const query = new URLSearchParams({
+                type: 'partner',
+                parents_only: 'true',
+                limit: '100',
+            });
+            if (searchTerm) query.set('search', searchTerm);
+
+            const response = await fetch(`${ADMIN_ENDPOINTS.SERVICE_CATEGORIES_ACTIVE_PUBLIC}?${query.toString()}`);
             const data = await response.json();
-            if (data.status) {
-                setBusinessTypes(data.data);
+            if (data.success || data.status) {
+                setPartnerCategories(data.data || []);
+            } else {
+                setPartnerCategories([]);
             }
         } catch (error) {
-            console.error('Error fetching business types:', error);
+            console.error('Error fetching partner categories:', error);
+            setPartnerCategories([]);
         } finally {
-            setLoading(prev => ({ ...prev, businessTypes: false }));
+            setLoading(prev => ({ ...prev, partnerCategories: false }));
         }
+    };
+
+    const debouncedPartnerCategorySearch = useCallback(
+        debounce((searchTerm) => {
+            fetchPartnerCategories(searchTerm);
+        }, 500),
+        []
+    );
+
+    const handlePartnerCategorySearch = (searchTerm) => {
+        setPartnerCategorySearchTerm(searchTerm);
+        debouncedPartnerCategorySearch(searchTerm);
+        setShowPartnerCategoryList(true);
+    };
+
+    const handlePartnerCategoryDropdownToggle = () => {
+        if (!showPartnerCategoryList) {
+            setPartnerCategorySearchTerm('');
+            fetchPartnerCategories();
+        }
+        setShowPartnerCategoryList(!showPartnerCategoryList);
+    };
+
+    const handlePartnerCategorySelect = (category) => {
+        setSelectedPartnerCategory(category);
+        setPartnerCategorySearchTerm(category.name_en || category.name_ar || category.code || '');
+        setFormData('partner_category_id', category.id);
+        setShowPartnerCategoryList(false);
+    };
+
+    const handleRemovePartnerCategory = () => {
+        setSelectedPartnerCategory(null);
+        setPartnerCategorySearchTerm('');
+        setFormData('partner_category_id', '');
+        setShowPartnerCategoryList(false);
     };
 
     // Fetch terms and conditions content
@@ -224,8 +267,19 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
     // Load data on component mount
     useEffect(() => {
         fetchCountries();
-        fetchBusinessTypes();
+        fetchPartnerCategories();
     }, []);
+
+    useEffect(() => {
+        if (!formData.partner_category_id || partnerCategories.length === 0) return;
+        const match = partnerCategories.find(
+            (c) => String(c.id) === String(formData.partner_category_id)
+        );
+        if (match) {
+            setSelectedPartnerCategory(match);
+            setPartnerCategorySearchTerm(match.name_en || match.name_ar || match.code || '');
+        }
+    }, [formData.partner_category_id, partnerCategories]);
 
     // Load cities when country changes
     useEffect(() => {
@@ -264,13 +318,6 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         
-        if (name === 'business_type') {
-            console.log('=== BUSINESS TYPE SELECTION DEBUG ===');
-            console.log('Selected business type:', value);
-            console.log('Available business types:', businessTypes);
-            console.log('=====================================');
-        }
-        
         setFormData(name, value);
     };
 
@@ -294,33 +341,12 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
         setShowTermsModal(false);
     };
 
-    // Handle date input click to open calendar directly
-    const handleDateClick = (e, dateRef) => {
-        e.preventDefault();
-        if (dateRef.current) {
-            dateRef.current.focus();
-            // Modern browsers support showPicker() API
-            if (dateRef.current.showPicker) {
-                try {
-                    dateRef.current.showPicker();
-                } catch (error) {
-                    // Fallback to just focusing if showPicker is not supported
-                    dateRef.current.focus();
-                }
-            } else {
-                // For older browsers, just focus and click
-                dateRef.current.focus();
-                dateRef.current.click();
-            }
-        }
-    };
-
     return (
         <div className="w-100">
             <div className="pb-10 pb-lg-15">
-                <h2 className="fw-bolder text-dark">Merchant Profile</h2>
+                <h2 className="fw-bolder text-dark">Partner Profile</h2>
                 <div className="text-muted fw-bold fs-6">
-                    Please provide your business information and trade license details to complete your merchant profile.
+                    Please provide your partner business information to complete onboarding.
                 </div>
             </div>
 
@@ -332,7 +358,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                 {/* Basic Business Information */}
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="owner_name" className="form-label">
-                        Owner Name <span className="text-danger">*</span>
+                        Company Name <span className="text-danger">*</span>
                     </label>
                     <input
                         type="text"
@@ -341,7 +367,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         name="owner_name"
                         value={formData.owner_name || ''}
                         onChange={handleChange}
-                        placeholder="Enter Owner Name"
+                        placeholder="Enter Company Name"
                         required
                         style={{ textTransform: 'none' }}
                     />
@@ -351,8 +377,28 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                 </div>
 
                 <div className="col-md-6 fv-row mb-4">
+                    <label htmlFor="name" className="form-label">
+                        Business /Brand Name <span className="text-danger">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        className={`form-control ${fieldErrors?.name ? 'is-invalid' : ''}`}
+                        id="name"
+                        name="name"
+                        value={formData.name || ''}
+                        onChange={handleChange}
+                        placeholder="Enter Business /Brand Name"
+                        required
+                        style={{ textTransform: 'none' }}
+                    />
+                    {fieldErrors?.name && (
+                        <div className="invalid-feedback">{fieldErrors.name[0]}</div>
+                    )}
+                </div>
+
+                <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="business_name" className="form-label">
-                        Business Name <span className="text-danger">*</span>
+                        Contact Person Name
                     </label>
                     <input
                         type="text"
@@ -361,8 +407,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         name="business_name"
                         value={formData.business_name || ''}
                         onChange={handleChange}
-                        placeholder="Enter Business Name"
-                        required
+                        placeholder="Optional (defaults to Business /Brand Name)"
                         style={{ textTransform: 'none' }}
                     />
                     {fieldErrors?.business_name && (
@@ -371,33 +416,8 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                 </div>
 
                 <div className="col-md-6 fv-row mb-4">
-                    <label htmlFor="business_type" className="form-label">
-                        Business Type <span className="text-danger">*</span>
-                    </label>
-                    <select
-                        className={`form-select ${fieldErrors?.business_type ? 'is-invalid' : ''}`}
-                        id="business_type"
-                        name="business_type"
-                        value={formData.business_type || ''}
-                        onChange={handleChange}
-                        required
-                        disabled={loading.businessTypes}
-                    >
-                        <option value="">{loading.businessTypes ? 'Loading...' : 'Select Business Type'}</option>
-                        {businessTypes.map(type => (
-                            <option key={type.id} value={type.value}>
-                                {type.text}
-                            </option>
-                        ))}
-                    </select>
-                    {fieldErrors?.business_type && (
-                        <div className="invalid-feedback">{fieldErrors.business_type[0]}</div>
-                    )}
-                </div>
-
-                <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="business_phone" className="form-label">
-                        Business Phone <span className="text-danger">*</span>
+                        Business Phone
                     </label>
                     <input
                         type="tel"
@@ -407,102 +427,11 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         value={formData.business_phone || ''}
                         onChange={handleChange}
                         placeholder="Enter Business Phone"
-                        required
                         style={{ textTransform: 'none' }}
                     />
                     {fieldErrors?.business_phone && (
                         <div className="invalid-feedback">{fieldErrors.business_phone[0]}</div>
                     )}
-                </div>
-
-                {/* Trade License Section */}
-                <div className="col-12">
-                    <h4 className="fw-bold text-dark mb-4">Trade License Information</h4>
-                </div>
-
-                <div className="col-md-6 fv-row mb-4">
-                    <label htmlFor="trade_license_number" className="form-label">
-                        Trade License Number <span className="text-danger">*</span>
-                    </label>
-                    <input
-                        type="text"
-                        className={`form-control ${fieldErrors?.trade_license_number ? 'is-invalid' : ''}`}
-                        id="trade_license_number"
-                        name="trade_license_number"
-                        value={formData.trade_license_number || ''}
-                        onChange={handleChange}
-                        placeholder="Enter Trade License Number"
-                        required
-                        style={{ textTransform: 'none' }}
-                    />
-                    {fieldErrors?.trade_license_number && (
-                        <div className="invalid-feedback">{fieldErrors.trade_license_number[0]}</div>
-                    )}
-                </div>
-
-                <div className="col-md-6 fv-row mb-4">
-                    <label htmlFor="trade_license_start_date" className="form-label">
-                        Trade License Start Date <span className="text-danger">*</span>
-                    </label>
-                    <input
-                        ref={startDateRef}
-                        type="date"
-                        className={`form-control ${fieldErrors?.trade_license_start_date ? 'is-invalid' : ''}`}
-                        id="trade_license_start_date"
-                        name="trade_license_start_date"
-                        value={formData.trade_license_start_date || ''}
-                        onChange={handleChange}
-                        onClick={(e) => handleDateClick(e, startDateRef)}
-                        required
-                    />
-                    {fieldErrors?.trade_license_start_date && (
-                        <div className="invalid-feedback">{fieldErrors.trade_license_start_date[0]}</div>
-                    )}
-                </div>
-
-                <div className="col-md-6 fv-row mb-4">
-                    <label htmlFor="trade_license_expired_date" className="form-label">
-                        Trade License Expired Date <span className="text-danger">*</span>
-                    </label>
-                    <input
-                        ref={expiredDateRef}
-                        type="date"
-                        className={`form-control ${fieldErrors?.trade_license_expired_date ? 'is-invalid' : ''}`}
-                        id="trade_license_expired_date"
-                        name="trade_license_expired_date"
-                        value={formData.trade_license_expired_date || ''}
-                        onChange={handleChange}
-                        onClick={(e) => handleDateClick(e, expiredDateRef)}
-                        required
-                    />
-                    {fieldErrors?.trade_license_expired_date && (
-                        <div className="invalid-feedback">{fieldErrors.trade_license_expired_date[0]}</div>
-                    )}
-                </div>
-
-                <div className="col-md-6 fv-row mb-4">
-                    <label htmlFor="tax_number" className="form-label">
-                        Tax Number <span className="text-danger">*</span>
-                    </label>
-                    <input
-                        type="text"
-                        className={`form-control ${fieldErrors?.tax_number ? 'is-invalid' : ''}`}
-                        id="tax_number"
-                        name="tax_number"
-                        value={formData.tax_number || ''}
-                        onChange={handleChange}
-                        placeholder="Enter Tax Number"
-                        required
-                        style={{ textTransform: 'none' }}
-                    />
-                    {fieldErrors?.tax_number && (
-                        <div className="invalid-feedback">{fieldErrors.tax_number[0]}</div>
-                    )}
-                </div>
-
-                {/* Location Information Section */}
-                <div className="col-12">
-                    <h4 className="fw-bold text-dark mb-4">Address Information</h4>
                 </div>
 
                 <div className="col-md-6 fv-row mb-4">
@@ -627,39 +556,32 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                 </div>
 
                 <div className="col-md-6 fv-row mb-4">
-                    <label htmlFor="city" className="form-label">
-                        City <span className="text-danger">*</span>
+                    <label htmlFor="partner_category_id" className="form-label">
+                        Partner Category <span className="text-danger">*</span>
                     </label>
                     <div className="position-relative">
-                        <div 
-                            className={`form-control h-50px d-flex align-items-center justify-content-between cursor-pointer ${fieldErrors?.city ? 'is-invalid' : ''}`}
-                            onClick={() => {
-                                if (selectedCountry || formData.country) {
-                                    setShowCityList(!showCityList);
-                                }
-                            }}
-                            style={{ 
-                                cursor: (selectedCountry || formData.country) ? 'pointer' : 'not-allowed',
-                                opacity: (selectedCountry || formData.country) ? 1 : 0.6
-                            }}
+                        <div
+                            className={`form-control h-50px d-flex align-items-center justify-content-between cursor-pointer ${fieldErrors?.partner_category_id ? 'is-invalid' : ''}`}
+                            onClick={handlePartnerCategoryDropdownToggle}
+                            style={{ cursor: 'pointer' }}
                         >
                             <div className="d-flex align-items-center">
-                                {selectedCity ? (
-                                    <span className="fw-bold text-gray-800">{selectedCity.text}</span>
-                                ) : (
-                                    <span className="text-muted">
-                                        {!(selectedCountry || formData.country) ? 'Please select a country first' : 'Select City'}
+                                {selectedPartnerCategory ? (
+                                    <span className="fw-bold text-gray-800">
+                                        {selectedPartnerCategory.name_en || selectedPartnerCategory.name_ar || selectedPartnerCategory.code}
                                     </span>
+                                ) : (
+                                    <span className="text-muted">Select partner category</span>
                                 )}
                             </div>
                             <div className="d-flex align-items-center">
-                                {selectedCity && (
-                                    <button 
+                                {selectedPartnerCategory && (
+                                    <button
                                         type="button"
                                         className="btn btn-icon btn-sm btn-light-danger me-2"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleRemoveCity();
+                                            handleRemovePartnerCategory();
                                         }}
                                     >
                                         <i className="ki-duotone ki-cross fs-2">
@@ -668,66 +590,65 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                                         </i>
                                     </button>
                                 )}
-                                <i className={`ki-duotone ki-down fs-2 ${showCityList ? 'rotate-180' : ''}`}>
+                                <i className={`ki-duotone ki-down fs-2 ${showPartnerCategoryList ? 'rotate-180' : ''}`}>
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
                             </div>
                         </div>
-                        
-                        {loading.cities && (
+
+                        {loading.partnerCategories && (
                             <div className="position-absolute top-50 end-0 translate-middle-y me-3">
                                 <div className="spinner-border spinner-border-sm" role="status">
                                     <span className="visually-hidden">Loading...</span>
                                 </div>
                             </div>
                         )}
-                        
-                        {/* City Dropdown */}
-                        {showCityList && (selectedCountry || formData.country) && (
+
+                        {showPartnerCategoryList && (
                             <div className="position-absolute top-100 start-0 w-100 bg-white border rounded-3 shadow-sm mt-1" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
                                 <div className="p-2">
-                                    <input 
-                                        type="text" 
-                                        className="form-control form-control-sm mb-2" 
-                                        placeholder="Search cities..."
-                                        value={citySearchTerm}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
-                                            handleCitySearch(value);
-                                        }}
+                                    <input
+                                        type="text"
+                                        className="form-control form-control-sm mb-2"
+                                        placeholder="Search categories..."
+                                        value={partnerCategorySearchTerm}
+                                        onChange={(e) => handlePartnerCategorySearch(e.target.value)}
+                                        onFocus={(e) => e.stopPropagation()}
                                         onClick={(e) => e.stopPropagation()}
                                         style={{ textTransform: 'none' }}
                                     />
                                 </div>
-                                {filteredCities.length > 0 ? (
-                                    filteredCities.map((city) => (
-                                        <div 
-                                            key={city.id}
+                                {partnerCategories.length > 0 ? (
+                                    partnerCategories.map((category) => (
+                                        <div
+                                            key={category.id}
                                             className="p-3 border-bottom cursor-pointer hover-bg-light d-flex align-items-center"
                                             onMouseDown={(e) => {
                                                 e.preventDefault();
-                                                handleCitySelect(city);
+                                                handlePartnerCategorySelect(category);
                                             }}
                                             style={{ cursor: 'pointer' }}
                                         >
-                                            <div className="fw-bold text-gray-800">{city.text}</div>
+                                            <div className="fw-bold text-gray-800">
+                                                {category.name_en || category.name_ar || category.code}
+                                            </div>
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="p-3 text-muted text-center">No cities found</div>
+                                    <div className="p-3 text-muted text-center">No categories found</div>
                                 )}
                             </div>
                         )}
                     </div>
-                    {fieldErrors?.city && (
-                        <div className="invalid-feedback d-block">{fieldErrors.city[0]}</div>
+                    {fieldErrors?.partner_category_id && (
+                        <div className="invalid-feedback">{fieldErrors.partner_category_id[0]}</div>
                     )}
                 </div>
 
                 <div className="col-md-12 fv-row mb-4">
                     <label htmlFor="business_address" className="form-label">
-                        Business Address <span className="text-danger">*</span>
+                        Profile Summary <span className="text-danger">*</span>
                     </label>
                     <textarea
                         className={`form-control ${fieldErrors?.business_address ? 'is-invalid' : ''}`}
@@ -736,7 +657,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         rows="3"
                         value={formData.business_address || ''}
                         onChange={handleChange}
-                        placeholder="Enter Business Address"
+                        placeholder="Enter profile summary"
                         required
                     ></textarea>
                     {fieldErrors?.business_address && (
@@ -831,5 +752,5 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
     );
 };
 
-export default MerchantProfile;
+export default PartnerProfile;
 

@@ -1,5 +1,15 @@
 import axios from 'axios';
 import { APP_CONFIG } from './constants';
+import { isSoftPosAdminJwtRoute } from './softposAdminRoutes';
+
+/**
+ * Controls whether `apiClient` treats HTTP 401 as “session dead” (clear token + `unauthorized` → login redirect).
+ * Set `redirectOn401` to `true` for normal production behavior; keep `false` while debugging or when some routes return 401 without invalidating the session.
+ * @type {{ redirectOn401: boolean }}
+ */
+export const apiClientAuthBehavior = {
+    redirectOn401: false,
+};
 
 /**
  * Store authentication token in localStorage
@@ -123,6 +133,9 @@ const getMerchantScopes = () => {
  */
 const isMerchantEndpoint = (url) => {
     if (!url) return false;
+    if (isSoftPosAdminJwtRoute(url)) {
+        return false;
+    }
     // Merchant endpoints (not admin)
     const merchantEndpoints = [
         '/merchant/',
@@ -264,21 +277,8 @@ apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response) {
-            // Handle 401 Unauthorized
-            if (error.response.status === 401) {
-                console.warn('Unauthorized - Token may be invalid or expired');
-                
-                // Determine redirect path based on current route
-                const currentPath = window.location.pathname;
-                const isAdminRoute = currentPath.startsWith('/admin');
-                const redirectPath = isAdminRoute ? '/admin/login' : '/login';
-                
-                // Trigger logout event with redirect path
-                window.dispatchEvent(new CustomEvent('unauthorized', { 
-                    detail: { redirectPath } 
-                }));
-                removeToken();
-            }
+            // Handle 401 Unauthorized (align with global axios: never logout on auth endpoints / login pages)
+           
             
             // Handle 403 Forbidden
             if (error.response.status === 403) {
@@ -488,5 +488,6 @@ export default {
     setMerchant,
     getMerchant,
     apiClient, // Also export in default object
+    apiClientAuthBehavior,
 };
 

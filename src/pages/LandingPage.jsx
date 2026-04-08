@@ -157,17 +157,11 @@ const LandingHeader = () => {
                     alt="Fastpay Logo" 
                     src="/faspay_logo.png" 
                     className="logo-default h-35px h-lg-45px"
-                    style={{
-                      filter: 'brightness(0) saturate(100%) invert(63%) sepia(95%) saturate(3452%) hue-rotate(180deg) brightness(105%) contrast(105%)',
-                    }}
                   />
                   <img 
                     alt="Fastpay Logo" 
                     src="/faspay_logo.png" 
                     className="logo-sticky h-30px h-lg-35px"
-                    style={{
-                      filter: 'brightness(0) saturate(100%) invert(63%) sepia(95%) saturate(3452%) hue-rotate(180deg) brightness(105%) contrast(105%)',
-                    }}
                   />
                 </div>
               </a>
@@ -2352,9 +2346,6 @@ const CompanyFooter = () => (
                   alt="Fastpay Logo" 
                   src="/faspay_logo.png" 
                   className="h-25px h-md-30px"
-                  style={{
-                    filter: 'brightness(0) saturate(100%) invert(63%) sepia(95%) saturate(3452%) hue-rotate(180deg) brightness(105%) contrast(105%)',
-                  }}
                 />
               </a>
             </div>

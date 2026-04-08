@@ -6,6 +6,7 @@
 
 import axios from 'axios';
 import { APP_CONFIG } from './constants';
+import { isSoftPosAdminJwtRoute } from './softposAdminRoutes';
 
 /**
  * Get authentication token from localStorage
@@ -117,6 +118,9 @@ const getMerchantScopes = () => {
  */
 const isMerchantEndpoint = (url) => {
     if (!url) return false;
+    if (isSoftPosAdminJwtRoute(url)) {
+        return false;
+    }
     // Merchant endpoints (not admin)
     const merchantEndpoints = [
         '/merchant/',
@@ -220,30 +224,30 @@ axios.interceptors.response.use(
     (error) => {
         if (error.response) {
             // Handle 401 Unauthorized - GLOBAL FOR ALL AXIOS CALLS
-            if (error.response.status === 401) {
-                const requestUrl = error.config?.url || '';
-                const currentPath = window.location.pathname;
+            // if (error.response.status === 401) {
+            //     const requestUrl = error.config?.url || '';
+            //     const currentPath = window.location.pathname;
 
-                // If this is a login/register endpoint OR we are already on a login page,
-                // don't trigger the global unauthorized flow. Let the page handle it.
-                if (isAuthEndpoint(requestUrl) || currentPath === '/login' || currentPath === '/admin/login') {
-                    return Promise.reject(error);
-                }
+            //     // If this is a login/register endpoint OR we are already on a login page,
+            //     // don't trigger the global unauthorized flow. Let the page handle it.
+            //     if (isAuthEndpoint(requestUrl) || currentPath === '/login' || currentPath === '/admin/login') {
+            //         return Promise.reject(error);
+            //     }
 
-                console.warn('🔒 [Global Interceptor] Unauthorized - Token may be invalid or expired');
+            //     console.warn('🔒 [Global Interceptor] Unauthorized - Token may be invalid or expired');
                 
-                // Determine redirect path based on current route
-                const isAdminRoute = currentPath.startsWith('/admin');
-                const redirectPath = isAdminRoute ? '/admin/login' : '/login';
+            //     // Determine redirect path based on current route
+            //     const isAdminRoute = currentPath.startsWith('/admin');
+            //     const redirectPath = isAdminRoute ? '/admin/login' : '/login';
                 
-                // Trigger logout event with redirect path
-                window.dispatchEvent(new CustomEvent('unauthorized', { 
-                    detail: { redirectPath } 
-                }));
+            //     // Trigger logout event with redirect path
+            //     window.dispatchEvent(new CustomEvent('unauthorized', { 
+            //         detail: { redirectPath } 
+            //     }));
                 
-                // Clear tokens
-                removeToken();
-            }
+            //     // Clear tokens
+            //     removeToken();
+            // }
             
             // Handle 403 Forbidden
             if (error.response.status === 403) {

@@ -31,6 +31,7 @@
     "lucide-react": "^0.561.0",
     "react": "^19.1.1",
     "react-apexcharts": "^1.8.0",
+    "react-device-mockup": "^1.0.0",
     "react-dom": "^19.1.1",
     "react-filepond": "^7.1.2",
     "react-phone-input-2": "^2.15.1",

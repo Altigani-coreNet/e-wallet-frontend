@@ -1142,16 +1142,11 @@ const AdminTransactionsIndex = () => {
                                         </div>
                                     </th>
                                     <th className="text-dark">Transaction ID</th>
-                                    <th className="text-dark">RRN</th>
-                                    <th className="text-dark">Merchant</th>
-                                    <th className="text-dark">Payment Method</th>
-                                    <th className="text-dark">Card Number</th>
-                                    <th className="text-dark">Amount</th>
-                                    <th className="text-dark">Batch No</th>
-                                    <th className="text-dark">SDK</th>
-                                    <th className="text-dark">Created Time</th>
                                     <th className="text-dark">Country</th>
+                                    <th className="text-dark">Merchant</th>
+                                    <th className="text-dark">Service</th>
                                     <th className="text-dark">Payment Type</th>
+                                    <th className="text-dark">Payment Method</th>
                                     <th className="text-dark">Status</th>
                                     <th className="text-end text-dark">Actions</th>
                                 </tr>
@@ -1161,16 +1156,11 @@ const AdminTransactionsIndex = () => {
                                     [...Array(pagination.per_page)].map((_, index) => (
                                         <tr key={`skeleton-${index}`}>
                                             <td><div className="skeleton" style={{width: '20px', height: '20px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '120px', height: '16px'}}></div></td>
+                                            <td><div className="skeleton" style={{width: '80px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '100px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '150px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '80px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '120px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '80px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '80px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '60px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '140px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '100px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '80px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '80px', height: '24px', borderRadius: '6px'}}></div></td>
                                             <td className="text-end"><div className="skeleton" style={{width: '70px', height: '32px', borderRadius: '6px', marginLeft: 'auto'}}></div></td>
@@ -1178,7 +1168,7 @@ const AdminTransactionsIndex = () => {
                                     ))
                                 ) : transactions.length === 0 ? (
                                     <tr>
-                                        <td colSpan="14" className="text-center py-10">
+                                        <td colSpan="9" className="text-center py-10">
                                             <div className="text-gray-500">
                                                 <i className="ki-duotone ki-file fs-3x mb-3">
                                                     <span className="path1"></span>
@@ -1202,30 +1192,6 @@ const AdminTransactionsIndex = () => {
                                                 </div>
                                             </td>
                                             <td>{transaction.transaction_id || transaction.id || 'N/A'}</td>
-                                            <td>{transaction.rrn || 'N/A'}</td>
-                                            <td>
-                                                {(() => {
-                                                    const merchantId = transaction.merchant?.id || transaction.merchant_id;
-                                                    const merchantLoading = Boolean(merchantId) && (merchantInfoLoading || hasPendingRequest(String(merchantId)));
-                                                    const info = getMerchantInfo(transaction);
-                                                    const record = merchantId ? getMerchantInfoById(String(merchantId)) : null;
-                                                    
-                                                    if (merchantLoading && !record) {
-                                                        return <div className="skeleton" style={{width: '120px', height: '16px'}}></div>;
-                                                    }
-                                                    return info.merchantName;
-                                                })()}
-                                            </td>
-                                            <td>{transaction.payment_method?.name || transaction.payment_method || 'N/A'}</td>
-                                            <td>
-                                                {transaction.card_number 
-                                                    ? `**** **** **** ${transaction.card_number.slice(-4)}` 
-                                                    : 'N/A'}
-                                            </td>
-                                            <td>{transaction.currency_symbol || '$'}{parseFloat(transaction.amount || 0).toFixed(2)}</td>
-                                            <td>{transaction.batch_no || transaction.batch?.batch_number || 'N/A'}</td>
-                                            <td>{transaction.sdk_id || 'N/A'}</td>
-                                            <td>{transaction.created_at ? new Date(transaction.created_at).toLocaleString() : 'N/A'}</td>
                                             <td>
                                                 {(() => {
                                                     const merchantId = transaction.merchant?.id || transaction.merchant_id;
@@ -1239,7 +1205,22 @@ const AdminTransactionsIndex = () => {
                                                     return info.countryName;
                                                 })()}
                                             </td>
+                                            <td>
+                                                {(() => {
+                                                    const merchantId = transaction.merchant?.id || transaction.merchant_id;
+                                                    const merchantLoading = Boolean(merchantId) && (merchantInfoLoading || hasPendingRequest(String(merchantId)));
+                                                    const info = getMerchantInfo(transaction);
+                                                    const record = merchantId ? getMerchantInfoById(String(merchantId)) : null;
+                                                    
+                                                    if (merchantLoading && !record) {
+                                                        return <div className="skeleton" style={{width: '120px', height: '16px'}}></div>;
+                                                    }
+                                                    return info.merchantName;
+                                                })()}
+                                            </td>
+                                            <td>N/A</td>
                                             <td>{transaction.payment_type || 'N/A'}</td>
+                                            <td>{transaction.payment_method?.name || transaction.payment_method || 'N/A'}</td>
                                             <td>
                                                 <span className={`badge ${getStatusBadgeClass(transaction.status)}`}>
                                                     {transaction.status || 'N/A'}

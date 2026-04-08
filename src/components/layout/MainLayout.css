@@ -19,6 +19,22 @@ body.app-blank #kt_app_root {
     width: 100%;
 }
 
+/* Footer fixed at bottom */
+.app-main {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 60px); /* Adjust based on header height */
+}
+
+.app-main > .d-flex.flex-column.flex-column-fluid {
+    flex: 1 0 auto;
+}
+
+#kt_app_footer {
+    margin-top: auto !important;
+    flex-shrink: 0;
+}
+
 #kt_app_sidebar_menu_wrapper {
     height: 95vh !important; /* or your desired width */
 }
@@ -46,16 +62,17 @@ body.app-sidebar-minimize .menu-sub .menu-item {
     display: block !important;
 }
 
-@media (max-width: 768px) {
+/* Medium and small screens - make 100% width */
+@media (max-width: 1024px) {
     #root {
-        width: 100%;
+        width: 100% !important;
     }
     #kt_app_root {
-        width: 100%;
+        width: 100% !important;
     }
     
     #kt_app_page {
-        width: 100%;
+        width: 100% !important;
     }
     #kt_app_wrapper {
         width: 100%;

@@ -60,8 +60,8 @@ const Sidebar = ({ isLoading = false, error, onRetry }) => {
             {/* Begin::Logo */}
             <div className="app-sidebar-logo px-6" id="kt_app_sidebar_logo">
                 <Link to="/merchant/dashboard">
-                    <img alt="Fastpay Logo" src="/faspay_logo.png" className="h-35px app-sidebar-logo-default" />
-                    <img alt="Fastpay Logo" src="/small_logo.png" className="h-30px app-sidebar-logo-minimize" />
+                    <img alt="Fastpay Logo" src="/faspay_logo_1.png" className="h-35px app-sidebar-logo-default" />
+                    <img alt="Fastpay Logo" src="/faspay_logo_1.png" className="h-30px app-sidebar-logo-minimize" />
                 </Link>
                 
                 {/* Begin::Sidebar toggle */}

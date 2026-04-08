@@ -1,10 +1,13 @@
 // API Base URLs
 export const  BASE_DOMAIN = 'https://dev.corenetpay.com';
 export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
-export const SOFTPOS_API_BASE = `${BASE_DOMAIN}/api/softpos`;
+// export const AUTH_SERVICE_BASE = `http://localhost:8000`;
+export const SOFTPOS_API_BASE =  `http://193.123.83.134:82`; //'http://localhost:8001';
 // PayTabs Node service base (for QR testing)
 export const PAYTABS_API_BASE = `${BASE_DOMAIN}/api/paytabs`;
-export const POS_API_BASE = `${BASE_DOMAIN}/api/pos`;
+export const POS_API_BASE = `${BASE_DOMAIN}/api/cashier`;
+// export const POS_API_BASE = `http://localhost:8002`;
+
 
 // Frontend Base URL
 export const FRONTEND_BASE_URL = BASE_DOMAIN;
@@ -43,7 +46,8 @@ export const AUTH_ENDPOINTS = {
     REGISTER_VERIFY_CODE: `${AUTH_SERVICE_BASE}/register/verify-code`,
     REGISTER_USER: `${AUTH_SERVICE_BASE}/register/user`,
     REGISTER_MERCHANT: `${AUTH_SERVICE_BASE}/register/merchant`,
-    REGISTER_SEND_CONTINUATION_EMAIL: `${AUTH_SERVICE_BASE}/register/send-continuation-email`,
+    REGISTER_PARTNER: `${SOFTPOS_API_BASE}/register/partner`,
+    REGISTER_SEND_CONTINUATION_EMAIL: `${SOFTPOS_API_BASE}/register/send-continuation-email`,
     
     // Password Management
     PASSWORD_REQUEST_RESET: `${AUTH_SERVICE_BASE}/password/request-reset`,
@@ -378,6 +382,7 @@ export const ADMIN_ENDPOINTS = {
     DASHBOARD_TERMINAL_STATUS: `${AUTH_SERVICE_BASE}/v2/admin/dashboard/terminals`,
     DASHBOARD_CHARTS: `${SOFTPOS_API_BASE}/v2/admin/dashboard/charts`,
     DASHBOARD_LATEST_TRANSACTIONS: `${SOFTPOS_API_BASE}/v2/admin/dashboard/latest-transactions`,
+    DASHBOARD_SUBSCRIPTIONS: `${AUTH_SERVICE_BASE}/v2/admin/dashboard/subscriptions`,
     DASHBOARD_EXPORT: `${SOFTPOS_API_BASE}/v2/admin/dashboard/export`,
     
     // Merchants (AuthService)
@@ -407,7 +412,31 @@ export const ADMIN_ENDPOINTS = {
     CHANGE_REQUEST_DETAILS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/change-requests/${id}`,
     CHANGE_REQUEST_APPROVE: (id) => `${AUTH_SERVICE_BASE}/v2/admin/change-requests/${id}/approve`,
     CHANGE_REQUEST_REJECT: (id) => `${AUTH_SERVICE_BASE}/v2/admin/change-requests/${id}/reject`,
-    
+
+    // Partners (SoftPos — routes/api.php `partners` + auth:api-admin)
+    CONTENT_PROVIDERS: `${SOFTPOS_API_BASE}/partners`,
+    CONTENT_PROVIDERS_SELECT: `${SOFTPOS_API_BASE}/partners/select`,
+    CONTENT_PROVIDERS_SCOPES: `${SOFTPOS_API_BASE}/partners/scopes`,
+    CONTENT_PROVIDER_DETAILS: (id) => `${SOFTPOS_API_BASE}/partners/${id}`,
+    CONTENT_PROVIDERS_COUNTRY_LOOKUP: `${SOFTPOS_API_BASE}/partners/country-lookup`,
+    CONTENT_PROVIDER_STATISTICS: `${SOFTPOS_API_BASE}/partners/statistics`,
+    CONTENT_PROVIDER_EXPORT: `${SOFTPOS_API_BASE}/partners/export`,
+    CONTENT_PROVIDER_EXPORT_TEMPLATE: `${SOFTPOS_API_BASE}/partners/export-template`,
+    CONTENT_PROVIDER_IMPORT_PREVIEW: `${SOFTPOS_API_BASE}/partners/import-preview`,
+    CONTENT_PROVIDER_IMPORT: `${SOFTPOS_API_BASE}/partners/import`,
+    CONTENT_PROVIDER_BULK_DELETE: `${SOFTPOS_API_BASE}/partners/bulk-delete`,
+    CONTENT_PROVIDER_APPROVE: (id) => `${SOFTPOS_API_BASE}/partners/${id}/approve`,
+    CONTENT_PROVIDER_REJECT: (id) => `${SOFTPOS_API_BASE}/partners/${id}/reject`,
+    CONTENT_PROVIDER_SUSPEND: (id) => `${SOFTPOS_API_BASE}/partners/${id}/suspend`,
+    CONTENT_PROVIDER_UNSUSPEND: (id) => `${SOFTPOS_API_BASE}/partners/${id}/unsuspend`,
+    CONTENT_PROVIDER_LOGS: (id) => `${SOFTPOS_API_BASE}/partners/${id}/logs`,
+    CONTENT_PROVIDER_CHANGE_REQUESTS: (id) => `${SOFTPOS_API_BASE}/partners/${id}/change-requests`,
+    CONTENT_PROVIDER_ATTACHMENTS: (id) => `${SOFTPOS_API_BASE}/partners/${id}/attachments`,
+    CONTENT_PROVIDER_CHANGE_REQUEST_APPROVE: (id, requestId) =>
+        `${SOFTPOS_API_BASE}/partners/${id}/change-requests/${requestId}/approve`,
+    CONTENT_PROVIDER_CHANGE_REQUEST_REJECT: (id, requestId) =>
+        `${SOFTPOS_API_BASE}/partners/${id}/change-requests/${requestId}/reject`,
+
     // Branches (AuthService)
     BRANCHES: `${AUTH_SERVICE_BASE}/v2/admin/branches`,
     BRANCH_DETAILS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/branches/${id}`,
@@ -537,10 +566,10 @@ export const ADMIN_ENDPOINTS = {
     UNITS_EXPORT: `${POS_API_BASE}/v2/admin/units/export`,
     UNIT_DETAILS: (id) => `${POS_API_BASE}/v2/admin/units/${id}`,
     
-    // Products
-    PRODUCTS: `${POS_API_BASE}/v2/admin/products`,
-    PRODUCTS_EXPORT: `${POS_API_BASE}/v2/admin/products/export`,
-    PRODUCT_DETAILS: (id) => `${POS_API_BASE}/v2/admin/products/${id}`,
+    // Products (Pos — inventory / cashier catalog)
+    POS_PRODUCTS: `${POS_API_BASE}/v2/admin/products`,
+    POS_PRODUCTS_EXPORT: `${POS_API_BASE}/v2/admin/products/export`,
+    POS_PRODUCT_DETAILS: (id) => `${POS_API_BASE}/v2/admin/products/${id}`,
     
     // Warehouses
     WAREHOUSES: `${POS_API_BASE}/v2/admin/warehouses`,
@@ -575,7 +604,12 @@ export const ADMIN_ENDPOINTS = {
     SALE_RETURNS: `${POS_API_BASE}/v2/admin/sale-returns`,
     SALE_RETURNS_EXPORT: `${POS_API_BASE}/v2/admin/sale-returns/export`,
     SALE_RETURN_DETAILS: (id) => `${POS_API_BASE}/v2/admin/sale-returns/${id}`,
-    
+
+    // Financial Support (AuthService - subscription-based)
+    FINANCIAL_SUPPORT: `${AUTH_SERVICE_BASE}/v2/admin/financial-support`,
+    FINANCIAL_SUPPORT_EXPORT: `${AUTH_SERVICE_BASE}/v2/admin/financial-support/export`,
+    FINANCIAL_SUPPORT_DETAILS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/financial-support/${id}`,
+
     // Purchase Management (Pos)
     // Purchases
     PURCHASES: `${POS_API_BASE}/v2/admin/purchases`,
@@ -618,6 +652,69 @@ export const ADMIN_ENDPOINTS = {
     PAYMENT_GATEWAYS: `${POS_API_BASE}/v2/admin/payment-gateways`,
     PAYMENT_GATEWAY_DETAILS: (id) => `${POS_API_BASE}/v2/admin/payment-gateways/${id}`,
     PAYMENT_GATEWAY_TOGGLE_STATUS: (id) => `${POS_API_BASE}/v2/admin/payment-gateways/${id}/toggle-status`,
+
+    // Service categories / sub-categories (SoftPos — `service-categories`, `service-sub-categories`)
+    SERVICE_CATEGORIES: `${SOFTPOS_API_BASE}/service-categories`,
+    SERVICE_CATEGORIES_ACTIVE: `${SOFTPOS_API_BASE}/service-categories/select`,
+    SERVICE_CATEGORIES_ACTIVE_PUBLIC: `${SOFTPOS_API_BASE}/service-categories/select-public`,
+    SERVICE_CATEGORY_DETAILS: (id) => `${SOFTPOS_API_BASE}/service-categories/${id}`,
+    SERVICE_CATEGORY_TOGGLE_STATUS: (id) => `${SOFTPOS_API_BASE}/service-categories/${id}/toggle-status`,
+    SERVICE_CATEGORY_BULK_DELETE: `${SOFTPOS_API_BASE}/service-categories/bulk-delete`,
+    SERVICE_CATEGORY_EXPORT: `${SOFTPOS_API_BASE}/service-categories/export`,
+    SERVICE_SUB_CATEGORIES: `${SOFTPOS_API_BASE}/service-sub-categories`,
+    SERVICE_SUB_CATEGORIES_SELECT: `${SOFTPOS_API_BASE}/service-sub-categories/select`,
+    SERVICE_SUB_CATEGORY_DETAILS: (id) => `${SOFTPOS_API_BASE}/service-sub-categories/${id}`,
+    SERVICE_SUB_CATEGORY_TOGGLE_STATUS: (id) => `${SOFTPOS_API_BASE}/service-sub-categories/${id}/toggle-status`,
+    SERVICE_SUB_CATEGORY_BULK_DELETE: `${SOFTPOS_API_BASE}/service-sub-categories/bulk-delete`,
+
+    // Services Management - Service Types (SoftPos — `service-types`; list CRUD may use AuthService)
+    SERVICE_TYPES: `${AUTH_SERVICE_BASE}/v2/admin/service-types`,
+    SERVICE_TYPES_SELECT: `${SOFTPOS_API_BASE}/service-types/select`,
+    SERVICE_TYPE_DETAILS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/service-types/${id}`,
+    SERVICE_TYPE_TOGGLE_STATUS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/service-types/${id}/toggle-status`,
+    SERVICE_TYPE_BULK_DELETE: `${AUTH_SERVICE_BASE}/v2/admin/service-types/bulk-delete`,
+
+    PRODUCT_SERVICE_FORMS: (productId) => `${SOFTPOS_API_BASE}/products/${productId}/service-forms`,
+
+    // Services Management - Operators (AuthService)
+    OPERATORS: `${AUTH_SERVICE_BASE}/v2/admin/operators`,
+    OPERATORS_ACTIVE: `${AUTH_SERVICE_BASE}/v2/admin/operators/select`,
+    OPERATOR_DETAILS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/operators/${id}`,
+    OPERATOR_TOGGLE_STATUS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/operators/${id}/toggle-status`,
+    OPERATOR_BULK_DELETE: `${AUTH_SERVICE_BASE}/v2/admin/operators/bulk-delete`,
+
+    // Services (SoftPos — prefix `services`)
+    SERVICES: `${SOFTPOS_API_BASE}/services`,
+    SERVICES_SELECT: `${SOFTPOS_API_BASE}/services/select`,
+    SERVICE_DETAILS: (id) => `${SOFTPOS_API_BASE}/services/${id}`,
+    SERVICE_CREATE: `${SOFTPOS_API_BASE}/services`,
+    SERVICE_UPDATE: (id) => `${SOFTPOS_API_BASE}/services/${id}`,
+    SERVICE_DELETE: (id) => `${SOFTPOS_API_BASE}/services/${id}`,
+    SERVICE_TOGGLE_STATUS: (id) => `${SOFTPOS_API_BASE}/services/${id}/toggle-status`,
+    SERVICE_BULK_DELETE: `${SOFTPOS_API_BASE}/services/bulk-delete`,
+    SERVICE_EXPORT: `${SOFTPOS_API_BASE}/services/export`,
+    SERVICE_IMPORT: `${SOFTPOS_API_BASE}/services/import`,
+
+    // Products — payment-gateway catalog (SoftPos — prefix `products`; POS inventory uses POS_PRODUCTS*)
+    PRODUCTS: `${SOFTPOS_API_BASE}/products`,
+    PRODUCT_DETAILS: (id) => `${SOFTPOS_API_BASE}/products/${id}`,
+    PRODUCT_CREATE: `${SOFTPOS_API_BASE}/products`,
+    PRODUCT_UPDATE: (id) => `${SOFTPOS_API_BASE}/products/${id}`,
+    PRODUCT_DELETE: (id) => `${SOFTPOS_API_BASE}/products/${id}`,
+    PRODUCT_TOGGLE_STATUS: (id) => `${SOFTPOS_API_BASE}/products/${id}/toggle-status`,
+    PRODUCT_BULK_DELETE: `${SOFTPOS_API_BASE}/products/bulk-delete`,
+    AUTH_PRODUCTS_EXPORT: `${SOFTPOS_API_BASE}/products/export`,
+    PRODUCTS_SELECT: `${SOFTPOS_API_BASE}/products/select`,
+
+    // Subscribers Management (AuthService)
+    SUBSCRIBERS: `${AUTH_SERVICE_BASE}/v2/admin/subscribers`,
+    SUBSCRIBERS_EXPORT: `${AUTH_SERVICE_BASE}/v2/admin/subscribers/export`,
+
+    // Subscriptions Management (AuthService)
+    SUBSCRIPTIONS: `${AUTH_SERVICE_BASE}/v2/admin/subscriptions`,
+    SUBSCRIPTIONS_EXPORT: `${AUTH_SERVICE_BASE}/v2/admin/subscriptions/export`,
+    SUBSCRIPTIONS_MSISDN_SELECT: `${AUTH_SERVICE_BASE}/v2/admin/subscriptions/msisdn/select`,
+    SUBSCRIPTIONS_REPORT: `${AUTH_SERVICE_BASE}/v2/admin/subscriptions/report`,
 };
 
 // Admin System Administration Endpoints (AuthService)
@@ -681,6 +778,59 @@ export const ADMIN_SYSTEM_ENDPOINTS = {
     CONTRACT_TERMS_UPDATE: `${AUTH_SERVICE_BASE}/v2/admin/settings/contract-terms/update`,
     CONTRACT_TERMS_PREVIEW: (lang) => `${AUTH_SERVICE_BASE}/v2/admin/settings/contract-terms/preview/${lang}`,
     CONTRACT_TERMS_DOWNLOAD: (lang) => `${AUTH_SERVICE_BASE}/v2/admin/settings/contract-terms/download/${lang}`,
+
+     // Service categories / sub-categories (SoftPos)
+     SERVICE_CATEGORIES: `${SOFTPOS_API_BASE}/service-categories`,
+     SERVICE_CATEGORIES_ACTIVE: `${SOFTPOS_API_BASE}/service-categories/select`,
+     SERVICE_CATEGORIES_ACTIVE_PUBLIC: `${SOFTPOS_API_BASE}/service-categories/select-public`,
+     SERVICE_CATEGORY_DETAILS: (id) => `${SOFTPOS_API_BASE}/service-categories/${id}`,
+     SERVICE_CATEGORY_TOGGLE_STATUS: (id) => `${SOFTPOS_API_BASE}/service-categories/${id}/toggle-status`,
+     SERVICE_CATEGORY_BULK_DELETE: `${SOFTPOS_API_BASE}/service-categories/bulk-delete`,
+     SERVICE_SUB_CATEGORIES: `${SOFTPOS_API_BASE}/service-sub-categories`,
+     SERVICE_SUB_CATEGORIES_SELECT: `${SOFTPOS_API_BASE}/service-sub-categories/select`,
+     SERVICE_SUB_CATEGORY_DETAILS: (id) => `${SOFTPOS_API_BASE}/service-sub-categories/${id}`,
+     SERVICE_SUB_CATEGORY_TOGGLE_STATUS: (id) => `${SOFTPOS_API_BASE}/service-sub-categories/${id}/toggle-status`,
+     SERVICE_SUB_CATEGORY_BULK_DELETE: `${SOFTPOS_API_BASE}/service-sub-categories/bulk-delete`,
+ 
+     // Services Management - Service Types (SoftPos select; list CRUD may use AuthService)
+     SERVICE_TYPES: `${AUTH_SERVICE_BASE}/v2/admin/service-types`,
+     SERVICE_TYPES_SELECT: `${SOFTPOS_API_BASE}/service-types/select`,
+     SERVICE_TYPE_DETAILS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/service-types/${id}`,
+     SERVICE_TYPE_TOGGLE_STATUS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/service-types/${id}/toggle-status`,
+     SERVICE_TYPE_BULK_DELETE: `${AUTH_SERVICE_BASE}/v2/admin/service-types/bulk-delete`,
+ 
+     PRODUCT_SERVICE_FORMS: (productId) => `${SOFTPOS_API_BASE}/products/${productId}/service-forms`,
+     
+     // Services Management - Operators (AuthService)
+     OPERATORS: `${AUTH_SERVICE_BASE}/v2/admin/operators`,
+     OPERATORS_ACTIVE: `${AUTH_SERVICE_BASE}/v2/admin/operators/select`,
+     OPERATOR_DETAILS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/operators/${id}`,
+     OPERATOR_TOGGLE_STATUS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/operators/${id}/toggle-status`,
+     OPERATOR_BULK_DELETE: `${AUTH_SERVICE_BASE}/v2/admin/operators/bulk-delete`,
+     
+     // Services (SoftPos)
+     SERVICES: `${SOFTPOS_API_BASE}/services`,
+     SERVICES_SELECT: `${SOFTPOS_API_BASE}/services/select`,
+     SERVICE_DETAILS: (id) => `${SOFTPOS_API_BASE}/services/${id}`,
+     SERVICE_CREATE: `${SOFTPOS_API_BASE}/services`,
+     SERVICE_UPDATE: (id) => `${SOFTPOS_API_BASE}/services/${id}`,
+     SERVICE_DELETE: (id) => `${SOFTPOS_API_BASE}/services/${id}`,
+     SERVICE_TOGGLE_STATUS: (id) => `${SOFTPOS_API_BASE}/services/${id}/toggle-status`,
+     SERVICE_BULK_DELETE: `${SOFTPOS_API_BASE}/services/bulk-delete`,
+     SERVICE_EXPORT: `${SOFTPOS_API_BASE}/services/export`,
+     SERVICE_IMPORT: `${SOFTPOS_API_BASE}/services/import`,
+     
+     // Products (SoftPos)
+     PRODUCTS: `${SOFTPOS_API_BASE}/products`,
+     PRODUCT_DETAILS: (id) => `${SOFTPOS_API_BASE}/products/${id}`,
+     PRODUCT_CREATE: `${SOFTPOS_API_BASE}/products`,
+     PRODUCT_UPDATE: (id) => `${SOFTPOS_API_BASE}/products/${id}`,
+     PRODUCT_DELETE: (id) => `${SOFTPOS_API_BASE}/products/${id}`,
+     PRODUCT_TOGGLE_STATUS: (id) => `${SOFTPOS_API_BASE}/products/${id}/toggle-status`,
+     PRODUCT_BULK_DELETE: `${SOFTPOS_API_BASE}/products/bulk-delete`,
+     AUTH_PRODUCTS_EXPORT: `${SOFTPOS_API_BASE}/products/export`,
+     PRODUCTS_SELECT: `${SOFTPOS_API_BASE}/products/select`,
+    
 };
 
 // Default Configuration
@@ -697,4 +847,6 @@ export const PUBLIC_ENDPOINTS = {
     PLANS: `${AUTH_SERVICE_BASE}/v2/public/plans`,
     PLAN_DETAILS: (id) => `${AUTH_SERVICE_BASE}/v2/public/plans/${id}`,
 };
+
+
 

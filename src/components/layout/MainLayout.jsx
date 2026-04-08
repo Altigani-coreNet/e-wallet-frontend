@@ -13,6 +13,7 @@ const MainLayoutContent = () => {
     const { closeSidebar } = useSidebar();
     const location = useLocation();
     const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     const { 
         token,
         profileLoading,
@@ -20,6 +21,16 @@ const MainLayoutContent = () => {
         profileError,
         fetchProfile
     } = useAuthStore();
+
+    // Track window width for responsive layout
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // Close sidebar on route change (mobile only)
     useEffect(() => {
@@ -167,9 +178,9 @@ const MainLayoutContent = () => {
     return (
         <>
             {/* Begin::App */}
-            <div className="d-flex flex-column flex-root app-root" id="kt_app_root" style={{ width: isSidebarMinimized ? '100%' : '90%' }}>
+            <div className="d-flex flex-column flex-root app-root" id="kt_app_root" style={{ width: windowWidth <= 1024 ? '100%' : (isSidebarMinimized ? '100%' : '90%') }}>
                 {/* Begin::Page */}
-                <div className="app-page flex-column flex-column-fluid" id="kt_app_page" style={{ width: isSidebarMinimized ? '93%' : '90%' }}>
+                <div className="app-page flex-column flex-column-fluid" id="kt_app_page" style={{ width: windowWidth <= 1024 ? '100%' : (isSidebarMinimized ? '93%' : '90%') }}>
                     {/* Begin::Header */}
                     <Header />
                     {/* End::Header */}
