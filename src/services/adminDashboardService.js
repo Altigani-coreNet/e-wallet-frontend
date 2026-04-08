@@ -69,11 +69,20 @@ export const fetchAdminDashboardSubscriptions = async (filters = {}) => {
     return extractData(response);
 };
 
+export const fetchAdminDashboardV3 = async (filters = {}) => {
+    const response = await apiClient.get(ADMIN_ENDPOINTS.DASHBOARD_V3, {
+        params: buildParams(filters),
+    });
+
+    return extractData(response);
+};
+
 export default {
     fetchAdminDashboardOverview,
     fetchAdminDashboardTerminalStatus,
     fetchAdminDashboardCharts,
     fetchAdminDashboardLatestTransactions,
     fetchAdminDashboardSubscriptions,
+    fetchAdminDashboardV3,
 };
 

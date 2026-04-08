@@ -516,8 +516,8 @@ const AdminContentProviderEdit = () => {
                                         </div>
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Contact Person Name</label>
-                                            <input type="text" name="business_name" className="form-control" value={formData.business_name} onChange={handleInputChange} placeholder="Optional (defaults to Business /Brand Name)" />
+                                            <label className="form-label fw-bold required">Contact Person Name</label>
+                                            <input type="text" name="business_name" className="form-control" value={formData.business_name} onChange={handleInputChange} placeholder="Enter Contact Person Name" required />
                                         </div>
 
                                         <div className="col-md-6 mb-7">
@@ -536,8 +536,8 @@ const AdminContentProviderEdit = () => {
                                         </div>
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Business Phone</label>
-                                            <input type="text" name="business_phone" className="form-control" value={formData.business_phone} onChange={handleInputChange} placeholder="+1234567890" />
+                                            <label className="form-label fw-bold required">Business Phone</label>
+                                            <input type="text" name="business_phone" className="form-control" value={formData.business_phone} onChange={handleInputChange} placeholder="+1234567890" required />
                                         </div>
 
                                         <div className="col-md-12 mb-7">

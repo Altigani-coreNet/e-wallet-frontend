@@ -28,11 +28,8 @@ const AdminTransactionsIndex = () => {
     const [showMerchantList, setShowMerchantList] = useState(false);
     const [selectedMerchant, setSelectedMerchant] = useState(null);
     
-    const [terminalsList, setTerminalsList] = useState([]);
-    const [filteredTerminals, setFilteredTerminals] = useState([]);
-    const [terminalSearchTerm, setTerminalSearchTerm] = useState('');
-    const [showTerminalList, setShowTerminalList] = useState(false);
-    const [selectedTerminal, setSelectedTerminal] = useState(null);
+    const [partnersList, setPartnersList] = useState([]);
+    const [serviceCategoriesList, setServiceCategoriesList] = useState([]);
     
     const [countriesList, setCountriesList] = useState([]);
     const [filteredCountries, setFilteredCountries] = useState([]);
@@ -56,7 +53,8 @@ const AdminTransactionsIndex = () => {
         search: '',
         status: '',
         merchant_id: '',
-        terminal_id: '',
+        partner_id: '',
+        service_category_id: '',
         country_id: '',
         start_date: '',
         end_date: ''
@@ -68,7 +66,6 @@ const AdminTransactionsIndex = () => {
 
     // Refs for dropdown containers
     const merchantDropdownRef = useRef(null);
-    const terminalDropdownRef = useRef(null);
     const countryDropdownRef = useRef(null);
 
     // Update filters when URL type changes
@@ -96,6 +93,18 @@ const AdminTransactionsIndex = () => {
                         <span className="path2"></span>
                     </i>
                     <span className="d-none d-lg-inline ms-lg-1">Filter</span>
+                </button>
+
+                <button
+                    className="btn btn-sm btn-flex btn-light-danger fw-bold"
+                    onClick={clearFilters}
+                    aria-label="Clear filters"
+                >
+                    <i className="ki-duotone ki-filter-remove fs-3 me-0 me-lg-1">
+                        <span className="path1"></span>
+                        <span className="path2"></span>
+                    </i>
+                    <span className="d-none d-lg-inline ms-lg-1">Clear Filters</span>
                 </button>
 
                 {/* Export – icon only on small screens, icon + text on large */}
@@ -148,23 +157,6 @@ const AdminTransactionsIndex = () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [showMerchantList]);
-
-    // Handle click outside for terminal dropdown
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (terminalDropdownRef.current && !terminalDropdownRef.current.contains(event.target)) {
-                setShowTerminalList(false);
-            }
-        };
-
-        if (showTerminalList) {
-            document.addEventListener('mousedown', handleClickOutside);
-        }
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [showTerminalList]);
 
     // Handle click outside for country dropdown
     useEffect(() => {
@@ -277,7 +269,7 @@ const AdminTransactionsIndex = () => {
             const token = getToken();
             
             // Fetch all dropdowns in parallel
-            const [merchantsRes, terminalsRes, countriesRes] = await Promise.all([
+            const [merchantsRes, partnersRes, serviceCategoriesRes, countriesRes] = await Promise.all([
                 // Merchants from AuthService (Admin endpoint)
                 axios.get(ADMIN_ENDPOINTS.MERCHANTS, {
                     params: { per_page: 1000 },
@@ -287,12 +279,21 @@ const AdminTransactionsIndex = () => {
                     return { data: { data: [] } };
                 }),
                 
-                // Terminals from AuthService (Admin endpoint)
-                axios.get(ADMIN_ENDPOINTS.TERMINALS, {
+                // Partners from SoftPos
+                axios.get(ADMIN_ENDPOINTS.CONTENT_PROVIDERS, {
                     params: { per_page: 1000 },
                     headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
                 }).catch(err => {
-                    console.error('Error fetching terminals:', err);
+                    console.error('Error fetching partners:', err);
+                    return { data: { data: [] } };
+                }),
+
+                // Service Categories from SoftPos
+                axios.get(ADMIN_ENDPOINTS.SERVICE_CATEGORIES, {
+                    params: { per_page: 1000 },
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                }).catch(err => {
+                    console.error('Error fetching service categories:', err);
                     return { data: { data: [] } };
                 }),
                 
@@ -311,11 +312,15 @@ const AdminTransactionsIndex = () => {
             setMerchantsList(merchantsArray);
             setFilteredMerchants(merchantsArray);
             
-            // Process terminals
-            const terminals = terminalsRes.data?.data?.data || terminalsRes.data?.data || [];
-            const terminalsArray = Array.isArray(terminals) ? terminals : [];
-            setTerminalsList(terminalsArray);
-            setFilteredTerminals(terminalsArray);
+            // Process partners
+            const partners = partnersRes.data?.data?.data || partnersRes.data?.data || [];
+            const partnersArray = Array.isArray(partners) ? partners : [];
+            setPartnersList(partnersArray);
+
+            // Process service categories
+            const serviceCategories = serviceCategoriesRes.data?.data?.data || serviceCategoriesRes.data?.data || [];
+            const serviceCategoriesArray = Array.isArray(serviceCategories) ? serviceCategories : [];
+            setServiceCategoriesList(serviceCategoriesArray);
             
             // Process countries
             const countriesData = countriesRes.data?.data || countriesRes.data || [];
@@ -354,30 +359,6 @@ const AdminTransactionsIndex = () => {
     const handleRemoveMerchant = () => {
         setSelectedMerchant(null);
         handleFilterChange('merchant_id', '');
-    };
-
-    const handleTerminalSearch = (searchTerm) => {
-        setTerminalSearchTerm(searchTerm);
-        if (searchTerm.trim() === '') {
-            setFilteredTerminals(terminalsList);
-        } else {
-            const filtered = terminalsList.filter(terminal =>
-                (terminal.name || terminal.terminal_id || '').toLowerCase().includes(searchTerm.toLowerCase())
-            );
-            setFilteredTerminals(filtered);
-        }
-    };
-
-    const handleTerminalSelect = (terminal) => {
-        setSelectedTerminal(terminal);
-        setShowTerminalList(false);
-        setTerminalSearchTerm('');
-        handleFilterChange('terminal_id', terminal.id);
-    };
-
-    const handleRemoveTerminal = () => {
-        setSelectedTerminal(null);
-        handleFilterChange('terminal_id', '');
     };
 
     const handleCountrySearch = (searchTerm) => {
@@ -551,13 +532,13 @@ const AdminTransactionsIndex = () => {
             search: '',
             status: '',
             merchant_id: '',
-            terminal_id: '',
+            partner_id: '',
+            service_category_id: '',
             country_id: '',
             start_date: '',
             end_date: ''
         });
         setSelectedMerchant(null);
-        setSelectedTerminal(null);
         setSelectedCountry(null);
         setPagination(prev => ({ ...prev, current_page: 1 }));
     };
@@ -811,7 +792,6 @@ const AdminTransactionsIndex = () => {
                                         className="form-control h-50px d-flex align-items-center justify-content-between"
                                         onClick={() => {
                                             if (!dropdownsLoading) {
-                                                setShowTerminalList(false);
                                                 setShowCountryList(false);
                                                 setShowMerchantList(!showMerchantList);
                                             }
@@ -879,78 +859,19 @@ const AdminTransactionsIndex = () => {
                                 </div>
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Terminal</label>
-                                <div className="position-relative" ref={terminalDropdownRef}>
-                                    <div 
-                                        className="form-control h-50px d-flex align-items-center justify-content-between"
-                                        onClick={() => {
-                                            if (!dropdownsLoading) {
-                                                setShowMerchantList(false);
-                                                setShowCountryList(false);
-                                                setShowTerminalList(!showTerminalList);
-                                            }
-                                        }}
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        <div className="d-flex align-items-center">
-                                            {selectedTerminal ? (
-                                                <span className="text-gray-800">{selectedTerminal.name || selectedTerminal.terminal_id || `Terminal ${selectedTerminal.id}`}</span>
-                                            ) : (
-                                                <span className="text-muted">All Terminals</span>
-                                            )}
-                                        </div>
-                                        <div className="d-flex align-items-center">
-                                            {selectedTerminal && (
-                                                <button 
-                                                    type="button"
-                                                    className="btn btn-icon btn-sm btn-light-danger me-2"
-                                                    onClick={(e) => { e.stopPropagation(); handleRemoveTerminal(); }}
-                                                >
-                                                    <i className="ki-duotone ki-cross fs-2">
-                                                        <span className="path1"></span>
-                                                        <span className="path2"></span>
-                                                    </i>
-                                                </button>
-                                            )}
-                                            <i className={`ki-duotone ki-down fs-2 ${showTerminalList ? 'rotate-180' : ''}`}>
-                                                <span className="path1"></span>
-                                                <span className="path2"></span>
-                                            </i>
-                                        </div>
-                                    </div>
-                                    
-                                    {showTerminalList && (
-                                        <div className="position-absolute top-100 start-0 w-100 bg-white border rounded-3 shadow-sm mt-1" style={{ zIndex: 1000, maxHeight: '250px', overflowY: 'auto' }}>
-                                            <div className="p-2">
-                                                <input 
-                                                    type="text" 
-                                                    className="form-control form-control-sm mb-2" 
-                                                    placeholder="Search terminals..."
-                                                    value={terminalSearchTerm}
-                                                    onChange={(e) => handleTerminalSearch(e.target.value)}
-                                                    onClick={(e) => e.stopPropagation()}
-                                                    autoFocus
-                                                />
-                                            </div>
-                                            {filteredTerminals.length > 0 ? (
-                                                filteredTerminals.map((terminal) => (
-                                                    <div 
-                                                        key={terminal.id}
-                                                        className="p-3 border-bottom cursor-pointer hover-bg-light"
-                                                        onMouseDown={(e) => { e.preventDefault(); handleTerminalSelect(terminal); }}
-                                                        style={{ cursor: 'pointer' }}
-                                                    >
-                                                        <div className="text-gray-800">{terminal.name || terminal.terminal_id || `Terminal ${terminal.id}`}</div>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="p-3 text-muted text-center">
-                                                    {dropdownsLoading ? 'Loading...' : 'No terminals found'}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                                <label className="form-label">Partner</label>
+                                <select
+                                    className="form-select"
+                                    value={filters.partner_id}
+                                    onChange={(e) => handleFilterChange('partner_id', e.target.value)}
+                                >
+                                    <option value="">All Partners</option>
+                                    {partnersList.map((partner) => (
+                                        <option key={partner.id} value={partner.id}>
+                                            {partner.business_name || partner.name}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                         <div className="row mt-3">
@@ -962,7 +883,6 @@ const AdminTransactionsIndex = () => {
                                         onClick={() => {
                                             if (!dropdownsLoading) {
                                                 setShowMerchantList(false);
-                                                setShowTerminalList(false);
                                                 setShowCountryList(!showCountryList);
                                             }
                                         }}
@@ -1037,6 +957,21 @@ const AdminTransactionsIndex = () => {
                                 </div>
                             </div>
                             <div className="col-md-3 mb-3">
+                                <label className="form-label">Service Category</label>
+                                <select
+                                    className="form-select"
+                                    value={filters.service_category_id}
+                                    onChange={(e) => handleFilterChange('service_category_id', e.target.value)}
+                                >
+                                    <option value="">All Service Categories</option>
+                                    {serviceCategoriesList.map((category) => (
+                                        <option key={category.id} value={category.id}>
+                                            {category.name_en || category.name?.en || category.name || 'Unnamed Category'}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="col-md-3 mb-3">
                                 <label className="form-label">From Date</label>
                                 <input
                                     ref={startDateRef}
@@ -1059,18 +994,6 @@ const AdminTransactionsIndex = () => {
                                     onClick={() => handleDateInputClick(endDateRef)}
                                     onFocus={() => handleDateInputClick(endDateRef)}
                                 />
-                            </div>
-                            <div className="col-md-3 mb-3 d-flex align-items-end">
-                                <button
-                                    className="btn btn-secondary w-100"
-                                    onClick={clearFilters}
-                                >
-                                    <i className="ki-duotone ki-filter-remove fs-3 me-1">
-                                        <span className="path1"></span>
-                                        <span className="path2"></span>
-                                    </i>
-                                    Clear Filters
-                                </button>
                             </div>
                         </div>
                         {getActiveFiltersCount() > 0 && (
@@ -1141,14 +1064,16 @@ const AdminTransactionsIndex = () => {
                                             />
                                         </div>
                                     </th>
-                                    <th className="text-dark">Transaction ID</th>
                                     <th className="text-dark">Country</th>
+                                    <th className="text-dark">Partner</th>
                                     <th className="text-dark">Merchant</th>
-                                    <th className="text-dark">Service</th>
+                                    <th className="text-dark">Service Category</th>
                                     <th className="text-dark">Payment Type</th>
-                                    <th className="text-dark">Payment Method</th>
+                                    <th className="text-dark">Transaction ID</th>
+                                    <th className="text-dark">Date and Time</th>
+                                    <th className="text-dark">Amount</th>
                                     <th className="text-dark">Status</th>
-                                    <th className="text-end text-dark">Actions</th>
+                                    <th className="text-end text-dark">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1156,19 +1081,20 @@ const AdminTransactionsIndex = () => {
                                     [...Array(pagination.per_page)].map((_, index) => (
                                         <tr key={`skeleton-${index}`}>
                                             <td><div className="skeleton" style={{width: '20px', height: '20px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '80px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '100px', height: '16px'}}></div></td>
+                                            <td><div className="skeleton" style={{width: '120px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '150px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '80px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '120px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '80px', height: '16px'}}></div></td>
+                                            <td><div className="skeleton" style={{width: '140px', height: '16px'}}></div></td>
+                                            <td><div className="skeleton" style={{width: '90px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '80px', height: '24px', borderRadius: '6px'}}></div></td>
                                             <td className="text-end"><div className="skeleton" style={{width: '70px', height: '32px', borderRadius: '6px', marginLeft: 'auto'}}></div></td>
                                         </tr>
                                     ))
                                 ) : transactions.length === 0 ? (
                                     <tr>
-                                        <td colSpan="9" className="text-center py-10">
+                                        <td colSpan="11" className="text-center py-10">
                                             <div className="text-gray-500">
                                                 <i className="ki-duotone ki-file fs-3x mb-3">
                                                     <span className="path1"></span>
@@ -1191,7 +1117,6 @@ const AdminTransactionsIndex = () => {
                                                     />
                                                 </div>
                                             </td>
-                                            <td>{transaction.transaction_id || transaction.id || 'N/A'}</td>
                                             <td>
                                                 {(() => {
                                                     const merchantId = transaction.merchant?.id || transaction.merchant_id;
@@ -1205,6 +1130,7 @@ const AdminTransactionsIndex = () => {
                                                     return info.countryName;
                                                 })()}
                                             </td>
+                                            <td>{transaction.partner?.name || transaction.partner?.business_name || transaction.partner_name || 'N/A'}</td>
                                             <td>
                                                 {(() => {
                                                     const merchantId = transaction.merchant?.id || transaction.merchant_id;
@@ -1218,9 +1144,11 @@ const AdminTransactionsIndex = () => {
                                                     return info.merchantName;
                                                 })()}
                                             </td>
-                                            <td>N/A</td>
+                                            <td>{transaction.service_category?.name_en || transaction.service_category_name || 'N/A'}</td>
                                             <td>{transaction.payment_type || 'N/A'}</td>
-                                            <td>{transaction.payment_method?.name || transaction.payment_method || 'N/A'}</td>
+                                            <td>{transaction.transaction_id || transaction.id || 'N/A'}</td>
+                                            <td>{transaction.created_at ? new Date(transaction.created_at).toLocaleString() : 'N/A'}</td>
+                                            <td>{transaction.currency_symbol || '$'}{parseFloat(transaction.amount || 0).toFixed(2)}</td>
                                             <td>
                                                 <span className={`badge ${getStatusBadgeClass(transaction.status)}`}>
                                                     {transaction.status || 'N/A'}
@@ -1231,7 +1159,7 @@ const AdminTransactionsIndex = () => {
                                                     className="btn btn-sm btn-light btn-active-light-primary"
                                                     onClick={() => navigate(`/admin/transactions/${transaction.id}`)}
                                                 >
-                                                    View
+                                                    Transaction Details
                                                 </button>
                                             </td>
                                         </tr>

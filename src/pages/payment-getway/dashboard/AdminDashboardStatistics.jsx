@@ -3,7 +3,41 @@ import { Link } from 'react-router-dom';
 
 const AdminDashboardStatistics = ({ data, subscriptionData, loading, subscriptionLoading }) => {
     const stats = data?.statistics || {};
-    const subStats = subscriptionData?.subscriptionData?.statistics || {};
+    const subscriptionPayload = subscriptionData?.subscriptionData || subscriptionData || {};
+    const subStats = subscriptionPayload?.statistics || subscriptionPayload?.stats || {};
+
+    const getNumber = (sources, keys) => {
+        for (const source of sources) {
+            if (!source) continue;
+            for (const key of keys) {
+                const value = source[key];
+                if (value !== undefined && value !== null) {
+                    const num = Number(value);
+                    if (Number.isFinite(num)) return num;
+                }
+            }
+        }
+        return 0;
+    };
+
+    const partnerCount = getNumber([subStats, subscriptionPayload, stats, data], ['partnerCount', 'partnersCount', 'totalPartners', 'partner_count']);
+    const activePartners = getNumber([subStats, subscriptionPayload], ['activePartners', 'active_partners']);
+    const totalProducts = getNumber([stats, data, subStats, subscriptionPayload], ['totalProducts', 'productsCount', 'productCount', 'total_products']);
+    const activeTransactions = getNumber([subStats, subscriptionPayload, stats], ['activeTransactions', 'totalTransactions', 'transactionsCount', 'total_transactions']);
+    const newTransactionsThisMonth = getNumber([subStats, subscriptionPayload], ['newTransactionsThisMonth', 'monthlyTransactions', 'new_transactions_this_month']);
+    const totalRevenue = getNumber(
+        [subStats, subscriptionPayload, stats, data],
+        [
+            'totalApprovedAmount',
+            'approvedTransactionsAmount',
+            'approved_transactions_amount',
+            'totalApprovedTransactionsAmount',
+            'totalRevenue',
+            'revenue',
+            'total_revenue',
+        ]
+    );
+    const monthlyRevenue = getNumber([subStats, subscriptionPayload], ['monthlyRevenue', 'revenueThisMonth', 'monthly_revenue']);
 
     useEffect(() => {
         console.log('AdminDashboardStatistics - Data:', { data, stats, subscriptionData, subStats, loading, subscriptionLoading });
@@ -55,14 +89,14 @@ const AdminDashboardStatistics = ({ data, subscriptionData, loading, subscriptio
                                 ? <div className="skeleton" style={{ width: '70%', height: '34px' }}></div>
                                 : (
                                     <span className="fs-2hx fw-bold d-block text-gray-800 me-2 mb-2 lh-1 ls-n2">
-                                        {subStats.partnerCount || 0}
+                                        {partnerCount.toLocaleString()}
                                     </span>
                                 )}
                         </div>
                         <div className="fw-semibold text-gray-600 fs-6">
                             {subscriptionLoading
                                 ? <div className="skeleton mt-2" style={{ width: '50%', height: '16px' }}></div>
-                                : <span className="badge badge-light-success">{subStats.activePartners || 0} active</span>}
+                                : <span className="badge badge-light-success">{activePartners.toLocaleString()} active</span>}
                         </div>
                     </div>
                 </Link>
@@ -83,7 +117,7 @@ const AdminDashboardStatistics = ({ data, subscriptionData, loading, subscriptio
                                 ? <div className="skeleton" style={{ width: '70%', height: '34px' }}></div>
                                 : (
                                     <span className="fs-2hx fw-bold d-block text-gray-800 me-2 mb-2 lh-1 ls-n2">
-                                        {stats.totalProducts || 0}
+                                        {totalProducts.toLocaleString()}
                                     </span>
                                 )}
                         </div>
@@ -106,7 +140,7 @@ const AdminDashboardStatistics = ({ data, subscriptionData, loading, subscriptio
                                 ? <div className="skeleton" style={{ width: '70%', height: '34px' }}></div>
                                 : (
                                     <span className="fs-2hx fw-bold d-block text-gray-800 me-2 mb-2 lh-1 ls-n2">
-                                        {subStats.activeTransactions?.toLocaleString() || 0}
+                                        {activeTransactions.toLocaleString()}
                                     </span>
                                 )}
                         </div>
@@ -115,7 +149,7 @@ const AdminDashboardStatistics = ({ data, subscriptionData, loading, subscriptio
                                 ? <div className="skeleton mt-2" style={{ width: '50%', height: '16px' }}></div>
                                 : (
                                     <span className="badge badge-light-success">
-                                        +{subStats.newTransactionsThisMonth || 0} this month
+                                        +{newTransactionsThisMonth.toLocaleString()} this month
                                     </span>
                                 )}
                         </div>
@@ -129,7 +163,7 @@ const AdminDashboardStatistics = ({ data, subscriptionData, loading, subscriptio
                     <div className="card-header pt-5">
                         <h3 className="card-title align-items-start flex-column">
                             <span className="card-label fw-bold text-gray-800">Total Revenue</span>
-                            <span className="text-gray-500 mt-1 fw-semibold fs-6">From product revenue</span>
+                            <span className="text-gray-500 mt-1 fw-semibold fs-6">Approved transactions amount</span>
                         </h3>
                     </div>
                     <div className="card-body pt-2">
@@ -138,14 +172,14 @@ const AdminDashboardStatistics = ({ data, subscriptionData, loading, subscriptio
                                 ? <div className="skeleton" style={{ width: '70%', height: '34px' }}></div>
                                 : (
                                     <span className="fs-2hx fw-bold d-block text-gray-800 me-2 mb-2 lh-1 ls-n2">
-                                        ${subStats.totalRevenue?.toLocaleString() || 0}
+                                        ${totalRevenue.toLocaleString()}
                                     </span>
                                 )}
                         </div>
                         <div className="fw-semibold text-gray-600 fs-6">
                             {subscriptionLoading
                                 ? <div className="skeleton mt-2" style={{ width: '45%', height: '16px' }}></div>
-                                : `$${subStats.monthlyRevenue?.toLocaleString() || 0} this month`}
+                                : `$${monthlyRevenue.toLocaleString()} this month`}
                         </div>
                     </div>
                 </div>

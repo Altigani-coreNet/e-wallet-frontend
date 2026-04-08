@@ -2,7 +2,7 @@
 export const  BASE_DOMAIN = 'https://dev.corenetpay.com';
 export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
 // export const AUTH_SERVICE_BASE = `http://localhost:8000`;
-export const SOFTPOS_API_BASE =  `http://193.123.83.134:82`; //'http://localhost:8001';
+export const SOFTPOS_API_BASE =  `${BASE_DOMAIN}/api/softpos` //  `http://193.123.83.134:82`;;
 // PayTabs Node service base (for QR testing)
 export const PAYTABS_API_BASE = `${BASE_DOMAIN}/api/paytabs`;
 export const POS_API_BASE = `${BASE_DOMAIN}/api/cashier`;
@@ -376,14 +376,16 @@ export const ADMIN_ENDPOINTS = {
     CHANGE_PASSWORD: `${AUTH_SERVICE_BASE}/v2/admin/auth/profile/change-password`,
     REFRESH_TOKEN: `${AUTH_SERVICE_BASE}/v2/admin/auth/refresh-token`,
     
-    // Dashboard (split across services)
+    // Dashboard (Admin SoftPOS aggregate)
     DASHBOARD: `${SOFTPOS_API_BASE}/v2/admin/dashboard`, // legacy aggregate
-    DASHBOARD_OVERVIEW: `${AUTH_SERVICE_BASE}/v2/admin/dashboard`,
+    DASHBOARD_OVERVIEW: `${SOFTPOS_API_BASE}/v2/admin/dashboard`,
     DASHBOARD_TERMINAL_STATUS: `${AUTH_SERVICE_BASE}/v2/admin/dashboard/terminals`,
     DASHBOARD_CHARTS: `${SOFTPOS_API_BASE}/v2/admin/dashboard/charts`,
     DASHBOARD_LATEST_TRANSACTIONS: `${SOFTPOS_API_BASE}/v2/admin/dashboard/latest-transactions`,
-    DASHBOARD_SUBSCRIPTIONS: `${AUTH_SERVICE_BASE}/v2/admin/dashboard/subscriptions`,
+    DASHBOARD_SUBSCRIPTIONS: `${SOFTPOS_API_BASE}/v2/admin/dashboard/subscriptions`,
     DASHBOARD_EXPORT: `${SOFTPOS_API_BASE}/v2/admin/dashboard/export`,
+    // Temporary alias until backend exposes a real v3 dashboard route
+    DASHBOARD_V3: `${SOFTPOS_API_BASE}/v3/admin/dashboard`,
     
     // Merchants (AuthService)
     MERCHANTS: `${AUTH_SERVICE_BASE}/v2/admin/merchants`,

@@ -22,6 +22,10 @@ const AdminTransactionDetail = () => {
     const [refundReason, setRefundReason] = useState('');
     const [currency, setCurrency] = useState(null);
     const [currencyLoading, setCurrencyLoading] = useState(false);
+    const [partnerDetails, setPartnerDetails] = useState(null);
+    const [partnerLoading, setPartnerLoading] = useState(false);
+    const [serviceDetails, setServiceDetails] = useState(null);
+    const [serviceLoading, setServiceLoading] = useState(false);
 
     // Extract merchant ID from transaction
     const transactionMerchantId = useMemo(() => {
@@ -119,6 +123,22 @@ const AdminTransactionDetail = () => {
         }
     }, [transaction, canRefundTransaction, canVoidTransaction]);
 
+    useEffect(() => {
+        if (transaction?.partner_id) {
+            fetchPartnerDetails(transaction.partner_id);
+        } else {
+            setPartnerDetails(null);
+        }
+    }, [transaction?.partner_id]);
+
+    useEffect(() => {
+        if (transaction?.service_id) {
+            fetchServiceDetails(transaction.service_id);
+        } else {
+            setServiceDetails(null);
+        }
+    }, [transaction?.service_id]);
+
     const fetchTransaction = async () => {
         setLoading(true);
         try {
@@ -169,6 +189,44 @@ const AdminTransactionDetail = () => {
             setCurrency({ currency_code: 'USD', symbol: '$' });
         } finally {
             setCurrencyLoading(false);
+        }
+    };
+
+    const fetchPartnerDetails = async (partnerId) => {
+        setPartnerLoading(true);
+        try {
+            const token = getToken();
+            const response = await axios.get(ADMIN_ENDPOINTS.CONTENT_PROVIDER_DETAILS(partnerId), {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+            setPartnerDetails(response.data?.data || response.data || null);
+        } catch (error) {
+            console.error('Error fetching partner details:', error);
+            setPartnerDetails(null);
+        } finally {
+            setPartnerLoading(false);
+        }
+    };
+
+    const fetchServiceDetails = async (serviceId) => {
+        setServiceLoading(true);
+        try {
+            const token = getToken();
+            const response = await axios.get(ADMIN_ENDPOINTS.SERVICE_DETAILS(serviceId), {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            });
+            setServiceDetails(response.data?.data || response.data || null);
+        } catch (error) {
+            console.error('Error fetching service details:', error);
+            setServiceDetails(null);
+        } finally {
+            setServiceLoading(false);
         }
     };
 
@@ -435,6 +493,9 @@ const AdminTransactionDetail = () => {
                status === 'declined' || status === 'DECLINED' ? 'danger' : 'warning';
     };
 
+    const resolvedPartner = partnerDetails?.partner || partnerDetails || transaction.partner || {};
+    const resolvedService = serviceDetails?.service || serviceDetails || transaction.service || {};
+
     return (
         <>
             {/* Transaction Status Card */}
@@ -608,6 +669,270 @@ const AdminTransactionDetail = () => {
                                     <div className="fs-7 text-muted">ATC</div>
                                     <div className="fs-6 fw-bold">{transaction.atc || 'Not available'}</div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Partner and Service Information */}
+            <div className="row gx-9 gy-6 mt-4">
+                <div className="col-xl-6">
+                    <div className="card card-dashed h-xl-100 p-6">
+                        <div className="d-flex flex-column py-2 w-100">
+                            <div className="fs-4 fw-bolder mb-5">Partner Information</div>
+                            <div className="row g-4">
+                                <div className="col-12">
+                                    <div className="d-flex align-items-center mb-3">
+                                        {(resolvedPartner?.logo_url || resolvedPartner?.logo || transaction.partner?.logo_url || transaction.partner?.logo) ? (
+                                            <img
+                                                src={resolvedPartner?.logo_url || resolvedPartner?.logo || transaction.partner?.logo_url || transaction.partner?.logo}
+                                                alt="Partner logo"
+                                                style={{
+                                                    width: '48px',
+                                                    height: '48px',
+                                                    borderRadius: '8px',
+                                                    objectFit: 'cover',
+                                                    border: '1px solid #e4e6ef'
+                                                }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="d-flex align-items-center justify-content-center bg-light-primary text-primary fw-bold"
+                                                style={{ width: '48px', height: '48px', borderRadius: '8px' }}
+                                            >
+                                                P
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="col-12">
+                                    <div className="fs-7 text-muted">Partner Name</div>
+                                    <div className="fs-6 fw-bold">
+                                        {partnerLoading
+                                            ? 'Loading...'
+                                            : (resolvedPartner?.name ||
+                                                resolvedPartner?.business_name ||
+                                                transaction.partner?.name ||
+                                                transaction.partner?.business_name ||
+                                                transaction.partner_name ||
+                                                'Not available')}
+                                    </div>
+                                </div>
+                                <div className="col-12">
+                                    <div className="fs-7 text-muted">Owner Name</div>
+                                    <div className="fs-6 fw-bold">
+                                        {resolvedPartner?.owner_name || transaction.partner?.owner_name || 'Not available'}
+                                    </div>
+                                </div>
+                                <div className="col-12">
+                                    <div className="fs-7 text-muted">Description</div>
+                                    <div className="fs-6 fw-bold text-wrap">
+                                        {resolvedPartner?.description ||
+                                            transaction.partner?.description ||
+                                            resolvedPartner?.business_name ||
+                                            transaction.partner?.business_name ||
+                                            resolvedPartner?.address ||
+                                            transaction.partner?.address ||
+                                            'Not available'}
+                                    </div>
+                                </div>
+                                <div className="col-12">
+                                    <div className="fs-7 text-muted">Partner ID</div>
+                                    <div className="fs-6 fw-bold">{transaction.partner_id || 'Not available'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="col-xl-6">
+                    <div className="card card-dashed h-xl-100 p-6">
+                        <div className="d-flex flex-column py-2 w-100">
+                            <div className="fs-4 fw-bolder mb-5">Service Information</div>
+                            <div className="row g-4">
+                                <div className="col-12">
+                                    <div className="d-flex align-items-center mb-3">
+                                        {(resolvedService?.image || transaction.service?.image) ? (
+                                            <img
+                                                src={resolvedService?.image || transaction.service?.image}
+                                                alt="Service image"
+                                                style={{
+                                                    width: '48px',
+                                                    height: '48px',
+                                                    borderRadius: '8px',
+                                                    objectFit: 'cover',
+                                                    border: '1px solid #e4e6ef'
+                                                }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="d-flex align-items-center justify-content-center bg-light-info text-info fw-bold"
+                                                style={{ width: '48px', height: '48px', borderRadius: '8px' }}
+                                            >
+                                                S
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="col-12">
+                                    <div className="fs-7 text-muted">Service Category</div>
+                                    <div className="fs-6 fw-bold">
+                                        {serviceLoading
+                                            ? 'Loading...'
+                                            : (resolvedService?.category?.name_en ||
+                                                resolvedService?.category_name ||
+                                                transaction.service_category?.name_en ||
+                                                transaction.service_category_name ||
+                                                'Not available')}
+                                    </div>
+                                </div>
+                                <div className="col-12">
+                                    <div className="fs-7 text-muted">Service Name</div>
+                                    <div className="fs-6 fw-bold">
+                                        {serviceLoading
+                                            ? 'Loading...'
+                                            : (resolvedService?.service_name?.en ||
+                                                resolvedService?.name_en ||
+                                                transaction.service?.service_name?.en ||
+                                                transaction.service_name ||
+                                                'Not available')}
+                                    </div>
+                                </div>
+                                <div className="col-12">
+                                    <div className="fs-7 text-muted">Description</div>
+                                    <div className="fs-6 fw-bold text-wrap">
+                                        {serviceLoading
+                                            ? 'Loading...'
+                                            : (resolvedService?.description?.en ||
+                                                resolvedService?.description ||
+                                                transaction.service?.description?.en ||
+                                                transaction.service?.description ||
+                                                'Not available')}
+                                    </div>
+                                </div>
+                                <div className="col-12">
+                                    <div className="fs-7 text-muted">Service ID</div>
+                                    <div className="fs-6 fw-bold">{transaction.service_id || 'Not available'}</div>
+                                </div>
+                                <div className="col-12">
+                                    <div className="fs-7 text-muted">Service Category ID</div>
+                                    <div className="fs-6 fw-bold">{transaction.service_category_id || 'Not available'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Payment Request Section */}
+            <div className="row gx-9 gy-6 mt-4">
+                <div className="col-xl-12">
+                    <div className="card card-dashed h-xl-100 flex-row flex-stack flex-wrap p-6">
+                        <div className="d-flex flex-column py-2 w-100">
+                            <div className="fs-4 fw-bolder mb-5 text-primary">
+                                <i className="ki-duotone ki-send fs-2 me-2">
+                                    <span className="path1"></span>
+                                    <span className="path2"></span>
+                                </i>
+                                Payment Request
+                            </div>
+
+                            <div className="row g-4">
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Amount</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.currency_symbol || '$'} {parseFloat(transaction.original_amount || transaction.amount || 0).toFixed(2)}
+                                    </div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Transaction Type</div>
+                                    <div className="fs-6 fw-bold">{transaction.transaction_type || 'N/A'}</div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Currency</div>
+                                    <div className="fs-6 fw-bold">
+                                        {(transaction.currency_symbol || '$')} ({currency?.currency_code || transaction.currency?.currency_code || 'USD'})
+                                    </div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Request Timestamp</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.timestamp || transaction.created_at ? new Date(transaction.timestamp || transaction.created_at).toLocaleString() : 'N/A'}
+                                    </div>
+                                </div>
+                                {(transaction.paymentMethod || transaction.payment_method) && (
+                                    <>
+                                        <div className="col-md-4">
+                                            <div className="fs-7 text-muted">Cardholder Name</div>
+                                            <div className="fs-6 fw-bold">
+                                                {transaction.paymentMethod?.cardholder_name || transaction.payment_method?.cardholder_name || 'N/A'}
+                                            </div>
+                                        </div>
+                                        <div className="col-md-4">
+                                            <div className="fs-7 text-muted">Entry Mode</div>
+                                            <div className="fs-6 fw-bold">
+                                                {transaction.paymentMethod?.entry_mode || transaction.payment_method?.entry_mode || 'N/A'}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Payment Response Section */}
+            <div className="row gx-9 gy-6 mt-4 mb-5">
+                <div className="col-xl-12">
+                    <div className="card card-dashed h-xl-100 flex-row flex-stack flex-wrap p-6">
+                        <div className="d-flex flex-column py-2 w-100">
+                            <div className="fs-4 fw-bolder mb-5 text-success">
+                                <i className="ki-duotone ki-message-text-2 fs-2 me-2">
+                                    <span className="path1"></span>
+                                    <span className="path2"></span>
+                                </i>
+                                Payment Response
+                            </div>
+
+                            <div className="row g-4">
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">SDK Status</div>
+                                    <div className="fs-6 fw-bold">
+                                        <span className={`badge badge-light-${getStatusClass(transaction.state || transaction.status)}`}>
+                                            {transaction.state || transaction.status || 'N/A'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">RRN ID</div>
+                                    <div className="fs-6 fw-bold">{transaction.rrn || 'N/A'}</div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Approval Code</div>
+                                    <div className="fs-6 fw-bold">{transaction.auth_code || 'N/A'}</div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">MID</div>
+                                    <div className="fs-6 fw-bold">{transaction.mid || 'N/A'}</div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">TID</div>
+                                    <div className="fs-6 fw-bold">{transaction.tid || 'N/A'}</div>
+                                </div>
+                                {transaction.atc && (
+                                    <div className="col-md-4">
+                                        <div className="fs-7 text-muted">ATC</div>
+                                        <div className="fs-6 fw-bold">{transaction.atc}</div>
+                                    </div>
+                                )}
+                                {(transaction.sdk || transaction.sdk_id) && (
+                                    <div className="col-md-4">
+                                        <div className="fs-7 text-muted">SDK ID</div>
+                                        <div className="fs-6 fw-bold">{transaction.sdk || transaction.sdk_id}</div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -10,17 +10,9 @@ import AdminDashboardFilters from './dashboard/AdminDashboardFilters';
 import SubscriptionWidget from '../../pages/payment-getway/dashboard/SubscriptionWidget';
 import AdminLatestTransactions from './dashboard/AdminLatestTransactions';
 import {
-    fetchAdminDashboardOverview,
+    fetchAdminDashboardV3,
     fetchAdminDashboardLatestTransactions,
-    fetchAdminDashboardSubscriptions,
 } from '../../services/adminDashboardService';
-
-/**
- * When true, does not request subscription dashboard (transaction chart, top partners) or latest transactions.
- * Those endpoints were returning 401; `apiClient` treats any 401 as logout + redirect to admin login.
- * Set to false when the backend accepts your token for these routes.
- */
-const SKIP_DASHBOARD_CHART_AND_LATEST_TX = true;
 
 const createInitialFilters = () => ({
     datetime_from: '',
@@ -51,24 +43,12 @@ const AdminDashboard = () => {
 
     const transactionsLimit = appliedFilters.limit;
 
-    const overviewQuery = useQuery({
-        queryKey: ['admin-dashboard-overview', filtersForData],
-        queryFn: () => fetchAdminDashboardOverview(filtersForData),
+    const dashboardV3Query = useQuery({
+        queryKey: ['admin-dashboard-v3', filtersForData],
+        queryFn: () => fetchAdminDashboardV3(filtersForData),
         keepPreviousData: true,
         onError: (err) => {
-            const message = err?.response?.data?.message || err?.message || 'Failed to load dashboard summary.';
-            toast.error(message);
-        },
-    });
-
-    const subscriptionsQuery = useQuery({
-        queryKey: ['admin-dashboard-subscriptions', filtersForData],
-        queryFn: () => fetchAdminDashboardSubscriptions(filtersForData),
-        enabled: !SKIP_DASHBOARD_CHART_AND_LATEST_TX,
-        keepPreviousData: true,
-        retry: false,
-        onError: (err) => {
-            const message = err?.response?.data?.message || err?.message || 'Failed to load subscription data.';
+            const message = err?.response?.data?.message || err?.message || 'Failed to load dashboard data.';
             toast.error(message);
         },
     });
@@ -76,7 +56,6 @@ const AdminDashboard = () => {
     const latestTransactionsQuery = useQuery({
         queryKey: ['admin-dashboard-latest-transactions', appliedFilters],
         queryFn: () => fetchAdminDashboardLatestTransactions(appliedFilters),
-        enabled: !SKIP_DASHBOARD_CHART_AND_LATEST_TX,
         keepPreviousData: true,
         retry: false,
         onError: (err) => {
@@ -85,13 +64,12 @@ const AdminDashboard = () => {
         },
     });
 
-    const isOverviewLoading = overviewQuery.isLoading || overviewQuery.isFetching;
-    const isSubscriptionsLoading = subscriptionsQuery.isLoading || subscriptionsQuery.isFetching;
+    const isDashboardV3Loading = dashboardV3Query.isLoading || dashboardV3Query.isFetching;
     const isLatestTransactionsLoading =
         latestTransactionsQuery.isLoading ||
         latestTransactionsQuery.isFetching ||
         terminalDetailsLoading;
-    const queryStates = [overviewQuery, subscriptionsQuery, latestTransactionsQuery];
+    const queryStates = [dashboardV3Query, latestTransactionsQuery];
     const isRefreshing = queryStates.some((query) => query.isFetching && !query.isLoading);
 
     useEffect(() => {
@@ -404,14 +382,9 @@ const AdminDashboard = () => {
     const handleRefresh = useCallback(async () => {
         try {
             const tasks = [
-                queryClient.invalidateQueries({ queryKey: ['admin-dashboard-overview'] }),
+                queryClient.invalidateQueries({ queryKey: ['admin-dashboard-v3'] }),
+                queryClient.invalidateQueries({ queryKey: ['admin-dashboard-latest-transactions'] }),
             ];
-            if (!SKIP_DASHBOARD_CHART_AND_LATEST_TX) {
-                tasks.push(
-                    queryClient.invalidateQueries({ queryKey: ['admin-dashboard-subscriptions'] }),
-                    queryClient.invalidateQueries({ queryKey: ['admin-dashboard-latest-transactions'] }),
-                );
-            }
             await Promise.all(tasks);
             toast.success('Dashboard data refreshed');
         } catch (err) {
@@ -498,13 +471,13 @@ const AdminDashboard = () => {
         toggleFilters,
     ]);
 
-    if (overviewQuery.isError && !overviewQuery.data) {
+    if (dashboardV3Query.isError && !dashboardV3Query.data) {
         return (
             <div className="alert alert-danger m-5" role="alert">
                 <h4 className="alert-heading">Error!</h4>
-                <p>{overviewQuery.error?.response?.data?.message || overviewQuery.error?.message || 'Failed to load dashboard data.'}</p>
+                <p>{dashboardV3Query.error?.response?.data?.message || dashboardV3Query.error?.message || 'Failed to load dashboard data.'}</p>
                 <hr />
-                <button className="btn btn-danger" onClick={() => overviewQuery.refetch()}>
+                <button className="btn btn-danger" onClick={() => dashboardV3Query.refetch()}>
                     Try Again
                 </button>
             </div>
@@ -522,30 +495,20 @@ const AdminDashboard = () => {
             />
 
             <AdminDashboardStatistics
-                data={overviewQuery.data}
-                subscriptionData={subscriptionsQuery.data}
-                loading={isOverviewLoading}
-                subscriptionLoading={isSubscriptionsLoading}
+                data={dashboardV3Query.data}
+                subscriptionData={dashboardV3Query.data}
+                loading={isDashboardV3Loading}
+                subscriptionLoading={isDashboardV3Loading}
             />
 
-            {!SKIP_DASHBOARD_CHART_AND_LATEST_TX ? (
-                <div className="row gy-5 g-xl-10">
-                    <div className="col-xl-12">
-                        <SubscriptionWidget
-                            data={subscriptionsQuery.data}
-                            loading={isSubscriptionsLoading}
-                        />
-                    </div>
+            <div className="row gy-5 g-xl-10">
+                <div className="col-xl-12">
+                    <SubscriptionWidget
+                        data={dashboardV3Query.data}
+                        loading={isDashboardV3Loading}
+                    />
                 </div>
-            ) : (
-                <div className="alert alert-light border border-dashed border-gray-300 mb-5" role="status">
-                    <span className="text-gray-700">
-                        Transaction chart, partner list, and latest transactions are turned off for now so optional APIs are not called (avoids 401 logout). Set{' '}
-                        <code className="fs-8">SKIP_DASHBOARD_CHART_AND_LATEST_TX</code> to <code className="fs-8">false</code> in{' '}
-                        <code className="fs-8">AdminDashboard.jsx</code> when those endpoints are fixed.
-                    </span>
-                </div>
-            )}
+            </div>
 
             <div className="row gy-5 g-xl-10">
                 <div className="col-xl-12">

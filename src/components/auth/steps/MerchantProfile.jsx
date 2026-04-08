@@ -398,7 +398,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="business_name" className="form-label">
-                        Contact Person Name
+                        Contact Person Name <span className="text-danger">*</span>
                     </label>
                     <input
                         type="text"
@@ -407,7 +407,8 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                         name="business_name"
                         value={formData.business_name || ''}
                         onChange={handleChange}
-                        placeholder="Optional (defaults to Business /Brand Name)"
+                        placeholder="Enter Contact Person Name"
+                        required
                         style={{ textTransform: 'none' }}
                     />
                     {fieldErrors?.business_name && (
@@ -417,7 +418,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="business_phone" className="form-label">
-                        Business Phone
+                        Business Phone <span className="text-danger">*</span>
                     </label>
                     <input
                         type="tel"
@@ -427,6 +428,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                         value={formData.business_phone || ''}
                         onChange={handleChange}
                         placeholder="Enter Business Phone"
+                        required
                         style={{ textTransform: 'none' }}
                     />
                     {fieldErrors?.business_phone && (

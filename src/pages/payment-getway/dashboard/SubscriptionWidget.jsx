@@ -2,18 +2,64 @@ import React, { useMemo } from 'react';
 import Chart from 'react-apexcharts';
 
 const SubscriptionWidget = ({ data, loading }) => {
-    const transactionsData = data?.subscriptionData || {};
-    const stats = transactionsData.statistics || {};
-    const chartData = transactionsData.chart || [];
-    const partners = transactionsData.partners || transactionsData.contentProviders || [];
-    const countries = transactionsData.countries || [];
+    const transactionsData = data?.subscriptionData || data || {};
+    const chartDataRaw = transactionsData.chart || transactionsData.charts || transactionsData.transactionChart || [];
+    const partnersRaw =
+        transactionsData.partners ||
+        transactionsData.contentProviders ||
+        transactionsData.topPartners ||
+        transactionsData.top_partners ||
+        [];
+    const countriesRaw =
+        transactionsData.countries ||
+        transactionsData.topCountries ||
+        transactionsData.top_countries ||
+        [];
+
+    const monthsFallback = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const chartData = useMemo(() => {
+        if (Array.isArray(chartDataRaw) && chartDataRaw.length > 0) {
+            return chartDataRaw;
+        }
+
+        return monthsFallback.map((month) => ({
+            month,
+            successTransactions: 0,
+            failedTransactions: 0,
+        }));
+    }, [chartDataRaw]);
+
+    const partners = useMemo(
+        () => (Array.isArray(partnersRaw) ? partnersRaw : []),
+        [partnersRaw]
+    );
+
+    const countries = useMemo(
+        () => (Array.isArray(countriesRaw) ? countriesRaw : []),
+        [countriesRaw]
+    );
+
+    const pickCount = (item, keys) => {
+        for (const key of keys) {
+            const value = item?.[key];
+            if (value !== undefined && value !== null) {
+                const num = Number(value);
+                return Number.isFinite(num) ? num : 0;
+            }
+        }
+        return 0;
+    };
 
     // Prepare chart data using ApexCharts format
     const chartOptions = useMemo(() => {
-        const hasData = chartData && chartData.length > 0;
-        const categories = hasData ? chartData.map(item => item.month || '') : [];
-        const successTransactionsSeries = hasData ? chartData.map(item => item.successTransactions || 0) : [];
-        const failedTransactionsSeries = hasData ? chartData.map(item => item.failedTransactions || 0) : [];
+        const categories = chartData.map((item, index) => item.month || item.label || monthsFallback[index] || '');
+        const successTransactionsSeries = chartData.map((item) =>
+            pickCount(item, ['successTransactions', 'success_transactions', 'success', 'approvedTransactions', 'approved_transactions'])
+        );
+        const failedTransactionsSeries = chartData.map((item) =>
+            pickCount(item, ['failedTransactions', 'failed_transactions', 'failed', 'declinedTransactions', 'declined_transactions'])
+        );
         
         return {
             series: [
@@ -147,7 +193,7 @@ const SubscriptionWidget = ({ data, loading }) => {
                                         <span className="visually-hidden">Loading...</span>
                                     </div>
                                 </div>
-                            ) : chartData && chartData.length > 0 ? (
+                            ) : (
                                 <div className="ms-n5 me-n3 min-h-auto w-100" style={{ height: '300px' }}>
                                     <Chart
                                         options={chartOptions}
@@ -155,10 +201,6 @@ const SubscriptionWidget = ({ data, loading }) => {
                                         type="area"
                                         height={300}
                                     />
-                                </div>
-                            ) : (
-                                <div className="d-flex align-items-center justify-content-center" style={{ height: '300px' }}>
-                                    <div className="text-muted">No chart data available</div>
                                 </div>
                             )}
                         </div>
@@ -184,25 +226,30 @@ const SubscriptionWidget = ({ data, loading }) => {
                             ) : partners && partners.length > 0 ? (
                                 <div className="scroll-y mh-300px">
                                     {partners
-                                        .filter(p => p.status === 'active')
-                                        .sort((a, b) => (b.transactionCount ?? b.subscriberCount ?? 0) - (a.transactionCount ?? a.subscriberCount ?? 0))
+                                        .filter((p) => !p?.status || p.status === 'active')
+                                        .sort((a, b) => (
+                                            pickCount(b, ['transactionCount', 'transaction_count', 'total_transactions', 'subscriberCount', 'subscription_count']) -
+                                            pickCount(a, ['transactionCount', 'transaction_count', 'total_transactions', 'subscriberCount', 'subscription_count'])
+                                        ))
                                         .slice(0, 10)
                                         .map((provider, index) => (
-                                            <div key={provider.id} className="d-flex align-items-center mb-4 provider-item p-2 rounded">
+                                            <div key={provider.id || provider.partner_id || index} className="d-flex align-items-center mb-4 provider-item p-2 rounded">
                                                 <div className="symbol symbol-40px me-3">
                                                     <div className="symbol-label bg-light-primary">
                                                         <span className="fw-bold text-primary">{index + 1}</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex-grow-1">
-                                                    <div className="fw-bold text-gray-800 fs-6">{provider.name}</div>
+                                                    <div className="fw-bold text-gray-800 fs-6">
+                                                        {provider.name || provider.partner_name || provider.title || `Partner ${index + 1}`}
+                                                    </div>
                                                     <div className="text-gray-500 fs-7">
-                                                        {(provider.transactionCount ?? provider.subscriberCount ?? 0).toLocaleString()} transactions
+                                                        {pickCount(provider, ['transactionCount', 'transaction_count', 'total_transactions', 'subscriberCount', 'subscription_count']).toLocaleString()} transactions
                                                     </div>
                                                 </div>
                                                 <div className="text-end">
                                                     <div className="fw-bold text-success fs-6">
-                                                        ${provider.revenue?.toLocaleString() || 0}
+                                                        ${pickCount(provider, ['revenue', 'total_revenue', 'amount']).toLocaleString()}
                                                     </div>
                                                 </div>
                                             </div>
@@ -248,24 +295,24 @@ const SubscriptionWidget = ({ data, loading }) => {
                                             </thead>
                                             <tbody>
                                                 {countries.map((country, index) => (
-                                                    <tr key={country.id || index}>
+                                                    <tr key={country.id || country.country_id || index}>
                                                         <td>
                                                             <div className="d-flex align-items-center">
                                                                 <div className="d-flex justify-content-start flex-column">
                                                                     <span className="text-gray-800 fw-bold text-hover-primary mb-1 fs-6">
-                                                                        {country.name || country.short_name || 'Unknown'}
+                                                                        {country.name || country.country_name || country.short_name || country.code || 'Unknown'}
                                                                     </span>
                                                                 </div>
                                                             </div>
                                                         </td>
                                                         <td className="text-end">
                                                             <span className="text-gray-800 fw-bold fs-6">
-                                                                {(country.transaction_count ?? country.subscription_count ?? 0).toLocaleString()}
+                                                                {pickCount(country, ['transaction_count', 'transactions', 'subscription_count', 'count']).toLocaleString()}
                                                             </span>
                                                         </td>
                                                         <td className="text-end">
                                                             <span className="text-success fw-bold fs-6">
-                                                                ${country.revenue?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                                                                ${pickCount(country, ['revenue', 'total_revenue', 'amount']).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                             </span>
                                                         </td>
                                                     </tr>

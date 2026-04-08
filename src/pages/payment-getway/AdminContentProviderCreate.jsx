@@ -639,16 +639,16 @@ const AdminContentProviderCreate = () => {
 
                                         {/* Contact Person Name */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Contact Person Name</label>
+                                            <label className="form-label fw-bold required">Contact Person Name</label>
                                             <input
                                                 type="text"
                                                 name="business_name"
                                                 className="form-control"
                                                 value={formData.business_name}
                                                 onChange={handleInputChange}
-                                                placeholder="Optional (defaults to Business /Brand Name)"
+                                                placeholder="Enter Contact Person Name"
+                                                required
                                             />
-                                            <div className="form-text">Optional: Will default to Business /Brand Name if not provided</div>
                                         </div>
 
                                         {/* Company Name */}
@@ -695,7 +695,7 @@ const AdminContentProviderCreate = () => {
 
                                         {/* Business Phone */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Business Phone</label>
+                                            <label className="form-label fw-bold required">Business Phone</label>
                                             <input
                                                 type="text"
                                                 name="business_phone"
@@ -703,6 +703,7 @@ const AdminContentProviderCreate = () => {
                                                 value={formData.business_phone}
                                                 onChange={handleInputChange}
                                                 placeholder="+1234567890"
+                                                required
                                             />
                                         </div>
 
