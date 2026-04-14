@@ -81,11 +81,15 @@ const ServiceWizard = () => {
     const [selectedCountry, setSelectedCountry] = useState(null);
     const [loadingCountries, setLoadingCountries] = useState(false);
     
-    // Content Provider states
+    // Parent / sub partner (service is assigned to parent org or a specific sub-partner)
     const [filteredContentProviders, setFilteredContentProviders] = useState([]);
     const [contentProviderSearchTerm, setContentProviderSearchTerm] = useState('');
-    const [selectedContentProvider, setSelectedContentProvider] = useState(null);
+    const [selectedParentPartner, setSelectedParentPartner] = useState(null);
     const [loadingContentProviders, setLoadingContentProviders] = useState(false);
+    const [filteredSubPartners, setFilteredSubPartners] = useState([]);
+    const [subPartnerSearchTerm, setSubPartnerSearchTerm] = useState('');
+    const [selectedSubPartner, setSelectedSubPartner] = useState(null);
+    const [loadingSubPartners, setLoadingSubPartners] = useState(false);
 
     useEffect(() => {
         setTitle('Create Service');
@@ -244,14 +248,18 @@ const ServiceWizard = () => {
             setSelectedCountry(country);
             setServiceFormData(prev => ({ ...prev, country_id: country.id, partner_id: "" }));
             setFilteredContentProviders([]);
-            setSelectedContentProvider(null);
+            setSelectedParentPartner(null);
+            setFilteredSubPartners([]);
+            setSelectedSubPartner(null);
         }
     };
 
     const handleCountryClear = () => {
         setSelectedCountry(null);
         setFilteredContentProviders([]);
-        setSelectedContentProvider(null);
+        setSelectedParentPartner(null);
+        setFilteredSubPartners([]);
+        setSelectedSubPartner(null);
         setServiceFormData(prev => ({ ...prev, country_id: '', partner_id: '' }));
     };
 
@@ -303,11 +311,13 @@ const ServiceWizard = () => {
         [serviceTypeOptions, serviceFormData.service_type]
     );
 
-    // Fetch content providers from API with optional search term, operator_id, and country_id
-    const fetchContentProviders = async (searchTerm = '', countryId = null) => {
+    const fetchContentProviders = useCallback(async (searchTerm = '', countryId = null) => {
         try {
             setLoadingContentProviders(true);
-            const params = {};
+            const params = {
+                limit: 100,
+                parent_organizations_only: true,
+            };
             if (searchTerm) params.search = searchTerm;
             if (countryId) params.country_id = countryId;
             const result = await getPartnersSelect(params);
@@ -319,43 +329,88 @@ const ServiceWizard = () => {
                 setFilteredContentProviders(result.data.data || []);
             }
         } catch (error) {
-            console.error('Failed to fetch content providers:', error);
-            toast.error('Failed to load content providers');
+            console.error('Failed to fetch parent partners:', error);
+            toast.error('Failed to load parent partners');
         } finally {
             setLoadingContentProviders(false);
         }
-    };
+    }, []);
 
-    // Debounced content provider search function
+    const fetchSubPartnersForParent = useCallback(async (parentId, searchTerm = '') => {
+        if (!parentId) {
+            setFilteredSubPartners([]);
+            return;
+        }
+        try {
+            setLoadingSubPartners(true);
+            const params = {
+                sub_partners_for_parent: parentId,
+                limit: 100,
+            };
+            if (searchTerm) params.search = searchTerm;
+            const result = await getPartnersSelect(params);
+            if (!result.success) {
+                toast.error(result.error);
+                setFilteredSubPartners([]);
+                return;
+            }
+            if (result.data?.status || result.data?.success) {
+                setFilteredSubPartners(result.data.data || []);
+            }
+        } catch (error) {
+            console.error('Failed to fetch sub-partners:', error);
+            toast.error('Failed to load sub-partners');
+            setFilteredSubPartners([]);
+        } finally {
+            setLoadingSubPartners(false);
+        }
+    }, []);
+
     const debouncedContentProviderSearch = useCallback(
-        debounce((searchTerm, operatorId, countryId) => {
+        debounce((searchTerm, countryId) => {
             if (searchTerm.length >= 1) {
-                fetchContentProviders(searchTerm, operatorId, countryId);
+                fetchContentProviders(searchTerm, countryId);
             } else {
-                fetchContentProviders('', operatorId, countryId);
+                fetchContentProviders('', countryId);
             }
         }, 500),
-        []
+        [fetchContentProviders]
+    );
+
+    const debouncedSubPartnerSearch = useCallback(
+        debounce((searchTerm, parentId) => {
+            fetchSubPartnersForParent(parentId, searchTerm);
+        }, 500),
+        [fetchSubPartnersForParent]
     );
 
     const handleContentProviderSearchChange = (value) => {
         setContentProviderSearchTerm(value);
-        debouncedContentProviderSearch(
-            value,
-            serviceFormData.country_id || null
-        );
+        debouncedContentProviderSearch(value, serviceFormData.country_id || null);
     };
 
     const handleContentProviderSelect = (option) => {
         const provider = filteredContentProviders.find(cp => cp.id === option.value);
         if (provider) {
-            setSelectedContentProvider(provider);
-            setServiceFormData(prev => ({ ...prev, partner_id: provider.id }));
+            setSelectedParentPartner(provider);
+            setSelectedSubPartner(null);
+            setFilteredSubPartners([]);
+            setSubPartnerSearchTerm('');
+            const hasSubs = Boolean(provider.has_sub_partners);
+            if (hasSubs) {
+                setServiceFormData(prev => ({ ...prev, partner_id: '' }));
+                fetchSubPartnersForParent(provider.id, '');
+            } else {
+                setServiceFormData(prev => ({ ...prev, partner_id: provider.id }));
+            }
         }
     };
 
     const handleContentProviderClear = () => {
-        setSelectedContentProvider(null);
+        setSelectedParentPartner(null);
+        setSelectedSubPartner(null);
+        setFilteredSubPartners([]);
+        setSubPartnerSearchTerm('');
         setServiceFormData(prev => ({ ...prev, partner_id: '' }));
     };
 
@@ -369,20 +424,72 @@ const ServiceWizard = () => {
         }
     };
 
-    // Convert content providers to options format
-    const contentProviderOptions = useMemo(() => {
+    const handleSubPartnerSearchChange = (value) => {
+        setSubPartnerSearchTerm(value);
+        if (selectedParentPartner?.id) {
+            debouncedSubPartnerSearch(value, selectedParentPartner.id);
+        }
+    };
+
+    const handleSubPartnerSelect = (option) => {
+        const sub = filteredSubPartners.find((s) => s.id === option.value);
+        if (sub) {
+            setSelectedSubPartner(sub);
+            setServiceFormData((prev) => ({ ...prev, partner_id: sub.id }));
+        }
+    };
+
+    const handleSubPartnerClear = () => {
+        setSelectedSubPartner(null);
+        setServiceFormData((prev) => ({ ...prev, partner_id: '' }));
+    };
+
+    const handleSubPartnerOpen = () => {
+        if (!selectedParentPartner?.has_sub_partners || !selectedParentPartner.id) return;
+        if (filteredSubPartners.length === 0 && !loadingSubPartners) {
+            fetchSubPartnersForParent(selectedParentPartner.id, subPartnerSearchTerm || '');
+        }
+    };
+
+    const parentPartnerOptions = useMemo(() => {
         return filteredContentProviders.map((cp) => ({
             value: cp.id,
-            label: cp.name || cp.text,
-            ...cp
+            label: cp.text || cp.name || cp.business_name || String(cp.id),
+            ...cp,
         }));
     }, [filteredContentProviders]);
 
-    // Find selected content provider option
-    const selectedContentProviderOption = useMemo(() => {
-        if (!selectedContentProvider) return null;
-        return contentProviderOptions.find(opt => opt.value === selectedContentProvider.id) || null;
-    }, [selectedContentProvider, contentProviderOptions]);
+    const selectedParentPartnerOption = useMemo(() => {
+        if (!selectedParentPartner) return null;
+        return (
+            parentPartnerOptions.find((opt) => opt.value === selectedParentPartner.id) || {
+                value: selectedParentPartner.id,
+                label: selectedParentPartner.text || selectedParentPartner.name || String(selectedParentPartner.id),
+                ...selectedParentPartner,
+            }
+        );
+    }, [selectedParentPartner, parentPartnerOptions]);
+
+    const subPartnerOptions = useMemo(
+        () =>
+            filteredSubPartners.map((s) => ({
+                value: s.id,
+                label: s.text || s.name || s.business_name || String(s.id),
+                ...s,
+            })),
+        [filteredSubPartners]
+    );
+
+    const selectedSubPartnerOption = useMemo(() => {
+        if (!selectedSubPartner) return null;
+        return (
+            subPartnerOptions.find((opt) => opt.value === selectedSubPartner.id) || {
+                value: selectedSubPartner.id,
+                label: selectedSubPartner.text || selectedSubPartner.name || String(selectedSubPartner.id),
+                ...selectedSubPartner,
+            }
+        );
+    }, [selectedSubPartner, subPartnerOptions]);
 
     useEffect(() => {
         if (!serviceFormData.category_id) {
@@ -421,14 +528,25 @@ const ServiceWizard = () => {
         // Validate required fields: Country, Category, Service Name EN/AR, Description EN/AR
         if (
             !serviceFormData.country_id ||
-            !serviceFormData.partner_id ||
             !serviceFormData.category_id ||
             !serviceFormData.service_name_en ||
             !serviceFormData.service_name_ar ||
             !serviceFormData.description_en ||
             !serviceFormData.description_ar
         ) {
-            toast.error('Please fill in required fields (Country, Partner, Category, Name EN/AR, Description EN/AR)');
+            toast.error('Please fill in required fields (Country, Category, Name EN/AR, Description EN/AR)');
+            return;
+        }
+        if (!selectedParentPartner) {
+            toast.error('Please select a parent partner');
+            return;
+        }
+        if (selectedParentPartner.has_sub_partners && !serviceFormData.partner_id) {
+            toast.error('Please select a sub partner for this parent organization');
+            return;
+        }
+        if (!serviceFormData.partner_id) {
+            toast.error('Please select a parent partner');
             return;
         }
 
@@ -565,16 +683,18 @@ const ServiceWizard = () => {
         }
     };
 
-    // Load partners when country changes
+    // Load parent partners when country changes
     useEffect(() => {
         if (serviceFormData.country_id && currentStep === 1) {
             fetchContentProviders('', serviceFormData.country_id);
         } else if (!serviceFormData.country_id && filteredContentProviders.length > 0) {
             setFilteredContentProviders([]);
-            setSelectedContentProvider(null);
+            setSelectedParentPartner(null);
+            setSelectedSubPartner(null);
+            setFilteredSubPartners([]);
             setServiceFormData(prev => ({ ...prev, partner_id: "" }));
         }
-    }, [serviceFormData.country_id, currentStep]);
+    }, [serviceFormData.country_id, currentStep, fetchContentProviders]);
 
     // Load products when service is created and we're on step 2
     useEffect(() => {
@@ -788,20 +908,37 @@ const ServiceWizard = () => {
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-7">
-                                                <label className="form-label">Partner <span className="text-danger">*</span></label>
+                                                <label className="form-label">Parent partner <span className="text-danger">*</span></label>
                                                 <SearchableDropdown
-                                                    options={contentProviderOptions}
-                                                    selected={selectedContentProviderOption}
+                                                    options={parentPartnerOptions}
+                                                    selected={selectedParentPartnerOption}
                                                     onSelect={handleContentProviderSelect}
                                                     onClear={handleContentProviderClear}
                                                     onOpen={handleContentProviderOpen}
                                                     onSearchChange={handleContentProviderSearchChange}
-                                                    placeholder="Select Partner"
+                                                    placeholder="Select parent partner"
                                                     loading={loadingContentProviders}
                                                     required={true}
                                                     showClear={false}
                                                 />
                                             </div>
+                                            {selectedParentPartner?.has_sub_partners ? (
+                                                <div className="col-md-6 mb-7">
+                                                    <label className="form-label">Sub partner <span className="text-danger">*</span></label>
+                                                    <SearchableDropdown
+                                                        options={subPartnerOptions}
+                                                        selected={selectedSubPartnerOption}
+                                                        onSelect={handleSubPartnerSelect}
+                                                        onClear={handleSubPartnerClear}
+                                                        onOpen={handleSubPartnerOpen}
+                                                        onSearchChange={handleSubPartnerSearchChange}
+                                                        placeholder="Select sub partner"
+                                                        loading={loadingSubPartners}
+                                                        required={true}
+                                                        showClear={false}
+                                                    />
+                                                </div>
+                                            ) : null}
                                             <div className="col-md-6 mb-7">
                                                 <label className="form-label">Service Category <span className="text-danger">*</span></label>
                                                 <SearchableDropdown

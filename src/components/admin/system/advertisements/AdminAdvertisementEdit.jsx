@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { getAdvertisement, updateAdvertisement } from '../../../../services/adminAdvertisementsService';
 import { AUTH_ENDPOINTS } from '../../../../utils/constants';
+import { advertisementAssetUrl, openNativeDatePicker, toDateInputValue } from '../../../../utils/advertisementFormUtils';
 
 const AdminAdvertisementEdit = () => {
 	const { id } = useParams();
@@ -111,11 +112,13 @@ const AdminAdvertisementEdit = () => {
 					image: null,
 					country_id: ad.country_id || '',
 					status: ad.status || 'active',
-					start_date: ad.start_date || '',
-					end_date: ad.end_date || ''
+					start_date: toDateInputValue(ad.start_date),
+					end_date: toDateInputValue(ad.end_date),
 				});
 				if (ad.image) {
-					setImagePreview(ad.image);
+					setImagePreview(advertisementAssetUrl(ad.image));
+				} else {
+					setImagePreview(null);
 				}
 			} else {
 				toast.error(adRes.error || 'Failed to load advertisement');
@@ -299,7 +302,13 @@ const AdminAdvertisementEdit = () => {
 							/>
 							{imagePreview && (
 								<div className="mt-3">
-									<img src={imagePreview} alt="Preview" className="img-thumbnail" style={{maxWidth: '300px'}} />
+									<div className="text-muted fs-8 mb-1">Current / preview</div>
+									<img
+										src={imagePreview}
+										alt="Advertisement"
+										className="img-thumbnail rounded border"
+										style={{ maxWidth: '100%', maxHeight: '280px', objectFit: 'contain' }}
+									/>
 								</div>
 							)}
 						</div>
@@ -317,22 +326,26 @@ const AdminAdvertisementEdit = () => {
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label">Start Date</label>
+							<label className="form-label" htmlFor="advertisement-edit-start-date">Start Date</label>
 							<input
+								id="advertisement-edit-start-date"
 								type="date"
 								className="form-control"
 								value={formData.start_date}
 								onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+								onClick={(e) => openNativeDatePicker(e.currentTarget)}
 							/>
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label">End Date</label>
+							<label className="form-label" htmlFor="advertisement-edit-end-date">End Date</label>
 							<input
+								id="advertisement-edit-end-date"
 								type="date"
 								className="form-control"
 								value={formData.end_date}
 								onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+								onClick={(e) => openNativeDatePicker(e.currentTarget)}
 							/>
 						</div>
 					</div>

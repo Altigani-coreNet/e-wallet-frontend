@@ -1,8 +1,9 @@
 // API Base URLs
 export const  BASE_DOMAIN = 'https://dev.corenetpay.com';
+// export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
 export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
 // export const AUTH_SERVICE_BASE = `http://localhost:8000`;
-export const SOFTPOS_API_BASE =  `${BASE_DOMAIN}/api/softpos` //  `http://193.123.83.134:82`;;
+export const SOFTPOS_API_BASE =  `${BASE_DOMAIN}/api/softpos`; //  `${BASE_DOMAIN}/api/softpos` //  `http://193.123.83.134:82`;;
 // PayTabs Node service base (for QR testing)
 export const PAYTABS_API_BASE = `${BASE_DOMAIN}/api/paytabs`;
 export const POS_API_BASE = `${BASE_DOMAIN}/api/cashier`;
@@ -438,6 +439,8 @@ export const ADMIN_ENDPOINTS = {
         `${SOFTPOS_API_BASE}/partners/${id}/change-requests/${requestId}/approve`,
     CONTENT_PROVIDER_CHANGE_REQUEST_REJECT: (id, requestId) =>
         `${SOFTPOS_API_BASE}/partners/${id}/change-requests/${requestId}/reject`,
+    /** Sub-partners under a root parent (inherits country & category from parent). */
+    PARTNER_SUB_PARTNERS: (parentId) => `${SOFTPOS_API_BASE}/partners/${parentId}/sub-partners`,
 
     // Branches (AuthService)
     BRANCHES: `${AUTH_SERVICE_BASE}/v2/admin/branches`,

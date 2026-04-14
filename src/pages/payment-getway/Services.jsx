@@ -84,8 +84,8 @@ const Services = () => {
         status: "",
         is_active: null,
         country_id: "",
-        category_id: "",
         partner_id: "",
+        category_id: "",
         service_type: "",
         date_from: "",
         date_to: "",
@@ -123,6 +123,11 @@ const Services = () => {
     const [partnersEnabled, setPartnersEnabled] = useState(false);
     const [partnerSearchTerm, setPartnerSearchTerm] = useState("");
     const [selectedPartnerOption, setSelectedPartnerOption] = useState(null);
+    const [subPartners, setSubPartners] = useState([]);
+    const [loadingSubPartners, setLoadingSubPartners] = useState(false);
+    const [subPartnersEnabled, setSubPartnersEnabled] = useState(false);
+    const [subPartnerSearchTerm, setSubPartnerSearchTerm] = useState("");
+    const [selectedSubPartnerOption, setSelectedSubPartnerOption] = useState(null);
 
     const [countries, setCountries] = useState([]);
     const [loadingCountries, setLoadingCountries] = useState(false);
@@ -141,8 +146,8 @@ const Services = () => {
             status: filters.status || undefined,
             is_active: filters.is_active !== null ? filters.is_active : undefined,
             country_id: filters.country_id || undefined,
-            category_id: filters.category_id || undefined,
             partner_id: filters.partner_id || undefined,
+            category_id: filters.category_id || undefined,
             service_type: filters.service_type || undefined,
             date_from: filters.date_from || undefined,
             date_to: filters.date_to || undefined,
@@ -165,6 +170,21 @@ const Services = () => {
             return service.service_name.en || service.service_name.ar || service.id || "N/A";
         }
         return service?.service_name || service?.id || "N/A";
+    }, []);
+
+    const resolvePartnerDisplayName = useCallback((service) => {
+        const partner =
+            service?.partner ||
+            service?.merchant ||
+            service?.contentProvider ||
+            null;
+        if (!partner) return "N/A";
+        const subName = partner?.name || "N/A";
+        const parentName = partner?.parent_name || null;
+        if (parentName) {
+            return `${subName} - ${parentName}`;
+        }
+        return subName;
     }, []);
 
     // Apply ?partner_id= from URL (e.g. deep link from partner details)
@@ -280,8 +300,8 @@ const Services = () => {
                 status: filters.status || undefined,
                 is_active: filters.is_active !== null ? filters.is_active : undefined,
                 country_id: filters.country_id || undefined,
-                category_id: filters.category_id || undefined,
                 partner_id: filters.partner_id || undefined,
+                category_id: filters.category_id || undefined,
                 service_type: filters.service_type || undefined,
                 date_from: filters.date_from || undefined,
                 date_to: filters.date_to || undefined,
@@ -375,6 +395,47 @@ const Services = () => {
         []
     );
 
+    const loadSubPartners = useCallback(
+        async (parentId, search = '') => {
+            if (!parentId) {
+                setSubPartners([]);
+                return;
+            }
+            try {
+                setLoadingSubPartners(true);
+                const params = {
+                    sub_partners_for_parent: parentId,
+                    limit: 100,
+                };
+                if (search) params.search = search;
+                const result = await getPartnersSelect(params);
+                if (!result.success) {
+                    setSubPartners([]);
+                    return;
+                }
+                const body = result.data;
+                if (body && (body.status === true || body.success === true)) {
+                    const list = Array.isArray(body.data) ? body.data : [];
+                    setSubPartners(
+                        list.map((cp) => ({
+                            value: cp.id,
+                            label: cp.name || cp.text || String(cp.id),
+                            ...cp,
+                        }))
+                    );
+                } else {
+                    setSubPartners([]);
+                }
+            } catch (error) {
+                console.error('Error loading sub partners:', error);
+                setSubPartners([]);
+            } finally {
+                setLoadingSubPartners(false);
+            }
+        },
+        []
+    );
+
     // Load countries
     const loadCountries = useCallback(
         async (search = '') => {
@@ -427,9 +488,22 @@ const Services = () => {
             ...partners.map((p) => ({
                 value: p.value,
                 label: p.label,
+                ...p,
             })),
         ],
         [partners]
+    );
+
+    const subPartnerOptions = useMemo(
+        () => [
+            { value: '', label: 'All Sub Partners' },
+            ...subPartners.map((p) => ({
+                value: p.value,
+                label: p.label,
+                ...p,
+            })),
+        ],
+        [subPartners]
     );
 
     const countryOptions = useMemo(
@@ -509,6 +583,21 @@ const Services = () => {
         setPartnersEnabled(true);
         loadPartners('', filters.country_id || null);
     }, [filters.partner_id, partners.length, loadingPartners, filters.country_id, loadPartners]);
+
+    useEffect(() => {
+        if (!selectedPartnerOption?.has_sub_partners) {
+            setSubPartners([]);
+            setSelectedSubPartnerOption(null);
+            setSubPartnerSearchTerm('');
+            setSubPartnersEnabled(false);
+            return;
+        }
+        if (!subPartnersEnabled) return;
+        const handler = setTimeout(() => {
+            loadSubPartners(selectedPartnerOption.value, subPartnerSearchTerm);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [selectedPartnerOption, subPartnersEnabled, subPartnerSearchTerm, loadSubPartners]);
 
     // Handle delete
     const handleDelete = async (id) => {
@@ -629,8 +718,8 @@ const Services = () => {
                 status: filters.status || undefined,
                 is_active: filters.is_active !== null ? filters.is_active : undefined,
                 country_id: filters.country_id || undefined,
-                category_id: filters.category_id || undefined,
                 partner_id: filters.partner_id || undefined,
+                category_id: filters.category_id || undefined,
                 service_type: filters.service_type || undefined,
                 date_from: filters.date_from || undefined,
                 date_to: filters.date_to || undefined,
@@ -683,8 +772,8 @@ const Services = () => {
             status: "",
             is_active: null,
             country_id: "",
-            category_id: "",
             partner_id: "",
+            category_id: "",
             service_type: "",
             date_from: "",
             date_to: "",
@@ -694,12 +783,16 @@ const Services = () => {
         setCountrySearchTerm('');
         setCategorySearchTerm('');
         setPartnerSearchTerm('');
+        setSubPartnerSearchTerm('');
         setSelectedCountryOption(null);
         setSelectedCategoryOption(null);
         setSelectedPartnerOption(null);
+        setSelectedSubPartnerOption(null);
         setCountriesEnabled(false);
         setCategoriesEnabled(false);
         setPartnersEnabled(false);
+        setSubPartnersEnabled(false);
+        setSubPartners([]);
     };
 
     const handleCategorySelect = useCallback((option) => {
@@ -733,15 +826,29 @@ const Services = () => {
     const handlePartnerSelect = useCallback((option) => {
         if (option && option.value === '') {
             setSelectedPartnerOption(null);
+            setSelectedSubPartnerOption(null);
+            setSubPartners([]);
             setFilterValue('partner_id', '');
         } else {
             setSelectedPartnerOption(option);
+            setSelectedSubPartnerOption(null);
+            setSubPartnerSearchTerm('');
+            if (option?.has_sub_partners) {
+                setSubPartnersEnabled(true);
+                loadSubPartners(option.value, '');
+            } else {
+                setSubPartners([]);
+                setSubPartnersEnabled(false);
+            }
             setFilterValue('partner_id', option?.value || '');
         }
-    }, [setFilterValue]);
+    }, [setFilterValue, loadSubPartners]);
 
     const handlePartnerClear = useCallback(() => {
         setSelectedPartnerOption(null);
+        setSelectedSubPartnerOption(null);
+        setSubPartners([]);
+        setSubPartnersEnabled(false);
         setFilterValue('partner_id', '');
     }, [setFilterValue]);
 
@@ -757,18 +864,52 @@ const Services = () => {
         setPartnersEnabled(true);
     }, []);
 
+    const handleSubPartnerSelect = useCallback((option) => {
+        if (option && option.value === '') {
+            setSelectedSubPartnerOption(null);
+            setFilterValue('partner_id', selectedPartnerOption?.value || '');
+        } else {
+            setSelectedSubPartnerOption(option);
+            setFilterValue('partner_id', option?.value || '');
+        }
+    }, [setFilterValue, selectedPartnerOption]);
+
+    const handleSubPartnerClear = useCallback(() => {
+        setSelectedSubPartnerOption(null);
+        setFilterValue('partner_id', selectedPartnerOption?.value || '');
+    }, [setFilterValue, selectedPartnerOption]);
+
+    const handleSubPartnerOpen = useCallback(() => {
+        if (!selectedPartnerOption?.has_sub_partners) return;
+        setSubPartnersEnabled(true);
+        if (subPartners.length === 0 && !loadingSubPartners) {
+            loadSubPartners(selectedPartnerOption.value, subPartnerSearchTerm);
+        }
+    }, [selectedPartnerOption, subPartners.length, loadingSubPartners, subPartnerSearchTerm, loadSubPartners]);
+
+    const handleSubPartnerSearchChange = useCallback((value) => {
+        setSubPartnerSearchTerm(value);
+        setSubPartnersEnabled(true);
+    }, []);
+
     const handleCountrySelect = useCallback((option) => {
         if (option && option.value === '') {
             setSelectedCountryOption(null);
             setFilterValue('country_id', '');
             setFilterValue('partner_id', '');
             setSelectedPartnerOption(null);
+            setSelectedSubPartnerOption(null);
+            setSubPartners([]);
+            setSubPartnersEnabled(false);
             setPartners([]);
         } else {
             setSelectedCountryOption(option);
             setFilterValue('country_id', option?.value || '');
             setFilterValue('partner_id', '');
             setSelectedPartnerOption(null);
+            setSelectedSubPartnerOption(null);
+            setSubPartners([]);
+            setSubPartnersEnabled(false);
             setPartners([]);
         }
     }, [setFilterValue]);
@@ -778,6 +919,9 @@ const Services = () => {
         setFilterValue('country_id', '');
         setFilterValue('partner_id', '');
         setSelectedPartnerOption(null);
+        setSelectedSubPartnerOption(null);
+        setSubPartners([]);
+        setSubPartnersEnabled(false);
         setPartners([]);
     }, [setFilterValue]);
 
@@ -895,34 +1039,6 @@ const Services = () => {
                                 </div>
                                 <div className="col-md-6 col-lg-3">
                                     <SearchableDropdown
-                                        label="Category"
-                                        placeholder="All Categories"
-                                        options={categoryOptions}
-                                        selected={selectedCategoryOption}
-                                        onSelect={handleCategorySelect}
-                                        onClear={handleCategoryClear}
-                                        loading={loadingCategories}
-                                        onOpen={handleCategoryOpen}
-                                        onSearchChange={handleCategorySearchChange}
-                                        searchPlaceholder="Search categories..."
-                                        renderOption={(option) => {
-                                            const isAllSelected = option.value === '' && !selectedCategoryOption;
-                                            return (
-                                                <div className="d-flex align-items-center">
-                                                    {(isAllSelected || (selectedCategoryOption && String(selectedCategoryOption.value) === String(option.value))) && (
-                                                        <i className="ki-duotone ki-check fs-5 text-primary me-2">
-                                                            <span className="path1"></span>
-                                                            <span className="path2"></span>
-                                                        </i>
-                                                    )}
-                                                    <span className={isAllSelected ? 'fw-bold text-primary' : ''}>{option.label}</span>
-                                                </div>
-                                            );
-                                        }}
-                                    />
-                                </div>
-                                <div className="col-md-6 col-lg-3">
-                                    <SearchableDropdown
                                         label="Partner"
                                         placeholder="All Partners"
                                         options={partnerOptions}
@@ -938,6 +1054,64 @@ const Services = () => {
                                             return (
                                                 <div className="d-flex align-items-center">
                                                     {(isAllSelected || (selectedPartnerOption && String(selectedPartnerOption.value) === String(option.value))) && (
+                                                        <i className="ki-duotone ki-check fs-5 text-primary me-2">
+                                                            <span className="path1"></span>
+                                                            <span className="path2"></span>
+                                                        </i>
+                                                    )}
+                                                    <span className={isAllSelected ? 'fw-bold text-primary' : ''}>{option.label}</span>
+                                                </div>
+                                            );
+                                        }}
+                                    />
+                                </div>
+                                {selectedPartnerOption?.has_sub_partners && (
+                                    <div className="col-md-3 col-lg-3">
+                                        <SearchableDropdown
+                                            label="Sub Partner"
+                                            placeholder="All Sub Partners"
+                                            options={subPartnerOptions}
+                                            selected={selectedSubPartnerOption}
+                                            onSelect={handleSubPartnerSelect}
+                                            onClear={handleSubPartnerClear}
+                                            loading={loadingSubPartners}
+                                            onOpen={handleSubPartnerOpen}
+                                            onSearchChange={handleSubPartnerSearchChange}
+                                            searchPlaceholder="Search sub partners..."
+                                            renderOption={(option) => {
+                                                const isAllSelected = option.value === '' && !selectedSubPartnerOption;
+                                                return (
+                                                    <div className="d-flex align-items-center">
+                                                        {(isAllSelected || (selectedSubPartnerOption && String(selectedSubPartnerOption.value) === String(option.value))) && (
+                                                            <i className="ki-duotone ki-check fs-5 text-primary me-2">
+                                                                <span className="path1"></span>
+                                                                <span className="path2"></span>
+                                                            </i>
+                                                        )}
+                                                        <span className={isAllSelected ? 'fw-bold text-primary' : ''}>{option.label}</span>
+                                                    </div>
+                                                );
+                                            }}
+                                        />
+                                    </div>
+                                )}
+                                <div className="col-md-6 col-lg-3">
+                                    <SearchableDropdown
+                                        label="Category"
+                                        placeholder="All Categories"
+                                        options={categoryOptions}
+                                        selected={selectedCategoryOption}
+                                        onSelect={handleCategorySelect}
+                                        onClear={handleCategoryClear}
+                                        loading={loadingCategories}
+                                        onOpen={handleCategoryOpen}
+                                        onSearchChange={handleCategorySearchChange}
+                                        searchPlaceholder="Search categories..."
+                                        renderOption={(option) => {
+                                            const isAllSelected = option.value === '' && !selectedCategoryOption;
+                                            return (
+                                                <div className="d-flex align-items-center">
+                                                    {(isAllSelected || (selectedCategoryOption && String(selectedCategoryOption.value) === String(option.value))) && (
                                                         <i className="ki-duotone ki-check fs-5 text-primary me-2">
                                                             <span className="path1"></span>
                                                             <span className="path2"></span>
@@ -1119,8 +1293,8 @@ const Services = () => {
                                 </th>
                                 <th className="min-w-90px">Image</th>
                                 <th className="min-w-150px">Country</th>
-                                <th className="min-w-140px">Category</th>
                                 <th className="min-w-125px">Partner</th>
+                                <th className="min-w-140px">Category</th>
                                 <th className="min-w-150px">Service Name</th>
                                 <th className="min-w-100px">Active Status</th>
                                 <th className="min-w-140px text-nowrap">Created</th>
@@ -1188,10 +1362,10 @@ const Services = () => {
                                                 </span>
                                             </div>
                                         </td>
+                                        <td>{resolvePartnerDisplayName(service)}</td>
                                         <td>
                                             <span className="text-gray-800">{resolveCategoryName(service)}</span>
                                         </td>
-                                        <td>{service.partner?.name || service.merchant?.name || service.contentProvider?.name || "N/A"}</td>
                                         <td>
                                             <div className="text-gray-800 text-hover-primary mb-1">
                                                 {resolveServiceName(service)}

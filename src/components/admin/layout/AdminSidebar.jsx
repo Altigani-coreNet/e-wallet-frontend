@@ -217,6 +217,17 @@ const AdminSidebar = () => {
                                     </div>
                                     <div className="menu-item">
                                         <NavLink
+                                            className={({ isActive: routeActive }) => `menu-link ${routeActive ? 'active' : ''}`}
+                                            to="/admin/partners/sub-partners"
+                                        >
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">Sub Partner Management</span>
+                                        </NavLink>
+                                    </div>
+                                    <div className="menu-item">
+                                        <NavLink
                                             className={`menu-link ${isPathActive('/admin/notifier-configurations') || location.pathname.includes('/notifier-configurations') ? 'active' : ''}`}
                                             to="/admin/notifier-configurations"
                                         >

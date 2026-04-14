@@ -11,8 +11,24 @@ const emptyDraft = () => ({
     date_to: '',
 });
 
-const ContentProviderFiltersPanel = ({ isVisible, appliedFilters, onApply, onClearFilters }) => {
-    const [draft, setDraft] = useState(emptyDraft);
+const emptyDraftSubPartners = () => ({
+    country_id: '',
+    partner_category_id: '',
+    parent_id: '',
+    date_from: '',
+    date_to: '',
+});
+
+/** mode 'subPartners' adds Parent organization filter (main partners that can have Sub Partners). */
+const ContentProviderFiltersPanel = ({
+    isVisible,
+    appliedFilters,
+    onApply,
+    onClearFilters,
+    mode = 'default',
+}) => {
+    const isSubMode = mode === 'subPartners';
+    const [draft, setDraft] = useState(isSubMode ? emptyDraftSubPartners : emptyDraft);
 
     const [filteredCountries, setFilteredCountries] = useState([]);
     const [countrySearchTerm, setCountrySearchTerm] = useState('');
@@ -24,18 +40,33 @@ const ContentProviderFiltersPanel = ({ isVisible, appliedFilters, onApply, onCle
     const [partnerCategoriesEnabled, setPartnerCategoriesEnabled] = useState(false);
     const [partnerCategorySearchTerm, setPartnerCategorySearchTerm] = useState('');
 
+    const [parentOrgs, setParentOrgs] = useState([]);
+    const [loadingParentOrgs, setLoadingParentOrgs] = useState(false);
+    const [parentOrgSearchTerm, setParentOrgSearchTerm] = useState('');
+    const [parentsEnabled, setParentsEnabled] = useState(false);
+
     const prevVisibleRef = useRef(false);
     useEffect(() => {
         if (isVisible && !prevVisibleRef.current) {
-            setDraft({
-                country_id: appliedFilters?.country_id || '',
-                partner_category_id: appliedFilters?.partner_category_id || '',
-                date_from: appliedFilters?.date_from || '',
-                date_to: appliedFilters?.date_to || '',
-            });
+            if (isSubMode) {
+                setDraft({
+                    country_id: appliedFilters?.country_id || '',
+                    partner_category_id: appliedFilters?.partner_category_id || '',
+                    parent_id: appliedFilters?.parent_id || '',
+                    date_from: appliedFilters?.date_from || '',
+                    date_to: appliedFilters?.date_to || '',
+                });
+            } else {
+                setDraft({
+                    country_id: appliedFilters?.country_id || '',
+                    partner_category_id: appliedFilters?.partner_category_id || '',
+                    date_from: appliedFilters?.date_from || '',
+                    date_to: appliedFilters?.date_to || '',
+                });
+            }
         }
         prevVisibleRef.current = isVisible;
-    }, [isVisible, appliedFilters]);
+    }, [isVisible, appliedFilters, isSubMode]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -47,9 +78,85 @@ const ContentProviderFiltersPanel = ({ isVisible, appliedFilters, onApply, onCle
     };
 
     const handleClearClick = () => {
-        setDraft(emptyDraft());
+        setDraft(isSubMode ? emptyDraftSubPartners() : emptyDraft());
+        setParentOrgs([]);
         onClearFilters();
     };
+
+    const fetchParentOrganizations = useCallback(async (countryId, searchTerm = '') => {
+        if (!countryId) {
+            setParentOrgs([]);
+            return;
+        }
+        try {
+            setLoadingParentOrgs(true);
+            const token = getToken();
+            const params = {
+                country_id: countryId,
+                parent_organizations_only: true,
+                limit: 200,
+                include_inactive: true,
+            };
+            if (searchTerm) params.search = searchTerm;
+            const response = await axios.get(ADMIN_ENDPOINTS.CONTENT_PROVIDERS_SELECT, {
+                params,
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const body = response.data;
+            if (body.success || body.status) {
+                setParentOrgs(body.data || []);
+            } else {
+                setParentOrgs([]);
+            }
+        } catch (e) {
+            console.error('Failed to load parent partners', e);
+            setParentOrgs([]);
+        } finally {
+            setLoadingParentOrgs(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!isSubMode || !parentsEnabled || !draft.country_id) return;
+        const t = setTimeout(() => {
+            fetchParentOrganizations(draft.country_id, parentOrgSearchTerm);
+        }, 300);
+        return () => clearTimeout(t);
+    }, [isSubMode, parentsEnabled, draft.country_id, parentOrgSearchTerm, fetchParentOrganizations]);
+
+    const parentOrgOptions = useMemo(() => {
+        const all = { value: '', label: 'All parent partners' };
+        const list = parentOrgs.map((p) => ({
+            value: p.id,
+            label: p.text || p.name || p.email || p.id,
+            ...p,
+        }));
+        return [all, ...list];
+    }, [parentOrgs]);
+
+    const selectedParentOrgOption = useMemo(() => {
+        if (!draft.parent_id) return null;
+        return parentOrgOptions.find((opt) => String(opt.value) === String(draft.parent_id)) || null;
+    }, [draft.parent_id, parentOrgOptions]);
+
+    const handleParentOrgSelect = useCallback((option) => {
+        if (option && option.value === '') {
+            setDraft((prev) => ({ ...prev, parent_id: '' }));
+        } else {
+            setDraft((prev) => ({ ...prev, parent_id: option?.value || '' }));
+        }
+    }, []);
+
+    const handleParentOrgClear = useCallback(() => {
+        setDraft((prev) => ({ ...prev, parent_id: '' }));
+    }, []);
+
+    const handleParentOrgOpen = useCallback(() => {
+        setParentsEnabled(true);
+        if (draft.country_id && parentOrgs.length === 0 && !loadingParentOrgs) {
+            fetchParentOrganizations(draft.country_id, parentOrgSearchTerm);
+        }
+    }, [draft.country_id, parentOrgs.length, loadingParentOrgs, fetchParentOrganizations, parentOrgSearchTerm]);
 
     const fetchCountries = useCallback(async (searchTerm = '') => {
         try {
@@ -100,17 +207,34 @@ const ContentProviderFiltersPanel = ({ isVisible, appliedFilters, onApply, onCle
         return countryOptions.find((opt) => String(opt.value) === String(draft.country_id)) || null;
     }, [draft.country_id, countryOptions]);
 
-    const handleCountrySelect = useCallback((option) => {
-        if (option && option.value === '') {
-            setDraft((prev) => ({ ...prev, country_id: '' }));
-        } else {
-            setDraft((prev) => ({ ...prev, country_id: option?.value || '' }));
-        }
-    }, []);
+    const handleCountrySelect = useCallback(
+        (option) => {
+            if (option && option.value === '') {
+                setDraft((prev) => ({
+                    ...prev,
+                    country_id: '',
+                    ...(isSubMode ? { parent_id: '' } : {}),
+                }));
+                setParentOrgs([]);
+            } else {
+                setDraft((prev) => ({
+                    ...prev,
+                    country_id: option?.value || '',
+                    ...(isSubMode ? { parent_id: '' } : {}),
+                }));
+            }
+        },
+        [isSubMode]
+    );
 
     const handleCountryClear = useCallback(() => {
-        setDraft((prev) => ({ ...prev, country_id: '' }));
-    }, []);
+        setDraft((prev) => ({
+            ...prev,
+            country_id: '',
+            ...(isSubMode ? { parent_id: '' } : {}),
+        }));
+        setParentOrgs([]);
+    }, [isSubMode]);
 
     const handleCountryOpen = useCallback(() => {
         setCountriesEnabled(true);
@@ -306,6 +430,27 @@ const ContentProviderFiltersPanel = ({ isVisible, appliedFilters, onApply, onCle
                             renderOption={renderCountryOption}
                         />
                     </div>
+
+                    {isSubMode && (
+                        <div className="col-xl-3 col-md-6">
+                            <SearchableDropdown
+                                label="Parent partner"
+                                placeholder={draft.country_id ? 'All parent partners' : 'Select country first'}
+                                options={parentOrgOptions}
+                                selected={selectedParentOrgOption}
+                                onSelect={handleParentOrgSelect}
+                                onClear={handleParentOrgClear}
+                                loading={loadingParentOrgs}
+                                onOpen={handleParentOrgOpen}
+                                onSearchChange={(v) => {
+                                    setParentOrgSearchTerm(v);
+                                    setParentsEnabled(true);
+                                }}
+                                searchPlaceholder="Search parent partners..."
+                                disabled={!draft.country_id}
+                            />
+                        </div>
+                    )}
 
                     <div className="col-xl-3 col-md-6">
                         <label className="form-label fw-bold">Created from (date and time)</label>

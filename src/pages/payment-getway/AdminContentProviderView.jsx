@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import axios from '../../utils/axiosConfig';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
@@ -20,6 +20,7 @@ import PartnerEventsTab from './view/PartnerEventsTab';
 import PartnerAttachmentsTab from './view/PartnerAttachmentsTab';
 import PartnerServicesTab from './view/PartnerServicesTab';
 import PartnerProductsTab from './view/PartnerProductsTab';
+import PartnerSubPartnersTab from './view/PartnerSubPartnersTab';
 import { fetchProducts } from '../../services/serviceProductsService';
 import useCountryInfoByIds from '../../hooks/useCountryInfoByIds';
 
@@ -56,6 +57,7 @@ const extractAdminList = (response) => {
 const AdminContentProviderView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { setTitle, setActions } = useToolbar();
 
     const [contentProvider, setContentProvider] = useState(null);
@@ -76,6 +78,7 @@ const AdminContentProviderView = () => {
         attachments: 0,
         services: 0,
         products: 0,
+        sub_partners: 0,
     });
 
     const contentProviderCountryId = contentProvider?.country_id ?? contentProvider?.country?.id;
@@ -104,26 +107,36 @@ const AdminContentProviderView = () => {
         contentProvider?.country?.alpha2 ||
         null;
 
-    const tabs = useMemo(
-        () => [
+    const tabs = useMemo(() => {
+        const base = [
             { key: 'overview', label: 'Overview' },
             { key: 'events', label: 'Events' },
             { key: 'attachments', label: 'Attachments' },
             { key: 'services', label: 'Services' },
             { key: 'products', label: 'Products' },
-        ],
-        []
-    );
+        ];
+        if (contentProvider && !contentProvider.parent_id && contentProvider.is_parent) {
+            return [
+                { key: 'overview', label: 'Overview' },
+                { key: 'sub-partners', label: 'Sub Partners' },
+                ...base.slice(1),
+            ];
+        }
+        return base;
+    }, [contentProvider]);
 
-    const statsConfig = useMemo(
-        () => [
+    const statsConfig = useMemo(() => {
+        const base = [
             { key: 'events', label: 'Events', icon: 'ki-abstract-44' },
             { key: 'attachments', label: 'Attachments', icon: 'ki-folder' },
             { key: 'services', label: 'Services', icon: 'ki-setting-2' },
             { key: 'products', label: 'Products', icon: 'ki-package' },
-        ],
-        []
-    );
+        ];
+        if (contentProvider && !contentProvider.parent_id && contentProvider.is_parent) {
+            return [{ key: 'sub_partners', label: 'Sub Partners', icon: 'ki-people' }, ...base];
+        }
+        return base;
+    }, [contentProvider]);
 
     useEffect(() => {
         setTitle('Partner Details');
@@ -291,6 +304,7 @@ const AdminContentProviderView = () => {
             attachments: 0,
             services: 0,
             products: 0,
+            sub_partners: 0,
         });
         try {
             const result = await getPartner(id);
@@ -321,6 +335,7 @@ const AdminContentProviderView = () => {
                     setStatistics((prev) => ({
                         ...prev,
                         events: events.length,
+                        sub_partners: partnerData.sub_partners_count ?? prev.sub_partners ?? 0,
                     }));
                 } else {
                     setContentProvider(null);
@@ -343,6 +358,24 @@ const AdminContentProviderView = () => {
         fetchContentProvider();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
+
+    useEffect(() => {
+        const tab = searchParams.get('tab');
+        if (!contentProvider) return;
+        const showSubTab = !contentProvider.parent_id && contentProvider.is_parent;
+        if (tab === 'sub-partners' && showSubTab) {
+            setActiveTab('sub-partners');
+        }
+    }, [searchParams, contentProvider]);
+
+    const handleTabChange = (key) => {
+        setActiveTab(key);
+        if (key === 'overview') {
+            setSearchParams({});
+        } else {
+            setSearchParams({ tab: key });
+        }
+    };
 
     useEffect(() => {
         if (!contentProvider?.id) return;
@@ -504,6 +537,13 @@ const AdminContentProviderView = () => {
                         partnerId={id}
                     />
                 );
+            case 'sub-partners':
+                return (
+                    <PartnerSubPartnersTab
+                        parentId={id}
+                        parentName={contentProvider.business_name || contentProvider.name}
+                    />
+                );
             default:
                 return (
                     <PartnerOverviewTab
@@ -552,7 +592,7 @@ const AdminContentProviderView = () => {
                     statistics={statistics}
                     statsConfig={statsConfig}
                     activeTab={activeTab}
-                    onTabChange={setActiveTab}
+                    onTabChange={handleTabChange}
                     tabs={tabs}
                     countryName={resolvedCountryName}
                     countryCode={resolvedCountryCode}

@@ -55,6 +55,8 @@ const AdminContentProviderEdit = () => {
     const [imagePreview, setImagePreview] = useState(null);
     const [logoFile, setLogoFile] = useState(null);
 
+    const [isSubPartner, setIsSubPartner] = useState(false);
+
     const [formData, setFormData] = useState({
         name: '',
         business_name: '',
@@ -66,7 +68,8 @@ const AdminContentProviderEdit = () => {
         country_id: '',
         partner_category_id: '',
         is_active: true,
-        status: 'pending'
+        status: 'pending',
+        is_parent: false,
     });
 
     useEffect(() => {
@@ -119,6 +122,7 @@ const AdminContentProviderEdit = () => {
             const isSuccess = responseData.success || responseData.status;
             if (isSuccess) {
                 const partner = responseData.data.partner || responseData.data.merchant || responseData.data.contentProvider || responseData.data;
+                setIsSubPartner(!!partner.parent_id);
                 setFormData({
                     name: partner.name || '',
                     business_name: partner.business_name || '',
@@ -130,7 +134,8 @@ const AdminContentProviderEdit = () => {
                     country_id: partner.country_id || '',
                     partner_category_id: partner.partner_category_id || partner.partner_category?.id || '',
                     is_active: partner.is_active !== undefined ? partner.is_active : true,
-                    status: partner.status || 'pending'
+                    status: partner.status || 'pending',
+                    is_parent: !!partner.is_parent,
                 });
                 if (partner.country) {
                     setSelectedCountry(partner.country);
@@ -369,6 +374,9 @@ const AdminContentProviderEdit = () => {
                 submitData.append('partner_category_id', formData.partner_category_id || '');
                 submitData.append('is_active', formData.is_active ? '1' : '0');
                 submitData.append('status', formData.status || 'pending');
+                if (!isSubPartner) {
+                    submitData.append('is_parent', formData.is_parent ? '1' : '0');
+                }
                 submitData.append('logo', logoFile);
             } else {
                 submitData = {
@@ -384,6 +392,11 @@ const AdminContentProviderEdit = () => {
                 delete submitData.tax_number;
                 delete submitData.trade_license_start_date;
                 delete submitData.trade_license_expired_date;
+                if (!isSubPartner) {
+                    submitData.is_parent = !!submitData.is_parent;
+                } else {
+                    delete submitData.is_parent;
+                }
             }
 
             const result = await updatePartner(id, submitData);
@@ -475,6 +488,14 @@ const AdminContentProviderEdit = () => {
                                 </div>
                                 <div className="card-body p-9">
                                     <div className="row">
+                                        {isSubPartner && (
+                                            <div className="col-12 mb-7">
+                                                <div className="alert alert-light-primary">
+                                                    Sub Partner: country and partner category are inherited from the parent and cannot be changed here.
+                                                </div>
+                                            </div>
+                                        )}
+                                        {!isSubPartner && (
                                         <div className="col-md-6 mb-7">
                                             <SearchableDropdown
                                                 label="Country"
@@ -490,7 +511,9 @@ const AdminContentProviderEdit = () => {
                                                 required={true}
                                             />
                                         </div>
+                                        )}
 
+                                        {!isSubPartner && (
                                         <div className="col-md-6 mb-7">
                                             <SearchableDropdown
                                                 label="Partner category"
@@ -509,6 +532,7 @@ const AdminContentProviderEdit = () => {
                                                 <div className="invalid-feedback d-block mt-1">{errors.partner_category_id}</div>
                                             )}
                                         </div>
+                                        )}
 
                                         <div className="col-md-6 mb-7">
                                             <label className="form-label fw-bold required">Business /Brand Name</label>
@@ -552,6 +576,24 @@ const AdminContentProviderEdit = () => {
                                                 <label className="form-check-label">{formData.is_active ? 'Active' : 'Inactive'}</label>
                                             </div>
                                         </div>
+
+                                        {!isSubPartner && (
+                                            <div className="col-md-12 mb-7">
+                                                <div className="form-check form-switch form-check-custom form-check-solid">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="checkbox"
+                                                        name="is_parent"
+                                                        checked={formData.is_parent}
+                                                        onChange={handleInputChange}
+                                                        id="edit_is_parent"
+                                                    />
+                                                    <label className="form-check-label" htmlFor="edit_is_parent">
+                                                        Parent organization (allows Sub Partners — same country and category as this partner)
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

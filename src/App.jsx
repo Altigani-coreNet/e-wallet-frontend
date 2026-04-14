@@ -320,6 +320,7 @@ import PgGatewayProductCreate from './pages/payment-getway/products/ProductCreat
 import PgGatewayProductEdit from './pages/payment-getway/products/ProductEdit';
 import AdminEPaymentGatewayComingSoon from './pages/payment-getway/AdminEPaymentGatewayComingSoon';
 import AdminPartnersIndex from './pages/payment-getway/AdminPartnersIndex';
+import AdminSubPartnersIndex from './pages/payment-getway/AdminSubPartnersIndex';
 import AdminContentProviderCreate from './pages/payment-getway/AdminContentProviderCreate';
 import AdminContentProviderView from './pages/payment-getway/AdminContentProviderView';
 import AdminContentProviderEdit from './pages/payment-getway/AdminContentProviderEdit';
@@ -739,8 +740,11 @@ function App() {
                     {/* E-payment gateway & services catalog */}
                     <Route path="settings/e-payment-gateway" element={<AdminEPaymentGatewayComingSoon />} />
 
+                    <Route path="partners/sub-partners/create" element={<AdminContentProviderCreate />} />
+                    <Route path="partners/sub-partners" element={<AdminSubPartnersIndex />} />
                     <Route path="partners" element={<AdminPartnersIndex />} />
                     <Route path="partners/create" element={<AdminContentProviderCreate />} />
+                    <Route path="partners/:parentId/sub-partners/create" element={<AdminContentProviderCreate />} />
                     <Route path="partners/:id/edit" element={<AdminContentProviderEdit />} />
                     <Route path="partners/:id" element={<AdminContentProviderView />} />
 

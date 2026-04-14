@@ -148,6 +148,11 @@ const Products = () => {
     const [contentProvidersEnabled, setContentProvidersEnabled] = useState(false);
     const [contentProviderSearchTerm, setContentProviderSearchTerm] = useState('');
     const [selectedContentProviderOption, setSelectedContentProviderOption] = useState(null);
+    const [subPartners, setSubPartners] = useState([]);
+    const [loadingSubPartners, setLoadingSubPartners] = useState(false);
+    const [subPartnersEnabled, setSubPartnersEnabled] = useState(false);
+    const [subPartnerSearchTerm, setSubPartnerSearchTerm] = useState('');
+    const [selectedSubPartnerOption, setSelectedSubPartnerOption] = useState(null);
 
     const [countries, setCountries] = useState([]);
     const [loadingCountries, setLoadingCountries] = useState(false);
@@ -238,7 +243,7 @@ const Products = () => {
     const loadContentProviders = useCallback(async (search = '', operatorId = null, countryId = null) => {
         try {
             setLoadingContentProviders(true);
-            const params = { per_page: 50 };
+            const params = { limit: 100, parent_organizations_only: true };
             if (search) params.search = search;
             if (operatorId) params.operator_id = operatorId;
             if (countryId) params.country_id = countryId;
@@ -271,6 +276,46 @@ const Products = () => {
             setContentProviders([]);
         } finally {
             setLoadingContentProviders(false);
+        }
+    }, []);
+
+    const loadSubPartners = useCallback(async (parentId, search = '') => {
+        if (!parentId) {
+            setSubPartners([]);
+            return;
+        }
+        try {
+            setLoadingSubPartners(true);
+            const params = { sub_partners_for_parent: parentId, limit: 100 };
+            if (search) params.search = search;
+            const result = await getPartnersSelect(params);
+            if (!result.success) {
+                setSubPartners([]);
+                return;
+            }
+            const body = result.data;
+            if (body && (body.status === true || body.success === true)) {
+                const list = Array.isArray(body.data) ? body.data : [];
+                setSubPartners(
+                    list.map((cp) => ({
+                        value: cp.id,
+                        label:
+                            (typeof cp.name === 'string'
+                                ? cp.name
+                                : cp.name?.en || cp.name?.ar) ||
+                            cp.text ||
+                            String(cp.id),
+                        ...cp,
+                    }))
+                );
+            } else {
+                setSubPartners([]);
+            }
+        } catch (error) {
+            console.error('Error loading sub partners:', error);
+            setSubPartners([]);
+        } finally {
+            setLoadingSubPartners(false);
         }
     }, []);
 
@@ -311,9 +356,22 @@ const Products = () => {
             ...contentProviders.map((cp) => ({
                 value: cp.value,
                 label: cp.label,
+                ...cp,
             })),
         ],
         [contentProviders]
+    );
+
+    const subPartnerOptions = useMemo(
+        () => [
+            { value: '', label: 'All Sub Partners' },
+            ...subPartners.map((cp) => ({
+                value: cp.value,
+                label: cp.label,
+                ...cp,
+            })),
+        ],
+        [subPartners]
     );
 
     const countryOptions = useMemo(
@@ -336,6 +394,21 @@ const Products = () => {
         }, 300);
         return () => clearTimeout(handler);
     }, [contentProvidersEnabled, contentProviderSearchTerm, filters.country_id, loadContentProviders]);
+
+    useEffect(() => {
+        if (!selectedContentProviderOption?.has_sub_partners) {
+            setSubPartners([]);
+            setSelectedSubPartnerOption(null);
+            setSubPartnersEnabled(false);
+            setSubPartnerSearchTerm('');
+            return;
+        }
+        if (!subPartnersEnabled) return;
+        const handler = setTimeout(() => {
+            loadSubPartners(selectedContentProviderOption.value, subPartnerSearchTerm);
+        }, 300);
+        return () => clearTimeout(handler);
+    }, [selectedContentProviderOption, subPartnersEnabled, subPartnerSearchTerm, loadSubPartners]);
 
     useEffect(() => {
         if (!countriesEnabled) return;
@@ -484,13 +557,15 @@ const Products = () => {
         setSearchTerm('');
         setPagination((prev) => ({ ...prev, current_page: 1 }));
         setCountrySearchTerm('');
-        setOperatorSearchTerm('');
         setContentProviderSearchTerm('');
+        setSubPartnerSearchTerm('');
         setSelectedCountryOption(null);
-        setSelectedOperatorOption(null);
         setSelectedContentProviderOption(null);
+        setSelectedSubPartnerOption(null);
         setCountriesEnabled(false);
         setContentProvidersEnabled(false);
+        setSubPartnersEnabled(false);
+        setSubPartners([]);
     };
 
     const handleCountrySelect = useCallback(
@@ -500,13 +575,19 @@ const Products = () => {
                 setFilterValue('country_id', '');
                 setFilterValue('merchant_id', '');
                 setSelectedContentProviderOption(null);
+                setSelectedSubPartnerOption(null);
                 setContentProviders([]);
+                setSubPartners([]);
+                setSubPartnersEnabled(false);
             } else {
                 setSelectedCountryOption(option);
                 setFilterValue('country_id', option?.value || '');
                 setFilterValue('merchant_id', '');
                 setSelectedContentProviderOption(null);
+                setSelectedSubPartnerOption(null);
                 setContentProviders([]);
+                setSubPartners([]);
+                setSubPartnersEnabled(false);
             }
         },
         [setFilterValue]
@@ -514,7 +595,13 @@ const Products = () => {
 
     const handleCountryClear = useCallback(() => {
         setSelectedCountryOption(null);
+        setSelectedContentProviderOption(null);
+        setSelectedSubPartnerOption(null);
+        setContentProviders([]);
+        setSubPartners([]);
+        setSubPartnersEnabled(false);
         setFilterValue('country_id', '');
+        setFilterValue('merchant_id', '');
     }, [setFilterValue]);
 
     const handleCountryOpen = useCallback(() => {
@@ -533,17 +620,33 @@ const Products = () => {
         (option) => {
             if (option && option.value === '') {
                 setSelectedContentProviderOption(null);
+                setSelectedSubPartnerOption(null);
+                setSubPartners([]);
+                setSubPartnersEnabled(false);
                 setFilterValue('merchant_id', '');
             } else {
                 setSelectedContentProviderOption(option);
-                setFilterValue('merchant_id', option?.value || '');
+                setSelectedSubPartnerOption(null);
+                setSubPartnerSearchTerm('');
+                if (option?.has_sub_partners) {
+                    setSubPartnersEnabled(true);
+                    loadSubPartners(option.value, '');
+                    setFilterValue('merchant_id', option?.value || '');
+                } else {
+                    setSubPartners([]);
+                    setSubPartnersEnabled(false);
+                    setFilterValue('merchant_id', option?.value || '');
+                }
             }
         },
-        [setFilterValue]
+        [setFilterValue, loadSubPartners]
     );
 
     const handleContentProviderClear = useCallback(() => {
         setSelectedContentProviderOption(null);
+        setSelectedSubPartnerOption(null);
+        setSubPartners([]);
+        setSubPartnersEnabled(false);
         setFilterValue('merchant_id', '');
     }, [setFilterValue]);
 
@@ -563,6 +666,37 @@ const Products = () => {
     const handleContentProviderSearchChange = useCallback((value) => {
         setContentProviderSearchTerm(value);
         setContentProvidersEnabled(true);
+    }, []);
+
+    const handleSubPartnerSelect = useCallback(
+        (option) => {
+            if (option && option.value === '') {
+                setSelectedSubPartnerOption(null);
+                setFilterValue('merchant_id', selectedContentProviderOption?.value || '');
+            } else {
+                setSelectedSubPartnerOption(option);
+                setFilterValue('merchant_id', option?.value || '');
+            }
+        },
+        [setFilterValue, selectedContentProviderOption]
+    );
+
+    const handleSubPartnerClear = useCallback(() => {
+        setSelectedSubPartnerOption(null);
+        setFilterValue('merchant_id', selectedContentProviderOption?.value || '');
+    }, [setFilterValue, selectedContentProviderOption]);
+
+    const handleSubPartnerOpen = useCallback(() => {
+        if (!selectedContentProviderOption?.has_sub_partners) return;
+        setSubPartnersEnabled(true);
+        if (subPartners.length === 0 && !loadingSubPartners) {
+            loadSubPartners(selectedContentProviderOption.value, subPartnerSearchTerm);
+        }
+    }, [selectedContentProviderOption, subPartners.length, loadingSubPartners, subPartnerSearchTerm, loadSubPartners]);
+
+    const handleSubPartnerSearchChange = useCallback((value) => {
+        setSubPartnerSearchTerm(value);
+        setSubPartnersEnabled(true);
     }, []);
 
     useEffect(() => {
@@ -595,10 +729,20 @@ const Products = () => {
             const option = contentProviderOptions.find(
                 (item) => String(item.value) === String(filters.merchant_id)
             );
-            if (option) setSelectedContentProviderOption(option);
+            if (option) {
+                setSelectedContentProviderOption(option);
+                setSelectedSubPartnerOption(null);
+                return;
+            }
+            const subOption = subPartnerOptions.find(
+                (item) => String(item.value) === String(filters.merchant_id)
+            );
+            if (subOption) {
+                setSelectedSubPartnerOption(subOption);
+            }
         }, 0);
         return () => clearTimeout(timer);
-    }, [filters.merchant_id, contentProviderOptions, selectedContentProviderOption]);
+    }, [filters.merchant_id, contentProviderOptions, subPartnerOptions, selectedContentProviderOption]);
 
     useEffect(() => {
         if (!filters.country_id) return;
@@ -691,8 +835,17 @@ const Products = () => {
             candidate.partner_name ||
             candidate.text ||
             '';
-
-        return String(name || '').trim() || 'N/A';
+        const parentName =
+            candidate.parent_name ||
+            candidate.parent?.name ||
+            candidate.main_partner_name ||
+            null;
+        const child = String(name || '').trim();
+        if (!child) return 'N/A';
+        if (parentName) {
+            return `${child} - ${String(parentName).trim()}`;
+        }
+        return child;
     };
 
     return (
@@ -805,6 +958,41 @@ const Products = () => {
                                     }}
                                 />
                             </div>
+                            {selectedContentProviderOption?.has_sub_partners && (
+                                <div className="col-md-3 col-lg-3">
+                                    <SearchableDropdown
+                                        label="Sub Partner"
+                                        placeholder="All Sub Partners"
+                                        options={subPartnerOptions}
+                                        selected={selectedSubPartnerOption}
+                                        onSelect={handleSubPartnerSelect}
+                                        onClear={handleSubPartnerClear}
+                                        loading={loadingSubPartners}
+                                        onOpen={handleSubPartnerOpen}
+                                        onSearchChange={handleSubPartnerSearchChange}
+                                        searchPlaceholder="Search sub partners..."
+                                        renderOption={(option) => {
+                                            const isAllSelected = option.value === '' && !selectedSubPartnerOption;
+                                            return (
+                                                <div className="d-flex align-items-center">
+                                                    {(isAllSelected ||
+                                                        (selectedSubPartnerOption &&
+                                                            String(selectedSubPartnerOption.value) ===
+                                                                String(option.value))) && (
+                                                        <i className="ki-duotone ki-check fs-5 text-primary me-2">
+                                                            <span className="path1"></span>
+                                                            <span className="path2"></span>
+                                                        </i>
+                                                    )}
+                                                    <span className={isAllSelected ? 'fw-bold text-primary' : ''}>
+                                                        {option.label}
+                                                    </span>
+                                                </div>
+                                            );
+                                        }}
+                                    />
+                                </div>
+                            )}
                             <div className="col-md-6 col-lg-3">
                                 <label className="form-label fw-bold">Service type</label>
                                 <select

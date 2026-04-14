@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../utils/constants';
 import { getToken } from '../../utils/api';
-import { createPartner } from '../../services/adminPartnersService';
+import { createPartner, createSubPartner, getPartner } from '../../services/adminPartnersService';
 import axios from '../../utils/axiosConfig';
 import { useToolbar } from '../../contexts/ToolbarContext';
 import SearchableDropdown from '../../common/filters/SearchableDropdown';
@@ -19,7 +19,22 @@ const debounce = (func, delay) => {
 
 const AdminContentProviderCreate = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { parentId } = useParams();
+    const isGlobalSubCreate = location.pathname === '/admin/partners/sub-partners/create';
+    const [pickedParentId, setPickedParentId] = useState(null);
+    const effectiveParentId = parentId || pickedParentId;
+
     const { setTitle, setActions } = useToolbar();
+    const [parentPartner, setParentPartner] = useState(null);
+    const [loadingParent, setLoadingParent] = useState(!!parentId);
+
+    const [subPickerCountryId, setSubPickerCountryId] = useState('');
+    const [pickerCountries, setPickerCountries] = useState([]);
+    const [pickerCountrySearch, setPickerCountrySearch] = useState('');
+    const [parentOrgsPicker, setParentOrgsPicker] = useState([]);
+    const [loadingPickerParents, setLoadingPickerParents] = useState(false);
+    const [pickerParentSearch, setPickerParentSearch] = useState('');
     const [saving, setSaving] = useState(false);
     const [filteredCountries, setFilteredCountries] = useState([]);
     const [countrySearchTerm, setCountrySearchTerm] = useState('');
@@ -53,14 +68,21 @@ const AdminContentProviderCreate = () => {
         partner_category_id: '',
         operator_id: '',
         is_active: true,
-        status: 'pending'
+        status: 'pending',
+        is_parent: false,
     });
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        setTitle('Add New Partner');
+        const isSubTitle = Boolean(effectiveParentId) || isGlobalSubCreate;
+        setTitle(isSubTitle ? 'Add Sub Partner' : 'Add New Partner');
+        const backTo = isGlobalSubCreate
+            ? '/admin/partners/sub-partners'
+            : effectiveParentId
+              ? `/admin/partners/${effectiveParentId}?tab=sub-partners`
+              : '/admin/partners';
         setActions(
-            <Link to="/admin/partners" className="btn btn-sm btn-light-danger">
+            <Link to={backTo} className="btn btn-sm btn-light-danger">
                 <i className="ki-duotone ki-arrow-left fs-2">
                     <span className="path1"></span>
                     <span className="path2"></span>
@@ -69,12 +91,136 @@ const AdminContentProviderCreate = () => {
             </Link>
         );
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, effectiveParentId, isGlobalSubCreate]);
+
+    useEffect(() => {
+        if (!effectiveParentId) {
+            setParentPartner(null);
+            return undefined;
+        }
+        let cancelled = false;
+        (async () => {
+            try {
+                setLoadingParent(true);
+                const res = await getPartner(effectiveParentId);
+                if (!res.success || cancelled) return;
+                const payload = res.data?.data ?? res.data;
+                const p = payload?.partner || payload?.merchant || payload?.contentProvider || payload;
+                if (p?.id) {
+                    setParentPartner(p);
+                    if (!p.is_parent) {
+                        toast.warning('This partner is not marked as a parent organization. Enable it in Edit partner first, then add Sub Partners.');
+                    }
+                } else toast.error('Parent partner not found');
+            } catch {
+                if (!cancelled) toast.error('Failed to load parent partner');
+            } finally {
+                if (!cancelled) setLoadingParent(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [effectiveParentId]);
+
+    const fetchPickerCountries = useCallback(async (searchTerm = '') => {
+        try {
+            const token = getToken();
+            const url = searchTerm
+                ? `${AUTH_ENDPOINTS.COUNTRIES_SELECT}?search=${encodeURIComponent(searchTerm)}`
+                : AUTH_ENDPOINTS.COUNTRIES_SELECT;
+            const response = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+            if (response.data.status) {
+                setPickerCountries(response.data.data || []);
+            }
+        } catch {
+            setPickerCountries([]);
+        }
+    }, []);
+
+    const fetchParentOrgsForPicker = useCallback(async (countryId, searchTerm = '') => {
+        if (!countryId) {
+            setParentOrgsPicker([]);
+            return;
+        }
+        try {
+            setLoadingPickerParents(true);
+            const token = getToken();
+            const params = {
+                country_id: countryId,
+                parent_organizations_only: true,
+                limit: 200,
+                include_inactive: true,
+            };
+            if (searchTerm) params.search = searchTerm;
+            const response = await axios.get(ADMIN_ENDPOINTS.CONTENT_PROVIDERS_SELECT, {
+                params,
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const body = response.data;
+            if (body.success || body.status) {
+                setParentOrgsPicker(body.data || []);
+            } else {
+                setParentOrgsPicker([]);
+            }
+        } catch {
+            setParentOrgsPicker([]);
+        } finally {
+            setLoadingPickerParents(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!isGlobalSubCreate || !subPickerCountryId) return undefined;
+        const t = setTimeout(() => {
+            fetchParentOrgsForPicker(subPickerCountryId, pickerParentSearch);
+        }, 300);
+        return () => clearTimeout(t);
+    }, [isGlobalSubCreate, subPickerCountryId, pickerParentSearch, fetchParentOrgsForPicker]);
 
     useEffect(() => {
         // Don't load all countries initially - will load on dropdown open or search
     }, []);
 
+    const pickerCountryOptions = useMemo(
+        () =>
+            pickerCountries.map((c) => ({
+                value: c.id,
+                label: c.text || c.name,
+                code: c.code,
+                ...c,
+            })),
+        [pickerCountries]
+    );
+
+    const selectedPickerCountryOption = useMemo(() => {
+        if (!subPickerCountryId) return null;
+        return pickerCountryOptions.find((o) => String(o.value) === String(subPickerCountryId)) || null;
+    }, [subPickerCountryId, pickerCountryOptions]);
+
+    const parentOrgPickerOptions = useMemo(
+        () =>
+            parentOrgsPicker.map((p) => ({
+                value: p.id,
+                label: p.text || p.name || p.email || p.id,
+                ...p,
+            })),
+        [parentOrgsPicker]
+    );
+
+    const selectedPickerParentOption = useMemo(() => {
+        if (!pickedParentId) return null;
+        const fromList = parentOrgPickerOptions.find((o) => String(o.value) === String(pickedParentId));
+        if (fromList) return fromList;
+        if (parentPartner && String(parentPartner.id) === String(pickedParentId)) {
+            return {
+                value: parentPartner.id,
+                label: parentPartner.business_name || parentPartner.name || parentPartner.email || parentPartner.id,
+                ...parentPartner,
+            };
+        }
+        return null;
+    }, [pickedParentId, parentOrgPickerOptions, parentPartner]);
 
     // Fetch countries from API with optional search term
     const fetchCountries = async (searchTerm = '') => {
@@ -365,7 +511,7 @@ const AdminContentProviderCreate = () => {
         const newErrors = {};
 
         if (!formData.name?.trim()) {
-            newErrors.name = 'Content provider name is required';
+            newErrors.name = 'Partner name is required';
         }
 
         if (!formData.owner_name?.trim()) {
@@ -382,12 +528,23 @@ const AdminContentProviderCreate = () => {
             newErrors.phone = 'Phone is required';
         }
 
-        if (!formData.country_id) {
-            newErrors.country_id = 'Country is required';
-        }
+        if (!effectiveParentId) {
+            if (isGlobalSubCreate) {
+                if (!subPickerCountryId) {
+                    newErrors.picker_country_id = 'Country is required';
+                }
+                if (!pickedParentId) {
+                    newErrors.parent_id = 'Parent partner is required';
+                }
+            } else {
+                if (!formData.country_id) {
+                    newErrors.country_id = 'Country is required';
+                }
 
-        if (!formData.partner_category_id) {
-            newErrors.partner_category_id = 'Partner category is required';
+                if (!formData.partner_category_id) {
+                    newErrors.partner_category_id = 'Partner category is required';
+                }
+            }
         }
 
         setErrors(newErrors);
@@ -418,8 +575,11 @@ const AdminContentProviderCreate = () => {
                 submitData.append('phone', formData.phone || '');
                 submitData.append('business_phone', formData.business_phone || '');
                 submitData.append('address', formData.address || '');
-                submitData.append('country_id', formData.country_id || '');
-                submitData.append('partner_category_id', formData.partner_category_id || '');
+                if (!effectiveParentId) {
+                    submitData.append('country_id', formData.country_id || '');
+                    submitData.append('partner_category_id', formData.partner_category_id || '');
+                    submitData.append('is_parent', formData.is_parent ? '1' : '0');
+                }
                 submitData.append('is_active', formData.is_active ? '1' : '0');
                 submitData.append('status', formData.status || 'pending');
 
@@ -438,9 +598,17 @@ const AdminContentProviderCreate = () => {
                 delete submitData.currency_id;
                 delete submitData.scopes;
                 delete submitData.operator_id;
+                if (effectiveParentId) {
+                    delete submitData.country_id;
+                    delete submitData.partner_category_id;
+                } else {
+                    submitData.is_parent = !!submitData.is_parent;
+                }
             }
 
-            const result = await createPartner(submitData);
+            const result = effectiveParentId
+                ? await createSubPartner(effectiveParentId, submitData)
+                : await createPartner(submitData);
             if (!result.success) {
                 toast.error(result.error);
                 if (result.errors) setErrors(result.errors);
@@ -449,8 +617,14 @@ const AdminContentProviderCreate = () => {
 
             const isSuccess = result.data.success || result.data.status;
             if (isSuccess) {
-                toast.success('Partner created successfully');
-                navigate('/admin/partners');
+                toast.success(effectiveParentId ? 'Sub Partner created successfully' : 'Partner created successfully');
+                if (isGlobalSubCreate) {
+                    navigate('/admin/partners/sub-partners');
+                } else if (effectiveParentId) {
+                    navigate(`/admin/partners/${effectiveParentId}?tab=sub-partners`);
+                } else {
+                    navigate('/admin/partners');
+                }
             }
         } catch (error) {
             const errorMessage = error.response?.data?.message || 'Failed to create partner';
@@ -465,6 +639,39 @@ const AdminContentProviderCreate = () => {
             setSaving(false);
         }
     };
+
+    const cancelHref =
+        isGlobalSubCreate || !effectiveParentId
+            ? isGlobalSubCreate
+                ? '/admin/partners/sub-partners'
+                : '/admin/partners'
+            : `/admin/partners/${effectiveParentId}?tab=sub-partners`;
+
+    const subPartnerSubmitBlocked =
+        isGlobalSubCreate &&
+        (!pickedParentId || loadingParent || !parentPartner || !parentPartner.is_parent);
+
+    if (effectiveParentId && loadingParent && !isGlobalSubCreate) {
+        return (
+            <div className="d-flex justify-content-center align-items-center py-15">
+                <span className="spinner-border text-primary" />
+            </div>
+        );
+    }
+
+    if (effectiveParentId && !parentPartner && !loadingParent && !isGlobalSubCreate) {
+        return (
+            <div className="text-center py-15">
+                <p className="text-gray-700">Could not load parent partner.</p>
+                <Link
+                    to={isGlobalSubCreate ? '/admin/partners/sub-partners' : '/admin/partners'}
+                    className="btn btn-primary mt-3"
+                >
+                    Back
+                </Link>
+            </div>
+        );
+    }
 
     return (
         <div className="post d-flex flex-column-fluid">
@@ -528,7 +735,7 @@ const AdminContentProviderCreate = () => {
                             <div className="card">
                                 <div className="card-header border-0">
                                     <div className="card-title">
-                                        <h2>Add New Partner</h2>
+                                        <h2>{effectiveParentId || isGlobalSubCreate ? 'Add Sub Partner' : 'Add New Partner'}</h2>
                                     </div>
                                 </div>
 
@@ -555,7 +762,147 @@ const AdminContentProviderCreate = () => {
                                     )}
 
                                     <div className="row">
-                                        {/* Country - First Field */}
+                                        {isGlobalSubCreate && (
+                                            <>
+                                                <div className="col-12 mb-5">
+                                                    <h3 className="fs-5 fw-bold text-gray-800 mb-1">Parent organization</h3>
+                                                    <p className="text-muted fs-7 mb-0">
+                                                        Choose country and main partner first. Country and partner category follow the parent.
+                                                    </p>
+                                                </div>
+                                                <div className="col-md-6 mb-7">
+                                                    <SearchableDropdown
+                                                        label="Country"
+                                                        placeholder="Select country"
+                                                        options={pickerCountryOptions}
+                                                        selected={selectedPickerCountryOption}
+                                                        onSelect={(option) => {
+                                                            setSubPickerCountryId(option?.value || '');
+                                                            setPickedParentId(null);
+                                                            setParentOrgsPicker([]);
+                                                            if (errors.picker_country_id) {
+                                                                setErrors((prev) => ({ ...prev, picker_country_id: '' }));
+                                                            }
+                                                        }}
+                                                        onClear={() => {
+                                                            setSubPickerCountryId('');
+                                                            setPickedParentId(null);
+                                                            setParentOrgsPicker([]);
+                                                        }}
+                                                        loading={false}
+                                                        onOpen={() => fetchPickerCountries('')}
+                                                        onSearchChange={(v) => {
+                                                            setPickerCountrySearch(v);
+                                                            fetchPickerCountries(v);
+                                                        }}
+                                                        searchPlaceholder="Search countries..."
+                                                        required
+                                                        renderSelected={(option) =>
+                                                            option ? (
+                                                                <div className="d-flex align-items-center">
+                                                                    {option.code && (
+                                                                        <img
+                                                                            src={`/flags/${option.code?.toLowerCase()}.png`}
+                                                                            alt={option.label}
+                                                                            className="me-2"
+                                                                            style={{ width: '20px', height: '15px', objectFit: 'cover' }}
+                                                                            onError={(e) => {
+                                                                                e.target.style.display = 'none';
+                                                                            }}
+                                                                        />
+                                                                    )}
+                                                                    <span>{option.label}</span>
+                                                                </div>
+                                                            ) : (
+                                                                <span className="text-muted fw-semibold">Select country</span>
+                                                            )
+                                                        }
+                                                        renderOption={(option) => (
+                                                            <div className="d-flex align-items-center">
+                                                                {option.code && (
+                                                                    <img
+                                                                        src={`/flags/${option.code?.toLowerCase()}.png`}
+                                                                        alt={option.label}
+                                                                        className="me-3"
+                                                                        style={{ width: '20px', height: '15px', objectFit: 'cover' }}
+                                                                        onError={(e) => {
+                                                                            e.target.style.display = 'none';
+                                                                        }}
+                                                                    />
+                                                                )}
+                                                                <span>{option.label}</span>
+                                                            </div>
+                                                        )}
+                                                    />
+                                                    {errors.picker_country_id && (
+                                                        <div className="invalid-feedback d-block mt-1">{errors.picker_country_id}</div>
+                                                    )}
+                                                </div>
+                                                <div className="col-md-6 mb-7">
+                                                    <SearchableDropdown
+                                                        label="Parent partner"
+                                                        placeholder={
+                                                            subPickerCountryId ? 'Select parent partner' : 'Select country first'
+                                                        }
+                                                        options={parentOrgPickerOptions}
+                                                        selected={selectedPickerParentOption}
+                                                        onSelect={(option) => {
+                                                            setPickedParentId(option?.value || null);
+                                                            if (errors.parent_id) {
+                                                                setErrors((prev) => ({ ...prev, parent_id: '' }));
+                                                            }
+                                                        }}
+                                                        onClear={() => setPickedParentId(null)}
+                                                        loading={loadingPickerParents}
+                                                        disabled={!subPickerCountryId}
+                                                        onOpen={() => {
+                                                            if (subPickerCountryId) {
+                                                                fetchParentOrgsForPicker(subPickerCountryId, pickerParentSearch);
+                                                            }
+                                                        }}
+                                                        onSearchChange={(v) => setPickerParentSearch(v)}
+                                                        searchPlaceholder="Search parent partners..."
+                                                        required
+                                                    />
+                                                    {errors.parent_id && (
+                                                        <div className="invalid-feedback d-block mt-1">{errors.parent_id}</div>
+                                                    )}
+                                                </div>
+                                                {pickedParentId && loadingParent && (
+                                                    <div className="col-12 mb-5">
+                                                        <span className="text-muted fs-7">
+                                                            <span className="spinner-border spinner-border-sm text-primary me-2" />
+                                                            Loading parent details…
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {pickedParentId && !loadingParent && !parentPartner && (
+                                                    <div className="col-12 mb-7">
+                                                        <div className="alert alert-warning mb-0">
+                                                            Could not load the selected parent partner. Try another parent or go back and try
+                                                            again.
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+
+                                        {effectiveParentId && parentPartner && (
+                                            <div className="col-12 mb-7">
+                                                <div className="alert alert-primary d-flex flex-column mb-0">
+                                                    <span className="fw-bold">
+                                                        Parent: {parentPartner.business_name || parentPartner.name}
+                                                    </span>
+                                                    <span className="fs-7 text-gray-700 mt-1">
+                                                        Country and partner category are taken from the parent and cannot be changed
+                                                        here.
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Country - First Field (root partner only) */}
+                                        {!effectiveParentId && !isGlobalSubCreate && (
                                         <div className="col-md-6 mb-7">
                                             <SearchableDropdown
                                                 label="Country"
@@ -602,8 +949,10 @@ const AdminContentProviderCreate = () => {
                                             />
                                             {errors.country_id && <div className="invalid-feedback d-block mt-1">{errors.country_id}</div>}
                                         </div>
+                                        )}
 
-                                        {/* Partner category (type = partner) */}
+                                        {/* Partner category (type = partner) — root partner only */}
+                                        {!effectiveParentId && !isGlobalSubCreate && (
                                         <div className="col-md-6 mb-7">
                                             <SearchableDropdown
                                                 label="Partner category"
@@ -622,6 +971,7 @@ const AdminContentProviderCreate = () => {
                                                 <div className="invalid-feedback d-block mt-1">{errors.partner_category_id}</div>
                                             )}
                                         </div>
+                                        )}
 
                                         {/* Business /Brand Name */}
                                         <div className="col-md-6 mb-7">
@@ -742,6 +1092,25 @@ const AdminContentProviderCreate = () => {
                                             </div>
                                         </div>
 
+                                        {!effectiveParentId && !isGlobalSubCreate && (
+                                            <div className="col-md-6 mb-7">
+                                                <label className="form-label fw-bold">Parent Organization</label>
+                                                <div className="form-check form-switch form-check-custom form-check-solid">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="checkbox"
+                                                        name="is_parent"
+                                                        checked={formData.is_parent}
+                                                        onChange={handleInputChange}
+                                                        id="create_is_parent"
+                                                    />
+                                                    <label className="form-check-label" htmlFor="create_is_parent">
+                                                        Parent organization
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
+
                                     </div>
                                 </div>
                             </div>
@@ -753,13 +1122,20 @@ const AdminContentProviderCreate = () => {
                         <div className="col-md-3"></div>
                         <div className="col-md-9">
                             <div className="d-flex justify-content-end gap-3">
-                                <Link to="/admin/partners" className="btn btn-light">
+                                <Link to={cancelHref} className="btn btn-light">
                                     Cancel
                                 </Link>
                                 <button
                                     type="submit"
                                     className="btn btn-primary"
-                                    disabled={saving}
+                                    disabled={
+                                        saving ||
+                                        subPartnerSubmitBlocked ||
+                                        (!isGlobalSubCreate &&
+                                            effectiveParentId &&
+                                            parentPartner &&
+                                            !parentPartner.is_parent)
+                                    }
                                 >
                                     {saving ? (
                                         <>
@@ -772,7 +1148,7 @@ const AdminContentProviderCreate = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Create Partner
+                                            {effectiveParentId || isGlobalSubCreate ? 'Create Sub Partner' : 'Create Partner'}
                                         </>
                                     )}
                                 </button>

@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { createAdvertisement } from '../../../../services/adminAdvertisementsService';
 import { AUTH_ENDPOINTS } from '../../../../utils/constants';
+import { openNativeDatePicker } from '../../../../utils/advertisementFormUtils';
 
 const AdminAdvertisementCreate = () => {
 	const { setTitle, setActions } = useToolbar();
@@ -237,14 +238,28 @@ const AdminAdvertisementCreate = () => {
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label">Start Date</label>
-							<input type="date" className={`form-control ${errors.start_date ? 'is-invalid' : ''}`} value={formData.start_date} onChange={(e) => setFormData({ ...formData, start_date: e.target.value })} />
+							<label className="form-label" htmlFor="advertisement-create-start-date">Start Date</label>
+							<input
+								id="advertisement-create-start-date"
+								type="date"
+								className={`form-control ${errors.start_date ? 'is-invalid' : ''}`}
+								value={formData.start_date}
+								onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+								onClick={(e) => openNativeDatePicker(e.currentTarget)}
+							/>
 							{errors.start_date && <div className="invalid-feedback">{errors.start_date[0]}</div>}
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label">End Date</label>
-							<input type="date" className={`form-control ${errors.end_date ? 'is-invalid' : ''}`} value={formData.end_date} onChange={(e) => setFormData({ ...formData, end_date: e.target.value })} />
+							<label className="form-label" htmlFor="advertisement-create-end-date">End Date</label>
+							<input
+								id="advertisement-create-end-date"
+								type="date"
+								className={`form-control ${errors.end_date ? 'is-invalid' : ''}`}
+								value={formData.end_date}
+								onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+								onClick={(e) => openNativeDatePicker(e.currentTarget)}
+							/>
 							{errors.end_date && <div className="invalid-feedback">{errors.end_date[0]}</div>}
 						</div>
 					</div>

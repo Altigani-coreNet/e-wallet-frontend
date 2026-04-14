@@ -241,6 +241,43 @@ export const importPartners = async (file) => {
     }
 };
 
+export const getSubPartners = async (parentId, params = {}) => {
+    try {
+        const token = getApiToken();
+        const response = await axios.get(ADMIN_ENDPOINTS.PARTNER_SUB_PARTNERS(parentId), {
+            params,
+            headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+        });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: error.response?.data?.message || 'Failed to fetch sub-partners' };
+    }
+};
+
+export const createSubPartner = async (parentId, partnerData) => {
+    try {
+        const token = getApiToken();
+        const isFormData = partnerData instanceof FormData;
+        const headers = {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        };
+        if (isFormData) {
+            headers['Content-Type'] = 'multipart/form-data';
+        } else {
+            headers['Content-Type'] = 'application/json';
+        }
+        const response = await axios.post(ADMIN_ENDPOINTS.PARTNER_SUB_PARTNERS(parentId), partnerData, { headers });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return {
+            success: false,
+            error: error.response?.data?.message || 'Failed to create sub-partner',
+            errors: error.response?.data?.errors,
+        };
+    }
+};
+
 export const downloadPartnersImportTemplate = async () => {
     try {
         const token = getApiToken();
