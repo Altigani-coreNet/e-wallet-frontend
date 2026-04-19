@@ -285,11 +285,17 @@ const NotificationMenu = () => {
         const reverbScheme = import.meta.env.VITE_REVERB_SCHEME || 'http';
         const isSecure = reverbScheme === 'https';
 
+        const authServiceOrigin = import.meta.env.VITE_AUTH_SERVICE_URL?.replace(/^['"]|['"]$/g, '')?.replace(
+            /\/$/,
+            '',
+        );
+        const broadcastingAuthUrl = `${AUTH_SERVICE_BASE}/api/broadcasting/auth`;
+
         const wsConfig = {
             host: reverbHost,
             port: reverbPort,
             scheme: reverbScheme,
-            authEndpoint: `${AUTH_SERVICE_BASE}/api/broadcasting/auth`,
+            authEndpoint: broadcastingAuthUrl,
         };
 
         logWs('starting Echo (Reverb)', { ...wsConfig, key: reverbKey, userId: user?.id });

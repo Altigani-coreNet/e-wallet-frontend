@@ -306,17 +306,29 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
         navigate(`/merchant/transactions/${transaction.id}`);
     };
 
-    // Get status badge color
-    const getStatusColor = (status) => {
-        const statusColors = {
-            'APPROVED': 'success',
-            'DECLINED': 'danger',
-            'PENDING': 'warning',
-            'CAPTURED': 'info',
-            'VOIDED': 'dark',
-            'REFUNDED': 'secondary'
+    /** Aligned with admin transactions index badge styles */
+    const getStatusBadgeClass = (status) => {
+        const statusMap = {
+            APPROVED: 'badge-light-success',
+            DECLINED: 'badge-light-danger',
+            PENDING: 'badge-light-warning',
+            FAILED: 'badge-light-danger',
+            VOIDED: 'badge-light-secondary',
+            REFUNDED: 'badge-light-info',
+            PROCESSED: 'badge-light-success',
+            CAPTURED: 'badge-light-info',
+            CANCELLED: 'badge-light-secondary',
+            EXPIRED: 'badge-light-dark',
+            REVERSED: 'badge-light-dark',
         };
-        return statusColors[status] || 'secondary';
+        return statusMap[status?.toUpperCase?.()] || 'badge-light-secondary';
+    };
+
+    const formatTableAmount = (value) => {
+        const numeric = Number(value ?? 0);
+        return Number.isNaN(numeric)
+            ? '0.00'
+            : numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     // Generate pagination numbers
@@ -454,39 +466,40 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                         <table className="table align-middle table-row-dashed fs-7 gy-5" id="transactions-table">
                             <thead>
                                 <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                    <th 
-                                        className="text-dark cursor-pointer" 
+                                    <th className="text-dark">Country</th>
+                                    <th className="text-dark">Partner</th>
+                                    <th className="text-dark">Merchant</th>
+                                    <th className="text-dark">Service Category</th>
+                                    <th className="text-dark">Payment Method</th>
+                                    <th
+                                        className="text-dark cursor-pointer"
                                         onClick={() => handleSort('transaction_id')}
                                         style={{ cursor: 'pointer' }}
                                     >
                                         Transaction ID {getSortIcon('transaction_id')}
                                     </th>
-                                    <th className="text-dark">Card Number</th>
-                                    <th 
-                                        className="text-dark cursor-pointer" 
+                                    <th
+                                        className="text-dark cursor-pointer"
+                                        onClick={() => handleSort('created_at')}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        Date and Time {getSortIcon('created_at')}
+                                    </th>
+                                    <th
+                                        className="text-dark cursor-pointer"
                                         onClick={() => handleSort('amount')}
                                         style={{ cursor: 'pointer' }}
                                     >
                                         Amount {getSortIcon('amount')}
                                     </th>
-                                    <th className="text-dark">Batch No</th>
-                                    <th className="text-dark">SDK</th>
-                                    <th 
-                                        className="text-dark cursor-pointer" 
-                                        onClick={() => handleSort('created_at')}
-                                        style={{ cursor: 'pointer' }}
-                                    >
-                                        Created Time {getSortIcon('created_at')}
-                                    </th>
-                                    <th className="text-dark">Payment Channel</th>
-                                    <th 
-                                        className="text-dark cursor-pointer" 
+                                    <th
+                                        className="text-dark cursor-pointer"
                                         onClick={() => handleSort('status')}
                                         style={{ cursor: 'pointer' }}
                                     >
                                         Status {getSortIcon('status')}
                                     </th>
-                                    <th className="text-end text-dark">Actions</th>
+                                    <th className="text-end text-dark">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -494,38 +507,19 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                     // Skeleton Loading Rows (separate loader for table)
                                     [...Array(perPage)].map((_, index) => (
                                         <tr key={`skeleton-${index}`}>
-                                            <td>
-                                                <div className="skeleton skeleton-text" style={{width: '120px', height: '16px'}}></div>
-                                            </td>
-                                            <td>
-                                                <div className="skeleton skeleton-text" style={{width: '150px', height: '16px'}}></div>
-                                            </td>
-                                            <td>
-                                                <div className="skeleton skeleton-text" style={{width: '80px', height: '16px'}}></div>
-                                            </td>
-                                            <td>
-                                                <div className="skeleton skeleton-text" style={{width: '60px', height: '16px'}}></div>
-                                            </td>
-                                            <td>
-                                                <div className="skeleton skeleton-text" style={{width: '60px', height: '16px'}}></div>
-                                            </td>
-                                            <td>
-                                                <div className="skeleton skeleton-text" style={{width: '140px', height: '16px'}}></div>
-                                            </td>
-                                            <td>
-                                                <div className="skeleton skeleton-text" style={{width: '80px', height: '16px'}}></div>
-                                            </td>
-                                            <td>
-                                                <div className="skeleton skeleton-badge" style={{width: '80px', height: '24px', borderRadius: '6px'}}></div>
-                                            </td>
+                                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((c) => (
+                                                <td key={c}>
+                                                    <div className="skeleton skeleton-text" style={{ width: c === 9 ? '80px' : '100px', height: '16px' }}></div>
+                                                </td>
+                                            ))}
                                             <td className="text-end">
-                                                <div className="skeleton skeleton-button" style={{width: '70px', height: '32px', borderRadius: '6px', marginLeft: 'auto'}}></div>
+                                                <div className="skeleton skeleton-button" style={{width: '120px', height: '32px', borderRadius: '6px', marginLeft: 'auto'}}></div>
                                             </td>
                                         </tr>
                                     ))
                                 ) : transactions.length === 0 ? (
                                     <tr>
-                                        <td colSpan="9" className="text-center py-5">
+                                        <td colSpan="10" className="text-center py-5">
                                             <div className="text-gray-500">
                                                 <i className="ki-duotone ki-file fs-3x mb-3">
                                                     <span className="path1"></span>
@@ -538,26 +532,30 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                 ) : (
                                     transactions.map((transaction) => (
                                         <tr key={transaction.id}>
-                                            <td>{transaction.transaction_id || 'N/A'}</td>
+                                            <td>{transaction.country_name || transaction.country?.name || 'N/A'}</td>
+                                            <td>{transaction.partner?.name || transaction.partner?.business_name || transaction.partner_name || 'N/A'}</td>
+                                            <td>{transaction.merchant_name || transaction.merchant?.business_name || transaction.merchant?.name || 'N/A'}</td>
+                                            <td>{transaction.service_category?.name_en || transaction.service_category_name || 'N/A'}</td>
                                             <td>
-                                                {transaction.card_number 
-                                                    ? `**** **** **** ${transaction.card_number.slice(-4)}` 
+                                                {transaction.method ||
+                                                    transaction.payment_method?.card_type ||
+                                                    transaction.paymentMethod?.card_type ||
+                                                    transaction.payment_type ||
+                                                    'N/A'}
+                                            </td>
+                                            <td>{transaction.transaction_id || transaction.id || 'N/A'}</td>
+                                            <td>
+                                                {transaction.created_at
+                                                    ? new Date(transaction.created_at).toLocaleString()
                                                     : 'N/A'}
                                             </td>
                                             <td>
-                                                {transaction.currency_symbol || '$'} {parseFloat(transaction.amount).toFixed(2)}
-                                            </td>
-                                            <td>{transaction.batch_no || 'N/A'}</td>
-                                            <td>{transaction.sdk_id || 'N/A'}</td>
-                                            <td>{new Date(transaction.created_at).toLocaleString()}</td>
-                                            <td>
-                                                <span className="badge badge-light-primary">
-                                                    {transaction.payment_type || 'N/A'}
-                                                </span>
+                                                {transaction.currency_symbol || '$'}
+                                                {formatTableAmount(transaction.amount)}
                                             </td>
                                             <td>
-                                                <span className={`badge badge-light-${getStatusColor(transaction.status)}`}>
-                                                    {transaction.status}
+                                                <span className={`badge ${getStatusBadgeClass(transaction.status)}`}>
+                                                    {transaction.status || 'N/A'}
                                                 </span>
                                             </td>
                                             <td className="text-end">

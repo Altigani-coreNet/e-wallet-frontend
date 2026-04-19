@@ -16,7 +16,7 @@ const TransactionActions = ({ transaction, onView }) => {
                 <span className="path2"></span>
                 <span className="path3"></span>
             </i>
-            View
+            Transaction Details
         </button>
     );
 };

@@ -65,6 +65,28 @@ const AdminTransactionDetail = () => {
         };
     }, [transaction, transactionMerchantId, getMerchantInfoById]);
 
+    /** Opens public cashier invoice print page; URL segment is the encrypted public invoice token. */
+    const handleViewReceipt = useCallback(() => {
+        const invoiceToken =
+            transaction?.transaction_encrypted_id ||
+            transaction?.encrypted_id ||
+            transaction?.id;
+        if (!invoiceToken) {
+            toast.error('Invoice link not available');
+            return;
+        }
+        const invoiceUrl = `/invoice/${encodeURIComponent(String(invoiceToken))}`;
+        try {
+            const newWindow = window.open(invoiceUrl, '_blank', 'noopener,noreferrer');
+            if (!newWindow) {
+                toast.error('Please allow pop-ups to view the invoice');
+            }
+        } catch (error) {
+            console.error('Error opening invoice page:', error);
+            toast.error('Unable to open invoice');
+        }
+    }, [transaction]);
+
     useEffect(() => {
         setTitle('Transaction Details');
         return () => setActions(null);
@@ -121,7 +143,7 @@ const AdminTransactionDetail = () => {
                 </div>
             );
         }
-    }, [transaction, canRefundTransaction, canVoidTransaction]);
+    }, [transaction, canRefundTransaction, canVoidTransaction, handleViewReceipt]);
 
     useEffect(() => {
         if (transaction?.partner_id) {
@@ -271,27 +293,6 @@ const AdminTransactionDetail = () => {
                 console.error('Send receipt error:', error);
                 toast.error(error.response?.data?.message || 'Failed to send receipt');
             }
-        }
-    };
-
-    const handleViewReceipt = async () => {
-        try {
-            const token = getToken();
-            const response = await axios.get(ADMIN_ENDPOINTS.TRANSACTION_RECEIPT(id), {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-            
-            if (response.data.data?.receipt_url) {
-                window.open(response.data.data.receipt_url, '_blank');
-            } else {
-                toast.info('Receipt view will be implemented');
-            }
-        } catch (error) {
-            console.error('View receipt error:', error);
-            toast.error('Failed to view receipt');
         }
     };
 

@@ -48,7 +48,8 @@ export const AUTH_ENDPOINTS = {
     REGISTER_USER: `${AUTH_SERVICE_BASE}/register/user`,
     REGISTER_MERCHANT: `${AUTH_SERVICE_BASE}/register/merchant`,
     REGISTER_PARTNER: `${SOFTPOS_API_BASE}/register/partner`,
-    REGISTER_SEND_CONTINUATION_EMAIL: `${SOFTPOS_API_BASE}/register/send-continuation-email`,
+    REGISTER_SEND_CONTINUATION_EMAIL_MERCHANT: `${SOFTPOS_API_BASE}/register/merchant/send-continuation-email`,
+    REGISTER_SEND_CONTINUATION_EMAIL_PARTNER: `${SOFTPOS_API_BASE}/register/partner/send-continuation-email`,
     
     // Password Management
     PASSWORD_REQUEST_RESET: `${AUTH_SERVICE_BASE}/password/request-reset`,

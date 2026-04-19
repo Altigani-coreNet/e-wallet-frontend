@@ -721,7 +721,7 @@ const PartnerRegister = () => {
                 // Get bearer token from localStorage or sessionStorage
                 const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
                 
-                const response = await fetch(AUTH_ENDPOINTS.REGISTER_SEND_CONTINUATION_EMAIL, {
+                const response = await fetch(AUTH_ENDPOINTS.REGISTER_SEND_CONTINUATION_EMAIL_PARTNER, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',

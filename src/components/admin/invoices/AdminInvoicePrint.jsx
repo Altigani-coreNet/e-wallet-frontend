@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { POS_API_BASE } from '../../../utils/constants';
 
+/**
+ * Public invoice print view. Route param `id` is the encrypted public token (same as sales invoice links).
+ */
 const AdminInvoicePrint = () => {
     const { id } = useParams();
     const [invoice, setInvoice] = useState(null);
@@ -14,7 +17,8 @@ const AdminInvoicePrint = () => {
                 setLoading(true);
                 
                 // Fetch without authentication headers for public access
-                const response = await fetch(`${POS_API_BASE}/invoice/${id}`);
+                const token = id ? encodeURIComponent(id) : '';
+                const response = await fetch(`${POS_API_BASE}/invoice/${token}`);
                 const data = await response.json();
                 
                 console.log('Invoice API Response:', data);
