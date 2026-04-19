@@ -540,7 +540,7 @@ const AdminTransactionDetail = () => {
                             <div className="d-flex align-items-center fs-4 fw-bolder mb-5">
                                 {transaction.paymentMethod?.cardholder_name || 'Card Information'}
                                 <span className="badge badge-light-primary fs-7 ms-2">
-                                    {transaction.transaction_type}
+                                    {transaction.transaction_type || 'N/A'}
                                 </span>
                             </div>
                             
@@ -551,17 +551,26 @@ const AdminTransactionDetail = () => {
                                 
                                 <div>
                                     <div className="fs-4 fw-bolder">
-                                        {transaction.method ? transaction.method.toUpperCase() : 'Card'}
+                                        {(transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || 'Card').toString().toUpperCase()}
                                         {transaction.card_number && ` **** ${transaction.card_number.slice(-4)}`}
                                     </div>
                                     <div className="fs-6 fw-bold text-gray-400">
                                         {transaction.expiry ? `Card expires at ${transaction.expiry}` : 'Expiry information not available'}
                                     </div>
-                                    {transaction.paymentMethod && (
+                                    <div className="mt-3">
                                         <div className="fs-7 text-muted">
-                                            Entry mode: {transaction.paymentMethod.entry_mode}
+                                            Payment Type: {transaction.payment_type || transaction.transaction_type || 'N/A'}
                                         </div>
-                                    )}
+                                        <div className="fs-7 text-muted">
+                                            Payment Method: {transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || 'N/A'}
+                                        </div>
+                                        <div className="fs-7 text-muted">
+                                            Payment Channel: {transaction.paymentMethod?.payment_channel || transaction.payment_method?.payment_channel || 'N/A'}
+                                        </div>
+                                        <div className="fs-7 text-muted">
+                                            Entry mode: {transaction.paymentMethod?.entry_mode || transaction.payment_method?.entry_mode || 'N/A'}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -839,15 +848,18 @@ const AdminTransactionDetail = () => {
                             </div>
 
                             <div className="row g-4">
+                                {/* Core request details */}
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Transaction ID</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.transaction_id || 'N/A'}
+                                    </div>
+                                </div>
                                 <div className="col-md-4">
                                     <div className="fs-7 text-muted">Amount</div>
                                     <div className="fs-6 fw-bold">
                                         {transaction.currency_symbol || '$'} {parseFloat(transaction.original_amount || transaction.amount || 0).toFixed(2)}
                                     </div>
-                                </div>
-                                <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Transaction Type</div>
-                                    <div className="fs-6 fw-bold">{transaction.transaction_type || 'N/A'}</div>
                                 </div>
                                 <div className="col-md-4">
                                     <div className="fs-7 text-muted">Currency</div>
@@ -861,6 +873,38 @@ const AdminTransactionDetail = () => {
                                         {transaction.timestamp || transaction.created_at ? new Date(transaction.timestamp || transaction.created_at).toLocaleString() : 'N/A'}
                                     </div>
                                 </div>
+
+                                {/* Merchant / terminal on request */}
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Merchant ID (MID)</div>
+                                    <div className="fs-6 fw-bold">{transaction.mid || 'N/A'}</div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Terminal ID (TID)</div>
+                                    <div className="fs-6 fw-bold">{transaction.tid || transaction.terminal_id || 'N/A'}</div>
+                                </div>
+
+                                {/* Payment routing on request */}
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Payment Type</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.payment_type || transaction.transaction_type || 'N/A'}
+                                    </div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Payment Method</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || 'N/A'}
+                                    </div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Payment Channel</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.paymentMethod?.payment_channel || transaction.payment_method?.payment_channel || 'N/A'}
+                                    </div>
+                                </div>
+
+                                {/* Cardholder & entry details */}
                                 {(transaction.paymentMethod || transaction.payment_method) && (
                                     <>
                                         <div className="col-md-4">
@@ -897,6 +941,7 @@ const AdminTransactionDetail = () => {
                             </div>
 
                             <div className="row g-4">
+                                {/* Status / basic identifiers */}
                                 <div className="col-md-4">
                                     <div className="fs-7 text-muted">SDK Status</div>
                                     <div className="fs-6 fw-bold">
@@ -913,24 +958,82 @@ const AdminTransactionDetail = () => {
                                     <div className="fs-7 text-muted">Approval Code</div>
                                     <div className="fs-6 fw-bold">{transaction.auth_code || 'N/A'}</div>
                                 </div>
+
+                                {/* Merchant / terminal / routing */}
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">MID</div>
+                                    <div className="fs-7 text-muted">Merchant ID (MID)</div>
                                     <div className="fs-6 fw-bold">{transaction.mid || 'N/A'}</div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">TID</div>
-                                    <div className="fs-6 fw-bold">{transaction.tid || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">Terminal ID (TID)</div>
+                                    <div className="fs-6 fw-bold">{transaction.tid || transaction.terminal_id || 'N/A'}</div>
                                 </div>
+                                {(transaction.sdk || transaction.sdk_id) && (
+                                    <div className="col-md-4">
+                                        <div className="fs-7 text-muted">SDK ID</div>
+                                        <div className="fs-6 fw-bold">{transaction.sdk || transaction.sdk_id}</div>
+                                    </div>
+                                )}
+
+                                {/* Card / EMV technical data */}
                                 {transaction.atc && (
                                     <div className="col-md-4">
                                         <div className="fs-7 text-muted">ATC</div>
                                         <div className="fs-6 fw-bold">{transaction.atc}</div>
                                     </div>
                                 )}
-                                {(transaction.sdk || transaction.sdk_id) && (
+                                {transaction.tvr && (
                                     <div className="col-md-4">
-                                        <div className="fs-7 text-muted">SDK ID</div>
-                                        <div className="fs-6 fw-bold">{transaction.sdk || transaction.sdk_id}</div>
+                                        <div className="fs-7 text-muted">TVR</div>
+                                        <div className="fs-6 fw-bold">{transaction.tvr}</div>
+                                    </div>
+                                )}
+                                {transaction.tsi && (
+                                    <div className="col-md-4">
+                                        <div className="fs-7 text-muted">TSI</div>
+                                        <div className="fs-6 fw-bold">{transaction.tsi}</div>
+                                    </div>
+                                )}
+                                {transaction.app_name && (
+                                    <div className="col-md-4">
+                                        <div className="fs-7 text-muted">Application Name</div>
+                                        <div className="fs-6 fw-bold">{transaction.app_name}</div>
+                                    </div>
+                                )}
+
+                                {/* Payment method breakdown */}
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Payment Type</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.payment_type || transaction.transaction_type || 'N/A'}
+                                    </div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Payment Method</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || 'N/A'}
+                                    </div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Payment Channel</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.paymentMethod?.payment_channel || transaction.payment_method?.payment_channel || 'N/A'}
+                                    </div>
+                                </div>
+                                <div className="col-md-4">
+                                    <div className="fs-7 text-muted">Entry Mode</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.paymentMethod?.entry_mode || transaction.payment_method?.entry_mode || 'N/A'}
+                                    </div>
+                                </div>
+
+                                {/* Response / error details */}
+                                {(transaction.decline_reason || transaction.error_message) && (
+                                    <div className="col-md-8">
+                                        <div className="fs-7 text-muted">Gateway Response</div>
+                                        <div className="fs-6 fw-bold text-wrap">
+                                            {transaction.decline_reason || transaction.error_message}
+                                        </div>
                                     </div>
                                 )}
                             </div>

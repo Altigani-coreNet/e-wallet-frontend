@@ -28,6 +28,7 @@
     "firebase": "^10.13.2",
     "framer-motion": "^12.23.26",
     "html2pdf.js": "^0.10.1",
+    "laravel-echo": "^2.3.4",
     "lucide-react": "^0.561.0",
     "react": "^19.1.1",
     "react-apexcharts": "^1.8.0",

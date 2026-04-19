@@ -21,9 +21,10 @@ const queryClient = new QueryClient({
 });
 
 // Auth Components
-import Login from './components/auth/Login';
-import PartnerRegister from './components/auth/MerchantRegister';
-import ForgotPassword from './components/auth/ForgotPassword';
+import Login from './components/auth/merchant/Login';
+import MerchantRegister from './components/auth/merchant/MerchantRegister';
+import PartnerRegister from './components/auth/parnters/PartnerRegister';
+import ForgotPassword from './components/auth/merchant/ForgotPassword';
 
 // Layout Components
 import MainLayout from './components/layout/MainLayout';
@@ -232,6 +233,8 @@ import AdminSettlementsIndex from './components/admin/settlements/AdminSettlemen
 import AdminSettlementDetail from './components/admin/settlements/AdminSettlementDetail';
 import AdminBatchesIndex from './components/admin/batches/AdminBatchesIndex';
 import AdminBatchDetail from './components/admin/batches/AdminBatchDetail';
+import AdminNotificationsIndex from './components/admin/notifications/AdminNotificationsIndex';
+import AdminNotificationForm from './components/admin/notifications/AdminNotificationForm';
 
 // System Administration Components - Plans
 import AdminPlansIndex from './components/admin/plans/AdminPlansIndex';
@@ -711,7 +714,8 @@ function App() {
             <Route path="/500" element={<Error500 />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/merchant/register" element={<PartnerRegister />} />
+            <Route path="/merchant/register" element={<MerchantRegister />} />
+            <Route path="/partner/register" element={<PartnerRegister />} />
 
             {/* Public Invoice Routes - No Authentication Required */}
             {/* POS (cashier) sale invoice */}
@@ -1109,24 +1113,27 @@ function App() {
 
                     {/* System Administration - Advertisements */}
                     <Route path="system/advertisements" element={
-                        <PermissionRoute required="pos.advertisements.view_advertisements">
-                            <AdminAdvertisementsIndex />
-                        </PermissionRoute>
+                        <AdminAdvertisementsIndex />
                     } />
                     <Route path="system/advertisements/create" element={
-                        <PermissionRoute required="pos.advertisements.create_advertisements">
-                            <AdminAdvertisementCreate />
-                        </PermissionRoute>
+                        <AdminAdvertisementCreate />
                     } />
                     <Route path="system/advertisements/:id" element={
-                        <PermissionRoute required="pos.advertisements.view_advertisements">
-                            <AdminAdvertisementView />
-                        </PermissionRoute>
+                        <AdminAdvertisementView />
                     } />
                     <Route path="system/advertisements/:id/edit" element={
-                        <PermissionRoute required="pos.advertisements.edit_advertisements">
-                            <AdminAdvertisementEdit />
-                        </PermissionRoute>
+                        <AdminAdvertisementEdit />
+                    } />
+
+                    {/* Notifications Management (no permissions required) */}
+                    <Route path="system/notifications" element={
+                        <AdminNotificationsIndex />
+                    } />
+                    <Route path="system/notifications/create" element={
+                        <AdminNotificationForm />
+                    } />
+                    <Route path="system/notifications/:id/edit" element={
+                        <AdminNotificationForm />
                     } />
 
                     {/* System Administration - Payment Gateways */}

@@ -23,6 +23,7 @@ const AdminTerminalsIndex = () => {
     const {
         merchantsMap,
         countriesMap,
+        branchesMap,
     } = useAdminReferenceData();
     
     const [pagination, setPagination] = useState({
@@ -505,6 +506,9 @@ const AdminTerminalsIndex = () => {
                                             <TerminalTableRow
                                                 key={terminal.id}
                                                 terminal={terminal}
+                                                merchantsMap={merchantsMap}
+                                                branchesMap={branchesMap}
+                                                countriesMap={countriesMap}
                                                 rowNumber={(pagination.current_page - 1) * pagination.per_page + index + 1}
                                                 isSelected={selectedIds.includes(terminal.id)}
                                                 onSelect={handleSelect}

@@ -1,8 +1,8 @@
 // API Base URLs
-export const  BASE_DOMAIN = 'https://dev.corenetpay.com';
+export const  BASE_DOMAIN = 'https://fastpay.sd';
+// export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
 // export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
 export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
-// export const AUTH_SERVICE_BASE = `http://localhost:8000`;
 export const SOFTPOS_API_BASE =  `${BASE_DOMAIN}/api/softpos`; //  `${BASE_DOMAIN}/api/softpos` //  `http://193.123.83.134:82`;;
 // PayTabs Node service base (for QR testing)
 export const PAYTABS_API_BASE = `${BASE_DOMAIN}/api/paytabs`;
@@ -835,7 +835,13 @@ export const ADMIN_SYSTEM_ENDPOINTS = {
      PRODUCT_BULK_DELETE: `${SOFTPOS_API_BASE}/products/bulk-delete`,
      AUTH_PRODUCTS_EXPORT: `${SOFTPOS_API_BASE}/products/export`,
      PRODUCTS_SELECT: `${SOFTPOS_API_BASE}/products/select`,
-    
+
+     NOTIFICATIONS: `${AUTH_SERVICE_BASE}/v2/admin/notifications`,
+    NOTIFICATION_DETAILS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/notifications/${id}`,
+    NOTIFICATION_RESEND: (id) => `${AUTH_SERVICE_BASE}/v2/admin/notifications/${id}/resend`,
+    NOTIFICATION_MERCHANTS_SELECT: `${AUTH_SERVICE_BASE}/v2/admin/notifications/lookups/merchants/select`,
+    NOTIFICATION_USERS_BY_MERCHANT: `${AUTH_SERVICE_BASE}/v2/admin/notifications/lookups/users`,
+        
 };
 
 // Default Configuration

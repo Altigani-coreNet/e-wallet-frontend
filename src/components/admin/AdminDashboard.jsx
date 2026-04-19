@@ -510,7 +510,7 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            <div className="row gy-5 g-xl-10">
+            <div className="row gy-5 g-xl-10 mt-10">
                 <div className="col-xl-12">
                     <AdminLatestTransactions
                         transactions={enrichedLatestTransactions}

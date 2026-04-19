@@ -10,7 +10,8 @@ const UserTableRow = ({
     onSelect, 
     onActivate, 
     onDeactivate, 
-    onDelete 
+    onDelete,
+    onSendResetPassword
 }) => {
     const canEditUser = useCan('pos.users.edit_users');
     const canDeleteUser = useCan('pos.users.delete_users');
@@ -224,6 +225,17 @@ const UserTableRow = ({
                                     Activate
                                 </button>
                             )}
+
+                            <button
+                                onMouseDown={(e) => { e.preventDefault(); onSendResetPassword?.(user.id); }}
+                                className="dropdown-item"
+                            >
+                                <i className="ki-duotone ki-shield-tick fs-5 me-2">
+                                    <span className="path1"></span>
+                                    <span className="path2"></span>
+                                </i>
+                                Reset Password
+                            </button>
                             
                             <div className="dropdown-divider"></div>
                             

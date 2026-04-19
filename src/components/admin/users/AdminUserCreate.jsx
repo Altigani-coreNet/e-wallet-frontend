@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { ADMIN_ENDPOINTS } from '../../../utils/constants';
+import { ADMIN_ENDPOINTS, ADMIN_SYSTEM_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { getTranslatedText } from '../../../utils/helpers';
@@ -21,6 +21,8 @@ const AdminUserCreate = () => {
     const [showBranchList, setShowBranchList] = useState(false);
     const [selectedMerchant, setSelectedMerchant] = useState(null);
     const [selectedBranch, setSelectedBranch] = useState(null);
+    const [merchantRoles, setMerchantRoles] = useState([]);
+    const [selectedRoleIds, setSelectedRoleIds] = useState([]);
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -32,6 +34,19 @@ const AdminUserCreate = () => {
         is_admin: false
     });
     const [errors, setErrors] = useState({});
+
+    const hasError = (field) => {
+        const error = errors[field];
+        if (Array.isArray(error)) return error.length > 0 && Boolean(error[0]);
+        return Boolean(error);
+    };
+    const getErrorMessage = (field) => {
+        const error = errors[field];
+        return Array.isArray(error) ? error[0] : error;
+    };
+    const validationMessages = Object.values(errors)
+        .flatMap((error) => (Array.isArray(error) ? error : [error]))
+        .filter(Boolean);
 
     useEffect(() => {
         setTitle('Add New User');
@@ -54,11 +69,41 @@ const AdminUserCreate = () => {
     useEffect(() => {
         if (formData.merchant_id) {
             fetchBranches(formData.merchant_id);
+            fetchMerchantRoles(formData.merchant_id);
         } else {
             setBranches([]);
+            setMerchantRoles([]);
+            setSelectedRoleIds([]);
             setFormData(prev => ({ ...prev, branch_id: '' }));
         }
     }, [formData.merchant_id]);
+
+    const fetchMerchantRoles = async (merchantId) => {
+        if (!merchantId) {
+            setMerchantRoles([]);
+            return;
+        }
+        try {
+            const token = getToken();
+            const response = await axios.get(ADMIN_SYSTEM_ENDPOINTS.ROLES_SELECT, {
+                params: { merchant_id: merchantId },
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const list = Array.isArray(response.data) ? response.data : [];
+            setMerchantRoles(list);
+            setSelectedRoleIds((prev) => prev.filter((id) => list.some((r) => String(r.id) === String(id))));
+        } catch (error) {
+            console.error('Failed to fetch merchant roles:', error);
+            setMerchantRoles([]);
+        }
+    };
+
+    const toggleRole = (roleId) => {
+        const idStr = String(roleId);
+        setSelectedRoleIds((prev) =>
+            prev.map(String).includes(idStr) ? prev.filter((id) => String(id) !== idStr) : [...prev, roleId]
+        );
+    };
 
     const fetchMerchants = async () => {
         try {
@@ -124,6 +169,7 @@ const AdminUserCreate = () => {
         setShowMerchantList(false);
         setSelectedBranch(null);
         setBranchSearchTerm('');
+        setSelectedRoleIds([]);
         fetchBranches(merchant.id);
     };
 
@@ -133,6 +179,8 @@ const AdminUserCreate = () => {
         setFormData(prev => ({ ...prev, merchant_id: '', branch_id: '', country_id: '' }));
         setBranches([]);
         setFilteredBranches([]);
+        setMerchantRoles([]);
+        setSelectedRoleIds([]);
     };
 
     const handleBranchSearch = (searchTerm) => {
@@ -168,7 +216,11 @@ const AdminUserCreate = () => {
             [name]: type === 'checkbox' ? checked : value
         }));
         if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: '' }));
+            setErrors(prev => {
+                const next = { ...prev };
+                delete next[name];
+                return next;
+            });
         }
     };
 
@@ -217,7 +269,8 @@ const AdminUserCreate = () => {
                 branch_id: formData.branch_id || null,
                 country_id: formData.country_id || null,
                 status: formData.status,
-                is_admin: formData.is_admin
+                is_admin: formData.is_admin,
+                roles: selectedRoleIds
             };
 
             const response = await axios.post(
@@ -260,7 +313,7 @@ const AdminUserCreate = () => {
 
                                 <div className="card-body p-9">
                                     {/* General Validation Errors */}
-                                    {Object.keys(errors).length > 0 && (
+                                    {validationMessages.length > 0 && (
                                         <div className="alert alert-danger alert-dismissible fade show mb-7" role="alert">
                                             <div className="d-flex">
                                                 <i className="ki-duotone ki-cross-circle fs-2hx text-danger me-4">
@@ -270,7 +323,7 @@ const AdminUserCreate = () => {
                                                 <div className="d-flex flex-column">
                                                     <h4 className="mb-1">Validation Errors</h4>
                                                     <ul className="mb-0">
-                                                        {Object.values(errors).map((error, idx) => (
+                                                        {validationMessages.map((error, idx) => (
                                                             <li key={idx}>{error}</li>
                                                         ))}
                                                     </ul>
@@ -287,12 +340,12 @@ const AdminUserCreate = () => {
                                             <input
                                                 type="text"
                                                 name="name"
-                                                className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                                className={`form-control ${hasError('name') ? 'is-invalid' : ''}`}
                                                 value={formData.name}
                                                 onChange={handleInputChange}
                                                 placeholder="Enter full name"
                                             />
-                                            {errors.name && <div className="invalid-feedback d-block">{errors.name}</div>}
+                                            {hasError('name') && <div className="invalid-feedback d-block">{getErrorMessage('name')}</div>}
                                         </div>
 
                                         {/* Email */}
@@ -301,12 +354,12 @@ const AdminUserCreate = () => {
                                             <input
                                                 type="email"
                                                 name="email"
-                                                className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                                className={`form-control ${hasError('email') ? 'is-invalid' : ''}`}
                                                 value={formData.email}
                                                 onChange={handleInputChange}
                                                 placeholder="user@example.com"
                                             />
-                                            {errors.email && <div className="invalid-feedback d-block">{errors.email}</div>}
+                                            {hasError('email') && <div className="invalid-feedback d-block">{getErrorMessage('email')}</div>}
                                         </div>
 
                                         {/* Phone */}
@@ -315,12 +368,12 @@ const AdminUserCreate = () => {
                                             <input
                                                 type="text"
                                                 name="phone"
-                                                className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
+                                                className={`form-control ${hasError('phone') ? 'is-invalid' : ''}`}
                                                 value={formData.phone}
                                                 onChange={handleInputChange}
                                                 placeholder="+1234567890"
                                             />
-                                            {errors.phone && <div className="invalid-feedback d-block">{errors.phone}</div>}
+                                            {hasError('phone') && <div className="invalid-feedback d-block">{getErrorMessage('phone')}</div>}
                                             <div className="form-text text-info mt-2">
                                                 <i className="ki-duotone ki-information fs-7 me-1">
                                                     <span className="path1"></span>
@@ -336,7 +389,7 @@ const AdminUserCreate = () => {
                                             <label className="form-label fw-bold required">Merchant</label>
                                             <div className="position-relative">
                                                 <div 
-                                                    className={`form-control h-50px d-flex align-items-center justify-content-between ${errors.merchant_id ? 'is-invalid' : ''}`}
+                                                    className={`form-control h-50px d-flex align-items-center justify-content-between ${hasError('merchant_id') ? 'is-invalid' : ''}`}
                                                     onClick={() => setShowMerchantList(!showMerchantList)}
                                                     style={{ cursor: 'pointer' }}
                                                 >
@@ -402,7 +455,7 @@ const AdminUserCreate = () => {
                                                     </div>
                                                 )}
                                             </div>
-                                            {errors.merchant_id && <div className="invalid-feedback d-block">{errors.merchant_id}</div>}
+                                            {hasError('merchant_id') && <div className="invalid-feedback d-block">{getErrorMessage('merchant_id')}</div>}
                                         </div>
 
                                         {/* Branch */}
@@ -476,6 +529,32 @@ const AdminUserCreate = () => {
                                                     </div>
                                                 )}
                                             </div>
+                                        </div>
+
+                                        {/* Merchant roles (guard web, scoped to merchant) */}
+                                        <div className="col-12 mb-7">
+                                            <label className="form-label fw-bold">Roles</label>
+                                            {!formData.merchant_id ? (
+                                                <div className="text-muted fs-7">Select merchant first to load roles.</div>
+                                            ) : merchantRoles.length === 0 ? (
+                                                <div className="text-muted fs-7">
+                                                    No roles found for this merchant. Create roles under merchant permissions or role management first.
+                                                </div>
+                                            ) : (
+                                                <div className="d-flex flex-wrap gap-4 mt-2">
+                                                    {merchantRoles.map((role) => (
+                                                        <label key={role.id} className="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input
+                                                                className="form-check-input"
+                                                                type="checkbox"
+                                                                checked={selectedRoleIds.map(String).includes(String(role.id))}
+                                                                onChange={() => toggleRole(role.id)}
+                                                            />
+                                                            <span className="form-check-label text-gray-800">{role.text || role.name}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Status */}

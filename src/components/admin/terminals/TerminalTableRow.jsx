@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useCan } from '../../../utils/permissions';
 
 const TerminalTableRow = ({ 
     terminal, 
+    merchantsMap = {},
+    branchesMap = {},
+    countriesMap = {},
     rowNumber, 
     isSelected, 
     onSelect, 
@@ -12,7 +15,6 @@ const TerminalTableRow = ({
 }) => {
     const canEditTerminal = useCan('pos.terminals.edit_terminals');
     const canDeleteTerminal = useCan('pos.terminals.delete_terminals');
-    const [showMenu, setShowMenu] = useState(false);
 
     const handleCheckboxChange = (e) => {
         onSelect(terminal.id, e.target.checked);
@@ -114,14 +116,23 @@ const TerminalTableRow = ({
             {/* Merchant */}
             <td>
                 <span className="text-gray-800">
-                    {terminal.merchant?.business_name || terminal.merchant?.name || 'N/A'}
+                    {terminal.merchant?.business_name ||
+                        terminal.merchant?.name ||
+                        terminal.merchant_name ||
+                        merchantsMap[terminal.merchant_id] ||
+                        terminal.merchant_id ||
+                        'N/A'}
                 </span>
             </td>
 
             {/* Branch */}
             <td>
                 <span className="text-gray-800">
-                    {terminal.branch?.name || 'N/A'}
+                    {terminal.branch?.name ||
+                        terminal.branch_name ||
+                        branchesMap[terminal.branch_id] ||
+                        terminal.branch_id ||
+                        'N/A'}
                 </span>
             </td>
 
@@ -175,7 +186,9 @@ const TerminalTableRow = ({
                 <span className="text-gray-800">
                     {(() => {
                         const country = terminal.country || terminal.merchant?.country;
-                        if (!country) return 'N/A';
+                        if (!country) {
+                            return countriesMap[terminal.country_id] || terminal.country_id || 'N/A';
+                        }
                         
                         // Handle multilingual name object
                         if (country.name && typeof country.name === 'object') {
@@ -190,72 +203,53 @@ const TerminalTableRow = ({
             {/* Created At */}
             <td>
                 <span className="text-gray-800">
-                    {new Date(terminal.created_at).toLocaleDateString()}
+                    {terminal.created_at ? new Date(terminal.created_at).toLocaleDateString() : 'N/A'}
                 </span>
             </td>
 
             {/* Actions */}
             <td className="text-end">
-                <div className="dropdown">
-                    <button
-                        className="btn btn-sm btn-light btn-active-light-primary"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded={showMenu}
-                        onClick={() => setShowMenu(!showMenu)}
+                <div className="d-flex justify-content-end gap-2 flex-nowrap">
+                    <Link
+                        to={`/admin/terminals/${terminal.id}`}
+                        className="btn btn-icon btn-sm btn-light-primary"
+                        title="View"
                     >
-                        Actions
-                        <i className="ki-duotone ki-down fs-5 ms-1"></i>
-                    </button>
-                    <ul className={`dropdown-menu dropdown-menu-end ${showMenu ? 'show' : ''}`}>
-                        <li>
-                            <Link 
-                                to={`/admin/terminals/${terminal.id}`} 
-                                className="dropdown-item"
-                            >
-                                <i className="ki-duotone ki-eye fs-6 me-2">
-                                    <span className="path1"></span>
-                                    <span className="path2"></span>
-                                    <span className="path3"></span>
-                                </i>
-                                View
-                            </Link>
-                        </li>
-                        {canEditTerminal && (
-                            <li>
-                                <Link 
-                                    to={`/admin/terminals/${terminal.id}/edit`} 
-                                    className="dropdown-item"
-                                >
-                                    <i className="ki-duotone ki-pencil fs-6 me-2">
-                                        <span className="path1"></span>
-                                        <span className="path2"></span>
-                                    </i>
-                                    Edit
-                                </Link>
-                            </li>
-                        )}
-                        {canDeleteTerminal && (
-                            <>
-                                <li><hr className="dropdown-divider" /></li>
-                                <li>
-                                    <button 
-                                        className="dropdown-item text-danger"
-                                        onClick={handleDelete}
-                                    >
-                                        <i className="ki-duotone ki-trash fs-6 me-2">
-                                            <span className="path1"></span>
-                                            <span className="path2"></span>
-                                            <span className="path3"></span>
-                                            <span className="path4"></span>
-                                            <span className="path5"></span>
-                                        </i>
-                                        Delete
-                                    </button>
-                                </li>
-                            </>
-                        )}
-                    </ul>
+                        <i className="ki-duotone ki-eye fs-6">
+                            <span className="path1"></span>
+                            <span className="path2"></span>
+                            <span className="path3"></span>
+                        </i>
+                    </Link>
+
+                    {canEditTerminal && (
+                        <Link
+                            to={`/admin/terminals/${terminal.id}/edit`}
+                            className="btn btn-icon btn-sm btn-light-warning"
+                            title="Edit"
+                        >
+                            <i className="ki-duotone ki-pencil fs-6">
+                                <span className="path1"></span>
+                                <span className="path2"></span>
+                            </i>
+                        </Link>
+                    )}
+
+                    {canDeleteTerminal && (
+                        <button
+                            className="btn btn-icon btn-sm btn-light-danger"
+                            onClick={handleDelete}
+                            title="Delete"
+                        >
+                            <i className="ki-duotone ki-trash fs-6">
+                                <span className="path1"></span>
+                                <span className="path2"></span>
+                                <span className="path3"></span>
+                                <span className="path4"></span>
+                                <span className="path5"></span>
+                            </i>
+                        </button>
+                    )}
                 </div>
             </td>
         </tr>

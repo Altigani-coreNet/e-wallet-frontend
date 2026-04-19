@@ -150,7 +150,7 @@ const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loadi
                                                             {transaction.terminal?.serial_number || 'N/A'}
                                                         </span>
                                                         <span className="text-gray-500 fw-semibold d-block fs-7">
-                                                            {transaction.terminal?.name || 'Unknown Terminal'}
+                                                            {transaction?.terminal_name || transaction?.terminal?.name || 'Terminal'}
                                                         </span>
                                                     </div>
                                                 </div>

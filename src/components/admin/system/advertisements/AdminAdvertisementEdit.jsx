@@ -27,7 +27,6 @@ const AdminAdvertisementEdit = () => {
 		end_date: ''
 	});
 	const [errors, setErrors] = useState({});
-
 	useEffect(() => {
 		setTitle('Edit Advertisement');
 		setActions(null);

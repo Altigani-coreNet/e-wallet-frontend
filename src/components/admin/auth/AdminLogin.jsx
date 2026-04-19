@@ -146,39 +146,62 @@ const AdminLogin = () => {
             {/* Page background image */}
             <style>{`
                 body {
-                    background-image: url('/assets/media/auth/bg4.jpg');
+                    background-image: url('/login_background.png');
+                    background-size: cover;
+                    background-position: center;
+                    background-repeat: no-repeat;
+                    background-attachment: fixed;
                 }
                 [data-bs-theme="dark"] body {
-                    background-image: url('/assets/media/auth/bg4-dark.jpg');
+                    background-image: url('/login_background.png');
+                    background-size: cover;
+                    background-position: center;
+                    background-repeat: no-repeat;
+                    background-attachment: fixed;
+                }
+                /* Login hero: hidden < lg; ~600px art, end-aligned on large screens */
+                .login-hero-wrap {
+                    width: 100%;
+                }
+                @media (min-width: 992px) {
+                    .login-hero-wrap {
+                        justify-content: flex-end;
+                        align-items: center;
+                    }
+                }
+                .login-hero-art {
+                    width: min(100%, 600px);
+                    max-width: 600px;
+                    margin-left: auto;
+                    margin-right: 0;
+                }
+                @media (min-width: 992px) {
+                    .login-hero-art {
+                        width: 600px;
+                        min-width: 600px;
+                    }
                 }
             `}</style>
             
             <div className="d-flex flex-column flex-root" id="kt_app_root" style={{ minHeight: '100vh' }}>
                 <div className="d-flex flex-column flex-lg-row" style={{ minHeight: '100vh' }}>
-                    {/* Left side - Branding - Hidden on small screens - 50% width */}
-                    <div className="d-none d-lg-flex justify-content-center align-items-center" style={{ flex: '1', minHeight: '100vh' }}>
-                        <div className="d-flex flex-column flex-center p-10">
-                            <img 
-                                className="theme-light-show mx-auto mw-100 w-150px w-lg-300px mb-10 mb-lg-20" 
-                                src="/faspay_logo.png" 
-                                alt="FasPOS Logo" 
+                    {/* Left: hero illustration — only from lg up */}
+                    <div
+                        className="login-hero-wrap d-none d-lg-flex px-6 px-lg-8 pe-lg-6 py-10 py-lg-0"
+                        style={{ flex: '1.6 1 0%', minWidth: 0, minHeight: '100vh' }}
+                    >
+                        <div className="login-hero-art">
+                            <img
+                                src="/login_image.png"
+                                alt=""
+                                className="w-100 d-block"
+                                style={{ height: 'auto', objectFit: 'contain' }}
                             />
-                            <img 
-                                className="theme-dark-show mx-auto mw-100 w-150px w-lg-300px mb-10 mb-lg-20" 
-                                src="/faspay_logo.png" 
-                                alt="FasPOS Logo" 
-                            />
-                            <h1 className="text-gray-800 fs-2qx fw-bold text-center mb-7">
-                                FasPOS Admin Panel
-                            </h1>
-                            <div className="text-dark fs-base text-center fw-semibold">
-                                Complete administrative control over merchants, terminals, users, and transactions across the entire platform.
-                            </div>
                         </div>
                     </div>
 
-                    {/* Right side - Login Form - 50% width on desktop, 100% on mobile */}
-                    <div className="d-flex justify-content-center align-items-center p-12" style={{ flex: '1', minHeight: '100vh' }}>
+                    {/* Right: login form (full width on small screens) */}
+                    <div className="d-flex justify-content-center align-items-center p-12" style={{ flex: '1 1 0%', minWidth: 0, minHeight: '100vh' }}>
                         <div className="bg-body d-flex flex-column flex-center rounded-4 w-md-600px py-15 px-10">
                             <div className="d-flex flex-center flex-column align-items-stretch w-md-400px">
                                 <div className="d-flex flex-center flex-column flex-column-fluid py-10">

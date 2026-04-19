@@ -23,13 +23,10 @@ const AdminLatestTransactions = ({ transactions, limit, onLimitChange, loading }
                 transaction?.terminal_uuid ??
                 'N/A';
 
-            const merchantName = transaction?.merchant?.business_name || 'Unknown Merchant';
-            const terminalName =
-                transaction?.terminal?.name ||
-                transaction?.terminal?.model ||
-                transaction?.terminal?.model_name ||
-                transaction?.terminal?.serial_no ||
-                null;
+            const merchantName = transaction?.merchant_name || transaction?.merchant?.business_name || 'Unknown Merchant';
+            const partnerName = transaction?.partner_name || null;
+            const countryName = transaction?.country_name || null;
+            const terminalName = transaction?.terminal_name || transaction?.terminal?.name || null;
 
             return (
                 <tr key={`${statusColor}-${transaction.id}`}>
@@ -37,7 +34,7 @@ const AdminLatestTransactions = ({ transactions, limit, onLimitChange, loading }
                     <div className="d-flex align-items-center">
                         <div className="symbol symbol-40px me-3">
                             <div className={`symbol-label bg-light-${statusColor} text-${statusColor} fs-6 fw-bold`}>
-                                {transaction.merchant?.business_name?.charAt(0)?.toUpperCase() || 'M'}
+                                {merchantName.charAt(0)?.toUpperCase() || 'M'}
                             </div>
                         </div>
                         <div className="d-flex justify-content-start flex-column">
@@ -50,6 +47,16 @@ const AdminLatestTransactions = ({ transactions, limit, onLimitChange, loading }
                                 {terminalName && (
                                     <span className="text-muted fw-semibold d-block fs-7">
                                         {terminalName}
+                                    </span>
+                                )}
+                                {partnerName && (
+                                    <span className="text-muted fw-semibold d-block fs-7">
+                                        Partner: {partnerName}
+                                    </span>
+                                )}
+                                {countryName && (
+                                    <span className="text-muted fw-semibold d-block fs-7">
+                                        Country: {countryName}
                                     </span>
                                 )}
                                 {transaction.terminal?.branch_name && (

@@ -356,6 +356,12 @@ const AdminUserView = () => {
                                         <span>User ID</span>
                                         <span className="fw-bold text-gray-900">{user.id}</span>
                                     </div>
+                                    {user.user_name && (
+                                        <div className="d-flex justify-content-between">
+                                            <span>Username</span>
+                                            <span className="fw-bold text-gray-900">{user.user_name}</span>
+                                        </div>
+                                    )}
                                     {user.merchant_id && (
                                         <div className="d-flex justify-content-between">
                                             <span>Merchant ID</span>

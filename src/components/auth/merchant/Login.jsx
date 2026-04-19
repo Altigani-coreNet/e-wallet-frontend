@@ -1,0 +1,303 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import useAuthStore from '../../../stores/authStore';
+
+const Login = () => {
+    const navigate = useNavigate();
+    const { login, loading, error, isAuthenticated, clearError, merchant } = useAuthStore();
+    
+    const [formData, setFormData] = useState({
+        email: '',
+        password: '',
+    });
+
+    const [formErrors, setFormErrors] = useState({});
+
+    // Clear stale tokens on mount and redirect if already authenticated (but verify token exists)
+    useEffect(() => {
+        const token = localStorage.getItem('corenet_token');
+        
+        // If store says authenticated but no token in localStorage, clear the store
+        if (isAuthenticated && !token) {
+            console.log('⚠️ Clearing stale auth state - no token in localStorage');
+            useAuthStore.setState({
+                user: null,
+                merchant: null,
+                token: null,
+                isAuthenticated: false,
+            });
+            return;
+        }
+        
+        // Only redirect if truly authenticated with valid token
+        if (isAuthenticated && token) {
+            const status = merchant?.status ? String(merchant.status).toLowerCase() : null;
+            const targetRoute = status === 'approved' ? '/merchant/dashboard' : '/merchant/profile';
+            navigate(targetRoute, { replace: true });
+        }
+    }, [isAuthenticated, merchant, navigate]);
+
+    // Clear error when component unmounts
+    useEffect(() => {
+        return () => clearError();
+    }, [clearError]);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+        
+        // Clear field error when user types
+        if (formErrors[name]) {
+            setFormErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }));
+        }
+    };
+
+    const validate = () => {
+        const errors = {};
+        
+        if (!formData.email) {
+            errors.email = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            errors.email = 'Email is invalid';
+        }
+        
+        if (!formData.password) {
+            errors.password = 'Password is required';
+        }
+        
+        return errors;
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        const errors = validate();
+        if (Object.keys(errors).length > 0) {
+            setFormErrors(errors);
+            return;
+        }
+
+        try {
+            const result = await login({
+                email: formData.email,
+                password: formData.password,
+            });
+            
+            toast.success('Login successful!');
+            
+            // Check if user needs to complete merchant registration
+            if (result?.needsMerchantRegistration) {
+                // Redirect to registration page at step 3 (Merchant Profile)
+                navigate('/merchant/register?step=2', { replace: true });
+                return;
+            }
+            
+            const merchantFromResponse = result?.merchant || result?.user?.merchant || merchant;
+            const status = merchantFromResponse?.status ? String(merchantFromResponse.status).toLowerCase() : null;
+
+            // If merchant is not approved, always go to profile
+            if (status !== 'approved') {
+                navigate('/merchant/profile', { replace: true });
+                return;
+            }
+
+            // Decide default module based on plan scopes (POS vs Cashier)
+            const merchantScopes = Array.isArray(merchantFromResponse?.scopes) ? merchantFromResponse.scopes : [];
+            const hasSoftPosScope = merchantScopes.includes('softpos');
+            const hasCashierScope = merchantScopes.includes('cashier');
+
+            const planScopes = Array.isArray(merchantFromResponse?.plan?.plan_scopes)
+                ? merchantFromResponse.plan.plan_scopes
+                : [];
+            const posScopeTypes = ['users', 'branches', 'terminals', 'transactions', 'batches', 'settlements', 'payment_links'];
+            const salesScopeTypes = ['categories', 'products', 'customers', 'suppliers', 'purchases', 'sales'];
+
+            const posScopes = planScopes.filter(
+                (scope) => scope.module === 'pos' && posScopeTypes.includes(scope.scope_type)
+            );
+            const salesScopes = planScopes.filter(
+                (scope) => scope.module === 'cashier' && salesScopeTypes.includes(scope.scope_type)
+            );
+
+            const hasAnyPosScopesEnabled =
+                planScopes.length === 0
+                    ? hasSoftPosScope
+                    : posScopes.length > 0 && posScopes.some((scope) => scope.is_enabled === true);
+
+            const hasAnySalesScopesEnabled =
+                planScopes.length === 0
+                    ? hasCashierScope
+                    : salesScopes.length > 0 && salesScopes.some((scope) => scope.is_enabled === true);
+
+            if (hasAnyPosScopesEnabled) {
+                navigate('/merchant/dashboard', { replace: true });
+            } else if (hasAnySalesScopesEnabled) {
+                navigate('/sales/dashboard', { replace: true });
+            } else {
+                // Fallback if no scopes: go to merchant profile
+                navigate('/merchant/profile', { replace: true });
+            }
+        } catch (err) {
+            const errorMessage = err.response?.data?.message || error || 'Login failed';
+            toast.error(errorMessage);
+            setFormErrors({ submit: errorMessage });
+        }
+    };
+
+    return (
+        <>
+            {/* Page background image - using shared login background */}
+            <style>{`
+                body {
+                    background-image: url('/login_background.png');
+                    background-size: cover;
+                    background-position: center;
+                    background-repeat: no-repeat;
+                    background-attachment: fixed;
+                }
+                [data-bs-theme="dark"] body {
+                    background-image: url('/login_background.png');
+                    background-size: cover;
+                    background-position: center;
+                    background-repeat: no-repeat;
+                    background-attachment: fixed;
+                }
+                .login-hero-wrap {
+                    width: 100%;
+                }
+                @media (min-width: 992px) {
+                    .login-hero-wrap {
+                        justify-content: flex-end;
+                        align-items: center;
+                    }
+                }
+                .login-hero-art {
+                    width: min(100%, 600px);
+                    max-width: 600px;
+                    margin-left: auto;
+                    margin-right: 0;
+                }
+                @media (min-width: 992px) {
+                    .login-hero-art {
+                        width: 600px;
+                        min-width: 600px;
+                    }
+                }
+            `}</style>
+            
+            <div className="d-flex flex-column flex-root" id="kt_app_root" style={{ minHeight: '100vh' }}>
+                <div className="d-flex flex-column flex-lg-row" style={{ minHeight: '100vh' }}>
+                    {/* Left: hero illustration — only from lg up */}
+                    <div
+                        className="login-hero-wrap d-none d-lg-flex px-6 px-lg-8 pe-lg-6 py-10 py-lg-0"
+                        style={{ flex: '1.6 1 0%', minWidth: 0, minHeight: '100vh' }}
+                    >
+                        <div className="login-hero-art">
+                            <img
+                                src="/login_image.png"
+                                alt=""
+                                className="w-100 d-block"
+                                style={{ height: 'auto', objectFit: 'contain' }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Right: login form (full width on small screens) */}
+                    <div className="d-flex justify-content-center align-items-center p-12" style={{ flex: '1 1 0%', minWidth: 0, minHeight: '100vh' }}>
+                    <div className="bg-body d-flex flex-column flex-center rounded-4 w-md-600px py-15 px-10">
+                        <div className="d-flex flex-center flex-column align-items-stretch w-md-400px">
+                            <div className="d-flex flex-center flex-column flex-column-fluid py-10">
+                                
+                                <form className="form w-100" onSubmit={handleSubmit}>
+                                    <div className="text-center mb-13">
+                                        <h1 className="text-dark fw-bolder mb-3">Merchant Sign In</h1>
+                                        <div className="text-gray-500 fw-semibold fs-6">Enter your merchant credentials</div>
+                                    </div>
+
+                                    {/* Error Messages */}
+                                    {formErrors.submit && (
+                                        <div className="alert alert-danger">
+                                            {formErrors.submit}
+                                        </div>
+                                    )}
+
+                                    {/* Email Field */}
+                                    <div className="fv-row mb-10">
+                                        <input
+                                            type="text"
+                                            name="email"
+                                            placeholder="Email Address"
+                                            autoComplete="off"
+                                            className={`form-control bg-transparent ${formErrors.email ? 'is-invalid' : ''}`}
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                        />
+                                        {formErrors.email && (
+                                            <div className="invalid-feedback">{formErrors.email}</div>
+                                        )}
+                                    </div>
+
+                                    {/* Password Field */}
+                                    <div className="fv-row mb-8">
+                                        <input
+                                            type="password"
+                                            name="password"
+                                            placeholder="Password"
+                                            className={`form-control bg-transparent ${formErrors.password ? 'is-invalid' : ''}`}
+                                            value={formData.password}
+                                            onChange={handleChange}
+                                        />
+                                        {formErrors.password && (
+                                            <div className="invalid-feedback">{formErrors.password}</div>
+                                        )}
+                                    </div>
+
+                                    {/* Forgot Password Link */}
+                                    <div className="d-flex flex-stack flex-wrap gap-3 fs-base fw-semibold mb-10">
+                                        <div></div>
+                                        <Link to="/forgot-password" className="link-primary">
+                                            Forgot Password?
+                                        </Link>
+                                    </div>
+
+                                    {/* Submit Button */}
+                                    <div className="d-grid mb-10">
+                                        <button type="submit" className="btn btn-primary" disabled={loading}>
+                                            <span className={loading ? 'd-none' : 'indicator-label'}>Sign In</span>
+                                            {loading && (
+                                                <span className="indicator-progress" style={{ display: 'block' }}>
+                                                    Signing In...
+                                                    <span className="spinner-border spinner-border-sm align-middle ms-2"></span>
+                                                </span>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {/* Register Link */}
+                                    <div className="text-center">
+                                        <span className="text-gray-500 fs-6">Don't have an account?</span>
+                                        <Link to="/merchant/register" className="link-primary fw-semibold fs-6 ms-1">
+                                            Register Here
+                                        </Link>
+                                    </div>
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </>
+    );
+};
+
+export default Login;
+

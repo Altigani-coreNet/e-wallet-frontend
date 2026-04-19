@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken, removeToken, getUser } from '../../../utils/api';
 import { useSidebar } from '../../../contexts/SidebarContext';
+import NotificationMenu from '../../layout/NotificationMenu';
 
 const AdminHeader = () => {
     const navigate = useNavigate();
@@ -153,6 +154,8 @@ const AdminHeader = () => {
                             </div>
                         </div>
                         {/* End::Search */}
+
+                        {/* <NotificationMenu /> */}
 
                         {/* Begin::Theme mode */}
                         <div className="app-navbar-item ms-1 ms-md-4">

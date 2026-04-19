@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -6,7 +6,6 @@ import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
-import useMerchantCountryInfo from '../../../hooks/useMerchantCountryInfo';
 import { exportTransactions } from '../../../utils/transactionExport';
 
 const AdminTransactionsIndex = () => {
@@ -213,55 +212,6 @@ const AdminTransactionsIndex = () => {
             setLoading(false);
         }
     };
-
-    // Extract merchant IDs from transactions
-    const transactionMerchantIds = useMemo(() => {
-        if (!transactions.length) return [];
-        return [
-            ...new Set(
-                transactions
-                    .map((transaction) => transaction.merchant?.id || transaction.merchant_id)
-                    .filter((id) => id !== null && id !== undefined && id !== '')
-                    .map((id) => String(id))
-            ),
-        ];
-    }, [transactions]);
-
-    // Fetch merchant and country info using the hook
-    const {
-        loading: merchantInfoLoading,
-        getMerchantInfoById,
-        hasPendingRequest,
-    } = useMerchantCountryInfo(transactionMerchantIds);
-
-    // Helper function to get merchant info for a transaction
-    const getMerchantInfo = useCallback(
-        (transaction) => {
-            const merchantId = transaction.merchant?.id || transaction.merchant_id;
-            
-            if (!merchantId) {
-                return {
-                    merchantName: transaction.merchant?.business_name || transaction.merchant?.name || 'N/A',
-                    countryName: transaction.merchant?.country?.name || 'N/A',
-                };
-            }
-
-            const record = getMerchantInfoById(String(merchantId));
-
-            if (record) {
-                return {
-                    merchantName: record.name || transaction.merchant?.business_name || transaction.merchant?.name || 'N/A',
-                    countryName: record.countryName || 'N/A',
-                };
-            }
-
-            return {
-                merchantName: transaction.merchant?.business_name || transaction.merchant?.name || 'N/A',
-                countryName: 'N/A',
-            };
-        },
-        [getMerchantInfoById]
-    );
 
     const fetchFilterDropdowns = async () => {
         setDropdownsLoading(true);
@@ -1068,7 +1018,7 @@ const AdminTransactionsIndex = () => {
                                     <th className="text-dark">Partner</th>
                                     <th className="text-dark">Merchant</th>
                                     <th className="text-dark">Service Category</th>
-                                    <th className="text-dark">Payment Type</th>
+                                    <th className="text-dark">Payment Method</th>
                                     <th className="text-dark">Transaction ID</th>
                                     <th className="text-dark">Date and Time</th>
                                     <th className="text-dark">Amount</th>
@@ -1117,35 +1067,11 @@ const AdminTransactionsIndex = () => {
                                                     />
                                                 </div>
                                             </td>
-                                            <td>
-                                                {(() => {
-                                                    const merchantId = transaction.merchant?.id || transaction.merchant_id;
-                                                    const countryLoading = Boolean(merchantId) && (merchantInfoLoading || hasPendingRequest(String(merchantId)));
-                                                    const info = getMerchantInfo(transaction);
-                                                    const record = merchantId ? getMerchantInfoById(String(merchantId)) : null;
-                                                    
-                                                    if (countryLoading && !record) {
-                                                        return <div className="skeleton" style={{width: '80px', height: '16px'}}></div>;
-                                                    }
-                                                    return info.countryName;
-                                                })()}
-                                            </td>
+                                            <td>{transaction.country_name || transaction.country?.name || 'N/A'}</td>
                                             <td>{transaction.partner?.name || transaction.partner?.business_name || transaction.partner_name || 'N/A'}</td>
-                                            <td>
-                                                {(() => {
-                                                    const merchantId = transaction.merchant?.id || transaction.merchant_id;
-                                                    const merchantLoading = Boolean(merchantId) && (merchantInfoLoading || hasPendingRequest(String(merchantId)));
-                                                    const info = getMerchantInfo(transaction);
-                                                    const record = merchantId ? getMerchantInfoById(String(merchantId)) : null;
-                                                    
-                                                    if (merchantLoading && !record) {
-                                                        return <div className="skeleton" style={{width: '120px', height: '16px'}}></div>;
-                                                    }
-                                                    return info.merchantName;
-                                                })()}
-                                            </td>
+                                            <td>{transaction.merchant_name || transaction.merchant?.business_name || transaction.merchant?.name || 'N/A'}</td>
                                             <td>{transaction.service_category?.name_en || transaction.service_category_name || 'N/A'}</td>
-                                            <td>{transaction.payment_type || 'N/A'}</td>
+                                            <td>{transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || transaction.payment_type || 'N/A'}</td>
                                             <td>{transaction.transaction_id || transaction.id || 'N/A'}</td>
                                             <td>{transaction.created_at ? new Date(transaction.created_at).toLocaleString() : 'N/A'}</td>
                                             <td>{transaction.currency_symbol || '$'}{parseFloat(transaction.amount || 0).toFixed(2)}</td>

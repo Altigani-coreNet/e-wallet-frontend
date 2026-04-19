@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
 import { useSidebar } from '../../contexts/SidebarContext';
+import NotificationMenu from './NotificationMenu';
 
 const Header = () => {
     const navigate = useNavigate();
@@ -229,6 +230,8 @@ const Header = () => {
                                 </div>
                             </div>
                         </div>
+
+                        <NotificationMenu />
 
                         {/* Theme mode */}
                         <div className="app-navbar-item ms-1 ms-md-4">

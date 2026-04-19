@@ -5,8 +5,10 @@ import { getToken } from '../utils/api';
 
 let cachedMerchants = null;
 let cachedCountries = null;
+let cachedBranches = null;
 let cachedMerchantsList = null;
 let cachedCountriesList = null;
+let cachedBranchesList = null;
 let cacheError = null;
 let cachePromise = null;
 
@@ -87,26 +89,30 @@ const mapArrayToDictionary = (items) => {
 
 export const useAdminReferenceData = ({ autoLoad = true } = {}) => {
     const [shouldLoad, setShouldLoad] = useState(
-        autoLoad && !(cachedMerchants && cachedCountries) && !cacheError
+        autoLoad && !(cachedMerchants && cachedCountries && cachedBranches) && !cacheError
     );
 
     const [state, setState] = useState({
         merchantsMap: cachedMerchants || {},
         countriesMap: cachedCountries || {},
+        branchesMap: cachedBranches || {},
         merchantsList: cachedMerchantsList || [],
         countriesList: cachedCountriesList || [],
+        branchesList: cachedBranchesList || [],
         loading: shouldLoad,
         error: cacheError,
     });
 
     useEffect(() => {
-        if (!shouldLoad || (cachedMerchants && cachedCountries)) {
+        if (!shouldLoad || (cachedMerchants && cachedCountries && cachedBranches)) {
             setState((prev) => ({
                 ...prev,
                 merchantsMap: cachedMerchants || prev.merchantsMap,
                 countriesMap: cachedCountries || prev.countriesMap,
+                branchesMap: cachedBranches || prev.branchesMap,
                 merchantsList: cachedMerchantsList || prev.merchantsList,
                 countriesList: cachedCountriesList || prev.countriesList,
+                branchesList: cachedBranchesList || prev.branchesList,
                 loading: false,
                 error: cacheError,
             }));
@@ -128,8 +134,12 @@ export const useAdminReferenceData = ({ autoLoad = true } = {}) => {
                         axios.get(ADMIN_SYSTEM_ENDPOINTS.COUNTRIES_SELECT, {
                             headers: { Authorization: `Bearer ${token}` },
                         }),
+                        axios.get(ADMIN_ENDPOINTS.BRANCHES, {
+                            params: { per_page: 1000 },
+                            headers: { Authorization: `Bearer ${token}` },
+                        }),
                     ]);
-                    const [merchantsRes, countriesRes] = await cachePromise;
+                    const [merchantsRes, countriesRes, branchesRes] = await cachePromise;
 
                     const merchantsData = Array.isArray(merchantsRes.data?.data)
                         ? merchantsRes.data.data
@@ -143,10 +153,19 @@ export const useAdminReferenceData = ({ autoLoad = true } = {}) => {
                             ? countriesRes.data
                             : [];
 
+                    const branchesPayload = branchesRes.data?.data || branchesRes.data || [];
+                    const branchesData = Array.isArray(branchesPayload?.data)
+                        ? branchesPayload.data
+                        : Array.isArray(branchesPayload)
+                            ? branchesPayload
+                            : [];
+
                     cachedMerchantsList = merchantsData;
                     cachedCountriesList = countriesData;
+                    cachedBranchesList = branchesData;
                     cachedMerchants = mapArrayToDictionary(merchantsData);
                     cachedCountries = mapArrayToDictionary(countriesData);
+                    cachedBranches = mapArrayToDictionary(branchesData);
                     cacheError = null;
                 }
 
@@ -154,8 +173,10 @@ export const useAdminReferenceData = ({ autoLoad = true } = {}) => {
                     setState({
                         merchantsMap: cachedMerchants,
                         countriesMap: cachedCountries,
+                        branchesMap: cachedBranches,
                         merchantsList: cachedMerchantsList,
                         countriesList: cachedCountriesList,
+                        branchesList: cachedBranchesList,
                         loading: false,
                         error: null,
                     });
@@ -165,14 +186,18 @@ export const useAdminReferenceData = ({ autoLoad = true } = {}) => {
                 cacheError = error;
                 cachedMerchants = cachedMerchants || {};
                 cachedCountries = cachedCountries || {};
+                cachedBranches = cachedBranches || {};
                 cachedMerchantsList = cachedMerchantsList || [];
                 cachedCountriesList = cachedCountriesList || [];
+                cachedBranchesList = cachedBranchesList || [];
                 if (!cancelled) {
                     setState({
                         merchantsMap: cachedMerchants,
                         countriesMap: cachedCountries,
+                        branchesMap: cachedBranches,
                         merchantsList: cachedMerchantsList,
                         countriesList: cachedCountriesList,
+                        branchesList: cachedBranchesList,
                         loading: false,
                         error,
                     });
@@ -191,13 +216,15 @@ export const useAdminReferenceData = ({ autoLoad = true } = {}) => {
     }, [shouldLoad]);
 
     const loadReferenceData = () => {
-        if (cachedMerchants && cachedCountries) {
+        if (cachedMerchants && cachedCountries && cachedBranches) {
             setState((prev) => ({
                 ...prev,
                 merchantsMap: cachedMerchants,
                 countriesMap: cachedCountries,
+                branchesMap: cachedBranches,
                 merchantsList: cachedMerchantsList,
                 countriesList: cachedCountriesList,
+                branchesList: cachedBranchesList,
                 loading: false,
                 error: cacheError,
             }));
@@ -215,7 +242,7 @@ export const useAdminReferenceData = ({ autoLoad = true } = {}) => {
     return {
         ...state,
         loadReferenceData,
-        hasLoaded: Boolean(cachedMerchants && cachedCountries),
+        hasLoaded: Boolean(cachedMerchants && cachedCountries && cachedBranches),
     };
 };
 

@@ -4,11 +4,13 @@ import { useToolbar } from '../../../contexts/ToolbarContext';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { useAdminTerminal, deleteAdminTerminal } from '../../../services/adminTerminalsService';
+import useAdminReferenceData from '../../../hooks/useAdminReferenceData';
 
 const AdminTerminalView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
+    const { merchantsMap, branchesMap, countriesMap } = useAdminReferenceData();
 
     // Fetch terminal data
     const { data: terminalResponse, isLoading, error } = useAdminTerminal(id);
@@ -264,15 +266,28 @@ const AdminTerminalView = () => {
                 </div>
                 <div className="card-body p-9">
                     <div className="row mb-7">
-                        <label className="col-lg-4 fw-bold text-muted">Merchant ID</label>
+                        <label className="col-lg-4 fw-bold text-muted">Merchant</label>
                         <div className="col-lg-8">
-                            <span className="fw-bolder fs-6 text-gray-800">{terminal.merchant_id || 'N/A'}</span>
+                            <span className="fw-bolder fs-6 text-gray-800">
+                                {terminal.merchant?.business_name ||
+                                    terminal.merchant?.name ||
+                                    terminal.merchant_name ||
+                                    merchantsMap[terminal.merchant_id] ||
+                                    terminal.merchant_id ||
+                                    'N/A'}
+                            </span>
                         </div>
                     </div>
                     <div className="row mb-7">
-                        <label className="col-lg-4 fw-bold text-muted">Branch ID</label>
+                        <label className="col-lg-4 fw-bold text-muted">Branch</label>
                         <div className="col-lg-8">
-                            <span className="fw-bolder fs-6 text-gray-800">{terminal.branch_id || 'N/A'}</span>
+                            <span className="fw-bolder fs-6 text-gray-800">
+                                {terminal.branch?.name ||
+                                    terminal.branch_name ||
+                                    branchesMap[terminal.branch_id] ||
+                                    terminal.branch_id ||
+                                    'N/A'}
+                            </span>
                         </div>
                     </div>
                     <div className="row mb-7">
@@ -281,14 +296,16 @@ const AdminTerminalView = () => {
                             <span className="fw-bolder fs-6 text-gray-800">
                                 {(() => {
                                     const country = terminal.country;
-                                    if (!country) return terminal.country_id || 'N/A';
+                                    if (!country) {
+                                        return countriesMap[terminal.country_id] || terminal.country_id || 'N/A';
+                                    }
                                     
                                     // Handle multilingual name object
                                     if (country.name && typeof country.name === 'object') {
-                                        return country.name.en || country.name.ar || terminal.country_id || 'N/A';
+                                        return country.name.en || country.name.ar || countriesMap[terminal.country_id] || terminal.country_id || 'N/A';
                                     }
                                     
-                                    return country.name || terminal.country_id || 'N/A';
+                                    return country.name || countriesMap[terminal.country_id] || terminal.country_id || 'N/A';
                                 })()}
                             </span>
                         </div>

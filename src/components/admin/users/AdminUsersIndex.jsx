@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 import { Link } from 'react-router-dom';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
@@ -345,6 +346,42 @@ const AdminUsersIndex = () => {
         }
     };
 
+    const handleSendResetPassword = async (id) => {
+        const result = await Swal.fire({
+            title: 'Send reset password email?',
+            text: 'A secure reset link will be sent to this user.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, send it',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        try {
+            const token = getToken();
+            const response = await axios.post(
+                ADMIN_ENDPOINTS.USER_SEND_RESET_PASSWORD(id),
+                {},
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+
+            const isSuccess = response.data.success || response.data.status;
+            if (isSuccess) {
+                toast.success(response.data.data?.message || response.data.message || 'Reset password email sent.');
+            } else {
+                toast.error(response.data.message || 'Failed to send reset password email.');
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to send reset password email');
+            console.error(error);
+        }
+    };
+
     return (
         <>
             <div className="post d-flex flex-column-fluid">
@@ -447,6 +484,7 @@ const AdminUsersIndex = () => {
                                                     onActivate={handleActivate}
                                                     onDeactivate={handleDeactivate}
                                                     onDelete={handleDelete}
+                                                    onSendResetPassword={handleSendResetPassword}
                                                 />
                                             ))}
                                         </tbody>
