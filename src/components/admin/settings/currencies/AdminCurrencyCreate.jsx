@@ -8,7 +8,7 @@ const AdminCurrencyCreate = () => {
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({ country: '', name: '', symbol: '', currency_code: '' });
+    const [formData, setFormData] = useState({ country: '', name: '', symbol_en: '', symbol_ar: '', currency_code_en: '', currency_code_ar: '' });
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
@@ -26,7 +26,19 @@ const AdminCurrencyCreate = () => {
         e.preventDefault();
         setLoading(true);
         setErrors({});
-        const response = await createCurrency(formData);
+        const payload = {
+            country: formData.country,
+            name: formData.name,
+            symbol: {
+                en: formData.symbol_en,
+                ar: formData.symbol_ar
+            },
+            currency_code: {
+                en: formData.currency_code_en,
+                ar: formData.currency_code_ar
+            }
+        };
+        const response = await createCurrency(payload);
         setLoading(false);
         if (response.success) {
             toast.success('Currency created successfully');
@@ -57,14 +69,24 @@ const AdminCurrencyCreate = () => {
                             </div>
                             <div className="row mb-6">
                                 <div className="col-lg-6">
-                                    <label className="form-label required">Symbol</label>
-                                    <input type="text" name="symbol" className={`form-control ${errors.symbol ? 'is-invalid' : ''}`} value={formData.symbol} onChange={handleChange} required />
-                                    {errors.symbol && <div className="invalid-feedback">{errors.symbol[0]}</div>}
+                                    <label className="form-label required">Symbol (English)</label>
+                                    <input type="text" name="symbol_en" className={`form-control ${errors['symbol.en'] ? 'is-invalid' : ''}`} value={formData.symbol_en} onChange={handleChange} required />
+                                    {errors['symbol.en'] && <div className="invalid-feedback">{errors['symbol.en'][0]}</div>}
                                 </div>
                                 <div className="col-lg-6">
-                                    <label className="form-label required">Currency Code</label>
-                                    <input type="text" name="currency_code" className={`form-control ${errors.currency_code ? 'is-invalid' : ''}`} value={formData.currency_code} onChange={handleChange} required />
-                                    {errors.currency_code && <div className="invalid-feedback">{errors.currency_code[0]}</div>}
+                                    <label className="form-label required">Symbol (Arabic)</label>
+                                    <input type="text" name="symbol_ar" className={`form-control ${errors['symbol.ar'] ? 'is-invalid' : ''}`} value={formData.symbol_ar} onChange={handleChange} required />
+                                    {errors['symbol.ar'] && <div className="invalid-feedback">{errors['symbol.ar'][0]}</div>}
+                                </div>
+                                <div className="col-lg-6">
+                                    <label className="form-label required">Currency Code (English)</label>
+                                    <input type="text" name="currency_code_en" className={`form-control ${errors['currency_code.en'] ? 'is-invalid' : ''}`} value={formData.currency_code_en} onChange={handleChange} required />
+                                    {errors['currency_code.en'] && <div className="invalid-feedback">{errors['currency_code.en'][0]}</div>}
+                                </div>
+                                <div className="col-lg-6">
+                                    <label className="form-label required">Currency Code (Arabic)</label>
+                                    <input type="text" name="currency_code_ar" className={`form-control ${errors['currency_code.ar'] ? 'is-invalid' : ''}`} value={formData.currency_code_ar} onChange={handleChange} required />
+                                    {errors['currency_code.ar'] && <div className="invalid-feedback">{errors['currency_code.ar'][0]}</div>}
                                 </div>
                             </div>
                         </div>

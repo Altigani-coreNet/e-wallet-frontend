@@ -25,6 +25,7 @@ import Login from './components/auth/merchant/Login';
 import MerchantRegister from './components/auth/merchant/MerchantRegister';
 import PartnerRegister from './components/auth/parnters/PartnerRegister';
 import ForgotPassword from './components/auth/merchant/ForgotPassword';
+import ResetPasswordFromEmail from './components/auth/merchant/ResetPasswordFromEmail';
 
 // Layout Components
 import MainLayout from './components/layout/MainLayout';
@@ -229,6 +230,8 @@ import AdminInvoicePrint from './components/admin/invoices/AdminInvoicePrint';
 import PosInvoicePrint from './components/pos/PosInvoicePrint';
 import AdminTransactionsIndex from './components/admin/transactions/AdminTransactionsIndex';
 import AdminTransactionDetail from './components/admin/transactions/AdminTransactionDetail';
+import AdminServiceTransactionsIndex from './components/admin/service-transactions/AdminServiceTransactionsIndex';
+import AdminServiceTransactionDetail from './components/admin/service-transactions/AdminServiceTransactionDetail';
 import AdminSettlementsIndex from './components/admin/settlements/AdminSettlementsIndex';
 import AdminSettlementDetail from './components/admin/settlements/AdminSettlementDetail';
 import AdminBatchesIndex from './components/admin/batches/AdminBatchesIndex';
@@ -716,6 +719,9 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/merchant/register" element={<MerchantRegister />} />
             <Route path="/partner/register" element={<PartnerRegister />} />
+                          {/* Public: reset link from email — must stay OUTSIDE ProtectedRoute + before splat */}
+            <Route path="/reset-password/:token" element={<ResetPasswordFromEmail />} />
+
 
             {/* Public Invoice Routes - No Authentication Required */}
             {/* POS (cashier) sale invoice */}
@@ -989,6 +995,16 @@ function App() {
                     <Route path="transactions/:id" element={
                         <PermissionRoute required="pos.transactions.view_transactions">
                             <AdminTransactionDetail />
+                        </PermissionRoute>
+                    } />
+                    <Route path="service-transactions" element={
+                        <PermissionRoute required="pos.transactions.view_transactions">
+                            <AdminServiceTransactionsIndex />
+                        </PermissionRoute>
+                    } />
+                    <Route path="service-transactions/:id" element={
+                        <PermissionRoute required="pos.transactions.view_transactions">
+                            <AdminServiceTransactionDetail />
                         </PermissionRoute>
                     } />
                     

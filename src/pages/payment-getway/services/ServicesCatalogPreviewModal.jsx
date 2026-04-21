@@ -1,9 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import axios from '../../../utils/axiosConfig';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS, AUTH_SERVICE_BASE } from '../../../utils/constants';
-import { fetchProductsByService, fetchProductServiceForms } from '../../../services/serviceProductsService';
-import ServiceProductModel from '../../../services/ServiceProductModel';
 import IPhoneMockup from '../../../common/IPhoneMockup';
 import { FIELD_TYPES } from '../../../common/MobileFormsBuilder';
 import { resolveBackendAssetUrl } from '../../../utils/assetUrl';
@@ -25,8 +23,24 @@ const getFieldKey = (field) => (field.key && field.key.trim() ? field.key.trim()
 const getCatalogFormValuesKey = (form, formIndex) =>
     form?.id != null && String(form.id) !== '' ? String(form.id) : `form_${formIndex}`;
 
+const normalizeFieldType = (field) =>
+    (field?.form_type || field?.type || '').toString().trim().toLowerCase();
+
+const getFormFields = (form) => {
+    if (Array.isArray(form?.fields)) return form.fields;
+    if (Array.isArray(form?.product_form_fields)) return form.product_form_fields;
+    return [];
+};
+
+const getProductForms = (product) => {
+    if (Array.isArray(product?.product_forms)) return product.product_forms;
+    if (Array.isArray(product?.serviceForms)) return product.serviceForms;
+    if (Array.isArray(product?.forms)) return product.forms;
+    return [];
+};
+
 const isRequiredValueMissing = (field, value) => {
-    if (field.type === 'Checkbox') {
+    if (normalizeFieldType(field) === 'checkbox') {
         return !Array.isArray(value) || value.length === 0;
     }
     return value === undefined || value === null || String(value).trim() === '';
@@ -34,7 +48,7 @@ const isRequiredValueMissing = (field, value) => {
 
 const validateCatalogFormFields = (form, values) => {
     const errors = {};
-    (form?.fields || []).forEach((field) => {
+    getFormFields(form).forEach((field) => {
         if (!field.is_required) return;
         const fieldKey = getFieldKey(field);
         const value = values[fieldKey];
@@ -169,15 +183,16 @@ const fieldInvalidClass = (hasErr) => (hasErr ? ' is-invalid' : '');
 
 /** Interactive mobile form — same behavior idea as MobileFormsBuilder preview (real controls, no debug JSON). */
 function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
-    const fields = form?.fields || [];
+    const fields = getFormFields(form);
 
     const renderField = (field) => {
         const options = getFieldOptions(field);
         const fieldKey = getFieldKey(field);
-        const value = values[fieldKey] ?? (field.type === 'Checkbox' ? [] : '');
+        const fieldType = normalizeFieldType(field);
+        const value = values[fieldKey] ?? (fieldType === 'checkbox' ? [] : '');
         const hasErr = Boolean(errors[fieldKey]);
 
-        const label = field.label_en || field.label_ar || 'Field';
+        const label = field.label || field.label_en || field.label_ar || 'Field';
 
         return (
             <div className="mb-3" key={field.id || fieldKey}>
@@ -186,7 +201,7 @@ function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
                     {field.is_required ? <span className="text-danger ms-1">*</span> : null}
                 </label>
 
-                {field.type === 'Text Field' && (
+                {(fieldType === 'text field' || fieldType === 'text_field' || fieldType === 'text') && (
                     <input
                         type="text"
                         className={`form-control form-control-sm${fieldInvalidClass(hasErr)}`}
@@ -196,7 +211,7 @@ function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
                         autoComplete="off"
                     />
                 )}
-                {field.type === 'Email Field' && (
+                {(fieldType === 'email field' || fieldType === 'email') && (
                     <input
                         type="email"
                         className={`form-control form-control-sm${fieldInvalidClass(hasErr)}`}
@@ -206,7 +221,7 @@ function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
                         autoComplete="off"
                     />
                 )}
-                {field.type === 'Number Field' && (
+                {(fieldType === 'number field' || fieldType === 'number' || fieldType === 'amount_picker') && (
                     <input
                         type="number"
                         className={`form-control form-control-sm${fieldInvalidClass(hasErr)}`}
@@ -215,7 +230,7 @@ function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
                         onChange={(e) => onFieldChange(fieldKey, e.target.value)}
                     />
                 )}
-                {field.type === 'Password Field' && (
+                {(fieldType === 'password field' || fieldType === 'password') && (
                     <input
                         type="password"
                         className={`form-control form-control-sm${fieldInvalidClass(hasErr)}`}
@@ -225,7 +240,7 @@ function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
                         autoComplete="off"
                     />
                 )}
-                {field.type === 'Multiline Text Field' && (
+                {(fieldType === 'multiline text field' || fieldType === 'text_area' || fieldType === 'textarea') && (
                     <textarea
                         className={`form-control form-control-sm${fieldInvalidClass(hasErr)}`}
                         rows={3}
@@ -234,7 +249,7 @@ function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
                         onChange={(e) => onFieldChange(fieldKey, e.target.value)}
                     />
                 )}
-                {(field.type === 'Dropdown' || field.type === 'Telecom Providers') && (
+                {(fieldType === 'dropdown' || fieldType === 'telecom providers' || fieldType === 'selection') && (
                     <select
                         className={`form-select form-select-sm${fieldInvalidClass(hasErr)}`}
                         value={value}
@@ -243,12 +258,12 @@ function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
                         <option value="">Select</option>
                         {options.map((opt, idx) => (
                             <option value={opt.value != null ? String(opt.value) : `${idx}`} key={`${fieldKey}-opt-${idx}`}>
-                                {opt.label_en || opt.label_ar || opt.value || ''}
+                                {opt.label || opt.label_en || opt.label_ar || opt.value || ''}
                             </option>
                         ))}
                     </select>
                 )}
-                {field.type === 'Radio Buttons' && (
+                {(fieldType === 'radio buttons' || fieldType === 'radio') && (
                     <div
                         className={`mt-1 p-2 rounded bg-white border${hasErr ? ' border-danger' : ' border-gray-200'}`}
                     >
@@ -265,14 +280,14 @@ function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
                                         onChange={() => onFieldChange(fieldKey, optValue)}
                                     />
                                     <label className="form-check-label" htmlFor={`cat-${fieldKey}-${idx}`} style={{ fontSize: 13 }}>
-                                        {opt.label_en || opt.label_ar || optValue}
+                                        {opt.label || opt.label_en || opt.label_ar || optValue}
                                     </label>
                                 </div>
                             );
                         })}
                     </div>
                 )}
-                {field.type === 'Checkbox' && (
+                {fieldType === 'checkbox' && (
                     <div
                         className={`mt-1 p-2 rounded bg-white border${hasErr ? ' border-danger' : ' border-gray-200'}`}
                     >
@@ -295,7 +310,7 @@ function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
                                         }}
                                     />
                                     <label className="form-check-label" htmlFor={`cat-chk-${fieldKey}-${idx}`} style={{ fontSize: 13 }}>
-                                        {opt.label_en || opt.label_ar || optValue}
+                                        {opt.label || opt.label_en || opt.label_ar || optValue}
                                     </label>
                                 </div>
                             );
@@ -303,7 +318,8 @@ function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
                     </div>
                 )}
 
-                {!FIELD_TYPES.includes(field.type) && (
+                {!FIELD_TYPES.includes(field.type) &&
+                    !['text field', 'text_field', 'text', 'email field', 'email', 'number field', 'number', 'amount_picker', 'password field', 'password', 'multiline text field', 'text_area', 'textarea', 'dropdown', 'telecom providers', 'selection', 'radio buttons', 'radio', 'checkbox'].includes(fieldType) && (
                     <input
                         type="text"
                         className={`form-control form-control-sm${fieldInvalidClass(hasErr)}`}
@@ -364,6 +380,8 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                 : undefined,
             country_id: listQueryParams.country_id || undefined,
             merchant_id: listQueryParams.merchant_id || undefined,
+            partner_id: listQueryParams.partner_id || undefined,
+            category_id: listQueryParams.category_id || undefined,
             service_type: listQueryParams.service_type || undefined,
             date_from: listQueryParams.date_from || undefined,
             date_to: listQueryParams.date_to || undefined,
@@ -375,9 +393,10 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
     const loadServicesForPreview = useCallback(async () => {
         setLoadingServices(true);
         try {
-            const response = await axios.get(ADMIN_ENDPOINTS.SERVICES, { params: buildServiceParams() });
-            if (response.data.success) {
-                setPreviewServices(response.data.data || []);
+            const response = await axios.get(ADMIN_ENDPOINTS.SERVICES_CATALOG, { params: buildServiceParams() });
+            if (response.data?.success || response.data?.status) {
+                const catalogServices = response.data?.data?.services || response.data?.services || [];
+                setPreviewServices(Array.isArray(catalogServices) ? catalogServices : []);
             } else {
                 setPreviewServices([]);
                 toast.error(response.data?.message || 'Failed to load services');
@@ -458,53 +477,22 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
         setActiveFormIndex(0);
     }, []);
 
-    const handlePickService = async (service) => {
+    const handlePickService = (service) => {
         setSelectedService(service);
         setStep('products');
-        setLoadingProducts(true);
-        setProducts([]);
-        try {
-            const response = await fetchProductsByService(service.id, { per_page: 200 });
-            if (response.success) {
-                const productsData = response.data?.data || response.data || [];
-                setProducts(
-                    ServiceProductModel.fromApiResponseArray(Array.isArray(productsData) ? productsData : [])
-                );
-            } else {
-                setProducts([]);
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error(error.response?.data?.message || 'Failed to load products');
-            setProducts([]);
-        } finally {
-            setLoadingProducts(false);
-        }
+        setLoadingProducts(false);
+        setProducts(Array.isArray(service?.products) ? service.products : []);
     };
 
-    const handlePickProduct = async (product) => {
+    const handlePickProduct = (product) => {
         setSelectedProduct(product);
         setStep('form');
         setActiveFormIndex(0);
         setFormValuesByFormId({});
         setFieldErrors({});
         setFormSubmitCompleted(false);
-        setLoadingForms(true);
-        setForms([]);
-        try {
-            const res = await fetchProductServiceForms(product.id);
-            if (res?.success) {
-                setForms(res.data || []);
-            } else {
-                setForms([]);
-            }
-        } catch (error) {
-            console.error(error);
-            toast.error(error.response?.data?.message || 'Failed to load forms');
-            setForms([]);
-        } finally {
-            setLoadingForms(false);
-        }
+        setLoadingForms(false);
+        setForms(getProductForms(product));
     };
 
     const handleBack = () => {
@@ -536,8 +524,7 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
         step === 'form' &&
         !loadingForms &&
         activeForm &&
-        Array.isArray(activeForm.fields) &&
-        activeForm.fields.length > 0;
+        getFormFields(activeForm).length > 0;
 
     const showFormChrome = formHasFields || formSubmitCompleted;
 
@@ -660,7 +647,7 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                 </div>
             );
         }
-        if (!activeForm || (activeForm.fields || []).length === 0) {
+        if (!activeForm || getFormFields(activeForm).length === 0) {
             return (
                 <div className="text-center text-muted fs-7 py-15 px-4">
                     {forms.length === 0 ? 'No forms for this product.' : 'This form has no fields yet.'}

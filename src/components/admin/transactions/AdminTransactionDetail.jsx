@@ -65,7 +65,7 @@ const AdminTransactionDetail = () => {
         };
     }, [transaction, transactionMerchantId, getMerchantInfoById]);
 
-    /** Opens public cashier invoice print page; URL segment is the encrypted public invoice token. */
+    /** Opens SoftPOS invoice page; URL segment should use encrypted transaction id. */
     const handleViewReceipt = useCallback(() => {
         const invoiceToken =
             transaction?.transaction_encrypted_id ||
@@ -75,7 +75,7 @@ const AdminTransactionDetail = () => {
             toast.error('Invoice link not available');
             return;
         }
-        const invoiceUrl = `/invoice/${encodeURIComponent(String(invoiceToken))}`;
+        const invoiceUrl = `/pos-invoice/${encodeURIComponent(String(invoiceToken))}`;
         try {
             const newWindow = window.open(invoiceUrl, '_blank', 'noopener,noreferrer');
             if (!newWindow) {

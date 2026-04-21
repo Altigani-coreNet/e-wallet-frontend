@@ -49,10 +49,15 @@ const AdminCitiesIndex = () => {
         try {
             const response = await getCitiesData({ page: pagination.current_page, per_page: pagination.per_page, search: searchTerm, ...filters });
             if (response.success) {
-                setCities(response.data.data || []);
-                if (response.data.recordsTotal) {
-                    setPagination(prev => ({ ...prev, total: response.data.recordsTotal, last_page: Math.ceil(response.data.recordsTotal / prev.per_page) }));
-                }
+                const responseData = response.data?.data || response.data;
+                const dataArray = Array.isArray(responseData?.data) ? responseData.data :
+                    Array.isArray(responseData) ? responseData : [];
+
+                setCities(dataArray);
+
+                const total = responseData?.recordsTotal || responseData?.total || dataArray.length;
+                const lastPage = responseData?.last_page || Math.ceil(total / pagination.per_page);
+                setPagination(prev => ({ ...prev, total, last_page: lastPage }));
             } else {
                 toast.error(response.error || 'Failed to fetch cities');
             }

@@ -136,6 +136,13 @@ const AdminCountryView = () => {
                 </div>
 
                 <div className="row mb-7">
+                    <label className="col-lg-4 fw-semibold text-muted">Currency Code</label>
+                    <div className="col-lg-8">
+                        <span className="fw-semibold text-gray-800">{country.currency_code || 'N/A'}</span>
+                    </div>
+                </div>
+
+                <div className="row mb-7">
                     <label className="col-lg-4 fw-semibold text-muted">Status</label>
                     <div className="col-lg-8">
                         <span className={`badge badge-light-${country.status ? 'success' : 'danger'}`}>

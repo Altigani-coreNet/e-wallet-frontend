@@ -150,7 +150,9 @@ const AdminSidebar = () => {
         location.pathname === '/admin/services' ||
         location.pathname.startsWith('/admin/services/') ||
         location.pathname === '/admin/service-products' ||
-        location.pathname.startsWith('/admin/service-products/');
+        location.pathname.startsWith('/admin/service-products/') ||
+        location.pathname === '/admin/service-transactions' ||
+        location.pathname.startsWith('/admin/service-transactions/');
 
     const isServiceCategoryDetailPath = /^\/admin\/service\/category\/[0-9a-f-]{36}$/i.test(location.pathname);
     const isCategoriesManagementRoute =
@@ -170,8 +172,26 @@ const AdminSidebar = () => {
         location.pathname === '/admin/settings/e-payment-gateway' ||
         location.pathname.startsWith('/admin/settings/e-payment-gateway/');
 
+    const isSettingsConfigurationRoute =
+        isPathActive('/admin/service/country') ||
+        isPathActive('/admin/settings/currencies') ||
+        isPathActive('/admin/settings/service-fees') ||
+        isPathActive('/admin/settings/contract-terms');
+
+    const isNotificationsListRoute = isPathActive('/admin/system/notifications', { exact: true });
+    const isNotificationsCreateRoute = isPathActive('/admin/system/notifications/create', { exact: true });
+
+    const isCountriesListRoute = isPathActive('/admin/system/countries', { exact: true });
+    const isCountriesCreateRoute = isPathActive('/admin/system/countries/create', { exact: true });
+
+    const isCitiesListRoute = isPathActive('/admin/system/cities', { exact: true });
+    const isCitiesCreateRoute = isPathActive('/admin/system/cities/create', { exact: true });
+
     const isSettingsAccordionActive =
-        isPathActive('/admin/system') || isSettingsServiceRoute || isSettingsEPaymentGatewayRoute;
+        isPathActive('/admin/system') ||
+        isSettingsServiceRoute ||
+        isSettingsEPaymentGatewayRoute ||
+        isSettingsConfigurationRoute;
 
     return (
         <div
@@ -616,6 +636,17 @@ const AdminSidebar = () => {
                                             <span className="menu-title">Service Products</span>
                                         </NavLink>
                                     </div>
+                                    <div className="menu-item">
+                                        <NavLink
+                                            className={`menu-link ${isPathActive('/admin/service-transactions', { exact: true }) ? 'active' : ''}`}
+                                            to="/admin/service-transactions"
+                                        >
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">Service History</span>
+                                        </NavLink>
+                                    </div>
                                 </div>
                             </div>
 
@@ -935,63 +966,7 @@ const AdminSidebar = () => {
                                             <span className="menu-title">Sub-Categories Management</span>
                                         </NavLink>
                                     </div>
-                                     {/* Countries Sub-menu */}
-                                     {canViewCountries && (<div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isActive('/admin/system/countries') ? 'hover show' : ''}`}>
-                                        <span className={`menu-link ${isActive('/admin/system/countries') ? 'active' : ''}`}>
-                                            <span className="menu-bullet">
-                                                <span className="bullet bullet-dot"></span>
-                                            </span>
-                                            <span className="menu-title">Countries</span>
-                                            <span className="menu-arrow"></span>
-                                        </span>
-                                        <div className={`menu-sub menu-sub-accordion ${isActive('/admin/system/countries') ? 'show' : ''}`}>
-                                            <div className="menu-item">
-                                                <NavLink className={`menu-link ${location.pathname === '/admin/system/countries' ? 'active' : ''}`} to="/admin/system/countries">
-                                                    <span className="menu-bullet">
-                                                        <span className="bullet bullet-dot"></span>
-                                                    </span>
-                                                    <span className="menu-title">Country List</span>
-                                                </NavLink>
-                                            </div>
-                                            {canCreateCountry && (<div className="menu-item">
-                                                <NavLink className={`menu-link ${location.pathname === '/admin/system/countries/create' ? 'active' : ''}`} to="/admin/system/countries/create">
-                                                    <span className="menu-bullet">
-                                                        <span className="bullet bullet-dot"></span>
-                                                    </span>
-                                                    <span className="menu-title">Add Country</span>
-                                                </NavLink>
-                                            </div>)}
-                                        </div>
-                                    </div>)}
-
-                                    {/* Cities Sub-menu */}
-                                    {canViewCities && (<div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isActive('/admin/system/cities') ? 'hover show' : ''}`}>
-                                        <span className={`menu-link ${isActive('/admin/system/cities') ? 'active' : ''}`}>
-                                            <span className="menu-bullet">
-                                                <span className="bullet bullet-dot"></span>
-                                            </span>
-                                            <span className="menu-title">Cities</span>
-                                            <span className="menu-arrow"></span>
-                                        </span>
-                                        <div className={`menu-sub menu-sub-accordion ${isActive('/admin/system/cities') ? 'show' : ''}`}>
-                                            <div className="menu-item">
-                                                <NavLink className={`menu-link ${location.pathname === '/admin/system/cities' ? 'active' : ''}`} to="/admin/system/cities">
-                                                    <span className="menu-bullet">
-                                                        <span className="bullet bullet-dot"></span>
-                                                    </span>
-                                                    <span className="menu-title">City List</span>
-                                                </NavLink>
-                                            </div>
-                                            {canCreateCity && (<div className="menu-item">
-                                                <NavLink className={`menu-link ${location.pathname === '/admin/system/cities/create' ? 'active' : ''}`} to="/admin/system/cities/create">
-                                                    <span className="menu-bullet">
-                                                        <span className="bullet bullet-dot"></span>
-                                                    </span>
-                                                    <span className="menu-title">Add City</span>
-                                                </NavLink>
-                                            </div>)}
-                                        </div>
-                                    </div>)}
+                                    
 
                                     {/* Advertisements Sub-menu */}
                                     {canViewAdvertisements && (<div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isActive('/admin/system/advertisements') ? 'hover show' : ''}`}>
@@ -1024,7 +999,7 @@ const AdminSidebar = () => {
 
                                     {/* Notifications Sub-menu */}
                                     {canViewAdvertisements && (<div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isActive('/admin/system/notifications') ? 'hover show' : ''}`}>
-                                        <span className={`menu-link ${isActive('/admin/system/notifications') ? 'active' : ''}`}>
+                                        <span className={`menu-link ${isNotificationsListRoute ? 'active' : ''}`}>
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
@@ -1033,7 +1008,7 @@ const AdminSidebar = () => {
                                         </span>
                                         <div className={`menu-sub menu-sub-accordion ${isActive('/admin/system/notifications') ? 'show' : ''}`}>
                                             <div className="menu-item">
-                                                <NavLink className={`menu-link ${location.pathname === '/admin/system/notifications' ? 'active' : ''}`} to="/admin/system/notifications">
+                                                <NavLink className={`menu-link ${isNotificationsListRoute ? 'active' : ''}`} to="/admin/system/notifications">
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
@@ -1041,7 +1016,7 @@ const AdminSidebar = () => {
                                                 </NavLink>
                                             </div>
                                             {canCreateAdvertisement && (<div className="menu-item">
-                                                <NavLink className={`menu-link ${location.pathname === '/admin/system/notifications/create' ? 'active' : ''}`} to="/admin/system/notifications/create">
+                                                <NavLink className={`menu-link ${isNotificationsCreateRoute ? 'active' : ''}`} to="/admin/system/notifications/create">
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
@@ -1051,17 +1026,121 @@ const AdminSidebar = () => {
                                         </div>
                                     </div>)}
 
-                                    {canViewCountries && (
-                                        <div className="menu-item">
-                                            <NavLink
-                                                className={`menu-link ${isPathActive('/admin/service/country') ? 'active' : ''}`}
-                                                to="/admin/service/country"
-                                            >
+                                    {(canViewCountries || canViewCurrencies || canViewServiceFees || canViewContractTerms) && (
+                                        <div
+                                            data-kt-menu-trigger="click"
+                                            className={`menu-item menu-accordion mb-1 ${isSettingsConfigurationRoute ? 'hover show' : ''}`}
+                                        >
+                                            <span className={`menu-link ${isSettingsConfigurationRoute ? 'active' : ''}`}>
                                                 <span className="menu-bullet">
                                                     <span className="bullet bullet-dot"></span>
                                                 </span>
-                                                <span className="menu-title">Country Management</span>
-                                            </NavLink>
+                                                <span className="menu-title">Configurations</span>
+                                                <span className="menu-arrow"></span>
+                                            </span>
+                                            <div className={`menu-sub menu-sub-accordion ${isSettingsConfigurationRoute ? 'show' : ''}`}>
+                                               
+                                                {/* Countries Sub-menu */}
+                                     {canViewCountries && (<div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isActive('/admin/system/countries') ? 'hover show' : ''}`}>
+                                        <span className={`menu-link ${isCountriesListRoute ? 'active' : ''}`}>
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">Countries</span>
+                                            <span className="menu-arrow"></span>
+                                        </span>
+                                        <div className={`menu-sub menu-sub-accordion ${isActive('/admin/system/countries') ? 'show' : ''}`}>
+                                            <div className="menu-item">
+                                                <NavLink className={`menu-link ${isCountriesListRoute ? 'active' : ''}`} to="/admin/system/countries">
+                                                    <span className="menu-bullet">
+                                                        <span className="bullet bullet-dot"></span>
+                                                    </span>
+                                                    <span className="menu-title">Country List</span>
+                                                </NavLink>
+                                            </div>
+                                            {canCreateCountry && (<div className="menu-item">
+                                                <NavLink className={`menu-link ${isCountriesCreateRoute ? 'active' : ''}`} to="/admin/system/countries/create">
+                                                    <span className="menu-bullet">
+                                                        <span className="bullet bullet-dot"></span>
+                                                    </span>
+                                                    <span className="menu-title">Add Country</span>
+                                                </NavLink>
+                                            </div>)}
+                                        </div>
+                                    </div>)}
+
+                                    {/* Cities Sub-menu */}
+                                    {canViewCities && (<div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isActive('/admin/system/cities') ? 'hover show' : ''}`}>
+                                        <span className={`menu-link ${isCitiesListRoute ? 'active' : ''}`}>
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">Cities</span>
+                                            <span className="menu-arrow"></span>
+                                        </span>
+                                        <div className={`menu-sub menu-sub-accordion ${isActive('/admin/system/cities') ? 'show' : ''}`}>
+                                            <div className="menu-item">
+                                                <NavLink className={`menu-link ${isCitiesListRoute ? 'active' : ''}`} to="/admin/system/cities">
+                                                    <span className="menu-bullet">
+                                                        <span className="bullet bullet-dot"></span>
+                                                    </span>
+                                                    <span className="menu-title">City List</span>
+                                                </NavLink>
+                                            </div>
+                                            {canCreateCity && (<div className="menu-item">
+                                                <NavLink className={`menu-link ${isCitiesCreateRoute ? 'active' : ''}`} to="/admin/system/cities/create">
+                                                    <span className="menu-bullet">
+                                                        <span className="bullet bullet-dot"></span>
+                                                    </span>
+                                                    <span className="menu-title">Add City</span>
+                                                </NavLink>
+                                            </div>)}
+                                        </div>
+                                    </div>)}
+                                    
+
+                                                {canViewCurrencies && (
+                                                    <div className="menu-item">
+                                                        <NavLink
+                                                            className={`menu-link ${isPathActive('/admin/settings/currencies') ? 'active' : ''}`}
+                                                            to="/admin/settings/currencies"
+                                                        >
+                                                            <span className="menu-bullet">
+                                                                <span className="bullet bullet-dot"></span>
+                                                            </span>
+                                                            <span className="menu-title">Currencies</span>
+                                                        </NavLink>
+                                                    </div>
+                                                )}
+
+                                                {canViewServiceFees && (
+                                                    <div className="menu-item">
+                                                        <NavLink
+                                                            className={`menu-link ${isPathActive('/admin/settings/service-fees') ? 'active' : ''}`}
+                                                            to="/admin/settings/service-fees"
+                                                        >
+                                                            <span className="menu-bullet">
+                                                                <span className="bullet bullet-dot"></span>
+                                                            </span>
+                                                            <span className="menu-title">Service Fees</span>
+                                                        </NavLink>
+                                                    </div>
+                                                )}
+
+                                                {canViewContractTerms && (
+                                                    <div className="menu-item">
+                                                        <NavLink
+                                                            className={`menu-link ${isPathActive('/admin/settings/contract-terms') ? 'active' : ''}`}
+                                                            to="/admin/settings/contract-terms"
+                                                        >
+                                                            <span className="menu-bullet">
+                                                                <span className="bullet bullet-dot"></span>
+                                                            </span>
+                                                            <span className="menu-title">Contract Terms</span>
+                                                        </NavLink>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     )}
                                 </div>

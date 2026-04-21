@@ -38,6 +38,7 @@ const CountryTableRow = ({ country, isSelected, onSelect, onRefresh }) => {
             <td>{country.name_ar}</td>
             <td>{country.short_name}</td>
             <td>{country.code || 'N/A'}</td>
+            <td>{country.currency_code || 'N/A'}</td>
             <td>
                 <button onClick={handleStatusChange} className={`badge badge-light-${country.status ? 'success' : 'danger'} cursor-pointer border-0`}>
                     {country.status ? 'Active' : 'Inactive'}

@@ -28,6 +28,7 @@ const AdminNotificationsIndex = () => {
         total: 0,
         last_page: 1,
     });
+    const [showFilters, setShowFilters] = useState(false);
 
     useEffect(() => {
         setTitle('Notification Management');
@@ -133,68 +134,106 @@ const AdminNotificationsIndex = () => {
         }
     };
 
+    const getTargetEntityName = (item) => {
+        if (item.target_type === 'merchant') {
+            return item.merchant?.name || item.notifiable?.name || item.merchant_name || '-';
+        }
+
+        if (item.target_type === 'user') {
+            return item.user?.name || item.notifiable?.name || item.notifiable?.email || item.user_name || '-';
+        }
+
+        return '-';
+    };
+
     return (
-        <div className="card">
-            <div className="card-header border-0 pt-6">
-                <div className="card-title d-flex align-items-center gap-3">
-                    <div className="d-flex align-items-center position-relative" style={{ minWidth: '320px' }}>
-                        <i className="ki-duotone ki-magnifier fs-2 position-absolute ms-4">
-                            <span className="path1"></span>
-                            <span className="path2"></span>
-                        </i>
-                        <input
-                            type="text"
-                            className="form-control form-control-solid ps-13"
-                            placeholder="Search title or description..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
-                        />
+        <div className="d-flex flex-column gap-7">
+            {showFilters && <div className="card">
+                <div className="card-header border-0 pt-6">
+                    <div className="card-title">
+                        <h3 className="fw-bold m-0">Filters</h3>
                     </div>
-
-                    <select
-                        className="form-select form-select-solid w-200px"
-                        value={filters.topic}
-                        onChange={(e) => setFilters((prev) => ({ ...prev, topic: e.target.value }))}
-                    >
-                        {topicOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
-
-                    <select
-                        className="form-select form-select-solid w-200px"
-                        value={filters.target_type}
-                        onChange={(e) => setFilters((prev) => ({ ...prev, target_type: e.target.value }))}
-                    >
-                        {targetOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
-
-                    <select
-                        className="form-select form-select-solid w-200px"
-                        value={filters.is_admin}
-                        onChange={(e) => setFilters((prev) => ({ ...prev, is_admin: e.target.value }))}
-                    >
-                        {adminOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
-
-                    <button className="btn btn-sm btn-primary" onClick={onSearchSubmit}>
-                        Search
-                    </button>
                 </div>
-            </div>
+                <div className="card-body pt-2 pb-6">
+                    <div className="row g-4">
+                        <div className="col-12 col-md-6 col-xl-4">
+                            <div className="d-flex align-items-center position-relative">
+                                <i className="ki-duotone ki-magnifier fs-2 position-absolute ms-4">
+                                    <span className="path1"></span>
+                                    <span className="path2"></span>
+                                </i>
+                                <input
+                                    type="text"
+                                    className="form-control form-control-solid ps-13"
+                                    placeholder="Search title or description..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
+                                />
+                            </div>
+                        </div>
 
-            <div className="card-body py-4">
+                        <div className="col-12 col-md-6 col-xl-2">
+                            <select
+                                className="form-select form-select-solid w-100"
+                                value={filters.topic}
+                                onChange={(e) => setFilters((prev) => ({ ...prev, topic: e.target.value }))}
+                            >
+                                {topicOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="col-12 col-md-6 col-xl-2">
+                            <select
+                                className="form-select form-select-solid w-100"
+                                value={filters.target_type}
+                                onChange={(e) => setFilters((prev) => ({ ...prev, target_type: e.target.value }))}
+                            >
+                                {targetOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="col-12 col-md-6 col-xl-2">
+                            <select
+                                className="form-select form-select-solid w-100"
+                                value={filters.is_admin}
+                                onChange={(e) => setFilters((prev) => ({ ...prev, is_admin: e.target.value }))}
+                            >
+                                {adminOptions.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                        {option.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="col-12 col-xl-2">
+                            <button className="btn btn-primary w-100" onClick={onSearchSubmit}>
+                                Search
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>}
+
+            <div className="card">
+                <div className="card-header border-0 pt-6">
+                    <div className="card-title d-flex justify-content-between align-items-center w-100 gap-3">
+                        <h3 className="fw-bold m-0">Notifications</h3>
+                        <button className="btn btn-sm btn-light-primary" onClick={() => setShowFilters((prev) => !prev)}>
+                            {showFilters ? 'Hide Filters' : 'Show Filters'}
+                        </button>
+                    </div>
+                </div>
+                <div className="card-body py-4">
                 {loading ? (
                     <div className="text-center py-10">
                         <span className="spinner-border text-primary"></span>
@@ -208,10 +247,9 @@ const AdminNotificationsIndex = () => {
                                 <tr className="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
                                     <th className="text-dark">Code</th>
                                     <th className="text-dark">Topic</th>
-                                    <th className="text-dark">Target</th>
+                                    <th className="text-dark">Type & Merchant/User</th>
                                     <th className="text-dark">Is Admin</th>
                                     <th className="text-dark">Title</th>
-                                    <th className="text-dark">Merchant/User</th>
                                     <th className="text-dark">Sent At</th>
                                     <th className="text-end text-dark">Actions</th>
                                 </tr>
@@ -222,9 +260,12 @@ const AdminNotificationsIndex = () => {
                                         <td className="fw-bold">{item.code || item.id}</td>
                                         <td className="text-capitalize">{(item.topic || '-').replace('_', ' ')}</td>
                                         <td>
-                                            <span className={targetBadgeClass(item.target_type)}>
-                                                {item.target_type}
-                                            </span>
+                                            <div className="d-flex flex-wrap align-items-center gap-2">
+                                                <span className={targetBadgeClass(item.target_type)}>
+                                                    {item.target_type}
+                                                </span>
+                                                <span className="text-gray-800 fw-semibold">{getTargetEntityName(item)}</span>
+                                            </div>
                                         </td>
                                         <td>
                                             <span className={`badge ${item.is_admin ? 'badge-light-primary' : 'badge-light-secondary'}`}>
@@ -232,11 +273,6 @@ const AdminNotificationsIndex = () => {
                                             </span>
                                         </td>
                                         <td>{item.title}</td>
-                                        <td>
-                                            {item.target_type === 'merchant' && (item.merchant_id || '-')}
-                                            {item.target_type === 'user' && (item.notifiable?.name || item.notifiable?.email || '-')}
-                                            {item.target_type === 'public' && '-'}
-                                        </td>
                                         <td>{item.sent_at ? new Date(item.sent_at).toLocaleString() : '-'}</td>
                                         <td className="text-end">
                                             <button
@@ -279,11 +315,11 @@ const AdminNotificationsIndex = () => {
                 )}
 
                 {!loading && items.length > 0 && (
-                    <div className="d-flex flex-stack flex-wrap pt-10">
+                    <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-4 pt-10">
                         <div className="fs-6 fw-semibold text-gray-700">
                             Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} entries
                         </div>
-                        <ul className="pagination">
+                        <ul className="pagination mb-0">
                             <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}>
                                 <button className="page-link" onClick={() => setPagination((prev) => ({ ...prev, current_page: prev.current_page - 1 }))}>
                                     Previous
@@ -297,6 +333,7 @@ const AdminNotificationsIndex = () => {
                         </ul>
                     </div>
                 )}
+                </div>
             </div>
         </div>
     );

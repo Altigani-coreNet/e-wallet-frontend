@@ -4,7 +4,7 @@ import { deleteCurrency } from '../../../../services/adminCurrenciesService';
 import { toast } from 'react-toastify';
 import { useCan } from '../../../../utils/permissions';
 
-const CurrencyTableRow = ({ currency, isSelected, onSelect, onRefresh }) => {
+const CurrencyTableRow = ({ currency, currencyCodeTranslations, symbolTranslations, isSelected, onSelect, onRefresh }) => {
     const canEditCurrency = useCan('pos.currencies.edit_currencies');
     const canDeleteCurrency = useCan('pos.currencies.delete_currencies');
     const handleDelete = async () => {
@@ -34,8 +34,10 @@ const CurrencyTableRow = ({ currency, isSelected, onSelect, onRefresh }) => {
             <td>{currency.id}</td>
             <td className="fw-bold">{currency.country}</td>
             <td>{currency.name}</td>
-            <td>{currency.symbol}</td>
-            <td><span className="badge badge-light-info">{currency.currency_code}</span></td>
+            <td>{symbolTranslations?.en || '-'}</td>
+            <td>{symbolTranslations?.ar || '-'}</td>
+            <td><span className="badge badge-light-info">{currencyCodeTranslations?.en || '-'}</span></td>
+            <td><span className="badge badge-light-primary">{currencyCodeTranslations?.ar || '-'}</span></td>
             <td>{new Date(currency.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</td>
             <td className="text-end">
                 <div className="d-flex justify-content-end flex-shrink-0">

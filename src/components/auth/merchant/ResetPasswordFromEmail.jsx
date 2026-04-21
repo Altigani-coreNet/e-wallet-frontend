@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { AUTH_ENDPOINTS } from '../../utils/constants';
+import { AUTH_ENDPOINTS } from '../../../utils/constants';
 
 const ResetPasswordFromEmail = () => {
     const { token: tokenParam } = useParams();

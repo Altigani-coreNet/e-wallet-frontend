@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
 import { useSidebar } from '../../contexts/SidebarContext';
@@ -11,49 +11,10 @@ const Header = () => {
     const planName = merchant?.plan?.name || merchant?.plan_name || '';
     const isEnterprisePlan = planName && ['enterprise', 'premium'].some((kw) => planName.toLowerCase().includes(kw));
     const { toggleSidebar } = useSidebar();
-    const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
-
-    // Monitor sidebar minimize state
-    useEffect(() => {
-        const checkSidebarState = () => {
-            const isMinimized = 
-                document.body.classList.contains('app-sidebar-minimize') || 
-                document.body.getAttribute('data-kt-app-sidebar-minimize') === 'on';
-            setIsSidebarMinimized(isMinimized);
-        };
-
-        // Initial check
-        checkSidebarState();
-
-        // Watch for changes
-        const observer = new MutationObserver(checkSidebarState);
-        observer.observe(document.body, {
-            attributes: true,
-            attributeFilter: ['class', 'data-kt-app-sidebar-minimize']
-        });
-
-        // Listen for toggle events
-        const sidebarToggle = document.querySelector('[data-kt-toggle-name="app-sidebar-minimize"]');
-        const handleToggle = () => {
-            setTimeout(checkSidebarState, 100);
-        };
-        
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', handleToggle);
-        }
-
-        return () => {
-            observer.disconnect();
-            if (sidebarToggle) {
-                sidebarToggle.removeEventListener('click', handleToggle);
-            }
-        };
-    }, []);
     
     // Get merchant scopes
     const merchantScopes = Array.isArray(merchant?.scopes) ? merchant.scopes : [];
     const hasSoftPosScope = merchantScopes.includes('softpos');
-    const hasCashierScope = merchantScopes.includes('cashier');
 
     const handleLogout = async () => {
         await logout();
@@ -138,85 +99,11 @@ const Header = () => {
                                     <span>Dashboard</span>
                                 </Link>
                             )}
-                            {hasCashierScope && (
-                                <>
-                                    <Link 
-                                        to="/sales/dashboard" 
-                                        style={{ 
-                                            textDecoration: 'none',
-                                            color: location.pathname.startsWith('/sales/dashboard') ? '#009ef7' : 'inherit',
-                                            fontWeight: location.pathname.startsWith('/sales/dashboard') ? '600' : '500',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.5rem',
-                                            padding: '0.5rem 1rem'
-                                        }}
-                                    >
-                                        <i className="ki-duotone ki-shop fs-2">
-                                            <span className="path1"></span>
-                                            <span className="path2"></span>
-                                            <span className="path3"></span>
-                                            <span className="path4"></span>
-                                            <span className="path5"></span>
-                                        </i>
-                                        <span>Shop Dashboard</span>
-                                    </Link>
-                                    <Link 
-                                        to="/sales/sale" 
-                                        style={{ 
-                                            textDecoration: 'none',
-                                            color: location.pathname.startsWith('/sales/sale') ? '#009ef7' : 'inherit',
-                                            fontWeight: location.pathname.startsWith('/sales/sale') ? '600' : '500',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '0.5rem',
-                                            padding: '0.5rem 1rem'
-                                        }}
-                                    >
-                                        <i className="ki-duotone ki-dollar fs-2">
-                                            <span className="path1"></span>
-                                            <span className="path2"></span>
-                                            <span className="path3"></span>
-                                            <span className="path4"></span>
-                                        </i>
-                                        <span>Cashier</span>
-                                    </Link>
-                                </>
-                            )}
                         </div>
                     </div>
 
                     {/* Navbar */}
                     <div className="app-navbar flex-shrink-0">
-                        {/* Begin::Sidebar desktop toggle */}
-                        <div className="app-navbar-item align-items-stretch ms-1 ms-md-4 d-none d-lg-flex">
-                            <button
-                                type="button"
-                                className="btn btn-icon btn-custom btn-icon-muted btn-active-light btn-active-color-primary w-35px h-35px"
-                                onClick={() => {
-                                    // Trigger the sidebar minimize toggle
-                                    const sidebarToggle = document.querySelector('[data-kt-toggle-name="app-sidebar-minimize"]');
-                                    if (sidebarToggle) {
-                                        sidebarToggle.click();
-                                    } else {
-                                        // Fallback: manually toggle the class
-                                        document.body.classList.toggle('app-sidebar-minimize');
-                                        const sidebar = document.getElementById('kt_app_sidebar');
-                                        if (sidebar) {
-                                            sidebar.classList.toggle('app-sidebar-minimize');
-                                        }
-                                    }
-                                }}
-                                title={isSidebarMinimized ? "Expand sidebar" : "Minimize sidebar"}
-                            >
-                                <i className={`ki-duotone ki-double-left fs-2 ${isSidebarMinimized ? 'rotate-180' : ''}`} style={{ transition: 'transform 0.3s ease' }}>
-                                    <span className="path1"></span>
-                                    <span className="path2"></span>
-                                </i>
-                            </button>
-                        </div>
-                        {/* End::Sidebar desktop toggle */}
-                        
                         {/* Search */}
                         <div className="app-navbar-item align-items-stretch ms-1 ms-md-4">
                             <div className="header-search d-flex align-items-stretch">

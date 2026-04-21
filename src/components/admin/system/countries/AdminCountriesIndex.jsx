@@ -51,10 +51,15 @@ const AdminCountriesIndex = () => {
         try {
             const response = await getCountriesData({ page: pagination.current_page, per_page: pagination.per_page, search: searchTerm, status: statusFilter });
             if (response.success) {
-                setCountries(response.data.data || []);
-                if (response.data.recordsTotal) {
-                    setPagination(prev => ({ ...prev, total: response.data.recordsTotal, last_page: Math.ceil(response.data.recordsTotal / prev.per_page) }));
-                }
+                const responseData = response.data?.data || response.data;
+                const dataArray = Array.isArray(responseData?.data) ? responseData.data :
+                    Array.isArray(responseData) ? responseData : [];
+
+                setCountries(dataArray);
+
+                const total = responseData?.recordsTotal || responseData?.total || dataArray.length;
+                const lastPage = responseData?.last_page || Math.ceil(total / pagination.per_page);
+                setPagination(prev => ({ ...prev, total, last_page: lastPage }));
             } else {
                 toast.error(response.error || 'Failed to fetch countries');
             }
@@ -107,6 +112,7 @@ const AdminCountriesIndex = () => {
                                     <th>Name (AR)</th>
                                     <th>Short Name</th>
                                     <th>Code</th>
+                                    <th>Currency Code</th>
                                     <th>Status</th>
                                     <th>Created At</th>
                                     <th className="text-end min-w-100px">Actions</th>
@@ -114,9 +120,9 @@ const AdminCountriesIndex = () => {
                             </thead>
                             <tbody className="fw-semibold text-gray-600">
                                 {loading ? (
-                                    <tr><td colSpan="8" className="text-center py-5"><div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div></td></tr>
+                                    <tr><td colSpan="9" className="text-center py-5"><div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div></td></tr>
                                 ) : countries.length === 0 ? (
-                                    <tr><td colSpan="8" className="text-center py-5">No countries found</td></tr>
+                                    <tr><td colSpan="9" className="text-center py-5">No countries found</td></tr>
                                 ) : (
                                     countries.map(country => <CountryTableRow key={country.id} country={country} isSelected={selectedIds.includes(country.id)} onSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])} onRefresh={fetchCountries} />)
                                 )}

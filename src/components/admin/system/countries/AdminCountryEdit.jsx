@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { getCountry, updateCountry } from '../../../../services/adminCountriesService';
+import { getCurrenciesForSelect } from '../../../../services/adminCurrenciesService';
 
 const AdminCountryEdit = () => {
     const { id } = useParams();
@@ -13,15 +14,35 @@ const AdminCountryEdit = () => {
         name: { en: '', ar: '' },
         short_name: '',
         code: '',
+        currency_id: '',
         status: true
     });
     const [errors, setErrors] = useState({});
+    const [currencies, setCurrencies] = useState([]);
 
     useEffect(() => {
         setTitle('Edit Country');
         setActions(null);
         fetchCountry();
+        fetchCurrencies();
     }, [id, setTitle, setActions]);
+
+    const fetchCurrencies = async () => {
+        try {
+            const response = await getCurrenciesForSelect();
+            if (!response.success) {
+                toast.error(response.error || 'Failed to load currencies');
+                return;
+            }
+
+            const payload = response.data?.data ?? response.data;
+            const options = Array.isArray(payload) ? payload : [];
+            setCurrencies(options);
+        } catch (error) {
+            console.error('Error fetching currencies:', error);
+            toast.error('Failed to load currencies');
+        }
+    };
 
     const fetchCountry = async () => {
         try {
@@ -32,6 +53,7 @@ const AdminCountryEdit = () => {
                     name: country.name || { en: '', ar: '' },
                     short_name: country.short_name || '',
                     code: country.code || '',
+                    currency_id: country.currency_id || '',
                     status: country.status || false
                 });
             }
@@ -114,6 +136,23 @@ const AdminCountryEdit = () => {
                                 value={formData.code}
                                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                             />
+                        </div>
+
+                        <div className="col-md-6 mb-5">
+                            <label className="form-label required">Currency</label>
+                            <select
+                                className={`form-select ${errors.currency_id ? 'is-invalid' : ''}`}
+                                value={formData.currency_id}
+                                onChange={(e) => setFormData({ ...formData, currency_id: e.target.value })}
+                            >
+                                <option value="">Select currency</option>
+                                {currencies.map((currency) => (
+                                    <option key={currency.id} value={currency.id}>
+                                        {currency.text || currency.currency_code || currency.name || currency.id}
+                                    </option>
+                                ))}
+                            </select>
+                            {errors.currency_id && <div className="invalid-feedback">{errors.currency_id[0]}</div>}
                         </div>
 
                         <div className="col-md-6 mb-5">

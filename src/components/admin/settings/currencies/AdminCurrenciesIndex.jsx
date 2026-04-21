@@ -9,6 +9,48 @@ import CurrencyFiltersPanel from './CurrencyFiltersPanel';
 import BulkActionBar from '../../../common/BulkActionBar';
 import '../SkeletonLoader.css';
 
+const getCurrencyCodeTranslations = (currency) => {
+    const translations = currency?.currency_code_translations;
+    if (translations && typeof translations === 'object') {
+        return {
+            en: translations.en || '',
+            ar: translations.ar || ''
+        };
+    }
+
+    const rawCode = currency?.currency_code;
+    if (rawCode && typeof rawCode === 'object') {
+        return {
+            en: rawCode.en || '',
+            ar: rawCode.ar || ''
+        };
+    }
+
+    const fallback = rawCode || '';
+    return { en: fallback, ar: fallback };
+};
+
+const getSymbolTranslations = (currency) => {
+    const translations = currency?.symbol_translations;
+    if (translations && typeof translations === 'object') {
+        return {
+            en: translations.en || '',
+            ar: translations.ar || ''
+        };
+    }
+
+    const rawSymbol = currency?.symbol;
+    if (rawSymbol && typeof rawSymbol === 'object') {
+        return {
+            en: rawSymbol.en || '',
+            ar: rawSymbol.ar || ''
+        };
+    }
+
+    const fallback = rawSymbol || '';
+    return { en: fallback, ar: fallback };
+};
+
 const AdminCurrenciesIndex = () => {
     const { setTitle, setActions } = useToolbar();
     const canCreateCurrency = useCan('pos.currencies.create_currencies');
@@ -182,8 +224,10 @@ const AdminCurrenciesIndex = () => {
                                     <th>ID</th>
                                     <th className="min-w-125px">Country</th>
                                     <th className="min-w-125px">Name</th>
-                                    <th>Symbol</th>
-                                    <th>Currency Code</th>
+                                    <th>Symbol (EN)</th>
+                                    <th>Symbol (AR)</th>
+                                    <th>Currency Code (EN)</th>
+                                    <th>Currency Code (AR)</th>
                                     <th>Created At</th>
                                     <th className="text-end min-w-100px">Actions</th>
                                 </tr>
@@ -198,6 +242,8 @@ const AdminCurrenciesIndex = () => {
                                                 <td><div className="skeleton skeleton-text" style={{ width: '120px' }}></div></td>
                                                 <td><div className="skeleton skeleton-text" style={{ width: '150px' }}></div></td>
                                                 <td><div className="skeleton skeleton-text" style={{ width: '40px' }}></div></td>
+                                                <td><div className="skeleton skeleton-text" style={{ width: '40px' }}></div></td>
+                                                <td><div className="skeleton skeleton-badge"></div></td>
                                                 <td><div className="skeleton skeleton-badge"></div></td>
                                                 <td><div className="skeleton skeleton-text" style={{ width: '100px' }}></div></td>
                                                 <td className="text-end"><div className="skeleton skeleton-actions"></div></td>
@@ -206,13 +252,15 @@ const AdminCurrenciesIndex = () => {
                                     </>
                                 ) : currencies.length === 0 ? (
                                     <tr>
-                                        <td colSpan="8" className="text-center py-5">No currencies found</td>
+                                        <td colSpan="10" className="text-center py-5">No currencies found</td>
                                     </tr>
                                 ) : (
                                     currencies.map(currency => (
                                         <CurrencyTableRow 
                                             key={currency.id}
                                             currency={currency}
+                                            currencyCodeTranslations={getCurrencyCodeTranslations(currency)}
+                                            symbolTranslations={getSymbolTranslations(currency)}
                                             isSelected={selectedIds.includes(currency.id)}
                                             onSelect={(id) => setSelectedIds(prev => 
                                                 prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]

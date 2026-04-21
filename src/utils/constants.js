@@ -4,6 +4,8 @@ export const  BASE_DOMAIN = 'https://fastpay.sd';
 // export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
 export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
 export const SOFTPOS_API_BASE =  `${BASE_DOMAIN}/api/softpos`; //  `${BASE_DOMAIN}/api/softpos` //  `http://193.123.83.134:82`;;
+// export const SOFTPOS_API_BASE =  `http://localhost:8000`;
+// export const AUTH_SERVICE_BASE = `http://localhost:8000`;
 // PayTabs Node service base (for QR testing)
 export const PAYTABS_API_BASE = `${BASE_DOMAIN}/api/paytabs`;
 export const POS_API_BASE = `${BASE_DOMAIN}/api/cashier`;
@@ -55,6 +57,8 @@ export const AUTH_ENDPOINTS = {
     PASSWORD_REQUEST_RESET: `${AUTH_SERVICE_BASE}/password/request-reset`,
     PASSWORD_VERIFY_CODE: `${AUTH_SERVICE_BASE}/password/verify-code`,
     PASSWORD_RESET: `${AUTH_SERVICE_BASE}/password/reset`,
+    PASSWORD_VALIDATE_RESET_TOKEN: `${AUTH_SERVICE_BASE}/password/reset-token/validate`,
+    PASSWORD_RESET_WITH_TOKEN: `${AUTH_SERVICE_BASE}/password/reset-token`,
     
     // Lookup Data
     COUNTRIES: `${AUTH_SERVICE_BASE}/countries`,
@@ -634,6 +638,10 @@ export const ADMIN_ENDPOINTS = {
     TRANSACTION_VOID: (id) => `${SOFTPOS_API_BASE}/v2/admin/transactions/${id}/void`,
     TRANSACTION_SEND_RECEIPT: (id) => `${SOFTPOS_API_BASE}/v2/admin/transactions/${id}/send-receipt`,
     TRANSACTION_RECEIPT: (id) => `${SOFTPOS_API_BASE}/v2/admin/transactions/${id}/receipt`,
+
+    // Service Transactions (SoftPos)
+    SERVICE_TRANSACTIONS: `${SOFTPOS_API_BASE}/v2/admin/service-transactions`,
+    SERVICE_TRANSACTION_DETAILS: (id) => `${SOFTPOS_API_BASE}/v2/admin/service-transactions/${id}`,
     
     // Payment Links (SoftPos)
     PAYMENT_LINKS: `${SOFTPOS_API_BASE}/v2/admin/payment-links`,
@@ -691,6 +699,7 @@ export const ADMIN_ENDPOINTS = {
 
     // Services (SoftPos — prefix `services`)
     SERVICES: `${SOFTPOS_API_BASE}/services`,
+    SERVICES_CATALOG: `${SOFTPOS_API_BASE}/services/catalog`,
     SERVICES_SELECT: `${SOFTPOS_API_BASE}/services/select`,
     SERVICE_DETAILS: (id) => `${SOFTPOS_API_BASE}/services/${id}`,
     SERVICE_CREATE: `${SOFTPOS_API_BASE}/services`,
