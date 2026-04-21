@@ -36,6 +36,15 @@ const ensureAbsoluteUrl = (base, value) => {
     return normalizedBase ? `${normalizedBase}/${normalizedPath}` : `/${normalizedPath}`;
 };
 
+const makeLocalOptionId = () => `opt_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+
+const normalizeFieldOptions = (options = []) =>
+    (Array.isArray(options) ? options : []).map((option, index) => ({
+        ...option,
+        id: option?.id ? `${option.id}` : makeLocalOptionId(),
+        _idx: index,
+    }));
+
 const ProductEdit = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -129,7 +138,7 @@ const ProductEdit = () => {
                                 label_ar: field.label_ar || '',
                                 key: field.key || '',
                                 type: field.type || 'Text Field',
-                                options: field.options || [],
+                                options: normalizeFieldOptions(field.options),
                             })),
                         })));
                     }

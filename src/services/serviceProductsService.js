@@ -25,6 +25,27 @@ const getAcceptLanguageHeader = () => {
  * Map mobile form builder state to API payload (form_name, fields, options).
  */
 export const mapProductFormsToApiPayload = (forms) => {
+    const normalizeOptionToken = (value) => String(value ?? '').trim().toLowerCase();
+    const sanitizeFieldOptions = (options = []) => {
+        const seen = new Set();
+        return (options || []).reduce((acc, option) => {
+            const labelEn = option?.label_en ?? '';
+            const labelAr = option?.label_ar ?? '';
+            const rawValue = option?.value ?? '';
+            const token = normalizeOptionToken(rawValue) || normalizeOptionToken(labelEn);
+            if (!token || seen.has(token)) {
+                return acc;
+            }
+            seen.add(token);
+            acc.push({
+                label_en: labelEn,
+                label_ar: labelAr,
+                value: rawValue,
+            });
+            return acc;
+        }, []);
+    };
+
     return (forms || []).map((f) => ({
         form_name: f.form_name ?? f.title ?? '',
         form_url: f.form_url ?? '',
@@ -34,11 +55,7 @@ export const mapProductFormsToApiPayload = (forms) => {
             label_ar: field.label_ar ?? '',
             key: field.key ?? '',
             type: field.type ?? 'Text Field',
-            options: (field.options || []).map((o) => ({
-                label_en: o.label_en ?? '',
-                label_ar: o.label_ar ?? '',
-                value: o.value ?? '',
-            })),
+            options: sanitizeFieldOptions(field.options),
             sort_order: field.sort_order ?? idx,
             is_required: field.is_required !== false,
             status: field.status !== false,

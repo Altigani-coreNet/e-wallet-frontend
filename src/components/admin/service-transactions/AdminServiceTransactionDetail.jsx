@@ -64,13 +64,98 @@ const AdminServiceTransactionDetail = () => {
         }
     };
 
-    if (loading) return <div className="card"><div className="card-body py-10 text-center">Loading...</div></div>;
+    if (loading) {
+        return (
+            <>
+                <style>{`
+                    .skeleton {
+                        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+                        background-size: 200% 100%;
+                        animation: skeleton-loading 1.5s ease-in-out infinite;
+                        border-radius: 4px;
+                    }
+                    @keyframes skeleton-loading {
+                        0% { background-position: 200% 0; }
+                        100% { background-position: -200% 0; }
+                    }
+                `}</style>
+
+                <div className="row g-5 g-xl-8 mt-4">
+                    <div className="col-md-12">
+                        <div className="card bg-light-secondary card-xl-stretch mb-xl-8">
+                            <div className="card-body">
+                                <div className="d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div className="skeleton mb-2" style={{ width: 200, height: 28 }}></div>
+                                        <div className="skeleton mb-2" style={{ width: 250, height: 16 }}></div>
+                                        <div className="skeleton" style={{ width: 170, height: 14 }}></div>
+                                    </div>
+                                    <div className="text-end">
+                                        <div className="skeleton mb-2" style={{ width: 180, height: 20 }}></div>
+                                        <div className="skeleton" style={{ width: 140, height: 14 }}></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="row gx-9 gy-6">
+                    <div className="col-xl-6">
+                        <div className="card card-dashed h-xl-100 p-6">
+                            <div className="skeleton mb-5" style={{ width: 180, height: 22 }}></div>
+                            <div className="skeleton mb-3" style={{ width: '100%', height: 16 }}></div>
+                            <div className="skeleton" style={{ width: '80%', height: 16 }}></div>
+                        </div>
+                    </div>
+                    <div className="col-xl-6">
+                        <div className="card card-dashed h-xl-100 p-6">
+                            <div className="skeleton mb-5" style={{ width: 180, height: 22 }}></div>
+                            <div className="skeleton mb-3" style={{ width: '100%', height: 16 }}></div>
+                            <div className="skeleton" style={{ width: '80%', height: 16 }}></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="row gx-9 gy-6 mt-4">
+                    <div className="col-xl-12">
+                        <div className="card card-dashed p-6">
+                            <div className="skeleton mb-4" style={{ width: 220, height: 22 }}></div>
+                            <div className="row g-4">
+                                {[1, 2, 3, 4].map((i) => (
+                                    <div className="col-md-3" key={i}>
+                                        <div className="skeleton mb-2" style={{ width: 120, height: 12 }}></div>
+                                        <div className="skeleton" style={{ width: '90%', height: 16 }}></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="row gx-9 gy-6 mt-4 mb-5">
+                    <div className="col-xl-6">
+                        <div className="card card-dashed h-xl-100">
+                            <div className="card-header"><div className="skeleton" style={{ width: 180, height: 20 }}></div></div>
+                            <div className="card-body"><div className="skeleton" style={{ width: '100%', height: 260 }}></div></div>
+                        </div>
+                    </div>
+                    <div className="col-xl-6">
+                        <div className="card card-dashed h-xl-100">
+                            <div className="card-header"><div className="skeleton" style={{ width: 180, height: 20 }}></div></div>
+                            <div className="card-body"><div className="skeleton" style={{ width: '100%', height: 260 }}></div></div>
+                        </div>
+                    </div>
+                </div>
+            </>
+        );
+    }
     if (!item) return <div className="card"><div className="card-body py-10 text-center">Not found</div></div>;
 
-    const serviceName = item.service?.service_name?.en || item.service?.service_name?.ar || item.service_id || 'N/A';
-    const productName = item.product?.name?.en || item.product?.name?.ar || item.product_id || 'N/A';
-    const merchantName = item.merchant?.business_name || item.merchant?.name || item.merchant_id || 'N/A';
-    const partnerName = item.partner?.name || item.partner?.business_name || item.partner_id || 'N/A';
+    const serviceName = item.service_name || item.service?.service_name?.en || item.service?.service_name?.ar || 'N/A';
+    const productName = item.product_name || item.product?.name?.en || item.product?.name?.ar || 'N/A';
+    const merchantName = item.merchant_name || item.merchant?.business_name || item.merchant?.name || 'N/A';
+    const partnerName = item.partner_name || item.partner?.name || item.partner?.business_name || 'N/A';
 
     return (
         <>
@@ -101,8 +186,6 @@ const AdminServiceTransactionDetail = () => {
                         <div className="row g-4">
                             <div className="col-12"><div className="fs-7 text-muted">Merchant</div><div className="fs-6 fw-bold">{merchantName}</div></div>
                             <div className="col-12"><div className="fs-7 text-muted">Partner</div><div className="fs-6 fw-bold">{partnerName}</div></div>
-                            <div className="col-12"><div className="fs-7 text-muted">Merchant ID</div><div className="fs-6 fw-bold">{item.merchant_id || 'N/A'}</div></div>
-                            <div className="col-12"><div className="fs-7 text-muted">Partner ID</div><div className="fs-6 fw-bold">{item.partner_id || 'N/A'}</div></div>
                         </div>
                     </div>
                 </div>
@@ -112,8 +195,6 @@ const AdminServiceTransactionDetail = () => {
                         <div className="row g-4">
                             <div className="col-12"><div className="fs-7 text-muted">Service</div><div className="fs-6 fw-bold">{serviceName}</div></div>
                             <div className="col-12"><div className="fs-7 text-muted">Product</div><div className="fs-6 fw-bold">{productName}</div></div>
-                            <div className="col-12"><div className="fs-7 text-muted">Service ID</div><div className="fs-6 fw-bold">{item.service_id || 'N/A'}</div></div>
-                            <div className="col-12"><div className="fs-7 text-muted">Product ID</div><div className="fs-6 fw-bold">{item.product_id || 'N/A'}</div></div>
                         </div>
                     </div>
                 </div>

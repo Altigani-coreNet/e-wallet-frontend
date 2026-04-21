@@ -2,10 +2,10 @@
 export const  BASE_DOMAIN = 'https://fastpay.sd';
 // export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
 // export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
-export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
-export const SOFTPOS_API_BASE =  `${BASE_DOMAIN}/api/softpos`; //  `${BASE_DOMAIN}/api/softpos` //  `http://193.123.83.134:82`;;
-// export const SOFTPOS_API_BASE =  `http://localhost:8000`;
-// export const AUTH_SERVICE_BASE = `http://localhost:8000`;
+// export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
+// export const SOFTPOS_API_BASE =  `${BASE_DOMAIN}/api/softpos`; //  `${BASE_DOMAIN}/api/softpos` //  `http://193.123.83.134:82`;;
+export const SOFTPOS_API_BASE =  `http://localhost:8000`;
+export const AUTH_SERVICE_BASE = `http://localhost:8000`;
 // PayTabs Node service base (for QR testing)
 export const PAYTABS_API_BASE = `${BASE_DOMAIN}/api/paytabs`;
 export const POS_API_BASE = `${BASE_DOMAIN}/api/cashier`;

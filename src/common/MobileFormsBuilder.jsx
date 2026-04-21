@@ -2,11 +2,11 @@ import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react
 import IPhoneMockup from './IPhoneMockup';
 
 const makeId = () => `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+const getOptionIdentity = (option, index) => (option?.id ? `${option.id}` : `idx_${index}`);
 
 export const FIELD_TYPES = [
     'Text Field',
     'Email Field',
-    'Telecom Providers',
     'Number Field',
     'Password Field',
     'Radio Buttons',
@@ -15,7 +15,42 @@ export const FIELD_TYPES = [
     'Multiline Text Field',
 ];
 
-export const TYPES_WITH_OPTIONS = new Set(['Telecom Providers', 'Radio Buttons', 'Checkbox', 'Dropdown']);
+export const TYPES_WITH_OPTIONS = new Set(['Radio Buttons', 'Checkbox', 'Dropdown']);
+
+const normalizeOptionValue = (value) => `${value ?? ''}`.trim().toLowerCase();
+
+const collectDuplicateOptionIds = (options = []) => {
+    const duplicateIds = new Set();
+    const seenValues = new Map();
+    const seenLabels = new Map();
+
+    options.forEach((opt, index) => {
+        const optionId = opt?.id ? `${opt.id}` : `idx_${index}`;
+
+        const valueKey = normalizeOptionValue(opt?.value);
+        const labelKey = normalizeOptionValue(opt?.label_en);
+
+        if (valueKey) {
+            if (seenValues.has(valueKey)) {
+                duplicateIds.add(optionId);
+                duplicateIds.add(seenValues.get(valueKey));
+            } else {
+                seenValues.set(valueKey, optionId);
+            }
+        }
+
+        if (labelKey) {
+            if (seenLabels.has(labelKey)) {
+                duplicateIds.add(optionId);
+                duplicateIds.add(seenLabels.get(labelKey));
+            } else {
+                seenLabels.set(labelKey, optionId);
+            }
+        }
+    });
+
+    return duplicateIds;
+};
 
 const getFieldKey = (field) => (field.key && field.key.trim() ? field.key.trim() : `field_${field.id}`);
 
@@ -74,15 +109,6 @@ const ServiceFormPreview = ({ formData, label, subLabel }) => (
                             )}
                             {field.type === 'Email Field' && (
                                 <input type="email" className="form-control" placeholder={field.label_en || ''} />
-                            )}
-                            {field.type === 'Telecom Providers' && (
-                                <select className="form-select">
-                                    {options.map((opt, idx) => (
-                                        <option value={opt.value || idx} key={`${opt.value || 'opt'}-${idx}`}>
-                                            {opt.label_en || ''}
-                                        </option>
-                                    ))}
-                                </select>
                             )}
                             {field.type === 'Number Field' && (
                                 <input type="number" className="form-control" placeholder={field.label_en || ''} />
@@ -350,7 +376,7 @@ const InteractiveServiceFormPreview = ({ label, subLabel, formId, fields, values
                                         onChange={(e) => onChange(formId, fieldKey, e.target.value)}
                                     ></textarea>
                                 )}
-                                {(field.type === 'Dropdown' || field.type === 'Telecom Providers') && (
+                                {field.type === 'Dropdown' && (
                                     <select
                                         className={`form-select ${hasError ? 'is-invalid' : ''}`}
                                         value={value}
@@ -648,7 +674,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
         );
     };
 
-    const updateOption = (formId, fieldId, optId, key, nextValue) => {
+    const updateOption = (formId, fieldId, optionIdentity, key, nextValue) => {
         setForms(
             forms.map((f) => {
                 if (f.id !== formId) return f;
@@ -658,7 +684,9 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                         if (field.id !== fieldId) return field;
                         return {
                             ...field,
-                            options: (field.options || []).map((opt) => (opt.id === optId ? { ...opt, [key]: nextValue } : opt)),
+                            options: (field.options || []).map((opt, idx) =>
+                                getOptionIdentity(opt, idx) === optionIdentity ? { ...opt, [key]: nextValue } : opt
+                            ),
                         };
                     }),
                 };
@@ -666,7 +694,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
         );
     };
 
-    const removeOption = (formId, fieldId, optId) => {
+    const removeOption = (formId, fieldId, optionIdentity) => {
         setForms(
             forms.map((f) => {
                 if (f.id !== formId) return f;
@@ -674,7 +702,12 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                     ...f,
                     fields: (f.fields || []).map((field) => {
                         if (field.id !== fieldId) return field;
-                        return { ...field, options: (field.options || []).filter((opt) => opt.id !== optId) };
+                        return {
+                            ...field,
+                            options: (field.options || []).filter(
+                                (opt, idx) => getOptionIdentity(opt, idx) !== optionIdentity
+                            ),
+                        };
                     }),
                 };
             })
@@ -798,6 +831,12 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
 
                                 {(mobileForm.fields || []).map((field) => (
                                     <div key={field.id} className="card p-4 mb-4">
+                                        {(() => {
+                                            const duplicateOptionIds = TYPES_WITH_OPTIONS.has(field.type)
+                                                ? collectDuplicateOptionIds(field.options || [])
+                                                : new Set();
+                                            const hasDuplicateOptions = duplicateOptionIds.size > 0;
+                                            return (
                                         <div className="row">
                                             <div className="col-md-6 mb-4">
                                                 <label className="form-label">Label English</label>
@@ -858,15 +897,17 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                             Add Option
                                                         </button>
                                                     </div>
-                                                    {(field.options || []).map((opt) => (
-                                                        <div key={opt.id} className="row mb-2">
+                                                    {(field.options || []).map((opt, optIndex) => {
+                                                        const optionIdentity = getOptionIdentity(opt, optIndex);
+                                                        return (
+                                                        <div key={optionIdentity} className="row mb-2">
                                                             <div className="col-md-4">
                                                                 <input
                                                                     type="text"
-                                                                    className="form-control"
+                                                                    className={`form-control ${duplicateOptionIds.has(optionIdentity) ? 'is-invalid' : ''}`}
                                                                     placeholder="Label (EN)"
                                                                     value={opt.label_en}
-                                                                    onChange={(e) => updateOption(mobileForm.id, field.id, opt.id, 'label_en', e.target.value)}
+                                                                    onChange={(e) => updateOption(mobileForm.id, field.id, optionIdentity, 'label_en', e.target.value)}
                                                                 />
                                                             </div>
                                                             <div className="col-md-4">
@@ -875,29 +916,40 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                                     className="form-control"
                                                                     placeholder="Label (AR)"
                                                                     value={opt.label_ar}
-                                                                    onChange={(e) => updateOption(mobileForm.id, field.id, opt.id, 'label_ar', e.target.value)}
+                                                                    onChange={(e) => updateOption(mobileForm.id, field.id, optionIdentity, 'label_ar', e.target.value)}
                                                                 />
                                                             </div>
                                                             <div className="col-md-3">
                                                                 <input
                                                                     type="text"
-                                                                    className="form-control"
+                                                                    className={`form-control ${duplicateOptionIds.has(optionIdentity) ? 'is-invalid' : ''}`}
                                                                     placeholder="Value"
                                                                     value={opt.value}
-                                                                    onChange={(e) => updateOption(mobileForm.id, field.id, opt.id, 'value', e.target.value)}
+                                                                    onChange={(e) => updateOption(mobileForm.id, field.id, optionIdentity, 'value', e.target.value)}
                                                                 />
+                                                                {duplicateOptionIds.has(optionIdentity) && (
+                                                                    <div className="invalid-feedback d-block">
+                                                                        Duplicate option label/value detected.
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                             <div className="col-md-1">
                                                                 <button
                                                                     type="button"
                                                                     className="btn btn-sm btn-danger"
-                                                                    onClick={() => removeOption(mobileForm.id, field.id, opt.id)}
+                                                                    onClick={() => removeOption(mobileForm.id, field.id, optionIdentity)}
                                                                 >
                                                                     &times;
                                                                 </button>
                                                             </div>
                                                         </div>
-                                                    ))}
+                                                        );
+                                                    })}
+                                                    {hasDuplicateOptions && (
+                                                        <div className="text-warning fs-7 mt-2">
+                                                            Duplicate options are allowed while editing, but only unique values will be saved.
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
 
@@ -912,6 +964,8 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                 </button>
                                             </div>
                                         </div>
+                                            );
+                                        })()}
                                     </div>
                                 ))}
                             </div>

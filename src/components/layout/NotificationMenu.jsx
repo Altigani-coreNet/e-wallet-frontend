@@ -195,8 +195,6 @@ const NotificationMenu = () => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loadingFeed, setLoadingFeed] = useState(false);
-    /** Dev/test: last payload from public channel `banners_updates` (full banner list snapshot). */
-    const [bannersWsTest, setBannersWsTest] = useState({ count: null, receivedAt: null });
     const echoRef = useRef(null);
     const audioRef = useRef(null);
     const wsConnectionUnbindRef = useRef(null);
@@ -375,25 +373,9 @@ const NotificationMenu = () => {
             );
         });
 
-        // Public channel — no /broadcasting/auth (same snapshot shape as GET /advertisements data).
-        const bannersChannel = echo.channel('banners_updates');
-        bannersChannel.listen('.banners.updated', (payload) => {
-            const list = Array.isArray(payload?.data) ? payload.data : [];
-            logWs('banners_updates — banners.updated', { success: payload?.success, count: list.length, data: list });
-            if (typeof window !== 'undefined') {
-                window.__lastBannersWsPayload = payload;
-            }
-            setBannersWsTest({
-                count: list.length,
-                receivedAt: new Date().toISOString(),
-            });
-        });
-
         attachPusherConnectionLogs(echo, wsConfig, isSecure, wsConnectionUnbindRef);
 
         return () => {
-            echo.leave('banners_updates');
-            setBannersWsTest({ count: null, receivedAt: null });
             wsConnectionUnbindRef.current?.();
             wsConnectionUnbindRef.current = null;
             if (echoRef.current) {
@@ -504,18 +486,6 @@ const NotificationMenu = () => {
                         Notifications
                         <span className="fs-8 opacity-75 ps-3">{notifications.length} reports</span>
                     </h3>
-                    <div className="fs-8 text-white opacity-90 px-9 mb-6 lh-sm">
-                        <span className="opacity-75">Banners (WS test)</span>
-                        {bannersWsTest.receivedAt != null ? (
-                            <>
-                                {' '}
-                                · {bannersWsTest.count} items ·{' '}
-                                {new Date(bannersWsTest.receivedAt).toLocaleTimeString()}
-                            </>
-                        ) : (
-                            <span className="opacity-75"> · waiting for banners_updates…</span>
-                        )}
-                    </div>
                     <ul className="nav nav-line-tabs nav-line-tabs-2x nav-stretch fw-semibold px-9" role="tablist">
                         <li className="nav-item" role="presentation">
                             <a
