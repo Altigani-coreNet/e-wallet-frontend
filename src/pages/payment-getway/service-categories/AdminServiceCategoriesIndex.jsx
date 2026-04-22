@@ -42,7 +42,9 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
         name_ar: '',
         parent_id: '',
         description: '',
-        is_active: true
+        is_active: true,
+        image: null,
+        image_preview: ''
     });
     const [formErrors, setFormErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
@@ -174,7 +176,9 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
             name_ar: '',
             parent_id: '',
             description: '',
-            is_active: true
+            is_active: true,
+            image: null,
+            image_preview: ''
         });
         setFormErrors({});
         setIsEditing(false);
@@ -188,7 +192,9 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
             name_ar: category.name_ar || category.name_en || category.name || '',
             parent_id: category.parent_id || '',
             description: category.description || '',
-            is_active: category.is_active
+            is_active: category.is_active,
+            image: null,
+            image_preview: category.image_url || category.image || ''
         });
         setFormErrors({});
         setIsEditing(true);
@@ -204,7 +210,9 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
             name_ar: '',
             parent_id: '',
             description: '',
-            is_active: true
+            is_active: true,
+            image: null,
+            image_preview: ''
         });
         setFormErrors({});
         setCurrentCategory(null);
@@ -220,6 +228,22 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
             setFormErrors({ ...formErrors, [name]: null });
         }
     };
+
+    const handleImageChange = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const preview = URL.createObjectURL(file);
+        setFormData((prev) => ({
+            ...prev,
+            image: file,
+            image_preview: preview
+        }));
+        if (formErrors.image) {
+            setFormErrors({ ...formErrors, image: null });
+        }
+    };
+
+    const getErrorMessage = (value) => (Array.isArray(value) ? value[0] : value);
 
     const validateForm = () => {
         const errors = {};
@@ -245,27 +269,39 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
         setSubmitting(true);
         try {
             const token = getToken();
-            const payload = {
-                type: categoryType,
-                name_en: formData.name_en,
-                name_ar: formData.name_ar,
-                parent_id: activeHierarchy === 'parents' ? null : (formData.parent_id || null),
-                description: formData.description || null,
-                is_active: formData.is_active
-            };
+            const payload = new FormData();
+            payload.append('type', categoryType);
+            payload.append('name_en', formData.name_en);
+            payload.append('name_ar', formData.name_ar);
+            payload.append('parent_id', activeHierarchy === 'parents' ? '' : (formData.parent_id || ''));
+            payload.append('description', formData.description || '');
+            payload.append('is_active', formData.is_active ? '1' : '0');
+            if (formData.image instanceof File) {
+                payload.append('image', formData.image);
+            }
 
             if (isEditing) {
                 await axios.put(
                     ADMIN_ENDPOINTS.SERVICE_CATEGORY_DETAILS(currentCategory.id),
                     payload,
-                    { headers: { 'Authorization': `Bearer ${token}` } }
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }
                 );
                 toast.success('Category updated successfully');
             } else {
                 await axios.post(
                     ADMIN_ENDPOINTS.SERVICE_CATEGORIES,
                     payload,
-                    { headers: { 'Authorization': `Bearer ${token}` } }
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }
                 );
                 toast.success('Category created successfully');
             }
@@ -403,6 +439,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
             {[...Array(pagination.per_page)].map((_, index) => (
                 <tr key={index}>
                     <td className="text-center"><div className="placeholder-glow"><span className="placeholder col-12"></span></div></td>
+                    <td><div className="placeholder-glow"><span className="placeholder col-8"></span></div></td>
                     <td><div className="placeholder-glow"><span className="placeholder col-12"></span></div></td>
                     <td><div className="placeholder-glow"><span className="placeholder col-8"></span></div></td>
                     <td className="text-center"><div className="placeholder-glow"><span className="placeholder col-6"></span></div></td>
@@ -513,6 +550,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                             />
                                         </div>
                                     </th>
+                                    <th className="min-w-80px">Image</th>
                                     <th className="min-w-150px">Name</th>
                                     <th className="min-w-200px">Description</th>
                                     <th className="text-center min-w-100px">Status</th>
@@ -525,7 +563,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                     <PlaceholderRows />
                                 ) : categories.length === 0 ? (
                                     <tr>
-                                        <td colSpan="6" className="text-center py-10">
+                                        <td colSpan="7" className="text-center py-10">
                                             <div className="text-gray-600 fs-5">No categories found</div>
                                         </td>
                                     </tr>
@@ -621,7 +659,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                             placeholder="Enter category name"
                                         />
                                         {formErrors.name_en && (
-                                            <div className="invalid-feedback">{formErrors.name_en}</div>
+                                            <div className="invalid-feedback">{getErrorMessage(formErrors.name_en)}</div>
                                         )}
                                     </div>
                                     <div className="mb-5">
@@ -635,7 +673,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                             placeholder="Enter Arabic category name"
                                         />
                                         {formErrors.name_ar && (
-                                            <div className="invalid-feedback">{formErrors.name_ar}</div>
+                                            <div className="invalid-feedback">{getErrorMessage(formErrors.name_ar)}</div>
                                         )}
                                     </div>
                                     {activeHierarchy === 'children' && (
@@ -657,10 +695,32 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                                     ))}
                                             </select>
                                             {formErrors.parent_id && (
-                                                <div className="invalid-feedback">{formErrors.parent_id}</div>
+                                                <div className="invalid-feedback">{getErrorMessage(formErrors.parent_id)}</div>
                                             )}
                                         </div>
                                     )}
+                                    <div className="mb-5">
+                                        <label className="form-label">Image</label>
+                                        <input
+                                            type="file"
+                                            className={`form-control ${formErrors.image ? 'is-invalid' : ''}`}
+                                            accept="image/*"
+                                            onChange={handleImageChange}
+                                        />
+                                        {formErrors.image && (
+                                            <div className="invalid-feedback">{getErrorMessage(formErrors.image)}</div>
+                                        )}
+                                        {formData.image_preview && (
+                                            <div className="mt-3">
+                                                <img
+                                                    src={formData.image_preview}
+                                                    alt="Category preview"
+                                                    className="img-fluid rounded border"
+                                                    style={{ maxHeight: '120px' }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="mb-5">
                                         <label className="form-label">Description</label>
                                         <textarea

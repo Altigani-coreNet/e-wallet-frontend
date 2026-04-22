@@ -29,6 +29,23 @@ const ServiceCategoryTableRow = ({
                 </div>
             </td>
             <td>
+                {category.image_url || category.image ? (
+                    <img
+                        src={category.image_url || category.image}
+                        alt={category.name_en || category.name || 'Category'}
+                        className="rounded border"
+                        style={{ width: '42px', height: '42px', objectFit: 'cover' }}
+                    />
+                ) : (
+                    <div
+                        className="d-inline-flex align-items-center justify-content-center rounded border text-muted fs-8"
+                        style={{ width: '42px', height: '42px' }}
+                    >
+                        N/A
+                    </div>
+                )}
+            </td>
+            <td>
                 <span className="text-dark fw-bold">{category.name_en || category.name || 'N/A'}</span>
             </td>
             <td>

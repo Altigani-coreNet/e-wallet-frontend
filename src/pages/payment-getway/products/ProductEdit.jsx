@@ -141,10 +141,17 @@ const ProductEdit = () => {
                                 options: normalizeFieldOptions(field.options),
                                 customization: (() => {
                                     const incoming = field.customization || field.customization_json || {};
+                                    const hasMin = incoming?.min !== null && incoming?.min !== undefined && incoming?.min !== '';
+                                    const hasMax = incoming?.max !== null && incoming?.max !== undefined && incoming?.max !== '';
+                                    const hasMinLength = incoming?.min_length !== null && incoming?.min_length !== undefined && incoming?.min_length !== '';
+                                    const hasMaxLength = incoming?.max_length !== null && incoming?.max_length !== undefined && incoming?.max_length !== '';
+                                    const hasRegex = incoming?.regex !== null && incoming?.regex !== undefined && `${incoming.regex}`.trim() !== '';
+                                    const hasHint = incoming?.hint !== null && incoming?.hint !== undefined && `${incoming.hint}`.trim() !== '';
                                     return {
                                         ...incoming,
                                         min: incoming?.min ?? incoming?.min_length ?? null,
                                         max: incoming?.max ?? incoming?.max_length ?? null,
+                                        enabled: Boolean(incoming?.enabled || hasMin || hasMax || hasMinLength || hasMaxLength || hasRegex || hasHint),
                                     };
                                 })(),
                                 is_required: field.is_required !== false,

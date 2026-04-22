@@ -957,6 +957,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                             className="form-control"
                                                             min="0"
                                                             value={customization.min ?? ''}
+                                                            placeholder="Minimum length"
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -974,6 +975,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                             className="form-control"
                                                             min="0"
                                                             value={customization.max ?? ''}
+                                                            placeholder="Maximum length"
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -1001,6 +1003,28 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                             placeholder="e.g. ^[a-zA-Z0-9]+$"
                                                         />
                                                     </div>
+                                                    <div className="col-12 mb-4">
+                                                        <label className="form-label">Hint</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={customization.hint ?? ''}
+                                                            placeholder="e.g. Enter your account number"
+                                                            onChange={(e) =>
+                                                                updateServiceField(
+                                                                    mobileForm.id,
+                                                                    field.id,
+                                                                    'customization',
+                                                                    { ...customization, enabled: true, hint: e.target.value }
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="col-12 mb-2">
+                                                        <small className="text-muted">
+                                                            Hint: for text fields, Min/Max are saved as Min Length/Max Length.
+                                                        </small>
+                                                    </div>
                                                 </>
                                             )}
                                             {showNumberCustomization && (
@@ -1011,6 +1035,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                             type="number"
                                                             className="form-control"
                                                             value={customization.min ?? ''}
+                                                            placeholder="Minimum value"
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -1027,6 +1052,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                             type="number"
                                                             className="form-control"
                                                             value={customization.max ?? ''}
+                                                            placeholder="Maximum value"
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -1036,6 +1062,28 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                                 )
                                                             }
                                                         />
+                                                    </div>
+                                                    <div className="col-12 mb-4">
+                                                        <label className="form-label">Hint</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={customization.hint ?? ''}
+                                                            placeholder="e.g. Enter amount between 1 and 100"
+                                                            onChange={(e) =>
+                                                                updateServiceField(
+                                                                    mobileForm.id,
+                                                                    field.id,
+                                                                    'customization',
+                                                                    { ...customization, enabled: true, hint: e.target.value }
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="col-12 mb-2">
+                                                        <small className="text-muted">
+                                                            Hint: for number fields, Min/Max are numeric value limits.
+                                                        </small>
                                                     </div>
                                                 </>
                                             )}

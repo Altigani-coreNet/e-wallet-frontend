@@ -56,19 +56,24 @@ export const mapProductFormsToApiPayload = (forms) => {
             ? field.customization
             : {};
         if (!customization.enabled) return null;
+        const hint = String(customization.hint ?? '').trim();
         const type = normalizeType(field.type);
         if (type === 'number field') {
             return {
                 min: parseOptionalNumber(customization.min),
                 max: parseOptionalNumber(customization.max),
+                hint: hint || null,
             };
         }
         if (['text field', 'email field', 'password field', 'multiline text field'].includes(type)) {
             const regex = String(customization.regex ?? '').trim();
             return {
-                min: parseOptionalNumber(customization.min),
-                max: parseOptionalNumber(customization.max),
+                min: null,
+                max: null,
+                min_length: parseOptionalNumber(customization.min),
+                max_length: parseOptionalNumber(customization.max),
                 regex: regex || null,
+                hint: hint || null,
             };
         }
         return null;
