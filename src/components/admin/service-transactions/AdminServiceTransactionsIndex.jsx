@@ -386,24 +386,18 @@ const AdminServiceTransactionsIndex = () => {
                                         </td>
                                         <td><span className={`badge ${getStatusBadgeClass(item.status)}`}>{item.status || 'N/A'}</span></td>
                                         <td className="text-end">
-                                            <div className="d-flex justify-content-end gap-2">
-                                                <button
-                                                    className="btn btn-sm btn-light btn-active-light-primary"
-                                                    onClick={() => navigate(`/admin/service-transactions/${item.id}`)}
-                                                >
-                                                    Service Details
-                                                </button>
-                                                <button
-                                                    className="btn btn-sm btn-light-primary"
-                                                    onClick={() => {
-                                                        const baseId = item.transaction?.id || item.transaction_id;
-                                                        if (baseId) navigate(`/admin/transactions/${baseId}`);
-                                                    }}
-                                                    disabled={!item.transaction?.id && !item.transaction_id}
-                                                >
-                                                    Transaction Details
-                                                </button>
-                                            </div>
+                                            <button
+                                                className="btn btn-icon btn-sm btn-light btn-active-light-primary"
+                                                onClick={() => navigate(`/admin/service-transactions/${item.id}`)}
+                                                title="Service Details"
+                                                aria-label="Service Details"
+                                            >
+                                                <i className="ki-duotone ki-eye fs-3">
+                                                    <span className="path1"></span>
+                                                    <span className="path2"></span>
+                                                    <span className="path3"></span>
+                                                </i>
+                                            </button>
                                         </td>
                                     </tr>
                                 ))

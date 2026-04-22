@@ -2,10 +2,10 @@
 export const  BASE_DOMAIN = 'https://fastpay.sd';
 // export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
 // export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
-// export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
-// export const SOFTPOS_API_BASE =  `${BASE_DOMAIN}/api/softpos`; //  `${BASE_DOMAIN}/api/softpos` //  `http://193.123.83.134:82`;;
-export const SOFTPOS_API_BASE =  `http://localhost:8000`;
-export const AUTH_SERVICE_BASE = `http://localhost:8000`;
+export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api/coreservice`;
+export const SOFTPOS_API_BASE =  `${BASE_DOMAIN}/api/softpos`; //  `${BASE_DOMAIN}/api/softpos` //  `http://193.123.83.134:82`;;
+// export const SOFTPOS_API_BASE =  `http://localhost:8000`;
+// export const AUTH_SERVICE_BASE = `http://localhost:8000`;
 // PayTabs Node service base (for QR testing)
 export const PAYTABS_API_BASE = `${BASE_DOMAIN}/api/paytabs`;
 export const POS_API_BASE = `${BASE_DOMAIN}/api/cashier`;
@@ -638,10 +638,6 @@ export const ADMIN_ENDPOINTS = {
     TRANSACTION_VOID: (id) => `${SOFTPOS_API_BASE}/v2/admin/transactions/${id}/void`,
     TRANSACTION_SEND_RECEIPT: (id) => `${SOFTPOS_API_BASE}/v2/admin/transactions/${id}/send-receipt`,
     TRANSACTION_RECEIPT: (id) => `${SOFTPOS_API_BASE}/v2/admin/transactions/${id}/receipt`,
-
-    // Service Transactions (SoftPos)
-    SERVICE_TRANSACTIONS: `${SOFTPOS_API_BASE}/v2/admin/service-transactions`,
-    SERVICE_TRANSACTION_DETAILS: (id) => `${SOFTPOS_API_BASE}/v2/admin/service-transactions/${id}`,
     
     // Payment Links (SoftPos)
     PAYMENT_LINKS: `${SOFTPOS_API_BASE}/v2/admin/payment-links`,

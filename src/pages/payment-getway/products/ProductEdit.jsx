@@ -139,6 +139,15 @@ const ProductEdit = () => {
                                 key: field.key || '',
                                 type: field.type || 'Text Field',
                                 options: normalizeFieldOptions(field.options),
+                                customization: (() => {
+                                    const incoming = field.customization || field.customization_json || {};
+                                    return {
+                                        ...incoming,
+                                        min: incoming?.min ?? incoming?.min_length ?? null,
+                                        max: incoming?.max ?? incoming?.max_length ?? null,
+                                    };
+                                })(),
+                                is_required: field.is_required !== false,
                             })),
                         })));
                     }

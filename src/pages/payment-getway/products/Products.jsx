@@ -16,7 +16,6 @@ import {
     toggleProductStatus,
     exportGatewayProducts,
 } from '../../../services/serviceProductsService';
-import useCountryInfoByIds from '../../../hooks/useCountryInfoByIds';
 
 const resolveServiceName = (service) => {
     if (!service) return 'N/A';
@@ -53,40 +52,14 @@ const resolveProductDescription = (product) => {
     return product.description_en || product.description_ar || '';
 };
 
-const pickProductCountryId = (product) =>
-    product?.country_id ??
-    product?.country?.id ??
-    product?.service?.country_id ??
-    product?.service?.country?.id ??
-    null;
-
-/** Prefer nested country from API; otherwise resolve by UUID via Auth countries index (see useCountryInfoByIds). */
-const getProductCountryDisplay = (product, getCountryById, lookupLoading) => {
+const getProductCountryDisplay = (product) => {
     const c = product?.country || product?.service?.country;
-    if (c) {
-        const n = c.name;
-        let label = '';
-        if (typeof n === 'string') label = n.trim();
-        else if (n && typeof n === 'object') label = (n.en || n.ar || '').trim();
-        if (label) {
-            return { label, code: c.short_name || c.code || null };
-        }
-    }
-    const cid = pickProductCountryId(product);
-    if (!cid) {
-        return { label: 'N/A', code: null };
-    }
-    const r = getCountryById(cid);
-    if (r?.name) {
-        return { label: r.name, code: r.code || r.short_name || null };
-    }
-    if (r && !r.name) {
-        return { label: 'N/A', code: null };
-    }
-    if (lookupLoading) {
-        return { label: '…', code: null };
-    }
-    return { label: 'N/A', code: null };
+    if (!c) return { label: 'N/A', code: null };
+    const n = c.name;
+    let label = '';
+    if (typeof n === 'string') label = n.trim();
+    else if (n && typeof n === 'object') label = (n.en || n.ar || '').trim();
+    return { label: label || 'N/A', code: c.short_name || c.code || null };
 };
 
 const Products = () => {
@@ -127,21 +100,6 @@ const Products = () => {
         }, 500);
         return () => clearTimeout(timer);
     }, [searchTerm]);
-
-    const countryIdsForLookup = useMemo(
-        () =>
-            [
-                ...new Set(
-                    products
-                        .map((p) => pickProductCountryId(p))
-                        .filter((id) => id !== null && id !== undefined && id !== '')
-                        .map(String)
-                ),
-            ],
-        [products]
-    );
-
-    const { getCountryById, loading: countryLookupLoading } = useCountryInfoByIds(countryIdsForLookup);
 
     const [contentProviders, setContentProviders] = useState([]);
     const [loadingContentProviders, setLoadingContentProviders] = useState(false);
@@ -1171,9 +1129,7 @@ const Products = () => {
                                 ) : products.length > 0 ? (
                                     products.map((product) => {
                                         const { label: countryLabel, code } = getProductCountryDisplay(
-                                            product,
-                                            getCountryById,
-                                            countryLookupLoading
+                                            product
                                         );
                                         return (
                                             <tr key={product.id}>

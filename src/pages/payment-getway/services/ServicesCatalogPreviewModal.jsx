@@ -39,6 +39,28 @@ const getProductForms = (product) => {
     return [];
 };
 
+const getFormActions = (form) => (Array.isArray(form?.actions) ? form.actions : []);
+
+const hasTapToPayAction = (form) =>
+    getFormActions(form).some((action) => {
+        const type = String(action?.action_type || '').trim().toLowerCase();
+        return type === 'tap_to_pay' || type === 'tab_to_pay';
+    });
+
+const getActionByName = (form, actionName) =>
+    getFormActions(form).find(
+        (action) => String(action?.action_name || '').trim().toLowerCase() === String(actionName || '').trim().toLowerCase()
+    );
+
+const getPrimaryAction = (form) => {
+    const actions = getFormActions(form);
+    return (
+        actions.find((action) => String(action?.action_type || '').trim().toLowerCase() !== 'button') ||
+        actions.find((action) => String(action?.action_name || '').trim().toLowerCase() !== 'cancel') ||
+        null
+    );
+};
+
 const isRequiredValueMissing = (field, value) => {
     if (normalizeFieldType(field) === 'checkbox') {
         return !Array.isArray(value) || value.length === 0;
@@ -57,6 +79,62 @@ const validateCatalogFormFields = (form, values) => {
         }
     });
     return errors;
+};
+
+const isEmptyValue = (value) => value === undefined || value === null || String(value).trim() === '';
+
+const validateByRules = (value, rules = {}, messages = {}) => {
+    const required = Boolean(rules?.required);
+    if (required && isEmptyValue(value)) {
+        return messages?.required || 'This field is required.';
+    }
+    if (isEmptyValue(value)) return null;
+
+    const stringValue = String(value);
+    const numericValue = Number(value);
+    const hasNumber = Number.isFinite(numericValue);
+
+    if (rules?.numeric && !hasNumber) {
+        return messages?.numeric || 'Please enter a valid number.';
+    }
+    if (rules?.min !== undefined && rules?.min !== null) {
+        const min = Number(rules.min);
+        if (Number.isFinite(min)) {
+            if (rules?.numeric) {
+                if (!hasNumber || numericValue < min) return messages?.min || `Value should be at least ${min}.`;
+            } else if (stringValue.length < min) {
+                return messages?.min || `Value should be at least ${min} characters.`;
+            }
+        }
+    }
+    if (rules?.max !== undefined && rules?.max !== null) {
+        const max = Number(rules.max);
+        if (Number.isFinite(max)) {
+            if (rules?.numeric) {
+                if (!hasNumber || numericValue > max) return messages?.max || `Value should be at most ${max}.`;
+            } else if (stringValue.length > max) {
+                return messages?.max || `Value should be at most ${max} characters.`;
+            }
+        }
+    }
+    if (rules?.max_length !== undefined && rules?.max_length !== null) {
+        const maxLength = Number(rules.max_length);
+        if (Number.isFinite(maxLength) && stringValue.length > maxLength) {
+            return messages?.max_length || `Value should be at most ${maxLength} characters.`;
+        }
+    }
+    if (rules?.regex) {
+        try {
+            const pattern = new RegExp(String(rules.regex));
+            if (!pattern.test(stringValue)) {
+                return messages?.regex || 'Invalid format.';
+            }
+        } catch {
+            // Ignore invalid backend pattern.
+        }
+    }
+
+    return null;
 };
 
 const getFieldOptions = (field) => {
@@ -180,6 +258,10 @@ const appTileMetaStyle = {
 };
 
 const fieldInvalidClass = (hasErr) => (hasErr ? ' is-invalid' : '');
+const prettifyFieldName = (name = '') =>
+    String(name)
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (char) => char.toUpperCase());
 
 /** Interactive mobile form — same behavior idea as MobileFormsBuilder preview (real controls, no debug JSON). */
 function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
@@ -191,6 +273,7 @@ function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
         const fieldType = normalizeFieldType(field);
         const value = values[fieldKey] ?? (fieldType === 'checkbox' ? [] : '');
         const hasErr = Boolean(errors[fieldKey]);
+        const errorText = typeof errors[fieldKey] === 'string' ? errors[fieldKey] : 'This field is required.';
 
         const label = field.label || field.label_en || field.label_ar || 'Field';
 
@@ -329,12 +412,49 @@ function LiveCatalogFormFields({ form, onFieldChange, values, errors = {} }) {
                         autoComplete="off"
                     />
                 )}
-                {hasErr ? <div className="invalid-feedback d-block fs-8">This field is required.</div> : null}
+                {hasErr ? <div className="invalid-feedback d-block fs-8">{errorText}</div> : null}
             </div>
         );
     };
 
     return <div>{fields.map((f) => renderField(f))}</div>;
+}
+
+function LiveRoleFields({ roleMap = {}, onFieldChange, values, errors = {} }) {
+    const roleEntries = Object.entries(roleMap);
+    if (!roleEntries.length) return null;
+
+    return (
+        <div>
+            {roleEntries.map(([fieldName, roleConfig]) => {
+                const rules = roleConfig?.rules || {};
+                const label = prettifyFieldName(fieldName);
+                const value = values[fieldName] ?? '';
+                const hasErr = Boolean(errors[fieldName]);
+                const errorText = typeof errors[fieldName] === 'string' ? errors[fieldName] : 'Invalid value.';
+                const isNumeric = Boolean(rules?.numeric);
+                return (
+                    <div className="mb-3" key={fieldName}>
+                        <label className="form-label fw-semibold mb-1" style={{ fontSize: 13 }}>
+                            {label}
+                            {rules?.required ? <span className="text-danger ms-1">*</span> : null}
+                        </label>
+                        <input
+                            type={isNumeric ? 'number' : 'text'}
+                            className={`form-control form-control-sm${fieldInvalidClass(hasErr)}`}
+                            placeholder={label}
+                            value={value}
+                            onChange={(e) => onFieldChange(fieldName, e.target.value)}
+                            min={rules?.min ?? undefined}
+                            max={rules?.max ?? undefined}
+                            autoComplete="off"
+                        />
+                        {hasErr ? <div className="invalid-feedback d-block fs-8">{errorText}</div> : null}
+                    </div>
+                );
+            })}
+        </div>
+    );
 }
 
 /**
@@ -355,6 +475,8 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
     const [formValuesByFormId, setFormValuesByFormId] = useState({});
     const [fieldErrors, setFieldErrors] = useState({});
     const [formSubmitCompleted, setFormSubmitCompleted] = useState(false);
+    const [dynamicFormStateByKey, setDynamicFormStateByKey] = useState({});
+    const [processingForm, setProcessingForm] = useState(false);
 
     const resetLocalState = useCallback(() => {
         setStep('services');
@@ -367,6 +489,8 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
         setFormValuesByFormId({});
         setFieldErrors({});
         setFormSubmitCompleted(false);
+        setDynamicFormStateByKey({});
+        setProcessingForm(false);
     }, []);
 
     const buildServiceParams = useCallback(() => {
@@ -428,6 +552,15 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
         return formValuesByFormId[fk] || {};
     }, [formValuesByFormId, activeForm, activeFormIndex]);
 
+    const activeFormKey = useMemo(
+        () => getCatalogFormValuesKey(activeForm, activeFormIndex),
+        [activeForm, activeFormIndex]
+    );
+
+    const activeDynamicFormState = dynamicFormStateByKey[activeFormKey] || {};
+    const cancelAction = useMemo(() => getActionByName(activeForm, 'cancel'), [activeForm]);
+    const primaryAction = useMemo(() => getPrimaryAction(activeForm), [activeForm]);
+
     const handleFieldChange = useCallback(
         (key, val) => {
             const fk = getCatalogFormValuesKey(activeForm, activeFormIndex);
@@ -445,32 +578,108 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
         [activeForm, activeFormIndex]
     );
 
-    const handleFormProcess = useCallback(() => {
-        if (!activeForm) return;
+    const handleTapToPayAction = useCallback(() => {
+        // Placeholder hook for future tap-to-pay logic.
+        setFormSubmitCompleted(true);
+    }, []);
+
+    const handleFormProcess = useCallback(async () => {
+        if (!activeForm || processingForm) return;
+        if (hasTapToPayAction(activeForm)) {
+            handleTapToPayAction();
+            return;
+        }
         const fk = getCatalogFormValuesKey(activeForm, activeFormIndex);
         const values = formValuesByFormId[fk] || {};
         const errors = validateCatalogFormFields(activeForm, values);
+        const roleMap = dynamicFormStateByKey[fk]?.fieldRoles || {};
+        Object.entries(roleMap).forEach(([fieldName, roleConfig]) => {
+            const backendError = validateByRules(values[fieldName], roleConfig?.rules, roleConfig?.messages);
+            if (backendError) {
+                errors[fieldName] = backendError;
+            }
+        });
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
             toast.error('Please fill in all required fields.');
             return;
         }
         setFieldErrors({});
-
-        if (activeFormIndex + 1 < forms.length) {
-            setActiveFormIndex((i) => i + 1);
-            toast.success('Saved. Continue with the next section.');
+        const formUrl = activeForm?.form_url?.trim();
+        if (!formUrl) {
+            const nextIndex = activeFormIndex + 1;
+            const nextForm = nextIndex < forms.length ? forms[nextIndex] : null;
+            const nextHasUrl = Boolean(nextForm?.form_url?.trim());
+            if (nextForm && nextHasUrl) {
+                setActiveFormIndex(nextIndex);
+                toast.success('Saved. Continue with the next section.');
+                return;
+            }
+            setFormSubmitCompleted(true);
+            toast.success('Form submitted successfully.');
             return;
         }
 
-        setFormSubmitCompleted(true);
-        toast.success('Form submitted successfully.');
-    }, [activeForm, activeFormIndex, forms.length, formValuesByFormId]);
+        setProcessingForm(true);
+        setDynamicFormStateByKey((prev) => ({
+            ...prev,
+            [fk]: {
+                ...(prev[fk] || {}),
+                loading: true,
+                fetchError: '',
+            },
+        }));
+        try {
+            const response = await axios.post(formUrl, values);
+            const payload = response?.data || {};
+            const data = payload?.data || {};
+            const filedRoles = Array.isArray(data?.filed_roles) ? data.filed_roles : [];
+            const nextRoleMap = filedRoles.reduce((acc, role) => {
+                const fieldName = role?.field_name ? String(role.field_name).trim() : '';
+                if (!fieldName) return acc;
+                acc[fieldName] = {
+                    rules: role?.rules || {},
+                    messages: role?.messages || {},
+                };
+                return acc;
+            }, {});
+
+            setDynamicFormStateByKey((prev) => ({
+                ...prev,
+                [fk]: {
+                    loading: false,
+                    fetchError: '',
+                    screenId: payload?.screen_id || '',
+                    widgets: Array.isArray(data?.widgets) ? data.widgets : [],
+                    fieldRoles: nextRoleMap,
+                    responsePayload: payload,
+                },
+            }));
+
+            // Backend-driven flow: same form submits and next screen widgets/roles are rendered.
+            if (!filedRoles.length && (!Array.isArray(data?.widgets) || data.widgets.length === 0)) {
+                setFormSubmitCompleted(true);
+            }
+        } catch (error) {
+            setDynamicFormStateByKey((prev) => ({
+                ...prev,
+                [fk]: {
+                    ...(prev[fk] || {}),
+                    loading: false,
+                    fetchError: error.response?.data?.message || 'Failed to process form request.',
+                },
+            }));
+            toast.error(error.response?.data?.message || 'Failed to process form request.');
+        } finally {
+            setProcessingForm(false);
+        }
+    }, [activeForm, activeFormIndex, forms, formValuesByFormId, dynamicFormStateByKey, processingForm, handleTapToPayAction]);
 
     const handleFormDone = useCallback(() => {
         setFormSubmitCompleted(false);
         setFieldErrors({});
         setFormValuesByFormId({});
+        setProcessingForm(false);
         setStep('products');
         setSelectedProduct(null);
         setForms([]);
@@ -491,6 +700,8 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
         setFormValuesByFormId({});
         setFieldErrors({});
         setFormSubmitCompleted(false);
+        setDynamicFormStateByKey({});
+        setProcessingForm(false);
         setLoadingForms(false);
         setForms(getProductForms(product));
     };
@@ -500,6 +711,8 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
             setFormSubmitCompleted(false);
             setFieldErrors({});
             setFormValuesByFormId({});
+            setDynamicFormStateByKey({});
+            setProcessingForm(false);
             setStep('products');
             setSelectedProduct(null);
             setForms([]);
@@ -520,13 +733,22 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
               ? resolveServiceName(selectedService)
               : getProductDisplayName(selectedProduct);
 
-    const formHasFields =
+    const formHasCatalogFields =
         step === 'form' &&
         !loadingForms &&
         activeForm &&
         getFormFields(activeForm).length > 0;
 
-    const showFormChrome = formHasFields || formSubmitCompleted;
+    const formHasDynamicRoleFields =
+        step === 'form' &&
+        !loadingForms &&
+        activeForm &&
+        Object.keys(activeDynamicFormState?.fieldRoles || {}).length > 0;
+
+    const hasDynamicWidgets = Array.isArray(activeDynamicFormState?.widgets) && activeDynamicFormState.widgets.length > 0;
+    const useDynamicScreen = Boolean(activeDynamicFormState?.screenId) || formHasDynamicRoleFields || hasDynamicWidgets;
+
+    const showFormChrome = formHasCatalogFields || formHasDynamicRoleFields || formSubmitCompleted;
 
     const renderPhoneBody = () => {
         if (step === 'services') {
@@ -647,7 +869,7 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                 </div>
             );
         }
-        if (!activeForm || getFormFields(activeForm).length === 0) {
+        if (!activeForm || (!getFormFields(activeForm).length && !Object.keys(activeDynamicFormState?.fieldRoles || {}).length)) {
             return (
                 <div className="text-center text-muted fs-7 py-15 px-4">
                     {forms.length === 0 ? 'No forms for this product.' : 'This form has no fields yet.'}
@@ -687,9 +909,15 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                 </div>
             );
         }
-        if (!formHasFields || !activeForm) return null;
+        if ((!formHasCatalogFields && !formHasDynamicRoleFields) || !activeForm) return null;
         return (
             <>
+                {activeDynamicFormState?.loading ? (
+                    <div className="alert alert-info py-2 mb-3">Loading form configuration...</div>
+                ) : null}
+                {activeDynamicFormState?.fetchError ? (
+                    <div className="alert alert-warning py-2 mb-3">{activeDynamicFormState.fetchError}</div>
+                ) : null}
                 {forms.length > 1 ? (
                     <div
                         className="d-flex gap-2 mb-3 pb-1"
@@ -718,17 +946,90 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                         ))}
                     </div>
                 ) : null}
+                {Array.isArray(activeDynamicFormState?.widgets) &&
+                    activeDynamicFormState.widgets.map((widget, idx) => {
+                        if (widget?.type === 'billing_header_card') {
+                            const content = widget?.content || {};
+                            return (
+                                <div key={`w-${idx}`} className="rounded-3 p-3 mb-3" style={{ background: '#0d6efd', color: '#fff' }}>
+                                    <div className="small opacity-75">{content?.title || ''}</div>
+                                    <div className="fw-bold fs-3">{content?.value || ''}</div>
+                                    <div className="small">
+                                        {[content?.currency, content?.subtitle].filter(Boolean).join(' - ')}
+                                    </div>
+                                    {content?.status_tag ? <div className="badge bg-light text-dark mt-2">{content.status_tag}</div> : null}
+                                </div>
+                            );
+                        }
+                        if (widget?.type === 'card_table') {
+                            const content = widget?.content || {};
+                            const rows = Array.isArray(content?.rows) ? content.rows : [];
+                            return (
+                                <div
+                                    key={`w-${idx}`}
+                                    className="bg-white rounded-3 p-3 mb-3 shadow-sm"
+                                    style={{ border: '1px solid rgba(0,0,0,0.08)' }}
+                                >
+                                    {content?.title ? (
+                                        <div className="fw-semibold text-gray-900 mb-2" style={{ fontSize: 13 }}>
+                                            {content.title}
+                                        </div>
+                                    ) : null}
+                                    {rows.length > 0 ? (
+                                        <div className="d-flex flex-column gap-2">
+                                            {rows.map((row, rowIdx) => (
+                                                <div
+                                                    key={`w-${idx}-r-${rowIdx}`}
+                                                    className="d-flex align-items-start justify-content-between gap-3"
+                                                    style={{ fontSize: 12, lineHeight: 1.35 }}
+                                                >
+                                                    <div className="text-muted" style={{ minWidth: 90 }}>
+                                                        {row?.field || '-'}
+                                                    </div>
+                                                    <div className="text-end text-gray-900 fw-medium" style={{ wordBreak: 'break-word' }}>
+                                                        {[row?.value, row?.currency].filter(Boolean).join(' ')}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-muted" style={{ fontSize: 12 }}>
+                                            No details available.
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+                        if (widget?.type === 'info_banner') {
+                            return (
+                                <div key={`w-${idx}`} className="alert alert-warning py-2 mb-3">
+                                    {widget?.content?.text || ''}
+                                </div>
+                            );
+                        }
+                        return null;
+                    })}
 
                 <div className="bg-white rounded-3 p-3 shadow-sm" style={{ border: '1px solid rgba(0,0,0,0.06)' }}>
                     <div className="text-muted fs-8 mb-2 text-uppercase" style={{ letterSpacing: 0.4 }}>
-                        {activeForm.form_name || 'Service form'}
+                        {activeDynamicFormState?.screenId || activeForm.form_name || 'Service form'}
                     </div>
-                    <LiveCatalogFormFields
-                        form={activeForm}
-                        values={currentFormValues}
-                        errors={fieldErrors}
-                        onFieldChange={handleFieldChange}
-                    />
+                    {formHasCatalogFields && !useDynamicScreen ? (
+                        <LiveCatalogFormFields
+                            form={activeForm}
+                            values={currentFormValues}
+                            errors={fieldErrors}
+                            onFieldChange={handleFieldChange}
+                        />
+                    ) : null}
+                    {formHasDynamicRoleFields ? (
+                        <LiveRoleFields
+                            roleMap={activeDynamicFormState?.fieldRoles || {}}
+                            values={currentFormValues}
+                            errors={fieldErrors}
+                            onFieldChange={handleFieldChange}
+                        />
+                    ) : null}
                 </div>
             </>
         );
@@ -836,11 +1137,18 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                                                     boxShadow: '0 -4px 12px rgba(15,23,42,0.06)',
                                                 }}
                                             >
-                                                <button type="button" className="btn btn-light btn-sm flex-grow-1" onClick={handleBack}>
-                                                    Cancel
+                                                <button type="button" className="btn btn-light btn-sm flex-grow-1" onClick={handleBack} disabled={processingForm}>
+                                                    {cancelAction?.action_label || 'Cancel'}
                                                 </button>
-                                                <button type="submit" className="btn btn-primary btn-sm flex-grow-1">
-                                                    Process
+                                                <button type="submit" className="btn btn-primary btn-sm flex-grow-1" disabled={processingForm}>
+                                                    {processingForm ? (
+                                                        <>
+                                                            <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                                                            Processing...
+                                                        </>
+                                                    ) : (
+                                                        primaryAction?.action_label || 'Process'
+                                                    )}
                                                 </button>
                                             </div>
                                         </form>

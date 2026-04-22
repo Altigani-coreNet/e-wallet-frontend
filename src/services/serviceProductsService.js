@@ -26,6 +26,12 @@ const getAcceptLanguageHeader = () => {
  */
 export const mapProductFormsToApiPayload = (forms) => {
     const normalizeOptionToken = (value) => String(value ?? '').trim().toLowerCase();
+    const normalizeType = (type) => String(type ?? '').trim().toLowerCase();
+    const parseOptionalNumber = (value) => {
+        if (value === '' || value === null || value === undefined) return null;
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    };
     const sanitizeFieldOptions = (options = []) => {
         const seen = new Set();
         return (options || []).reduce((acc, option) => {
@@ -45,6 +51,28 @@ export const mapProductFormsToApiPayload = (forms) => {
             return acc;
         }, []);
     };
+    const sanitizeCustomization = (field = {}) => {
+        const customization = field?.customization && typeof field.customization === 'object'
+            ? field.customization
+            : {};
+        if (!customization.enabled) return null;
+        const type = normalizeType(field.type);
+        if (type === 'number field') {
+            return {
+                min: parseOptionalNumber(customization.min),
+                max: parseOptionalNumber(customization.max),
+            };
+        }
+        if (['text field', 'email field', 'password field', 'multiline text field'].includes(type)) {
+            const regex = String(customization.regex ?? '').trim();
+            return {
+                min: parseOptionalNumber(customization.min),
+                max: parseOptionalNumber(customization.max),
+                regex: regex || null,
+            };
+        }
+        return null;
+    };
 
     return (forms || []).map((f) => ({
         form_name: f.form_name ?? f.title ?? '',
@@ -56,6 +84,7 @@ export const mapProductFormsToApiPayload = (forms) => {
             key: field.key ?? '',
             type: field.type ?? 'Text Field',
             options: sanitizeFieldOptions(field.options),
+            customization: sanitizeCustomization(field),
             sort_order: field.sort_order ?? idx,
             is_required: field.is_required !== false,
             status: field.status !== false,

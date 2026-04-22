@@ -10,40 +10,18 @@ import { getToken } from "../../utils/api";
 import { getPartnersSelect } from "../../services/adminPartnersService";
 import { formatDateTime } from "../../utils/helpers";
 import ServicesCatalogPreviewModal from "./services/ServicesCatalogPreviewModal";
-import useCountryInfoByIds from "../../hooks/useCountryInfoByIds";
 import { resolveBackendAssetUrl } from "../../utils/assetUrl";
 import { AUTH_SERVICE_BASE } from "../../utils/constants";
 
-const pickServiceCountryId = (service) => service?.country_id ?? service?.country?.id ?? null;
-
-/** Prefer nested country from API; otherwise resolve UUID via Auth countries index (see useCountryInfoByIds). */
-const getServiceCountryDisplay = (service, getCountryById, lookupLoading) => {
+const getServiceCountryDisplay = (service) => {
     const c = service?.country;
-    if (c) {
-        const n = c.name;
-        let label = '';
-        if (typeof n === 'string') label = n.trim();
-        else if (n && typeof n === 'object') label = (n.en || n.ar || '').trim();
-        if (!label && c.short_name) label = String(c.short_name);
-        if (label) {
-            return { label, code: c.code || c.short_name || null };
-        }
-    }
-    const cid = pickServiceCountryId(service);
-    if (!cid) {
-        return { label: 'N/A', code: null };
-    }
-    const r = getCountryById(cid);
-    if (r?.name) {
-        return { label: r.name, code: r.code || r.short_name || null };
-    }
-    if (r && !r.name) {
-        return { label: 'N/A', code: null };
-    }
-    if (lookupLoading) {
-        return { label: '…', code: null };
-    }
-    return { label: 'N/A', code: null };
+    if (!c) return { label: "N/A", code: null };
+    const n = c.name;
+    let label = "";
+    if (typeof n === "string") label = n.trim();
+    else if (n && typeof n === "object") label = (n.en || n.ar || "").trim();
+    if (!label && c.short_name) label = String(c.short_name);
+    return { label: label || "N/A", code: c.code || c.short_name || null };
 };
 
 const Services = () => {
@@ -54,21 +32,6 @@ const Services = () => {
     const [loading, setLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-
-    const countryIdsForLookup = useMemo(
-        () =>
-            [
-                ...new Set(
-                    services
-                        .map((s) => pickServiceCountryId(s))
-                        .filter((id) => id !== null && id !== undefined && id !== "")
-                        .map(String)
-                ),
-            ],
-        [services]
-    );
-
-    const { getCountryById, loading: countryLookupLoading } = useCountryInfoByIds(countryIdsForLookup);
 
     // Pagination state
     const [pagination, setPagination] = useState({
@@ -1314,9 +1277,7 @@ const Services = () => {
                             ) : services.length > 0 ? (
                                 services.map((service) => {
                                     const { label: countryLabel, code: countryCode } = getServiceCountryDisplay(
-                                        service,
-                                        getCountryById,
-                                        countryLookupLoading
+                                        service
                                     );
                                     return (
                                     <tr key={service.id}>

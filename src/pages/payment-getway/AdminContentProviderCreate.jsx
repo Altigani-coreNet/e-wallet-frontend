@@ -811,7 +811,7 @@ const AdminContentProviderCreate = () => {
                                                                             }}
                                                                         />
                                                                     )}
-                                                                    <span>{option.label}</span>
+                                                                    <span className="text-gray-800">{option.label}</span>
                                                                 </div>
                                                             ) : (
                                                                 <span className="text-muted fw-semibold">Select country</span>
@@ -830,7 +830,7 @@ const AdminContentProviderCreate = () => {
                                                                         }}
                                                                     />
                                                                 )}
-                                                                <span>{option.label}</span>
+                                                                <span className="text-gray-800">{option.label}</span>
                                                             </div>
                                                         )}
                                                     />
@@ -928,7 +928,7 @@ const AdminContentProviderCreate = () => {
                                                                     onError={(e) => { e.target.style.display = 'none'; }}
                                                                 />
                                                             )}
-                                                            <span>{option.label}</span>
+                                                            <span className="text-gray-800">{option.label}</span>
                                                         </div>
                                                     ) : <span className="text-muted fw-semibold">Select country</span>
                                                 )}
@@ -943,7 +943,7 @@ const AdminContentProviderCreate = () => {
                                                                 onError={(e) => { e.target.style.display = 'none'; }}
                                                             />
                                                         )}
-                                                        <span>{option.label}</span>
+                                                        <span className="text-gray-800">{option.label}</span>
                                                     </div>
                                                 )}
                                             />

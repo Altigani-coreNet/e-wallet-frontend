@@ -53,6 +53,14 @@ const collectDuplicateOptionIds = (options = []) => {
 };
 
 const getFieldKey = (field) => (field.key && field.key.trim() ? field.key.trim() : `field_${field.id}`);
+const getNormalizedFieldType = (type) => `${type || ''}`.trim().toLowerCase();
+const isNumberFieldType = (type) => getNormalizedFieldType(type) === 'number field';
+const isTextCustomizationType = (type) => {
+    const normalized = getNormalizedFieldType(type);
+    return ['text field', 'email field', 'password field', 'multiline text field'].includes(normalized);
+};
+const getFieldCustomization = (field) =>
+    field?.customization && typeof field.customization === 'object' ? field.customization : {};
 
 const previewScreenShellStyle = {
     flex: 1,
@@ -521,6 +529,8 @@ const ensureBaseForm = (existing) => {
                     key: '',
                     type: FIELD_TYPES[0],
                     options: [],
+                    customization: {},
+                    is_required: true,
                 },
             ],
         },
@@ -557,6 +567,8 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                         key: '',
                         type: FIELD_TYPES[0],
                         options: [],
+                            customization: {},
+                            is_required: true,
                     },
                 ],
             },
@@ -594,6 +606,8 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                             key: '',
                             type: FIELD_TYPES[0],
                             options: [],
+                            customization: {},
+                            is_required: true,
                         },
                     ],
                 };
@@ -630,6 +644,18 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                         const base = { ...field, [key]: nextValue };
                         if (key === 'type' && !TYPES_WITH_OPTIONS.has(nextValue)) {
                             base.options = [];
+                        }
+                        if (key === 'type') {
+                            const nextCustomization = { ...(base.customization || {}) };
+                            if (isNumberFieldType(nextValue)) {
+                                delete nextCustomization.regex;
+                            } else if (isTextCustomizationType(nextValue)) {
+                                // keep min/max for text; they represent text length
+                            } else {
+                                base.customization = {};
+                                return base;
+                            }
+                            base.customization = nextCustomization;
                         }
                         return base;
                     }),
@@ -836,6 +862,10 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                 ? collectDuplicateOptionIds(field.options || [])
                                                 : new Set();
                                             const hasDuplicateOptions = duplicateOptionIds.size > 0;
+                                            const customization = getFieldCustomization(field);
+                                            const customizationEnabled = Boolean(customization.enabled);
+                                            const showTextCustomization = customizationEnabled && isTextCustomizationType(field.type);
+                                            const showNumberCustomization = customizationEnabled && isNumberFieldType(field.type);
                                             return (
                                         <div className="row">
                                             <div className="col-md-6 mb-4">
@@ -884,6 +914,131 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                     ))}
                                                 </select>
                                             </div>
+                                            <div className="col-md-6 mb-4 d-flex align-items-end">
+                                                <div className="form-check form-check-custom form-check-solid">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="checkbox"
+                                                        id={`required-${mobileForm.id}-${field.id}`}
+                                                        checked={field.is_required !== false}
+                                                        onChange={(e) => updateServiceField(mobileForm.id, field.id, 'is_required', e.target.checked)}
+                                                    />
+                                                    <label className="form-check-label fw-semibold" htmlFor={`required-${mobileForm.id}-${field.id}`}>
+                                                        Required Field
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {(isTextCustomizationType(field.type) || isNumberFieldType(field.type)) && (
+                                                <div className="col-12 mb-4">
+                                                    <div className="form-check form-check-custom form-check-solid">
+                                                        <input
+                                                            className="form-check-input"
+                                                            type="checkbox"
+                                                            id={`customization-enable-${mobileForm.id}-${field.id}`}
+                                                            checked={customizationEnabled}
+                                                            onChange={(e) => {
+                                                                const enabled = e.target.checked;
+                                                                const nextCustomization = enabled ? { ...(customization || {}), enabled: true } : {};
+                                                                updateServiceField(mobileForm.id, field.id, 'customization', nextCustomization);
+                                                            }}
+                                                        />
+                                                        <label className="form-check-label fw-semibold" htmlFor={`customization-enable-${mobileForm.id}-${field.id}`}>
+                                                            Enable Customization
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {showTextCustomization && (
+                                                <>
+                                                    <div className="col-md-4 mb-4">
+                                                        <label className="form-label">Min</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control"
+                                                            min="0"
+                                                            value={customization.min ?? ''}
+                                                            onChange={(e) =>
+                                                                updateServiceField(
+                                                                    mobileForm.id,
+                                                                    field.id,
+                                                                    'customization',
+                                                                    { ...customization, enabled: true, min: e.target.value }
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-4 mb-4">
+                                                        <label className="form-label">Max</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control"
+                                                            min="0"
+                                                            value={customization.max ?? ''}
+                                                            onChange={(e) =>
+                                                                updateServiceField(
+                                                                    mobileForm.id,
+                                                                    field.id,
+                                                                    'customization',
+                                                                    { ...customization, enabled: true, max: e.target.value }
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-4 mb-4">
+                                                        <label className="form-label">Regex</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={customization.regex ?? ''}
+                                                            onChange={(e) =>
+                                                                updateServiceField(
+                                                                    mobileForm.id,
+                                                                    field.id,
+                                                                    'customization',
+                                                                    { ...customization, enabled: true, regex: e.target.value }
+                                                                )
+                                                            }
+                                                            placeholder="e.g. ^[a-zA-Z0-9]+$"
+                                                        />
+                                                    </div>
+                                                </>
+                                            )}
+                                            {showNumberCustomization && (
+                                                <>
+                                                    <div className="col-md-6 mb-4">
+                                                        <label className="form-label">Min</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control"
+                                                            value={customization.min ?? ''}
+                                                            onChange={(e) =>
+                                                                updateServiceField(
+                                                                    mobileForm.id,
+                                                                    field.id,
+                                                                    'customization',
+                                                                    { ...customization, enabled: true, min: e.target.value }
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-6 mb-4">
+                                                        <label className="form-label">Max</label>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control"
+                                                            value={customization.max ?? ''}
+                                                            onChange={(e) =>
+                                                                updateServiceField(
+                                                                    mobileForm.id,
+                                                                    field.id,
+                                                                    'customization',
+                                                                    { ...customization, enabled: true, max: e.target.value }
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                </>
+                                            )}
 
                                             {TYPES_WITH_OPTIONS.has(field.type) && (
                                                 <div className="col-12 mt-3">
