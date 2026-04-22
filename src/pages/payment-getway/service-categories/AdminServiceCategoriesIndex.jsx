@@ -281,7 +281,8 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
             }
 
             if (isEditing) {
-                await axios.put(
+                payload.append('_method', 'PUT');
+                await axios.post(
                     ADMIN_ENDPOINTS.SERVICE_CATEGORY_DETAILS(currentCategory.id),
                     payload,
                     {
