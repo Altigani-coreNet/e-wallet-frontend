@@ -638,6 +638,8 @@ export const ADMIN_ENDPOINTS = {
     TRANSACTION_VOID: (id) => `${SOFTPOS_API_BASE}/v2/admin/transactions/${id}/void`,
     TRANSACTION_SEND_RECEIPT: (id) => `${SOFTPOS_API_BASE}/v2/admin/transactions/${id}/send-receipt`,
     TRANSACTION_RECEIPT: (id) => `${SOFTPOS_API_BASE}/v2/admin/transactions/${id}/receipt`,
+    SERVICE_TRANSACTIONS: `${SOFTPOS_API_BASE}/v2/admin/service-transactions`,
+    SERVICE_TRANSACTION_DETAILS: (id) => `${SOFTPOS_API_BASE}/v2/admin/service-transactions/${id}`,
     
     // Payment Links (SoftPos)
     PAYMENT_LINKS: `${SOFTPOS_API_BASE}/v2/admin/payment-links`,
