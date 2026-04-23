@@ -25,6 +25,20 @@ const getAcceptLanguageHeader = () => {
  * Map mobile form builder state to API payload (form_name, fields, options).
  */
 export const mapProductFormsToApiPayload = (forms) => {
+    const normalizeFormName = (name, fallbackTitle = '') => {
+        if (name && typeof name === 'object') {
+            return {
+                en: name.en ?? fallbackTitle ?? '',
+                ar: name.ar ?? '',
+            };
+        }
+
+        const asString = typeof name === 'string' ? name : '';
+        return {
+            en: asString || fallbackTitle || '',
+            ar: '',
+        };
+    };
     const normalizeOptionToken = (value) => String(value ?? '').trim().toLowerCase();
     const normalizeType = (type) => String(type ?? '').trim().toLowerCase();
     const parseOptionalNumber = (value) => {
@@ -80,7 +94,7 @@ export const mapProductFormsToApiPayload = (forms) => {
     };
 
     return (forms || []).map((f) => ({
-        form_name: f.form_name ?? f.title ?? '',
+        form_name: normalizeFormName(f.form_name, f.title),
         form_url: f.form_url ?? '',
         country_id: f.country_id ?? null,
         fields: (f.fields || []).map((field, idx) => ({

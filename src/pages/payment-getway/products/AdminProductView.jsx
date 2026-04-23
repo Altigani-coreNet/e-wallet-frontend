@@ -86,6 +86,15 @@ const normalizeName = (rawName) => {
     return { en: '', ar: '' };
 };
 
+const getFormDisplayName = (form, locale = 'en') => {
+    if (!form) return '';
+    if (form.form_name && typeof form.form_name === 'object') {
+        return form.form_name[locale] || form.form_name.en || form.form_name.ar || '';
+    }
+    if (typeof form.form_name === 'string') return form.form_name;
+    return '';
+};
+
 const DetailRow = ({ label, children }) => (
     <div className="row mb-5">
         <div className="col-lg-4"><span className="fw-bold text-gray-800">{label}</span></div>
@@ -99,7 +108,7 @@ const FormPreviewScreen = ({ form, label }) => {
         <div className="p-4 bg-white" style={{ height: '100%', overflowY: 'auto' }}>
             <div className="mb-4 pb-3 border-bottom">
                 <div className="fw-bold fs-5 text-gray-900">{label || 'Live Form Preview'}</div>
-                <div className="text-muted fs-7 mt-1">{form?.form_name || form?.title || 'Mobile Services Form'}</div>
+                <div className="text-muted fs-7 mt-1">{getFormDisplayName(form) || form?.title || 'Mobile Services Form'}</div>
             </div>
             {fields.length === 0 ? (
                 <div className="text-muted">No fields in this form.</div>
@@ -348,11 +357,12 @@ const AdminProductView = () => {
                             forms.map((form, formIdx) => (
                                 <div className="card border mb-5" key={form.id || formIdx}>
                                     <div className="card-header bg-light py-4">
-                                        <span className="fw-bold text-gray-800">{form.form_name || `Form ${formIdx + 1}`}</span>
+                                        <span className="fw-bold text-gray-800">{getFormDisplayName(form) || `Form ${formIdx + 1}`}</span>
                                         {form.id != null && <span className="text-muted ms-2">(id: {form.id})</span>}
                                     </div>
                                     <div className="card-body">
-                                        <DetailRow label="Form name">{form.form_name || '—'}</DetailRow>
+                                        <DetailRow label="Form name (EN)">{getFormDisplayName(form, 'en') || '—'}</DetailRow>
+                                        <DetailRow label="Form name (AR)">{getFormDisplayName(form, 'ar') || '—'}</DetailRow>
                                         <DetailRow label="Form URL">{form.form_url || '—'}</DetailRow>
                                         <div className="fw-bold text-gray-800 mb-3 mt-2">Fields</div>
                                         {(form.fields || []).length === 0 ? (
@@ -435,7 +445,7 @@ const AdminProductView = () => {
                                                         className={`list-group-item list-group-item-action ${idx === activeFormIndex ? 'active' : ''}`}
                                                         onClick={() => setActiveFormIndex(idx)}
                                                     >
-                                                        {form.form_name || `Form ${idx + 1}`}
+                                                        {getFormDisplayName(form) || `Form ${idx + 1}`}
                                                     </button>
                                                 ))}
                                             </div>

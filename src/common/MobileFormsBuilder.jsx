@@ -61,6 +61,7 @@ const isTextCustomizationType = (type) => {
 };
 const getFieldCustomization = (field) =>
     field?.customization && typeof field.customization === 'object' ? field.customization : {};
+const getFormTitle = (form) => form?.form_name?.en?.trim() || form?.title?.trim() || 'Mobile Services Form';
 
 const previewScreenShellStyle = {
     flex: 1,
@@ -520,6 +521,7 @@ const ensureBaseForm = (existing) => {
         {
             id: makeId(),
             title: 'Mobile Services Form',
+            form_name: { en: 'Mobile Services Form', ar: '' },
             form_url: '',
             fields: [
                 {
@@ -558,6 +560,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
             {
                 id: makeId(),
                 title: `Mobile Services Form ${forms.length + 1}`,
+                form_name: { en: `Mobile Services Form ${forms.length + 1}`, ar: '' },
                 form_url: '',
                 fields: [
                     {
@@ -813,7 +816,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                         <div className="card p-5 mt-4 col-md-7">
                             <div className="card-header d-flex justify-content-between align-items-center flex-nowrap gap-2">
                                 <div className="card-title">
-                                    <h3 className="card-label">{mobileForm.title}</h3>
+                                    <h3 className="card-label">{getFormTitle(mobileForm)}</h3>
                                 </div>
                                 <div className="card-toolbar">
                                     <button
@@ -836,12 +839,34 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                             <div className="card-body p-3">
                                 <div className="row mb-5">
                                     <div className="col-md-6">
-                                        <label className="form-label fw-semibold">Form Name</label>
+                                        <label className="form-label fw-semibold">Form Name (English)</label>
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={mobileForm.title}
-                                            onChange={(e) => updateMobileFormMeta(mobileForm.id, 'title', e.target.value)}
+                                            value={mobileForm.form_name?.en ?? mobileForm.title ?? ''}
+                                            onChange={(e) => {
+                                                const nextEn = e.target.value;
+                                                updateMobileFormMeta(mobileForm.id, 'form_name', {
+                                                    en: nextEn,
+                                                    ar: mobileForm.form_name?.ar ?? '',
+                                                });
+                                                updateMobileFormMeta(mobileForm.id, 'title', nextEn);
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="col-md-6">
+                                        <label className="form-label fw-semibold">Form Name (Arabic)</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            dir="rtl"
+                                            value={mobileForm.form_name?.ar ?? ''}
+                                            onChange={(e) =>
+                                                updateMobileFormMeta(mobileForm.id, 'form_name', {
+                                                    en: mobileForm.form_name?.en ?? mobileForm.title ?? '',
+                                                    ar: e.target.value,
+                                                })
+                                            }
                                         />
                                     </div>
                                     <div className="col-md-6">
@@ -1182,7 +1207,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                             <ServiceFormPreview
                                                 formData={previewFields}
                                                 label={serviceLabel || 'Live Form Preview'}
-                                                subLabel={mobileForm.title?.trim() || ''}
+                                                subLabel={mobileForm.form_name?.en?.trim() || mobileForm.title?.trim() || ''}
                                             />
                                         </div>
                                     </IPhoneMockup>
@@ -1233,7 +1258,9 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                 Step {previewFormIndex + 1} / {(forms || []).length}
                                             </div>
                                             <div className="text-muted">
-                                                {(forms || [])[previewFormIndex]?.title || 'Mobile Services Form'}
+                                                {(forms || [])[previewFormIndex]?.form_name?.en ||
+                                                    (forms || [])[previewFormIndex]?.title ||
+                                                    'Mobile Services Form'}
                                             </div>
                                         </div>
                                         <div className="d-flex justify-content-center">
@@ -1241,7 +1268,11 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                 <div className="p-4 bg-white" style={previewScreenShellStyle}>
                                                     <InteractiveServiceFormPreview
                                                         label={serviceLabel || 'Live Form Preview'}
-                                                        subLabel={(forms || [])[previewFormIndex]?.title?.trim() || ''}
+                                                        subLabel={
+                                                            (forms || [])[previewFormIndex]?.form_name?.en?.trim() ||
+                                                            (forms || [])[previewFormIndex]?.title?.trim() ||
+                                                            ''
+                                                        }
                                                         formId={(forms || [])[previewFormIndex]?.id}
                                                         fields={(forms || [])[previewFormIndex]?.fields || []}
                                                         values={previewValues[(forms || [])[previewFormIndex]?.id] || {}}

@@ -373,6 +373,25 @@ const NotificationMenu = () => {
             );
         });
 
+        subscribePrivate(
+            echo,
+            'services_updates',
+            '.services.updated',
+            (event) => {
+                pushIncoming(
+                    {
+                        title: 'Services Updated',
+                        message: 'Service catalog has been updated.',
+                        topic: 'service_updates',
+                        sent_at: new Date().toISOString(),
+                        meta: { topic: 'service_updates' },
+                        data: event?.data || [],
+                    },
+                    'public',
+                );
+            },
+        );
+
         attachPusherConnectionLogs(echo, wsConfig, isSecure, wsConnectionUnbindRef);
 
         return () => {

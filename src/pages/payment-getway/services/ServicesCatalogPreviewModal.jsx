@@ -168,6 +168,14 @@ const getProductDisplayName = (product) =>
     product.product_name ||
     'Product';
 
+const getFormDisplayName = (form) => {
+    if (!form) return '';
+    if (form.form_name && typeof form.form_name === 'object') {
+        return form.form_name.en || form.form_name.ar || '';
+    }
+    return typeof form.form_name === 'string' ? form.form_name : '';
+};
+
 const phoneShellStyle = {
     display: 'flex',
     flexDirection: 'column',
@@ -941,7 +949,7 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                                         : { background: '#fff', color: '#374151', borderColor: '#e5e7eb' }),
                                 }}
                             >
-                                {f.form_name || `Form ${idx + 1}`}
+                                {getFormDisplayName(f) || `Form ${idx + 1}`}
                             </button>
                         ))}
                     </div>
@@ -1012,7 +1020,7 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
 
                 <div className="bg-white rounded-3 p-3 shadow-sm" style={{ border: '1px solid rgba(0,0,0,0.06)' }}>
                     <div className="text-muted fs-8 mb-2 text-uppercase" style={{ letterSpacing: 0.4 }}>
-                        {activeDynamicFormState?.screenId || activeForm.form_name || 'Service form'}
+                        {activeDynamicFormState?.screenId || getFormDisplayName(activeForm) || 'Service form'}
                     </div>
                     {formHasCatalogFields && !useDynamicScreen ? (
                         <LiveCatalogFormFields

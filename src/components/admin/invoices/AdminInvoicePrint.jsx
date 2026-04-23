@@ -404,6 +404,23 @@ const AdminInvoicePrint = () => {
                             <span className="detail-label">Ref. No:</span>
                             <span className="detail-value">{invoice.ref_number || invoice.reference_no || 'N/A'}</span>
                         </div>
+                        {Array.isArray(invoice.meta) && invoice.meta.length > 0 && (
+                            <>
+                                <div className="receipt-divider" style={{ marginTop: '10px', marginBottom: '8px' }}></div>
+                                {invoice.meta.map((metaItem, index) => (
+                                    <div key={`meta-${index}`} className="detail-row">
+                                        <span className="detail-label">
+                                            {(metaItem?.key || '').toString().replace(/_/g, ' ')}:
+                                        </span>
+                                        <span className="detail-value">
+                                            {metaItem?.value !== null && metaItem?.value !== undefined && metaItem?.value !== ''
+                                                ? metaItem.value.toString()
+                                                : 'N/A'}
+                                        </span>
+                                    </div>
+                                ))}
+                            </>
+                        )}
                     </div>
 
                     {/* Thank You Message */}

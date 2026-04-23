@@ -24,6 +24,21 @@ const normalizeNameTranslations = (nameValue, fallbackEn = '', fallbackAr = '') 
     return { en: fallbackEn ?? '', ar: fallbackAr ?? '' };
 };
 
+const normalizeFormNameTranslations = (nameValue, fallbackTitle = '') => {
+    if (nameValue && typeof nameValue === 'object' && !Array.isArray(nameValue)) {
+        return {
+            en: nameValue.en ?? fallbackTitle ?? '',
+            ar: nameValue.ar ?? '',
+        };
+    }
+
+    if (typeof nameValue === 'string') {
+        return { en: nameValue, ar: '' };
+    }
+
+    return { en: fallbackTitle ?? '', ar: '' };
+};
+
 const ensureAbsoluteUrl = (base, value) => {
     if (!value || typeof value !== 'string') return null;
     const trimmed = value.trim();
@@ -130,7 +145,11 @@ const ProductEdit = () => {
                         const list = formsResp.data || [];
                         setProductForms(list.map((f) => ({
                             id: `${f.id}`,
-                            title: f.form_name || 'Mobile Services Form',
+                            title: f.form_name_en || f.form_name?.en || f.form_name || 'Mobile Services Form',
+                            form_name: normalizeFormNameTranslations(
+                                f.form_name,
+                                f.form_name_en || f.form_name || 'Mobile Services Form'
+                            ),
                             form_url: f.form_url || '',
                             fields: (f.fields || []).map((field) => ({
                                 id: `${field.id}`,
