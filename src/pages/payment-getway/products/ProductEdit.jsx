@@ -24,19 +24,19 @@ const normalizeNameTranslations = (nameValue, fallbackEn = '', fallbackAr = '') 
     return { en: fallbackEn ?? '', ar: fallbackAr ?? '' };
 };
 
-const normalizeFormNameTranslations = (nameValue, fallbackTitle = '') => {
+const normalizeFormNameTranslations = (nameValue, fallbackEn = '', fallbackAr = '') => {
     if (nameValue && typeof nameValue === 'object' && !Array.isArray(nameValue)) {
         return {
-            en: nameValue.en ?? fallbackTitle ?? '',
-            ar: nameValue.ar ?? '',
+            en: nameValue.en ?? fallbackEn ?? '',
+            ar: nameValue.ar ?? fallbackAr ?? '',
         };
     }
 
     if (typeof nameValue === 'string') {
-        return { en: nameValue, ar: '' };
+        return { en: nameValue || fallbackEn || '', ar: fallbackAr || '' };
     }
 
-    return { en: fallbackTitle ?? '', ar: '' };
+    return { en: fallbackEn ?? '', ar: fallbackAr ?? '' };
 };
 
 const ensureAbsoluteUrl = (base, value) => {
@@ -148,7 +148,8 @@ const ProductEdit = () => {
                             title: f.form_name_en || f.form_name?.en || f.form_name || 'Mobile Services Form',
                             form_name: normalizeFormNameTranslations(
                                 f.form_name,
-                                f.form_name_en || f.form_name || 'Mobile Services Form'
+                                f.form_name_en || f.form_name?.en || f.form_name || 'Mobile Services Form',
+                                f.form_name_ar || f.form_name?.ar || ''
                             ),
                             form_url: f.form_url || '',
                             fields: (f.fields || []).map((field) => ({
