@@ -51,6 +51,13 @@ const SubscriptionWidget = ({ data, loading }) => {
         return 0;
     };
 
+    const isPartnerRowShown = (p) => {
+        if (!p?.status) return true;
+        const s = String(p.status).toLowerCase();
+        const hidden = ['suspended', 'rejected', 'deleted'];
+        return !hidden.includes(s);
+    };
+
     // Prepare chart data using ApexCharts format
     const chartOptions = useMemo(() => {
         const categories = chartData.map((item, index) => item.month || item.label || monthsFallback[index] || '');
@@ -209,7 +216,7 @@ const SubscriptionWidget = ({ data, loading }) => {
 
                 {/* Top Content Providers */}
                 <div className="col-xl-4">
-                    <div className="card card-flush h-xl-100">
+                   <div className="card card-flush h-xl-100">
                         <div className="card-header pt-5">
                             <h3 className="card-title align-items-start flex-column">
                                 <span className="card-label fw-bold text-gray-800">Top 10 Partners</span>
@@ -226,7 +233,7 @@ const SubscriptionWidget = ({ data, loading }) => {
                             ) : partners && partners.length > 0 ? (
                                 <div className="scroll-y mh-300px">
                                     {partners
-                                        .filter((p) => !p?.status || p.status === 'active')
+                                        .filter(isPartnerRowShown)
                                         .sort((a, b) => (
                                             pickCount(b, ['transactionCount', 'transaction_count', 'total_transactions', 'subscriberCount', 'subscription_count']) -
                                             pickCount(a, ['transactionCount', 'transaction_count', 'total_transactions', 'subscriberCount', 'subscription_count'])

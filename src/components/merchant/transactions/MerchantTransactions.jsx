@@ -273,23 +273,18 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
         setCurrentPage(1); // Reset to first page on sort change
     };
 
-    // Get sort icon for column
+    // Sort arrow only on the active column; kept inline with label via parent flex wrapper
     const getSortIcon = (column) => {
         if (sortBy !== column) {
-            return (
-                <i className="ki-duotone ki-arrows-up-down fs-7 text-muted ms-1">
-                    <span className="path1"></span>
-                    <span className="path2"></span>
-                </i>
-            );
+            return null;
         }
         return sortOrder === 'asc' ? (
-            <i className="ki-duotone ki-arrow-up fs-7 text-primary ms-1">
+            <i className="ki-duotone ki-arrow-up fs-7 text-primary flex-shrink-0">
                 <span className="path1"></span>
                 <span className="path2"></span>
             </i>
         ) : (
-            <i className="ki-duotone ki-arrow-down fs-7 text-primary ms-1">
+            <i className="ki-duotone ki-arrow-down fs-7 text-primary flex-shrink-0">
                 <span className="path1"></span>
                 <span className="path2"></span>
             </i>
@@ -472,41 +467,53 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
             <div className="card">
                 <div className="card-body pt-0">
                     <div className="table-responsive">
-                        <table className="table align-middle table-row-dashed fs-7 gy-5" id="transactions-table">
+                        <table className="table align-top table-row-dashed fs-7 gy-5" id="transactions-table">
                             <thead>
                                 <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th className="text-dark">Country</th>
                                     <th className="text-dark">User</th>
                                     <th className="text-dark">Payment Method</th>
                                     <th
-                                        className="text-dark cursor-pointer"
+                                        className="text-dark cursor-pointer fs-8"
                                         onClick={() => handleSort('transaction_id')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Transaction ID {getSortIcon('transaction_id')}
+                                        <span className="d-inline-flex align-items-center flex-nowrap gap-1">
+                                            Transaction ID
+                                            {getSortIcon('transaction_id')}
+                                        </span>
                                     </th>
                                     <th
                                         className="text-dark cursor-pointer"
                                         onClick={() => handleSort('created_at')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Date and Time {getSortIcon('created_at')}
+                                        <span className="d-inline-flex align-items-center flex-nowrap gap-1">
+                                            Date and Time
+                                            {getSortIcon('created_at')}
+                                        </span>
                                     </th>
                                     <th
                                         className="text-dark cursor-pointer"
                                         onClick={() => handleSort('amount')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Amount {getSortIcon('amount')}
+                                        <span className="d-inline-flex align-items-center flex-nowrap gap-1">
+                                            Amount
+                                            {getSortIcon('amount')}
+                                        </span>
                                     </th>
                                     <th
                                         className="text-dark cursor-pointer"
                                         onClick={() => handleSort('status')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Status {getSortIcon('status')}
+                                        <span className="d-inline-flex align-items-center flex-nowrap gap-1">
+                                            Status
+                                            {getSortIcon('status')}
+                                        </span>
                                     </th>
-                                    <th className="text-end text-dark">Action</th>
+                                    <th className="text-center text-dark">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -519,8 +526,8 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                                     <div className="skeleton skeleton-text" style={{ width: c === 9 ? '80px' : '100px', height: '16px' }}></div>
                                                 </td>
                                             ))}
-                                            <td className="text-end">
-                                                <div className="skeleton skeleton-button" style={{width: '120px', height: '32px', borderRadius: '6px', marginLeft: 'auto'}}></div>
+                                            <td className="text-center">
+                                                <div className="skeleton skeleton-button d-inline-block" style={{width: '120px', height: '32px', borderRadius: '6px'}}></div>
                                             </td>
                                         </tr>
                                     ))
@@ -548,7 +555,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                                     transaction.payment_type ||
                                                     'N/A'}
                                             </td>
-                                            <td>{transaction.transaction_id || transaction.id || 'N/A'}</td>
+                                            <td className="fs-8">{transaction.transaction_id || transaction.id || 'N/A'}</td>
                                             <td>
                                                 {transaction.created_at
                                                     ? new Date(transaction.created_at).toLocaleString()
@@ -563,7 +570,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                                     {transaction.status || 'N/A'}
                                                 </span>
                                             </td>
-                                            <td className="text-end">
+                                            <td className="text-center">
                                                 <TransactionActions
                                                     transaction={transaction}
                                                     onView={handleView}

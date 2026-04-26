@@ -1,6 +1,7 @@
 import React from 'react';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
+import { REGISTRATION_PHONE } from '../../../../utils/registrationPhoneRules';
 
 const AccountDetails = ({ formData, setFormData, fieldErrors }) => {
     const handleChange = (e) => {
@@ -52,7 +53,9 @@ const AccountDetails = ({ formData, setFormData, fieldErrors }) => {
                             <label htmlFor="phone" className="form-label">Phone</label>
                             <div className={`form-control p-0 ${fieldErrors.phone ? 'is-invalid' : ''}`}>
                                 <PhoneInput
-                                    country={"ae"}
+                                    country={REGISTRATION_PHONE.defaultCountry}
+                                    onlyCountries={REGISTRATION_PHONE.onlyCountries}
+                                    preferredCountries={REGISTRATION_PHONE.onlyCountries}
                                     inputProps={{ id: 'phone', name: 'phone', required: true }}
                                     value={(formData.phone || '').replace(/^\+/, '')}
                                     onChange={(value) => {

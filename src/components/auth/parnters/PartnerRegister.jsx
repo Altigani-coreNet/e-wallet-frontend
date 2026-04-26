@@ -3,6 +3,7 @@ import classNames from 'classnames';
 import Swal from 'sweetalert2';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AUTH_ENDPOINTS, AUTH_SERVICE_BASE } from '../../../utils/constants';
+import { validateRegistrationPhone } from '../../../utils/registrationPhoneRules';
 import useRegistrationStore from '../../../stores/useRegistrationStore';
 import useAuthStore from '../../../stores/authStore';
 
@@ -525,6 +526,18 @@ const PartnerRegister = () => {
         if (currentStep === 0) {
             // Clear previous error
             setFieldErrors({});
+
+            const phoneCheck = validateRegistrationPhone(formData.phone);
+            if (!phoneCheck.ok) {
+                setFieldErrors({ phone: [phoneCheck.message] });
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Invalid phone number',
+                    text: phoneCheck.message,
+                    confirmButtonText: 'OK',
+                });
+                return;
+            }
 
             try {
                 const response = await fetch(AUTH_ENDPOINTS.REGISTER_VALIDATE, {
