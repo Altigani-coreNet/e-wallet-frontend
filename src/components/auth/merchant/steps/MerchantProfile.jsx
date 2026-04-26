@@ -511,7 +511,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                     </label>
                     <div className="position-relative">
                         <div 
-                            className={`form-control form-control-solid h-50px d-flex align-items-center justify-content-between cursor-pointer ${fieldErrors?.country ? 'is-invalid' : ''}`}
+                            className={`form-control h-50px d-flex align-items-center justify-content-between cursor-pointer ${fieldErrors?.country ? 'is-invalid' : ''}`}
                             onClick={handleCountryDropdownToggle}
                             style={{ cursor: 'pointer' }}
                         >
@@ -570,7 +570,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                                 <div className="p-2">
                                     <input 
                                         type="text" 
-                                        className="form-control form-control-sm mb-2 form-control-solid" 
+                                        className="form-control form-control-sm mb-2" 
                                         placeholder="Search countries..."
                                         value={countrySearchTerm}
                                         onChange={(e) => {
@@ -609,7 +609,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                                                     e.target.src = '/flags/placeholder.png';
                                                 }}
                                             />
-                                            <div className="fw-bold text-black-800">{country.text}</div>
+                                            <div className="fw-bold text-gray-800">{country.text}</div>
                                         </div>
                                     ))
                                 ) : (
@@ -632,7 +632,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                     </label>
                     <div className="position-relative">
                         <div 
-                            className={`form-control form-control-solid h-50px d-flex align-items-center justify-content-between cursor-pointer ${fieldErrors?.city ? 'is-invalid' : ''}`}
+                            className={`form-control h-50px d-flex align-items-center justify-content-between cursor-pointer ${fieldErrors?.city ? 'is-invalid' : ''}`}
                             onClick={() => {
                                 if (selectedCountry || formData.country) {
                                     setShowCityList(!showCityList);
