@@ -14,6 +14,15 @@ import { useToolbar } from '../../../contexts/ToolbarContext';
 import { toast } from 'react-toastify';
 import { canExport } from '../../../utils/permissions';
 
+/** Matches API CountryResource: `name` may be a string or { en, ar }. */
+function formatCountryNameLabel(country) {
+    if (!country?.name && country?.name !== '') return '';
+    const n = country.name;
+    if (typeof n === 'string') return n;
+    if (n && typeof n === 'object') return n.en || n.ar || '';
+    return '';
+}
+
 const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -467,9 +476,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                             <thead>
                                 <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th className="text-dark">Country</th>
-                                    <th className="text-dark">Partner</th>
-                                    <th className="text-dark">Merchant</th>
-                                    <th className="text-dark">Service Category</th>
+                                    <th className="text-dark">User</th>
                                     <th className="text-dark">Payment Method</th>
                                     <th
                                         className="text-dark cursor-pointer"
@@ -507,7 +514,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                     // Skeleton Loading Rows (separate loader for table)
                                     [...Array(perPage)].map((_, index) => (
                                         <tr key={`skeleton-${index}`}>
-                                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((c) => (
+                                            {[1, 2, 3, 4, 5, 6, 7].map((c) => (
                                                 <td key={c}>
                                                     <div className="skeleton skeleton-text" style={{ width: c === 9 ? '80px' : '100px', height: '16px' }}></div>
                                                 </td>
@@ -519,7 +526,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                     ))
                                 ) : transactions.length === 0 ? (
                                     <tr>
-                                        <td colSpan="10" className="text-center py-5">
+                                        <td colSpan="8" className="text-center py-5">
                                             <div className="text-gray-500">
                                                 <i className="ki-duotone ki-file fs-3x mb-3">
                                                     <span className="path1"></span>
@@ -532,10 +539,8 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                 ) : (
                                     transactions.map((transaction) => (
                                         <tr key={transaction.id}>
-                                            <td>{transaction.country_name || transaction.country?.name || 'N/A'}</td>
-                                            <td>{transaction.partner?.name || transaction.partner?.business_name || transaction.partner_name || 'N/A'}</td>
-                                            <td>{transaction.merchant_name || transaction.merchant?.business_name || transaction.merchant?.name || 'N/A'}</td>
-                                            <td>{transaction.service_category?.name_en || transaction.service_category_name || 'N/A'}</td>
+                                            <td>{formatCountryNameLabel(transaction.country) || 'N/A'}</td>
+                                            <td>{transaction.user_name || transaction.user?.name || 'N/A'}</td>
                                             <td>
                                                 {transaction.method ||
                                                     transaction.payment_method?.card_type ||

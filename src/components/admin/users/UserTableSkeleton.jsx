@@ -97,7 +97,9 @@ const UserTableSkeleton = ({ rows = 10 }) => {
                                 
                                 {/* Actions */}
                                 <td className="text-end">
-                                    <div className="skeleton" style={{ width: '40px', height: '32px', marginLeft: 'auto' }}></div>
+                                    <div className="d-flex justify-content-end">
+                                        <div className="skeleton" style={{ width: '36px', height: '36px', borderRadius: '4px' }}></div>
+                                    </div>
                                 </td>
                             </tr>
                         ))}

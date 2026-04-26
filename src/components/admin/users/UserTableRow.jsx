@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { getTranslatedText } from '../../../utils/helpers';
 import { useCan } from '../../../utils/permissions';
@@ -15,19 +15,6 @@ const UserTableRow = ({
 }) => {
     const canEditUser = useCan('pos.users.edit_users');
     const canDeleteUser = useCan('pos.users.delete_users');
-    const [showActions, setShowActions] = useState(false);
-    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
-    const buttonRef = useRef(null);
-
-    useEffect(() => {
-        if (showActions && buttonRef.current) {
-            const rect = buttonRef.current.getBoundingClientRect();
-            setDropdownPosition({
-                top: rect.bottom + window.scrollY,
-                right: window.innerWidth - rect.right + window.scrollX
-            });
-        }
-    }, [showActions]);
 
     const handleCheckboxChange = (e) => {
         onSelect(user.id, e.target.checked);
@@ -155,107 +142,105 @@ const UserTableRow = ({
             <td className="text-end">
                 <div className="dropdown">
                     <button
-                        ref={buttonRef}
-                        className="btn btn-sm btn-light btn-active-light-primary"
                         type="button"
-                        onClick={() => setShowActions(!showActions)}
-                        onBlur={() => setTimeout(() => setShowActions(false), 200)}
+                        className="btn btn-sm btn-icon btn-bg-light btn-active-light-primary"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        title="Actions"
                     >
-                        Actions
-                        <i className="ki-duotone ki-down fs-5 ms-1"></i>
+                        <i className="ki-duotone ki-dots-square fs-2">
+                            <span className="path1" />
+                            <span className="path2" />
+                            <span className="path3" />
+                            <span className="path4" />
+                        </i>
                     </button>
-                    {showActions && (
-                        <div 
-                            className="dropdown-menu dropdown-menu-end show" 
-                            style={{ 
-                                position: 'fixed', 
-                                top: `${dropdownPosition.top}px`, 
-                                right: `${dropdownPosition.right}px`,
-                                left: 'auto',
-                                zIndex: 1050 
-                            }}
-                        >
-                            <Link 
-                                to={`/admin/users/${user.id}`} 
-                                className="dropdown-item"
-                                onMouseDown={(e) => e.preventDefault()}
-                            >
+                    <ul className="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <Link className="dropdown-item" to={`/admin/users/${user.id}`}>
                                 <i className="ki-duotone ki-eye fs-5 me-2">
-                                    <span className="path1"></span>
-                                    <span className="path2"></span>
-                                    <span className="path3"></span>
+                                    <span className="path1" />
+                                    <span className="path2" />
+                                    <span className="path3" />
                                 </i>
                                 View
                             </Link>
-                            
-                            {canEditUser && (
-                                <Link 
-                                    to={`/admin/users/${user.id}/edit`} 
-                                    className="dropdown-item"
-                                    onMouseDown={(e) => e.preventDefault()}
-                                >
+                        </li>
+                        {canEditUser && (
+                            <li>
+                                <Link className="dropdown-item" to={`/admin/users/${user.id}/edit`}>
                                     <i className="ki-duotone ki-pencil fs-5 me-2">
-                                        <span className="path1"></span>
-                                        <span className="path2"></span>
+                                        <span className="path1" />
+                                        <span className="path2" />
                                     </i>
                                     Edit
                                 </Link>
-                            )}
-                            
+                            </li>
+                        )}
+                        <li>
                             {(user.status === 'active' || user.status === 1 || user.status === '1' || user.status === true) ? (
-                                <button 
-                                    onMouseDown={(e) => { e.preventDefault(); onDeactivate(user.id); }} 
+                                <button
+                                    type="button"
                                     className="dropdown-item"
+                                    onClick={() => onDeactivate(user.id)}
                                 >
                                     <i className="ki-duotone ki-cross-circle fs-5 me-2">
-                                        <span className="path1"></span>
-                                        <span className="path2"></span>
+                                        <span className="path1" />
+                                        <span className="path2" />
                                     </i>
                                     Deactivate
                                 </button>
                             ) : (
-                                <button 
-                                    onMouseDown={(e) => { e.preventDefault(); onActivate(user.id); }} 
+                                <button
+                                    type="button"
                                     className="dropdown-item"
+                                    onClick={() => onActivate(user.id)}
                                 >
                                     <i className="ki-duotone ki-check-circle fs-5 me-2">
-                                        <span className="path1"></span>
-                                        <span className="path2"></span>
+                                        <span className="path1" />
+                                        <span className="path2" />
                                     </i>
                                     Activate
                                 </button>
                             )}
-
+                        </li>
+                        <li>
                             <button
-                                onMouseDown={(e) => { e.preventDefault(); onSendResetPassword?.(user.id); }}
+                                type="button"
                                 className="dropdown-item"
+                                onClick={() => onSendResetPassword?.(user.id)}
                             >
                                 <i className="ki-duotone ki-shield-tick fs-5 me-2">
-                                    <span className="path1"></span>
-                                    <span className="path2"></span>
+                                    <span className="path1" />
+                                    <span className="path2" />
                                 </i>
                                 Reset Password
                             </button>
-                            
-                            <div className="dropdown-divider"></div>
-                            
-                            {canDeleteUser && onDelete && (
-                                <button 
-                                    onMouseDown={(e) => { e.preventDefault(); onDelete(user.id); }} 
-                                    className="dropdown-item text-danger"
-                                >
-                                    <i className="ki-duotone ki-trash fs-5 me-2">
-                                        <span className="path1"></span>
-                                        <span className="path2"></span>
-                                        <span className="path3"></span>
-                                        <span className="path4"></span>
-                                        <span className="path5"></span>
-                                    </i>
-                                    Delete
-                                </button>
-                            )}
-                        </div>
-                    )}
+                        </li>
+                        {canDeleteUser && onDelete && (
+                            <>
+                                <li>
+                                    <hr className="dropdown-divider" />
+                                </li>
+                                <li>
+                                    <button
+                                        type="button"
+                                        className="dropdown-item text-danger"
+                                        onClick={() => onDelete(user.id)}
+                                    >
+                                        <i className="ki-duotone ki-trash fs-5 me-2">
+                                            <span className="path1" />
+                                            <span className="path2" />
+                                            <span className="path3" />
+                                            <span className="path4" />
+                                            <span className="path5" />
+                                        </i>
+                                        Delete
+                                    </button>
+                                </li>
+                            </>
+                        )}
+                    </ul>
                 </div>
             </td>
         </tr>

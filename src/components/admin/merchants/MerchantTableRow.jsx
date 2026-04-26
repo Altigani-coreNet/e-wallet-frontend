@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { AUTH_SERVICE_BASE } from '../../../utils/constants';
 import { useCan } from '../../../utils/permissions';
@@ -28,24 +28,11 @@ const MerchantTableRow = ({
 }) => {
     const canEditMerchant = useCan('pos.merchants.edit_merchants');
     const canDeleteMerchant = useCan('pos.merchants.delete_merchants');
-    const [showActions, setShowActions] = useState(false);
-    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
-    const buttonRef = useRef(null);
     const [logoError, setLogoError] = useState(false);
 
     useEffect(() => {
         setLogoError(false);
     }, [merchant.logo]);
-
-    useEffect(() => {
-        if (showActions && buttonRef.current) {
-            const rect = buttonRef.current.getBoundingClientRect();
-            setDropdownPosition({
-                top: rect.bottom + window.scrollY,
-                right: window.innerWidth - rect.right + window.scrollX
-            });
-        }
-    }, [showActions]);
 
     const getStatusBadgeClass = (status) => {
         switch (status?.toLowerCase()) {
@@ -173,123 +160,140 @@ const MerchantTableRow = ({
             <td className="text-end">
                 <div className="dropdown">
                     <button
-                        ref={buttonRef}
-                        className="btn btn-sm btn-light btn-active-light-primary"
                         type="button"
-                        onClick={() => setShowActions(!showActions)}
-                        onBlur={() => setTimeout(() => setShowActions(false), 200)}
+                        className="btn btn-sm btn-icon btn-bg-light btn-active-light-primary"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        title="Actions"
                     >
-                        Actions
-                        <i className="ki-duotone ki-down fs-5 ms-1"></i>
+                        <i className="ki-duotone ki-dots-square fs-2">
+                            <span className="path1" />
+                            <span className="path2" />
+                            <span className="path3" />
+                            <span className="path4" />
+                        </i>
                     </button>
-                    {showActions && (
-                        <div 
-                            className="dropdown-menu dropdown-menu-end show" 
-                            style={{ 
-                                position: 'fixed', 
-                                top: `${dropdownPosition.top}px`, 
-                                right: `${dropdownPosition.right}px`,
-                                left: 'auto',
-                                zIndex: 1050 
-                            }}
-                        >
-                            <Link 
-                                to={`/admin/merchants/${merchant.id}`} 
-                                className="dropdown-item"
-                                onMouseDown={(e) => e.preventDefault()}
-                            >
+                    <ul className="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <Link className="dropdown-item" to={`/admin/merchants/${merchant.id}`}>
                                 <i className="ki-duotone ki-eye fs-5 me-2">
-                                    <span className="path1"></span>
-                                    <span className="path2"></span>
-                                    <span className="path3"></span>
+                                    <span className="path1" />
+                                    <span className="path2" />
+                                    <span className="path3" />
                                 </i>
                                 View
                             </Link>
-                            
-                            {['pending', 'requesting_updated'].includes(merchant.status) && onApprove && (
-                                <button 
-                                    onMouseDown={(e) => { e.preventDefault(); onApprove(merchant.id); }} 
+                        </li>
+                        {canEditMerchant && (
+                            <li>
+                                <Link className="dropdown-item" to={`/admin/merchants/${merchant.id}/edit`}>
+                                    <i className="ki-duotone ki-pencil fs-5 me-2">
+                                        <span className="path1" />
+                                        <span className="path2" />
+                                    </i>
+                                    Edit
+                                </Link>
+                            </li>
+                        )}
+                        {['pending', 'requesting_updated'].includes(merchant.status) && onApprove && (
+                            <li>
+                                <button
+                                    type="button"
                                     className="dropdown-item"
+                                    onClick={() => onApprove(merchant.id)}
                                 >
                                     <i className="ki-duotone ki-check fs-5 me-2">
-                                        <span className="path1"></span>
-                                        <span className="path2"></span>
+                                        <span className="path1" />
+                                        <span className="path2" />
                                     </i>
                                     Approve
                                 </button>
-                            )}
-                            
-                            {['pending', 'requesting_updated'].includes(merchant.status) && onReject && (
-                                <button 
-                                    onMouseDown={(e) => { e.preventDefault(); onReject(merchant); }} 
+                            </li>
+                        )}
+                        {['pending', 'requesting_updated'].includes(merchant.status) && onReject && (
+                            <li>
+                                <button
+                                    type="button"
                                     className="dropdown-item"
+                                    onClick={() => onReject(merchant)}
                                 >
                                     <i className="ki-duotone ki-cross fs-5 me-2">
-                                        <span className="path1"></span>
-                                        <span className="path2"></span>
+                                        <span className="path1" />
+                                        <span className="path2" />
                                     </i>
                                     Reject
                                 </button>
-                            )}
-                            
-                            {merchant.status !== 'suspended' && onSuspend && (
-                                <button 
-                                    onMouseDown={(e) => { e.preventDefault(); onSuspend(merchant); }} 
+                            </li>
+                        )}
+                        {merchant.status !== 'suspended' && onSuspend && (
+                            <li>
+                                <button
+                                    type="button"
                                     className="dropdown-item"
+                                    onClick={() => onSuspend(merchant)}
                                 >
                                     <i className="ki-duotone ki-lock fs-5 me-2">
-                                        <span className="path1"></span>
-                                        <span className="path2"></span>
+                                        <span className="path1" />
+                                        <span className="path2" />
                                     </i>
                                     Suspend
                                 </button>
-                            )}
-                            
-                            {merchant.status === 'suspended' && onUnsuspend && (
-                                <button 
-                                    onMouseDown={(e) => { e.preventDefault(); onUnsuspend(merchant.id); }} 
+                            </li>
+                        )}
+                        {merchant.status === 'suspended' && onUnsuspend && (
+                            <li>
+                                <button
+                                    type="button"
                                     className="dropdown-item"
+                                    onClick={() => onUnsuspend(merchant.id)}
                                 >
                                     <i className="ki-duotone ki-lock-2 fs-5 me-2">
-                                        <span className="path1"></span>
-                                        <span className="path2"></span>
+                                        <span className="path1" />
+                                        <span className="path2" />
                                     </i>
                                     Unsuspend
                                 </button>
-                            )}
-                            
-                            {(merchant.user_id || merchant.user?.id) && onResetPassword && (
-                                <button 
-                                    onMouseDown={(e) => { e.preventDefault(); onResetPassword(merchant); }} 
+                            </li>
+                        )}
+                        {(merchant.user_id || merchant.user?.id) && onResetPassword && (
+                            <li>
+                                <button
+                                    type="button"
                                     className="dropdown-item"
+                                    onClick={() => onResetPassword(merchant)}
                                 >
                                     <i className="ki-duotone ki-key fs-5 me-2">
-                                        <span className="path1"></span>
-                                        <span className="path2"></span>
+                                        <span className="path1" />
+                                        <span className="path2" />
                                     </i>
                                     Reset Password
                                 </button>
-                            )}
-                            
-                            <div className="dropdown-divider"></div>
-                            
-                            {canDeleteMerchant && onDelete && (
-                                <button 
-                                    onMouseDown={(e) => { e.preventDefault(); onDelete(merchant.id); }} 
-                                    className="dropdown-item text-danger"
-                                >
-                                    <i className="ki-duotone ki-trash fs-5 me-2">
-                                        <span className="path1"></span>
-                                        <span className="path2"></span>
-                                        <span className="path3"></span>
-                                        <span className="path4"></span>
-                                        <span className="path5"></span>
-                                    </i>
-                                    Delete
-                                </button>
-                            )}
-                        </div>
-                    )}
+                            </li>
+                        )}
+                        {canDeleteMerchant && onDelete && (
+                            <>
+                                <li>
+                                    <hr className="dropdown-divider" />
+                                </li>
+                                <li>
+                                    <button
+                                        type="button"
+                                        className="dropdown-item text-danger"
+                                        onClick={() => onDelete(merchant.id)}
+                                    >
+                                        <i className="ki-duotone ki-trash fs-5 me-2">
+                                            <span className="path1" />
+                                            <span className="path2" />
+                                            <span className="path3" />
+                                            <span className="path4" />
+                                            <span className="path5" />
+                                        </i>
+                                        Delete
+                                    </button>
+                                </li>
+                            </>
+                        )}
+                    </ul>
                 </div>
             </td>
         </tr>

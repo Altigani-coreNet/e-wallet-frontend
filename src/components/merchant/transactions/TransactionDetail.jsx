@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Swal from 'sweetalert2';
-import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     fetchTransactionDetails,
@@ -8,11 +7,18 @@ import {
     refundTransaction,
     sendReceipt
 } from '../../../services/transactionsService';
-import { ADMIN_ENDPOINTS } from '../../../utils/constants';
-import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { toast } from 'react-toastify';
 import useMerchantCountryInfo from '../../../hooks/useMerchantCountryInfo';
+
+/** Matches API CountryResource: `name` may be a string or { en, ar }. */
+function formatCountryNameLabel(country) {
+    if (!country?.name && country?.name !== '') return '';
+    const n = country.name;
+    if (typeof n === 'string') return n;
+    if (n && typeof n === 'object') return n.en || n.ar || '';
+    return '';
+}
 
 const TransactionDetail = () => {
     const { id } = useParams();
@@ -26,10 +32,6 @@ const TransactionDetail = () => {
     const [refundLoading, setRefundLoading] = useState(false);
     const [sendReceiptLoading, setSendReceiptLoading] = useState(false);
     const [currency, setCurrency] = useState(null);
-    const [partnerDetails, setPartnerDetails] = useState(null);
-    const [partnerLoading, setPartnerLoading] = useState(false);
-    const [serviceDetails, setServiceDetails] = useState(null);
-    const [serviceLoading, setServiceLoading] = useState(false);
 
     const transactionMerchantId = useMemo(() => {
         if (!transaction) return null;
@@ -44,22 +46,29 @@ const TransactionDetail = () => {
     } = useMerchantCountryInfo(transactionMerchantId ? [transactionMerchantId] : []);
 
     const getMerchantInfo = useCallback(() => {
+        const m = transaction?.merchant;
+        if (m?.business_name || m?.name) {
+            return {
+                merchantName: m.business_name || m.name || 'N/A',
+                countryName: formatCountryNameLabel(m.country) || 'N/A',
+            };
+        }
         if (!transactionMerchantId) {
             return {
-                merchantName: transaction?.merchant?.business_name || transaction?.merchant?.name || 'N/A',
-                countryName: transaction?.merchant?.country?.name || 'N/A',
+                merchantName: 'N/A',
+                countryName: formatCountryNameLabel(transaction?.country) || 'N/A',
             };
         }
         const record = getMerchantInfoById(transactionMerchantId);
         if (record) {
             return {
-                merchantName: record.name || transaction?.merchant?.business_name || transaction?.merchant?.name || 'N/A',
-                countryName: record.countryName || 'N/A',
+                merchantName: record.name || 'N/A',
+                countryName: record.countryName || formatCountryNameLabel(transaction?.country) || 'N/A',
             };
         }
         return {
-            merchantName: transaction?.merchant?.business_name || transaction?.merchant?.name || 'N/A',
-            countryName: 'N/A',
+            merchantName: 'N/A',
+            countryName: formatCountryNameLabel(transaction?.country) || 'N/A',
         };
     }, [transaction, transactionMerchantId, getMerchantInfoById]);
 
@@ -100,64 +109,6 @@ const TransactionDetail = () => {
         }
     }, [transaction]);
 
-    useEffect(() => {
-        if (!transaction?.partner_id) {
-            setPartnerDetails(null);
-            return;
-        }
-        let cancelled = false;
-        const load = async () => {
-            setPartnerLoading(true);
-            try {
-                const token = getToken();
-                const response = await axios.get(ADMIN_ENDPOINTS.CONTENT_PROVIDER_DETAILS(transaction.partner_id), {
-                    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-                });
-                if (!cancelled) {
-                    setPartnerDetails(response.data?.data || response.data || null);
-                }
-            } catch (err) {
-                console.error('Error fetching partner details:', err);
-                if (!cancelled) setPartnerDetails(null);
-            } finally {
-                if (!cancelled) setPartnerLoading(false);
-            }
-        };
-        load();
-        return () => {
-            cancelled = true;
-        };
-    }, [transaction?.partner_id]);
-
-    useEffect(() => {
-        if (!transaction?.service_id) {
-            setServiceDetails(null);
-            return;
-        }
-        let cancelled = false;
-        const load = async () => {
-            setServiceLoading(true);
-            try {
-                const token = getToken();
-                const response = await axios.get(ADMIN_ENDPOINTS.SERVICE_DETAILS(transaction.service_id), {
-                    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-                });
-                if (!cancelled) {
-                    setServiceDetails(response.data?.data || response.data || null);
-                }
-            } catch (err) {
-                console.error('Error fetching service details:', err);
-                if (!cancelled) setServiceDetails(null);
-            } finally {
-                if (!cancelled) setServiceLoading(false);
-            }
-        };
-        load();
-        return () => {
-            cancelled = true;
-        };
-    }, [transaction?.service_id]);
-    
     // Refetch function (for after void/refund)
     const refetch = useCallback(async () => {
         if (!id) return;
@@ -512,9 +463,6 @@ const TransactionDetail = () => {
         );
     }
 
-    const resolvedPartner = partnerDetails?.partner || partnerDetails || transaction.partner || {};
-    const resolvedService = serviceDetails?.service || serviceDetails || transaction.service || {};
-
     return (
         <>
             <div className="d-flex flex-wrap flex-stack mb-6">
@@ -691,7 +639,7 @@ const TransactionDetail = () => {
                                     </div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Country</div>
+                                    <div className="fs-7 text-muted">Merchant country</div>
                                     <div className="fs-6 fw-bold">
                                         {(() => {
                                             const merchantLoading =
@@ -737,164 +685,15 @@ const TransactionDetail = () => {
                                 </div>
                                 <div className="col-md-3">
                                     <div className="fs-7 text-muted">Created By</div>
-                                    <div className="fs-6 fw-bold">{transaction.user?.name || 'Not available'}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="row gx-9 gy-6 mt-4">
-                <div className="col-xl-6">
-                    <div className="card card-dashed h-xl-100 p-6">
-                        <div className="d-flex flex-column py-2 w-100">
-                            <div className="fs-4 fw-bolder mb-5">Partner Information</div>
-                            <div className="row g-4">
-                                <div className="col-12">
-                                    <div className="d-flex align-items-center mb-3">
-                                        {resolvedPartner?.logo_url ||
-                                        resolvedPartner?.logo ||
-                                        transaction.partner?.logo_url ||
-                                        transaction.partner?.logo ? (
-                                            <img
-                                                src={
-                                                    resolvedPartner?.logo_url ||
-                                                    resolvedPartner?.logo ||
-                                                    transaction.partner?.logo_url ||
-                                                    transaction.partner?.logo
-                                                }
-                                                alt="Partner logo"
-                                                style={{
-                                                    width: '48px',
-                                                    height: '48px',
-                                                    borderRadius: '8px',
-                                                    objectFit: 'cover',
-                                                    border: '1px solid #e4e6ef',
-                                                }}
-                                            />
-                                        ) : (
-                                            <div
-                                                className="d-flex align-items-center justify-content-center bg-light-primary text-primary fw-bold"
-                                                style={{ width: '48px', height: '48px', borderRadius: '8px' }}
-                                            >
-                                                P
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="col-12">
-                                    <div className="fs-7 text-muted">Partner Name</div>
                                     <div className="fs-6 fw-bold">
-                                        {partnerLoading
-                                            ? 'Loading...'
-                                            : resolvedPartner?.name ||
-                                              resolvedPartner?.business_name ||
-                                              transaction.partner?.name ||
-                                              transaction.partner?.business_name ||
-                                              transaction.partner_name ||
-                                              'Not available'}
+                                        {transaction.user_name || transaction.user?.name || 'Not available'}
                                     </div>
                                 </div>
-                                <div className="col-12">
-                                    <div className="fs-7 text-muted">Owner Name</div>
+                                <div className="col-md-3">
+                                    <div className="fs-7 text-muted">Transaction country</div>
                                     <div className="fs-6 fw-bold">
-                                        {resolvedPartner?.owner_name || transaction.partner?.owner_name || 'Not available'}
+                                        {formatCountryNameLabel(transaction.country) || 'N/A'}
                                     </div>
-                                </div>
-                                <div className="col-12">
-                                    <div className="fs-7 text-muted">Description</div>
-                                    <div className="fs-6 fw-bold text-wrap">
-                                        {resolvedPartner?.description ||
-                                            transaction.partner?.description ||
-                                            resolvedPartner?.business_name ||
-                                            transaction.partner?.business_name ||
-                                            resolvedPartner?.address ||
-                                            transaction.partner?.address ||
-                                            'Not available'}
-                                    </div>
-                                </div>
-                                <div className="col-12">
-                                    <div className="fs-7 text-muted">Partner ID</div>
-                                    <div className="fs-6 fw-bold">{transaction.partner_id || 'Not available'}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="col-xl-6">
-                    <div className="card card-dashed h-xl-100 p-6">
-                        <div className="d-flex flex-column py-2 w-100">
-                            <div className="fs-4 fw-bolder mb-5">Service Information</div>
-                            <div className="row g-4">
-                                <div className="col-12">
-                                    <div className="d-flex align-items-center mb-3">
-                                        {resolvedService?.image || transaction.service?.image ? (
-                                            <img
-                                                src={resolvedService?.image || transaction.service?.image}
-                                                alt="Service"
-                                                style={{
-                                                    width: '48px',
-                                                    height: '48px',
-                                                    borderRadius: '8px',
-                                                    objectFit: 'cover',
-                                                    border: '1px solid #e4e6ef',
-                                                }}
-                                            />
-                                        ) : (
-                                            <div
-                                                className="d-flex align-items-center justify-content-center bg-light-info text-info fw-bold"
-                                                style={{ width: '48px', height: '48px', borderRadius: '8px' }}
-                                            >
-                                                S
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="col-12">
-                                    <div className="fs-7 text-muted">Service Category</div>
-                                    <div className="fs-6 fw-bold">
-                                        {serviceLoading
-                                            ? 'Loading...'
-                                            : resolvedService?.category?.name_en ||
-                                              resolvedService?.category_name ||
-                                              transaction.service_category?.name_en ||
-                                              transaction.service_category_name ||
-                                              'Not available'}
-                                    </div>
-                                </div>
-                                <div className="col-12">
-                                    <div className="fs-7 text-muted">Service Name</div>
-                                    <div className="fs-6 fw-bold">
-                                        {serviceLoading
-                                            ? 'Loading...'
-                                            : resolvedService?.service_name?.en ||
-                                              resolvedService?.name_en ||
-                                              transaction.service?.service_name?.en ||
-                                              transaction.service_name ||
-                                              'Not available'}
-                                    </div>
-                                </div>
-                                <div className="col-12">
-                                    <div className="fs-7 text-muted">Description</div>
-                                    <div className="fs-6 fw-bold text-wrap">
-                                        {serviceLoading
-                                            ? 'Loading...'
-                                            : resolvedService?.description?.en ||
-                                              resolvedService?.description ||
-                                              transaction.service?.description?.en ||
-                                              transaction.service?.description ||
-                                              'Not available'}
-                                    </div>
-                                </div>
-                                <div className="col-12">
-                                    <div className="fs-7 text-muted">Service ID</div>
-                                    <div className="fs-6 fw-bold">{transaction.service_id || 'Not available'}</div>
-                                </div>
-                                <div className="col-12">
-                                    <div className="fs-7 text-muted">Service Category ID</div>
-                                    <div className="fs-6 fw-bold">{transaction.service_category_id || 'Not available'}</div>
                                 </div>
                             </div>
                         </div>

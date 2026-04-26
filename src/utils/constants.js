@@ -119,6 +119,8 @@ export const SOFTPOS_ENDPOINTS = {
     TRANSACTION_VOID: (id) => `${SOFTPOS_API_BASE}/v1/merchant/transactions/${id}/void`,
     TRANSACTION_REFUND: (id) => `${SOFTPOS_API_BASE}/v1/merchant/transactions/${id}/refund`,
     TRANSACTION_SEND_RECEIPT: (id) => `${SOFTPOS_API_BASE}/v1/merchant/transactions/${id}/send-receipt`,
+    MERCHANT_SERVICE_DETAILS: (id) => `${SOFTPOS_API_BASE}/v1/merchant/services/${id}`,
+    MERCHANT_PARTNER_DETAILS: (id) => `${SOFTPOS_API_BASE}/v1/merchant/partners/${id}`,
     // Public POS invoice (external print page, encrypted ID)
     POS_INVOICE_PUBLIC: (token) => `${SOFTPOS_API_BASE}/pos/invoice/${token}`,
     

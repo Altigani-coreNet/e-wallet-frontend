@@ -598,9 +598,8 @@ const AdminMerchantsIndex = () => {
                                 <td><span className="placeholder col-6" style={{ height: '22px' }}></span></td>
                                 <td><span className="placeholder col-8" style={{ height: '14px' }}></span></td>
                                 <td className="text-end">
-                                    <div className="d-flex justify-content-end gap-2">
-                                        <span className="placeholder rounded" style={{ width: '32px', height: '32px' }}></span>
-                                        <span className="placeholder rounded" style={{ width: '32px', height: '32px' }}></span>
+                                    <div className="d-flex justify-content-end">
+                                        <span className="placeholder rounded" style={{ width: '36px', height: '36px' }}></span>
                                     </div>
                                 </td>
                             </tr>
