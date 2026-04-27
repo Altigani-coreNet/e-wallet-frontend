@@ -41,7 +41,9 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                                 <img src={user?.profile_image || merchant?.logo_url} alt="User Logo" className="rounded" />
                             ) : (
                                 <div className="symbol-label fs-3 bg-light-primary text-primary">
-                                    {user?.name ? user.name.substring(0, 2).toUpperCase() : 'NA'}
+                                    {user?.user_name
+                                        ? user.user_name.substring(0, 2).toUpperCase()
+                                        : 'NA'}
                                 </div>
                             )}
                             <div className="position-absolute translate-middle bottom-0 start-100 mb-6 bg-success rounded-circle border border-4 border-white h-20px w-20px"></div>
@@ -57,7 +59,7 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                                 {/* Name */}
                                 <div className="d-flex align-items-center mb-2">
                                     <a href="#" className="text-gray-900 text-hover-primary fs-2 fw-bolder me-1">
-                                        {user?.name || 'User Name Not Available'}
+                                        {user?.user_name || 'N/A'}
                                     </a>
                                     <a href="#">
                                         <span className="svg-icon svg-icon-1 svg-icon-primary">

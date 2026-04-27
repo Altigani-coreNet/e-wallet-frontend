@@ -617,7 +617,7 @@ const AccountVerification = ({ formData, setFormData, onNextStep, onPreviousStep
                 <div className="pb-6 pb-lg-15">
                     <h2 className="fw-bolder text-dark fs-4 fs-lg-2">Step 2: Account Verification & Security Setup</h2>
                     <div className="text-muted fw-bold fs-7 fs-lg-6">
-                        Final step: Create a secure password to complete your account setup and protect your merchant account
+                        Create a secure password to complete your account setup and protect your merchant account
                     </div>
                 </div>
 

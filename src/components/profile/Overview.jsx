@@ -153,10 +153,19 @@ const Overview = ({ user, merchant, merchantCompletion, logs, onEditClick }) => 
                             
                             <div className="card-body p-9">
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-bold text-muted">User Name</label>
+                                    <label className="col-lg-4 fw-bold text-muted">Full Name</label>
                                     <div className="col-lg-8">
                                         <span className="fw-bolder fs-6 text-gray-800">
                                             {user.name || 'N/A'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="row mb-7">
+                                    <label className="col-lg-4 fw-bold text-muted">Username</label>
+                                    <div className="col-lg-8">
+                                        <span className="fw-bolder fs-6 text-gray-800">
+                                            {user.user_name || 'N/A'}
                                         </span>
                                     </div>
                                 </div>

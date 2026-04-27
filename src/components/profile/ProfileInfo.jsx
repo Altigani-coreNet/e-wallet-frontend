@@ -259,8 +259,11 @@ const ProfileInfo = () => {
                                 <div className="d-flex align-items-center justify-content-center">
                                     <div className="d-flex flex-column">    
                                         <a href="#" className="fs-4 fw-bold text-gray-900 text-hover-primary mb-1">
-                                            {user.name}
+                                            {user.name || 'N/A'}
                                         </a>
+                                        <div className="fs-7 text-gray-500 mb-1">
+                                            Username: {user.user_name || 'N/A'}
+                                        </div>
                                         <div className="fs-6 fw-semibold text-gray-400">
                                             {user.email}
                                         </div>
