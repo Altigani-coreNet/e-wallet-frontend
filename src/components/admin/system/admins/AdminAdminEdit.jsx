@@ -62,7 +62,11 @@ const AdminAdminEdit = () => {
         ]);
 
         if (adminRes.success) {
-            const adminData = adminRes.data.data;
+            const adminData = adminRes.data;
+            if (!adminData) {
+                toast.error('Invalid admin data received');
+                return;
+            }
             setFormData({
                 name: adminData.name || '',
                 email: adminData.email || '',
@@ -72,15 +76,15 @@ const AdminAdminEdit = () => {
                 profile_image: null,
                 status: adminData.status || 'active',
                 custom_region: adminData.custom_region || false,
-                regions: adminData.countries?.map(c => c.id) || [],
+                regions: adminData.regions?.map(r => r.id) || [],
                 roles: adminData.roles?.map(r => r.id) || [],
-                country_id: adminData.country_id || ''
+                country_id: adminData.country?.id || ''
             });
             if (adminData.profile_image) {
                 setImagePreview(adminData.profile_image);
             }
-            if (adminData.countries && adminData.countries.length > 0) {
-                setSelectedRegions(adminData.countries);
+            if (adminData.regions && adminData.regions.length > 0) {
+                setSelectedRegions(adminData.regions);
             }
             if (adminData.country) {
                 setSelectedCountry(adminData.country);

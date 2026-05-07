@@ -37,6 +37,12 @@ const AdminUserEdit = () => {
     });
     const [errors, setErrors] = useState({});
 
+    const normalizeStatusToSelectValue = (status) => {
+        if (status === 'active' || status === 1 || status === '1' || status === true) return 'active';
+        if (status === 'inactive' || status === 0 || status === '0' || status === false) return 'inactive';
+        return 'active';
+    };
+
     const hasError = (field) => {
         const error = errors[field];
         if (Array.isArray(error)) return error.length > 0 && Boolean(error[0]);
@@ -124,7 +130,7 @@ const AdminUserEdit = () => {
                     phone: user.phone || '',
                     merchant_id: user.merchant_id || '',
                     branch_id: user.branch_id || '',
-                    status: user.status || 'active',
+                    status: normalizeStatusToSelectValue(user.status),
                     is_admin: user.is_admin || false
                 });
 

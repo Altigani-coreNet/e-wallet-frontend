@@ -8,6 +8,7 @@ export const FIELD_TYPES = [
     'Text Field',
     'Email Field',
     'Number Field',
+    'Date Field',
     'Password Field',
     'Radio Buttons',
     'Checkbox',
@@ -19,7 +20,7 @@ export const TYPES_WITH_OPTIONS = new Set(['Radio Buttons', 'Checkbox', 'Dropdow
 
 const normalizeOptionValue = (value) => `${value ?? ''}`.trim().toLowerCase();
 
-const collectDuplicateOptionIds = (options = []) => {
+        const collectDuplicateOptionIds = (options = []) => {
     const duplicateIds = new Set();
     const seenValues = new Map();
     const seenLabels = new Map();
@@ -55,6 +56,7 @@ const collectDuplicateOptionIds = (options = []) => {
 const getFieldKey = (field) => (field.key && field.key.trim() ? field.key.trim() : `field_${field.id}`);
 const getNormalizedFieldType = (type) => `${type || ''}`.trim().toLowerCase();
 const isNumberFieldType = (type) => getNormalizedFieldType(type) === 'number field';
+const isDateFieldType = (type) => getNormalizedFieldType(type) === 'date field';
 const isTextCustomizationType = (type) => {
     const normalized = getNormalizedFieldType(type);
     return ['text field', 'email field', 'password field', 'multiline text field'].includes(normalized);
@@ -121,6 +123,9 @@ const ServiceFormPreview = ({ formData, label, subLabel }) => (
                             )}
                             {field.type === 'Number Field' && (
                                 <input type="number" className="form-control" placeholder={field.label_en || ''} />
+                            )}
+                            {field.type === 'Date Field' && (
+                                <input type="date" className="form-control" placeholder={field.label_en || ''} />
                             )}
                             {field.type === 'Password Field' && (
                                 <input type="password" className="form-control" placeholder={field.label_en || ''} />
@@ -367,6 +372,15 @@ const InteractiveServiceFormPreview = ({ label, subLabel, formId, fields, values
                                         onChange={(e) => onChange(formId, fieldKey, e.target.value)}
                                     />
                                 )}
+                                {field.type === 'Date Field' && (
+                                    <input
+                                        type="date"
+                                        className={`form-control ${hasError ? 'is-invalid' : ''}`}
+                                        placeholder={field.label_en || ''}
+                                        value={value}
+                                        onChange={(e) => onChange(formId, fieldKey, e.target.value)}
+                                    />
+                                )}
                                 {field.type === 'Password Field' && (
                                     <input
                                         type="password"
@@ -589,8 +603,8 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
     };
 
     const updateMobileFormMeta = (formId, key, nextValue) => {
-        setForms(
-            forms.map((f) => (f.id === formId ? { ...f, [key]: nextValue } : f))
+        setForms((prevForms) =>
+            prevForms.map((f) => (f.id === formId ? { ...f, [key]: nextValue } : f))
         );
     };
 
@@ -652,8 +666,8 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                             const nextCustomization = { ...(base.customization || {}) };
                             if (isNumberFieldType(nextValue)) {
                                 delete nextCustomization.regex;
-                            } else if (isTextCustomizationType(nextValue)) {
-                                // keep min/max for text; they represent text length
+                            } else if (isTextCustomizationType(nextValue) || isDateFieldType(nextValue)) {
+                                // keep min/max for text/date; text uses length, date uses range
                             } else {
                                 base.customization = {};
                                 return base;
@@ -891,6 +905,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                             const customizationEnabled = Boolean(customization.enabled);
                                             const showTextCustomization = customizationEnabled && isTextCustomizationType(field.type);
                                             const showNumberCustomization = customizationEnabled && isNumberFieldType(field.type);
+                                            const showDateCustomization = customizationEnabled && isDateFieldType(field.type);
                                             return (
                                         <div className="row">
                                             <div className="col-md-6 mb-4">
@@ -953,7 +968,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                     </label>
                                                 </div>
                                             </div>
-                                            {(isTextCustomizationType(field.type) || isNumberFieldType(field.type)) && (
+                                            {(isTextCustomizationType(field.type) || isNumberFieldType(field.type) || isDateFieldType(field.type)) && (
                                                 <div className="col-12 mb-4">
                                                     <div className="form-check form-check-custom form-check-solid">
                                                         <input
@@ -1108,6 +1123,66 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                     <div className="col-12 mb-2">
                                                         <small className="text-muted">
                                                             Hint: for number fields, Min/Max are numeric value limits.
+                                                        </small>
+                                                    </div>
+                                                </>
+                                            )}
+                                            {showDateCustomization && (
+                                                <>
+                                                    <div className="col-md-6 mb-4">
+                                                        <label className="form-label">Min Date</label>
+                                                        <input
+                                                            type="date"
+                                                            className="form-control"
+                                                            value={customization.min ?? ''}
+                                                            placeholder="Earliest date"
+                                                            onChange={(e) =>
+                                                                updateServiceField(
+                                                                    mobileForm.id,
+                                                                    field.id,
+                                                                    'customization',
+                                                                    { ...customization, enabled: true, min: e.target.value }
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="col-md-6 mb-4">
+                                                        <label className="form-label">Max Date</label>
+                                                        <input
+                                                            type="date"
+                                                            className="form-control"
+                                                            value={customization.max ?? ''}
+                                                            placeholder="Latest date"
+                                                            onChange={(e) =>
+                                                                updateServiceField(
+                                                                    mobileForm.id,
+                                                                    field.id,
+                                                                    'customization',
+                                                                    { ...customization, enabled: true, max: e.target.value }
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="col-12 mb-4">
+                                                        <label className="form-label">Hint</label>
+                                                        <input
+                                                            type="text"
+                                                            className="form-control"
+                                                            value={customization.hint ?? ''}
+                                                            placeholder="e.g. Choose a date within the allowed range"
+                                                            onChange={(e) =>
+                                                                updateServiceField(
+                                                                    mobileForm.id,
+                                                                    field.id,
+                                                                    'customization',
+                                                                    { ...customization, enabled: true, hint: e.target.value }
+                                                                )
+                                                            }
+                                                        />
+                                                    </div>
+                                                    <div className="col-12 mb-2">
+                                                        <small className="text-muted">
+                                                            Hint: for date fields, Min/Max are date limits.
                                                         </small>
                                                     </div>
                                                 </>

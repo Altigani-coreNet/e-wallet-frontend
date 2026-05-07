@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
-import { useToolbar } from '../../../contexts/ToolbarContext';
 import { useQueryClient } from '@tanstack/react-query';
+import { useToolbar } from '../../../contexts/ToolbarContext';
 import { useCan } from '../../../utils/permissions';
 import Swal from 'sweetalert2';
 import TerminalFiltersPanel from './TerminalFiltersPanel';
@@ -17,9 +17,9 @@ import {
 } from '../../../services/adminTerminalsService';
 
 const AdminTerminalsIndex = () => {
+    const queryClient = useQueryClient();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const canCreateTerminal = useCan('pos.terminals.create_terminals');
-    const queryClient = useQueryClient();
     const {
         merchantsMap,
         countriesMap,
@@ -54,6 +54,12 @@ const AdminTerminalsIndex = () => {
         isLoading, 
         refetch 
     } = useAdminTerminals(pagination.current_page, pagination.per_page, filters);
+
+    // Always force fresh terminals data whenever this page is entered.
+    useEffect(() => {
+        queryClient.removeQueries({ queryKey: ['admin-terminals'] });
+        refetch();
+    }, [queryClient, refetch]);
 
     // Extract data
     const terminals = terminalsData?.data?.data || terminalsData?.data || [];
@@ -231,7 +237,6 @@ const AdminTerminalsIndex = () => {
         if (response.success) {
             Swal.fire('Deleted!', response.message, 'success');
             setSelectedIds([]);
-            queryClient.invalidateQueries({ queryKey: ['admin-terminals'] });
             await refetch();
         } else {
             Swal.fire('Error!', response.error, 'error');
@@ -244,7 +249,6 @@ const AdminTerminalsIndex = () => {
         
         if (response.success) {
             toast.success(response.message);
-            queryClient.invalidateQueries({ queryKey: ['admin-terminals'] });
             await refetch();
         } else {
             toast.error(response.error);
@@ -299,7 +303,6 @@ const AdminTerminalsIndex = () => {
     // Handle import success
     const handleImportSuccess = () => {
         setShowImportModal(false);
-        queryClient.invalidateQueries({ queryKey: ['admin-terminals'] });
         refetch();
     };
 

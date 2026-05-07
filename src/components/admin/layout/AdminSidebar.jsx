@@ -616,13 +616,24 @@ const AdminSidebar = () => {
                                 <div className={`menu-sub menu-sub-accordion ${isServiceRoute ? 'show' : ''}`}>
                                     <div className="menu-item">
                                         <NavLink
-                                            className={`menu-link ${isPathActive('/admin/services', { exact: true }) ? 'active' : ''}`}
+                                            className={`menu-link ${isPathActive('/admin/services', { exact: true })  && ! isPathActive('/admin/services/home-config', { exact: true }) ? 'active' : ''}`}
                                             to="/admin/services"
                                         >
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
                                             <span className="menu-title">Services</span>
+                                        </NavLink>
+                                    </div>
+                                    <div className="menu-item">
+                                        <NavLink
+                                            className={`menu-link ${isPathActive('/admin/services/home-config', { exact: true }) ? 'active' : ''}`}
+                                            to="/admin/services/home-config"
+                                        >
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">Home Services Config</span>
                                         </NavLink>
                                     </div>
                                     <div className="menu-item">

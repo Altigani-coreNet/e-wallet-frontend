@@ -4,7 +4,7 @@ import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { useCurrencies } from '../../../services/currenciesService';
 
-const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
+const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validationErrors = {} }) => {
     const navigate = useNavigate();
     
     // Fetch currencies from AuthService
@@ -23,6 +23,16 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
     
     const [showPaymentMethodsDropdown, setShowPaymentMethodsDropdown] = useState(false);
     const paymentMethodsRef = useRef(null);
+    const [useScheduledDate, setUseScheduledDate] = useState(false);
+
+    const getDisplayText = (value) => {
+        if (value == null) return '';
+        if (typeof value === 'string' || typeof value === 'number') return String(value);
+        if (typeof value === 'object') {
+            return value.en || value.ar || Object.values(value).find((v) => typeof v === 'string') || '';
+        }
+        return '';
+    };
 
     // Set default currency when currencies are loaded
     useEffect(() => {
@@ -150,6 +160,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
             
             console.log('Form Data Set:', updatedFormData);
             setFormData(updatedFormData);
+            setUseScheduledDate(Boolean(updatedFormData.scheduled_date));
         }
     }, [mode, initialData]);
 
@@ -207,6 +218,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
         // Ensure payment_method_types is a clean array (no nested arrays or JSON strings)
         const cleanedFormData = {
             ...formData,
+            scheduled_date: useScheduledDate ? formData.scheduled_date : null,
             payment_method_types: Array.isArray(formData.payment_method_types)
                 ? formData.payment_method_types.filter((value, index, self) => 
                     // Remove duplicates and ensure all are strings (not JSON strings)
@@ -219,6 +231,12 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
         
         console.log('Submitting Form Data:', cleanedFormData);
         onSubmit(cleanedFormData);
+    };
+
+    const getFieldError = (fieldName) => {
+        const err = validationErrors?.[fieldName];
+        if (Array.isArray(err)) return err[0];
+        return err || null;
     };
 
     const paymentMethods = [
@@ -263,12 +281,13 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
                                 step="0.01"
                                 min="0.01"
                                 name="amount"
-                                className="form-control"
+                                className={`form-control ${getFieldError('amount') ? 'is-invalid' : ''}`}
                                 placeholder="Enter amount"
                                 value={formData.amount}
                                 onChange={handleChange}
                                 required
                             />
+                            {getFieldError('amount') && <div className="invalid-feedback d-block">{getFieldError('amount')}</div>}
                         </div>
 
                         {/* Currency */}
@@ -276,7 +295,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
                             <label className="form-label required">Currency</label>
                             <select
                                 name="currency_id"
-                                className="form-select"
+                                className={`form-select ${getFieldError('currency_id') ? 'is-invalid' : ''}`}
                                 value={formData.currency_id}
                                 onChange={handleChange}
                                 required
@@ -291,7 +310,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
                                         <option value="">Select currency</option>
                                         {currencies && currencies.map(currency => (
                                             <option key={currency.id} value={currency.id}>
-                                                {currency.currency_code} - {currency.name} ({currency.symbol})
+                                                {getDisplayText(currency.currency_code)} - {getDisplayText(currency.name)} ({getDisplayText(currency.symbol)})
                                             </option>
                                         ))}
                                     </>
@@ -302,6 +321,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
                                     Failed to load currencies from server
                                 </div>
                             )}
+                            {getFieldError('currency_id') && <div className="invalid-feedback d-block">{getFieldError('currency_id')}</div>}
                         </div>
 
                         {/* Customer Name */}
@@ -310,12 +330,13 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
                             <input
                                 type="text"
                                 name="customer_name"
-                                className="form-control"
+                                className={`form-control ${getFieldError('customer_name') ? 'is-invalid' : ''}`}
                                 placeholder="Enter customer name"
                                 value={formData.customer_name}
                                 onChange={handleChange}
                                 required
                             />
+                            {getFieldError('customer_name') && <div className="invalid-feedback d-block">{getFieldError('customer_name')}</div>}
                         </div>
 
                         {/* Customer Email */}
@@ -324,7 +345,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
                             <input
                                 type="email"
                                 name="customer_email"
-                                className="form-control"
+                                className={`form-control ${getFieldError('customer_email') ? 'is-invalid' : ''}`}
                                 placeholder="Enter customer email"
                                 value={formData.customer_email}
                                 onChange={handleChange}
@@ -332,6 +353,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
                             <div className="form-text">
                                 Optional: Email for sending payment link
                             </div>
+                            {getFieldError('customer_email') && <div className="invalid-feedback d-block">{getFieldError('customer_email')}</div>}
                         </div>
 
                         {/* Customer Phone */}
@@ -371,18 +393,39 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
 
                         {/* Scheduled Date */}
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Scheduled Date</label>
-                            <input
-                                type="date"
-                                name="scheduled_date"
-                                className="form-control"
-                                value={formData.scheduled_date}
-                                onChange={handleChange}
-                                min={new Date().toISOString().split('T')[0]}
-                            />
-                            <div className="form-text">
-                                Optional: Schedule when this link becomes active
-                            </div>
+                            <label className="form-label d-flex align-items-center gap-3 mb-3">
+                                <input
+                                    type="checkbox"
+                                    className="form-check-input"
+                                    checked={useScheduledDate}
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setUseScheduledDate(checked);
+                                        if (!checked) {
+                                            setFormData(prev => ({ ...prev, scheduled_date: '' }));
+                                        }
+                                    }}
+                                />
+                                <span>Schedule Date</span>
+                            </label>
+                            {useScheduledDate ? (
+                                <>
+                                    <input
+                                        type="date"
+                                        name="scheduled_date"
+                                        className={`form-control ${getFieldError('scheduled_date') ? 'is-invalid' : ''}`}
+                                        value={formData.scheduled_date}
+                                        onChange={handleChange}
+                                        min={new Date().toISOString().split('T')[0]}
+                                    />
+                                    <div className="form-text">
+                                        Choose when this payment link becomes active.
+                                    </div>
+                                    {getFieldError('scheduled_date') && <div className="invalid-feedback d-block">{getFieldError('scheduled_date')}</div>}
+                                </>
+                            ) : (
+                                <div className="form-text">Enable to set a start date for this payment link.</div>
+                            )}
                         </div>
 
                         {/* Expiry Date */}
@@ -391,7 +434,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
                             <input
                                 type="date"
                                 name="expired_date"
-                                className="form-control"
+                                className={`form-control ${getFieldError('expired_date') ? 'is-invalid' : ''}`}
                                 value={formData.expired_date}
                                 onChange={handleChange}
                                 min={new Date().toISOString().split('T')[0]}
@@ -399,6 +442,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
                             <div className="form-text">
                                 Optional: Set when this link expires
                             </div>
+                            {getFieldError('expired_date') && <div className="invalid-feedback d-block">{getFieldError('expired_date')}</div>}
                         </div>
 
                         {/* Payment Method Types - Beautiful Multi-Select */}
@@ -525,6 +569,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error }) => {
                             <div className="form-text mt-2">
                                 Click to select multiple payment methods. Selected methods appear as tags above.
                             </div>
+                            {getFieldError('payment_method_types') && <div className="invalid-feedback d-block">{getFieldError('payment_method_types')}</div>}
                             {/* Hidden input for form validation */}
                             <input
                                 type="hidden"

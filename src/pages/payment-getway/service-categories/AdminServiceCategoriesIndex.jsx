@@ -107,6 +107,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
         fetchParentCategories();
     }, [categoryType]);
 
+
     useEffect(() => {
         if (fixedHierarchy && fixedHierarchy !== activeHierarchy) {
             setActiveHierarchy(fixedHierarchy);
@@ -169,6 +170,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
             console.error('Error fetching parent categories:', error);
         }
     };
+
 
     const handleOpenCreateModal = () => {
         setFormData({

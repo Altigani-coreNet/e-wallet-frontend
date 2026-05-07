@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getTranslatedText } from '../../../utils/helpers';
-import { useCan } from '../../../utils/permissions';
+import { useCan, USER_GROUP_EDIT_PERMISSIONS } from '../../../utils/permissions';
 
 const UserGroupTableRow = ({ 
     group, 
@@ -12,7 +12,7 @@ const UserGroupTableRow = ({
     onDeactivate, 
     onDelete 
 }) => {
-    const canEditUserGroup = useCan('pos.user_groups.edit_users_groups');
+    const canEditUserGroup = useCan(USER_GROUP_EDIT_PERMISSIONS);
     const canDeleteUserGroup = useCan('pos.user_groups.delete_users_groups');
     const [showActions, setShowActions] = useState(false);
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });

@@ -20,9 +20,14 @@ const UserTableRow = ({
         onSelect(user.id, e.target.checked);
     };
 
-    const getStatusBadge = (status) => {
-        // Handle both string and numeric status values
-        const isActive = status === 'active' || status === 1 || status === '1' || status === true;
+    const getStatusBadge = (status, isActiveFallback) => {
+        // Handle both string and numeric status values, and fall back to `is_active`.
+        const isActive =
+            status === 'active' ||
+            status === 1 ||
+            status === '1' ||
+            status === true ||
+            isActiveFallback === true;
         const statusText = isActive ? 'Active' : 'Inactive';
         const statusClass = isActive ? 'badge-light-success' : 'badge-light-warning';
         
@@ -119,7 +124,7 @@ const UserTableRow = ({
 
             {/* Status */}
             <td>
-                {getStatusBadge(user.status)}
+                {getStatusBadge(user.status, user.is_active)}
             </td>
 
             {/* Is Admin */}
@@ -178,7 +183,7 @@ const UserTableRow = ({
                             </li>
                         )}
                         <li>
-                            {(user.status === 'active' || user.status === 1 || user.status === '1' || user.status === true) ? (
+                            {(user.status === 'active' || user.status === 1 || user.status === '1' || user.status === true || user.is_active === true) ? (
                                 <button
                                     type="button"
                                     className="dropdown-item"

@@ -79,6 +79,13 @@ export const mapProductFormsToApiPayload = (forms) => {
                 hint: hint || null,
             };
         }
+        if (type === 'date field') {
+            return {
+                min: customization.min || null,
+                max: customization.max || null,
+                hint: hint || null,
+            };
+        }
         if (['text field', 'email field', 'password field', 'multiline text field'].includes(type)) {
             const regex = String(customization.regex ?? '').trim();
             return {

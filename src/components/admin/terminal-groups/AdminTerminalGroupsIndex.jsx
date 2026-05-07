@@ -52,6 +52,12 @@ const AdminTerminalGroupsIndex = () => {
         refetch 
     } = useAdminTerminalGroups(pagination.current_page, pagination.per_page, filters);
 
+    // Always force fresh list when this page is entered.
+    useEffect(() => {
+        queryClient.removeQueries({ queryKey: ['admin-terminal-groups'] });
+        refetch();
+    }, [queryClient, refetch]);
+
     // Extract data
     const groups = groupsData?.data?.data || groupsData?.data || [];
     const paginationData = {

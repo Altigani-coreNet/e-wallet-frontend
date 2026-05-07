@@ -7,6 +7,7 @@
 import axios from 'axios';
 import { APP_CONFIG } from './constants';
 import { isSoftPosAdminJwtRoute } from './softposAdminRoutes';
+import { showApiWarningToast } from './apiWarnings';
 
 /**
  * Get authentication token from localStorage
@@ -220,7 +221,10 @@ axios.interceptors.request.use(
  * Handles authentication errors globally for ALL axios responses
  */
 axios.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        showApiWarningToast(response);
+        return response;
+    },
     (error) => {
         if (error.response) {
             // Handle 401 Unauthorized - GLOBAL FOR ALL AXIOS CALLS

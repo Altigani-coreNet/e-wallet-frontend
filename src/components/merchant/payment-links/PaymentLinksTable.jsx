@@ -14,6 +14,7 @@ const PaymentLinksTable = ({
     loading,
     error
 }) => {
+    const skeletonRows = Array.from({ length: 6 }, (_, i) => i);
     // Initialize KTMenu when payment links change
     useEffect(() => {
         if (paymentLinks.length > 0 && typeof window.KTMenu !== 'undefined') {
@@ -45,10 +46,44 @@ const PaymentLinksTable = ({
 
     if (loading) {
         return (
-            <div className="text-center py-5">
-                <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                </div>
+            <div className="table-responsive">
+                <table className="table align-middle table-row-dashed fs-6 gy-5">
+                    <thead>
+                        <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                            <th className="w-10px pe-2"></th>
+                            <th>ID</th>
+                            <th>UUID</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Currency</th>
+                            <th>Status</th>
+                            <th>Created At</th>
+                            <th>Scheduled Date</th>
+                            <th className="text-end min-w-100px">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="text-gray-600 fw-semibold">
+                        {skeletonRows.map((row) => (
+                            <tr key={`skeleton-${row}`}>
+                                <td><span className="placeholder col-8"></span></td>
+                                <td><span className="placeholder col-7"></span></td>
+                                <td><span className="placeholder col-10"></span></td>
+                                <td>
+                                    <div className="placeholder-glow d-grid gap-1">
+                                        <span className="placeholder col-8"></span>
+                                        <span className="placeholder col-6"></span>
+                                    </div>
+                                </td>
+                                <td><span className="placeholder col-6"></span></td>
+                                <td><span className="placeholder col-5"></span></td>
+                                <td><span className="placeholder col-7"></span></td>
+                                <td><span className="placeholder col-9"></span></td>
+                                <td><span className="placeholder col-7"></span></td>
+                                <td className="text-end"><span className="placeholder col-6"></span></td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         );
     }

@@ -101,11 +101,14 @@ const MerchantUsersTab = ({ merchantId }) => {
                                         <td>
                                             {(() => {
                                                 const rawStatus = user?.status;
-                                                const normalizedStatus = typeof rawStatus === 'string' && rawStatus.length > 0
-                                                    ? rawStatus.toLowerCase()
-                                                    : (user?.is_active ? 'active' : 'inactive');
-                                                const badgeClass = normalizedStatus === 'active' ? 'success' : 'secondary';
-                                                const label = normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
+                                                const isActive =
+                                                    rawStatus === 'active' ||
+                                                    rawStatus === 1 ||
+                                                    rawStatus === '1' ||
+                                                    rawStatus === true ||
+                                                    user?.is_active === true;
+                                                const badgeClass = isActive ? 'success' : 'secondary';
+                                                const label = isActive ? 'Active' : 'Inactive';
                                                 return (
                                                     <span className={`badge badge-light-${badgeClass}`}>
                                                         {label}

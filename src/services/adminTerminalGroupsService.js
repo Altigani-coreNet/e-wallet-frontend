@@ -316,9 +316,12 @@ export const useAdminTerminalGroups = (page, perPage, filters) => {
     return useQuery({
         queryKey: ['admin-terminal-groups', page, perPage, filters],
         queryFn: () => fetchAdminTerminalGroups({ page, perPage, filters }),
-        staleTime: 30 * 1000,
-        cacheTime: 5 * 60 * 1000,
-        keepPreviousData: true
+        staleTime: 0,
+        cacheTime: 0,
+        keepPreviousData: false,
+        refetchOnMount: 'always',
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true
     });
 };
 

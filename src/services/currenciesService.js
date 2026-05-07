@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { AUTH_ENDPOINTS } from '../utils/constants';
+import { AUTH_ENDPOINTS, SOFTPOS_ENDPOINTS } from '../utils/constants';
 import { getToken } from '../utils/api';
 import { toast } from 'react-toastify';
 
@@ -24,7 +24,7 @@ const CACHE_CONFIG = {
 export const fetchCurrencies = async () => {
     const token = getApiToken();
     
-    const response = await axios.get(AUTH_ENDPOINTS.CURRENCIES, {
+    const response = await axios.get(SOFTPOS_ENDPOINTS.CURRENCIES || AUTH_ENDPOINTS.CURRENCIES, {
         headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -40,7 +40,7 @@ export const fetchCurrencies = async () => {
 export const fetchCurrenciesSelect = async () => {
     const token = getApiToken();
     
-    const response = await axios.get(AUTH_ENDPOINTS.CURRENCIES_SELECT, {
+    const response = await axios.get(SOFTPOS_ENDPOINTS.CURRENCIES_SELECT || AUTH_ENDPOINTS.CURRENCIES_SELECT, {
         headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
@@ -55,8 +55,9 @@ export const fetchCurrenciesSelect = async () => {
  */
 export const fetchCurrencyDetails = async (currencyId) => {
     const token = getApiToken();
+    const baseEndpoint = SOFTPOS_ENDPOINTS.CURRENCIES || AUTH_ENDPOINTS.CURRENCIES;
     
-    const response = await axios.get(`${AUTH_ENDPOINTS.CURRENCIES}/${currencyId}`, {
+    const response = await axios.get(`${baseEndpoint}/${currencyId}`, {
         headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'

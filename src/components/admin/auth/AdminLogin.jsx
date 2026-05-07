@@ -16,6 +16,7 @@ const AdminLogin = () => {
 
     const [formErrors, setFormErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     // Clear any stale tokens on mount to prevent redirect loop
     useEffect(() => {
@@ -246,15 +247,24 @@ const AdminLogin = () => {
                                         </div>
 
                                         {/* Password Field */}
-                                        <div className="fv-row mb-8">
+                                        <div className="fv-row mb-8 position-relative">
                                             <input
-                                                type="password"
+                                                type={showPassword ? 'text' : 'password'}
                                                 name="password"
                                                 placeholder="Password"
                                                 className={`form-control bg-transparent ${formErrors.password ? 'is-invalid' : ''}`}
+                                                style={{ paddingRight: '3rem' }}
                                                 value={formData.password}
                                                 onChange={handleChange}
                                             />
+                                            <button
+                                                type="button"
+                                                className="btn btn-icon btn-sm position-absolute top-50 end-0 translate-middle-y me-2"
+                                                onClick={() => setShowPassword((prev) => !prev)}
+                                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                            >
+                                                <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                                            </button>
                                         {formErrors.password && (
                                             <div className="invalid-feedback">{formErrors.password}</div>
                                         )}

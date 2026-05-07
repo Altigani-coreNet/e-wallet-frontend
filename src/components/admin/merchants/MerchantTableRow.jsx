@@ -152,7 +152,7 @@ const MerchantTableRow = ({
             {/* Country */}
             <td>
                 <span className="text-gray-600">
-                    {merchant.country?.name?.en || merchant.country?.name || 'N/A'}
+                    {merchant.country_name || merchant.country?.name?.en || merchant.country?.name || 'N/A'}
                 </span>
             </td>
 

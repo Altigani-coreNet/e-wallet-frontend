@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
@@ -9,6 +10,7 @@ import useAdminReferenceData from '../../../hooks/useAdminReferenceData';
 const AdminTerminalView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const { merchantsMap, branchesMap, countriesMap } = useAdminReferenceData();
 
@@ -80,6 +82,7 @@ const AdminTerminalView = () => {
         const response = await deleteAdminTerminal(id);
         
         if (response.success) {
+            await queryClient.invalidateQueries({ queryKey: ['admin-terminals'] });
             toast.success(response.message);
             navigate('/admin/terminals');
         } else {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -12,6 +12,7 @@ import UserGroupTableSkeleton from './UserGroupTableSkeleton';
 import BulkActionBar from '../../common/BulkActionBar';
 
 const AdminUserGroupsIndex = () => {
+    const location = useLocation();
     const { setTitle, setActions } = useToolbar();
     const canCreateUserGroup = useCan('pos.user_groups.create_users_groups');
     const [userGroups, setUserGroups] = useState([]);
@@ -91,10 +92,20 @@ const AdminUserGroupsIndex = () => {
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    // Fetch user groups when pagination or filters change
+    // Fetch user groups when pagination, filters change, or user navigates to this page again.
     useEffect(() => {
         fetchUserGroups();
-    }, [pagination.current_page, pagination.per_page, filters.search, filters.status, filters.merchant_id, filters.branch_id, filters.date_from, filters.date_to]);
+    }, [
+        location.key,
+        pagination.current_page,
+        pagination.per_page,
+        filters.search,
+        filters.status,
+        filters.merchant_id,
+        filters.branch_id,
+        filters.date_from,
+        filters.date_to
+    ]);
 
     const fetchUserGroups = async () => {
         setLoading(true);

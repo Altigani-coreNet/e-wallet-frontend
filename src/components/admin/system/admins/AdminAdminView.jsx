@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
-import { getAdmin, deleteAdmin } from '../../../../services/adminAdminsService';
+import { getAdmin, deleteAdmin, changeAdminStatus } from '../../../../services/adminAdminsService';
 
 const AdminAdminView = () => {
     const { id } = useParams();
@@ -10,11 +10,37 @@ const AdminAdminView = () => {
     const navigate = useNavigate();
     const [admin, setAdmin] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [statusChanging, setStatusChanging] = useState(false);
 
     useEffect(() => {
         setTitle('Admin Details');
+        fetchAdmin();
+        return () => setActions(null);
+    }, [id, setTitle, setActions]);
+
+    useEffect(() => {
+        if (!admin) return;
+
         setActions(
             <div className="d-flex gap-2">
+                <button
+                    type="button"
+                    className={`btn btn-sm ${admin.status === 'active' ? 'btn-light-danger' : 'btn-light-success'}`}
+                    onClick={handleStatusToggle}
+                    disabled={statusChanging}
+                >
+                    <i className="ki-duotone ki-toggle-on fs-3">
+                        <span className="path1"></span>
+                        <span className="path2"></span>
+                    </i>
+                    <span className="d-none d-md-inline ms-1">
+                        {statusChanging
+                            ? 'Changing...'
+                            : admin.status === 'active'
+                                ? 'Deactivate'
+                                : 'Activate'}
+                    </span>
+                </button>
                 <Link to={`/admin/system/admins/${id}/edit`} className="btn btn-sm btn-primary">
                     <i className="ki-duotone ki-pencil fs-3">
                         <span className="path1"></span>
@@ -34,16 +60,14 @@ const AdminAdminView = () => {
                 </button>
             </div>
         );
-        fetchAdmin();
-        return () => setActions(null);
-    }, [id, setTitle, setActions]);
+    }, [admin, statusChanging, id, setActions]);
 
     const fetchAdmin = async () => {
         setLoading(true);
         try {
             const response = await getAdmin(id);
             if (response.success) {
-                setAdmin(response.data.data);
+                setAdmin(response.data);
             } else {
                 toast.error(response.error || 'Failed to fetch admin');
             }
@@ -52,6 +76,30 @@ const AdminAdminView = () => {
             toast.error('Failed to fetch admin');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleStatusToggle = async () => {
+        const targetAdminId = admin?.id || id;
+        if (!targetAdminId) {
+            toast.error('Admin ID is missing');
+            return;
+        }
+        setStatusChanging(true);
+        try {
+            const response = await changeAdminStatus(targetAdminId);
+            if (response.success) {
+                const updated = response.data;
+                setAdmin(updated);
+                toast.success('Status changed successfully');
+            } else {
+                toast.error(response.error || 'Failed to change status');
+            }
+        } catch (error) {
+            console.error('Error changing status:', error);
+            toast.error('Failed to change status');
+        } finally {
+            setStatusChanging(false);
         }
     };
 
@@ -77,10 +125,22 @@ const AdminAdminView = () => {
     if (loading) {
         return (
             <div className="card">
-                <div className="card-body text-center py-10">
-                    <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
+                <div className="card-header">
+                    <div className="card-title">
+                        <div className="skeleton w-150px h-20px bg-light rounded" />
                     </div>
+                </div>
+                <div className="card-body">
+                    {[1, 2, 3, 4, 5].map((row) => (
+                        <div className="row mb-7" key={row}>
+                            <div className="col-lg-4">
+                                <div className="skeleton w-100px h-16px bg-light rounded" />
+                            </div>
+                            <div className="col-lg-8">
+                                <div className="skeleton w-250px h-16px bg-light rounded" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </div>
         );
@@ -136,9 +196,18 @@ const AdminAdminView = () => {
                 <div className="row mb-7">
                     <label className="col-lg-4 fw-semibold text-muted">Status</label>
                     <div className="col-lg-8">
-                        <span className={`badge badge-light-${admin.status === 'active' ? 'success' : 'danger'}`}>
-                            {admin.status}
-                        </span>
+                        <button
+                            type="button"
+                            onClick={handleStatusToggle}
+                            disabled={statusChanging}
+                            className={`badge border-0 cursor-pointer badge-light-${admin.status === 'active' ? 'success' : 'danger'}`}
+                        >
+                            {statusChanging
+                                ? 'Changing...'
+                                : admin.status === 'active'
+                                    ? 'Active (click to deactivate)'
+                                    : 'Inactive (click to activate)'}
+                        </button>
                     </div>
                 </div>
 
@@ -168,14 +237,16 @@ const AdminAdminView = () => {
                     </div>
                 </div>
 
-                {admin.custom_region && admin.countries && Array.isArray(admin.countries) && admin.countries.length > 0 && (
+                {admin.custom_region && admin.regions && Array.isArray(admin.regions) && admin.regions.length > 0 && (
                     <div className="row mb-7">
                         <label className="col-lg-4 fw-semibold text-muted">Regions</label>
                         <div className="col-lg-8">
                             <div className="d-flex flex-wrap gap-2">
-                                {admin.countries.map((country, index) => (
+                                {admin.regions.map((region, index) => (
                                     <span key={index} className="badge badge-light">
-                                        {typeof country === 'object' ? (typeof country.name === 'object' ? country.name.en : country.name) : country}
+                                        {typeof region === 'object'
+                                            ? (typeof region.name === 'object' ? (region.name.en || region.name.ar || '') : (region.name || region.code || 'N/A'))
+                                            : region}
                                     </span>
                                 ))}
                             </div>

@@ -127,6 +127,14 @@ export const permissionMap = {
   },
 };
 
+/** Sync with admin `PermissionRoute` for user-groups edit — includes legacy typo keys from older roles. */
+export const USER_GROUP_EDIT_PERMISSIONS = [
+  'pos.user_groups.edit_users_groups',
+  'edit_users_groups',
+  'pos.users_groups.edit',
+  'pos.user_groups.edit_users_group',
+];
+
 function normalizeToArray(value) {
   if (!value) return [];
   return Array.isArray(value) ? value : [value];

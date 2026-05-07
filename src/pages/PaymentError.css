@@ -1,0 +1,143 @@
+.pe-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 16px;
+    background:
+        radial-gradient(circle at 50% -10%, rgba(230, 11, 18, 0.28) 0%, rgba(230, 11, 18, 0.14) 28%, rgba(230, 11, 18, 0.04) 52%, rgba(230, 11, 18, 0) 72%),
+        radial-gradient(circle at 50% 0%, #fff0f1 0%, #fff5f5 28%, #f8f9fc 60%, #eef1f6 100%);
+    font-family: 'Poppins', 'Inter', sans-serif;
+}
+
+.pe-card {
+    width: min(100%, 520px);
+    background: #fff;
+    box-shadow: 0 13px 40px rgba(170, 170, 170, 0.12);
+    border-radius: 30px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.pe-header {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.pe-error-icon {
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    background: rgba(230, 11, 18, 0.12);
+    color: #e60b12;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pe-header-text {
+    width: 100%;
+    text-align: center;
+}
+
+.pe-header-text h1 {
+    margin: 0;
+    color: #474747;
+    font-size: 26px;
+    font-weight: 500;
+}
+
+.pe-header-text h2 {
+    margin: 6px 0 4px;
+    color: #121212;
+    font-size: 34px;
+    font-weight: 700;
+}
+
+.pe-header-text p {
+    margin: 0;
+    font-size: 14px;
+    color: #6e6e6e;
+}
+
+.pe-line {
+    width: 100%;
+    border-top: 1.7px solid #ededed;
+}
+
+.pe-content {
+    width: 100%;
+    display: grid;
+    gap: 10px;
+}
+
+.pe-note {
+    border: 1px solid #ffd9dc;
+    background: #fff7f8;
+    color: #96242a;
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 13px;
+}
+
+.pe-note-muted {
+    border-color: #eceef4;
+    background: #fafbff;
+    color: #5f6570;
+}
+
+.pe-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.pe-btn {
+    height: 42px;
+    border-radius: 10px;
+    border: none;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.pe-btn-light {
+    background: #f3f5f9;
+    color: #232323;
+}
+
+.pe-btn-primary {
+    background: #e60b12;
+    color: #fff;
+}
+
+@media (max-width: 640px) {
+    .pe-card {
+        border-radius: 22px;
+        padding: 24px 18px;
+    }
+
+    .pe-header-text h1 {
+        font-size: 24px;
+    }
+
+    .pe-header-text h2 {
+        font-size: 30px;
+    }
+
+    .pe-actions {
+        grid-template-columns: 1fr;
+    }
+}

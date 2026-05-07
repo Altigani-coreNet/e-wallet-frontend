@@ -4,7 +4,7 @@ import LoadingSpinner from '../common/LoadingSpinner';
 import { SOFTPOS_ENDPOINTS } from '../../utils/constants';
 
 const PosInvoicePrint = () => {
-    const { id } = useParams(); // encrypted transaction id
+    const { id, uuid } = useParams(); // id = encrypted POS token, uuid = payment-link UUID
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -13,7 +13,10 @@ const PosInvoicePrint = () => {
         const fetchInvoice = async () => {
             try {
                 setLoading(true);
-                const response = await fetch(SOFTPOS_ENDPOINTS.POS_INVOICE_PUBLIC(id));
+                const endpoint = uuid
+                    ? SOFTPOS_ENDPOINTS.LINK_INVOICE_PUBLIC(uuid)
+                    : SOFTPOS_ENDPOINTS.POS_INVOICE_PUBLIC(id);
+                const response = await fetch(endpoint);
                 const result = await response.json();
 
                 console.log('POS Invoice API Response:', result);
@@ -31,8 +34,8 @@ const PosInvoicePrint = () => {
             }
         };
 
-        if (id) fetchInvoice();
-    }, [id]);
+        if (id || uuid) fetchInvoice();
+    }, [id, uuid]);
 
     const handlePrint = () => {
         window.print();
@@ -51,21 +54,19 @@ const PosInvoicePrint = () => {
     const formatDate = (dateString) => {
         if (!dateString) return '';
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     };
 
     const formatTime = (dateString) => {
         if (!dateString) return '';
         const date = new Date(dateString);
-        return date.toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        });
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
     };
 
     if (loading) {
@@ -195,30 +196,11 @@ const PosInvoicePrint = () => {
                         </>
                     )}
 
-                    {/* Dashed Separator */}
-                    <div className="receipt-divider"></div>
-
-                    {/* QR Code Section */}
-                    <div className="qr-section">
-                        <div className="qr-title">Scan QR For E-Receipt</div>
-                        <div className="qr-code">
-                            <img
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-                                    invoice.invoice_url || window.location.href
-                                )}`}
-                                alt="Receipt QR Code"
-                            />
-                        </div>
-                        <div className="qr-instruction">
-                            Use your phone camera to download the receipt.
-                        </div>
-                    </div>
-
-                    {/* Dashed Separator */}
-                    <div className="receipt-divider"></div>
-
                     {/* Transaction Details Footer */}
                     <div className="transaction-details-footer">
+                        <div className="receipt-divider"></div>
+                        <div className="transaction-details-title">Transaction Details</div>
+                        <div className="receipt-divider"></div>
                         <div className="detail-row">
                             <span className="detail-label">Date:</span>
                             <span className="detail-value">{invoice.date ? formatDate(invoice.date) : formatDate(invoice.created_at)}</span>
@@ -228,16 +210,32 @@ const PosInvoicePrint = () => {
                             <span className="detail-value">{invoice.time || formatTime(invoice.created_at)}</span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Merchant ID:</span>
-                            <span className="detail-value">{invoice.merchant_id || 'N/A'}</span>
+                            <span className="detail-label">Merchant Code:</span>
+                            <span className="detail-value">{invoice.shop?.merchant_code || invoice.merchant_code || 'N/A'}</span>
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Terminal ID:</span>
                             <span className="detail-value">{invoice.terminal_id || 'N/A'}</span>
                         </div>
                         <div className="detail-row">
+                            <span className="detail-label">Card Number:</span>
+                            <span className="detail-value">{invoice.card_number || 'N/A'}</span>
+                        </div>
+                        <div className="detail-row">
+                            <span className="detail-label">Expiry:</span>
+                            <span className="detail-value">{invoice.expiry || 'N/A'}</span>
+                        </div>
+                        <div className="detail-row">
+                            <span className="detail-label">Payment Method:</span>
+                            <span className="detail-value">{invoice.payment_method || 'N/A'}</span>
+                        </div>
+                        <div className="detail-row">
                             <span className="detail-label">Payment Type:</span>
-                            <span className="detail-value">{invoice.payment_method || 'Card'}</span>
+                            <span className="detail-value">{invoice.transaction_type || invoice.payment_type || 'Purchase'}</span>
+                        </div>
+                        <div className="detail-row">
+                            <span className="detail-label">Transaction:</span>
+                            <span className="detail-value">{invoice.transaction_id || invoice.id || 'N/A'}</span>
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Ref. No:</span>
@@ -260,6 +258,25 @@ const PosInvoicePrint = () => {
                                 ))}
                             </>
                         )}
+                    </div>
+
+                    {/* Dashed Separator */}
+                    <div className="receipt-divider"></div>
+
+                    {/* QR Code Section */}
+                    <div className="qr-section">
+                        <div className="qr-title">Scan QR For E-Receipt</div>
+                        <div className="qr-code">
+                            <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                                    invoice.invoice_url || window.location.href
+                                )}`}
+                                alt="Receipt QR Code"
+                            />
+                        </div>
+                        <div className="qr-instruction">
+                            Use your phone camera to download the receipt.
+                        </div>
                     </div>
 
                     {/* Thank You Message */}
@@ -325,6 +342,12 @@ const PosInvoicePrint = () => {
                 .qr-code img { width: 160px; height: 160px; border: 1px solid #e0e0e0; }
                 .qr-instruction { font-size: 12px; color: #666; }
                 .transaction-details-footer { margin-top: 15px; }
+                .transaction-details-title {
+                    text-align: center;
+                    font-size: 13px;
+                    font-weight: 600;
+                    margin-bottom: 8px;
+                }
                 .detail-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
                 .detail-label { font-weight: 600; color: #000; }
                 .detail-value { color: #333; }

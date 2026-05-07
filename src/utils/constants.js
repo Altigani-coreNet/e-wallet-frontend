@@ -105,6 +105,8 @@ export const SOFTPOS_ENDPOINTS = {
     PAYMENT_LINK_BULK_DELETE: `${SOFTPOS_API_BASE}/v1/merchant/payment-links/bulk-delete`,
     PAYMENT_LINK_UPDATE_DATE: (id) => `${SOFTPOS_API_BASE}/v1/merchant/payment-links/${id}/update-date`,
     PAYMENT_LINK_SEND: (id) => `${SOFTPOS_API_BASE}/v1/merchant/payment-links/${id}/send`,
+    CURRENCIES: `${SOFTPOS_API_BASE}/currencies`,
+    CURRENCIES_SELECT: `${SOFTPOS_API_BASE}/currencies/select`,
     
     PAYTABS: {
         GENERATE_QR: `${PAYTABS_API_BASE}/api/paytabs/generate-qr`,
@@ -123,6 +125,8 @@ export const SOFTPOS_ENDPOINTS = {
     MERCHANT_PARTNER_DETAILS: (id) => `${SOFTPOS_API_BASE}/v1/merchant/partners/${id}`,
     // Public POS invoice (external print page, encrypted ID)
     POS_INVOICE_PUBLIC: (token) => `${SOFTPOS_API_BASE}/pos/invoice/${token}`,
+    // Public payment-link invoice (external print page, UUID)
+    LINK_INVOICE_PUBLIC: (uuid) => `${SOFTPOS_API_BASE}/link-invoice/${uuid}`,
     
     // Settlements
     SETTLEMENTS_DATA: `${SOFTPOS_API_BASE}/v1/merchant/settlements/data`,
@@ -700,6 +704,10 @@ export const ADMIN_ENDPOINTS = {
     // Services (SoftPos — prefix `services`)
     SERVICES: `${SOFTPOS_API_BASE}/services`,
     SERVICES_CATALOG: `${SOFTPOS_API_BASE}/services/catalog`,
+    SERVICES_CATALOG_PREVIEW: `${SOFTPOS_API_BASE}/v2/admin/services/catalog`,
+    SERVICES_HOME_PREVIEW: `${SOFTPOS_API_BASE}/v2/admin/services/home`,
+    SERVICES_HOME_SCREEN_CONFIG: `${SOFTPOS_API_BASE}/services/home-screen-config`,
+    SERVICES_HOME_SCREEN_CONFIG_SEARCH: `${SOFTPOS_API_BASE}/services/home-screen-config/search`,
     SERVICES_SELECT: `${SOFTPOS_API_BASE}/services/select`,
     SERVICE_DETAILS: (id) => `${SOFTPOS_API_BASE}/services/${id}`,
     SERVICE_CREATE: `${SOFTPOS_API_BASE}/services`,

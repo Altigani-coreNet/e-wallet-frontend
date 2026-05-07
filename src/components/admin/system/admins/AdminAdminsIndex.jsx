@@ -87,14 +87,16 @@ const AdminAdminsIndex = () => {
             const response = await getAdminsData(params);
 
             if (response.success) {
-                setAdmins(response.data.data || []);
-                if (response.data.recordsTotal) {
-                    setPagination(prev => ({
-                        ...prev,
-                        total: response.data.recordsTotal,
-                        last_page: Math.ceil(response.data.recordsTotal / prev.per_page)
-                    }));
-                }
+                const { admins: rows, meta } = response.data;
+
+                setAdmins(rows || []);
+                setPagination(prev => ({
+                    ...prev,
+                    current_page: meta?.current_page || prev.current_page,
+                    per_page: meta?.per_page || prev.per_page,
+                    total: meta?.total || (rows ? rows.length : 0),
+                    last_page: meta?.last_page || 1
+                }));
             } else {
                 toast.error(response.error || 'Failed to fetch admins');
             }
@@ -136,6 +138,49 @@ const AdminAdminsIndex = () => {
         setPagination(prev => ({ ...prev, current_page: newPage }));
     };
 
+    const renderSkeletonRows = () => (
+        [...Array(8)].map((_, idx) => (
+            <tr key={idx}>
+                <td>
+                    <div className="form-check form-check-sm form-check-custom form-check-solid">
+                        <div className="skeleton w-16px h-16px bg-light rounded" />
+                    </div>
+                </td>
+                <td>
+                    <div className="d-flex align-items-center">
+                        <div className="symbol symbol-35px me-3">
+                            <div className="skeleton w-35px h-35px bg-light rounded-circle" />
+                        </div>
+                        <div>
+                            <div className="skeleton w-140px h-16px bg-light rounded mb-2" />
+                            <div className="skeleton w-90px h-12px bg-light rounded" />
+                        </div>
+                    </div>
+                </td>
+                <td><div className="skeleton w-180px h-16px bg-light rounded" /></td>
+                <td><div className="skeleton w-120px h-16px bg-light rounded" /></td>
+                <td>
+                    <div className="d-flex gap-1">
+                        <div className="skeleton w-50px h-22px bg-light rounded-pill" />
+                        <div className="skeleton w-55px h-22px bg-light rounded-pill" />
+                    </div>
+                </td>
+                <td><div className="skeleton w-60px h-22px bg-light rounded-pill" /></td>
+                <td>
+                    <div className="d-flex gap-1">
+                        <div className="skeleton w-70px h-22px bg-light rounded-pill" />
+                        <div className="skeleton w-45px h-22px bg-light rounded-pill" />
+                    </div>
+                </td>
+                <td><div className="skeleton w-95px h-22px bg-light rounded-pill" /></td>
+                <td><div className="skeleton w-110px h-16px bg-light rounded" /></td>
+                <td className="text-end">
+                    <div className="d-inline-block skeleton w-78px h-32px bg-light rounded" />
+                </td>
+            </tr>
+        ))
+    );
+
     return (
         <>
                 
@@ -163,19 +208,25 @@ const AdminAdminsIndex = () => {
                 <div className="card">
                     <div className="card-header border-0 pt-6">
                         <div className="card-title">
-                            <div className="d-flex align-items-center position-relative my-1">
-                                <i className="ki-duotone ki-magnifier fs-3 position-absolute ms-5">
-                                    <span className="path1"></span>
-                                    <span className="path2"></span>
-                                </i>
-                                <input
-                                    type="text"
-                                    className="form-control form-control-solid w-250px ps-13"
-                                    placeholder="Search Admins"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
+                            {loading ? (
+                                <div className="d-flex align-items-center my-1">
+                                    <div className="skeleton w-250px h-40px bg-light rounded" />
+                                </div>
+                            ) : (
+                                <div className="d-flex align-items-center position-relative my-1">
+                                    <i className="ki-duotone ki-magnifier fs-3 position-absolute ms-5">
+                                        <span className="path1"></span>
+                                        <span className="path2"></span>
+                                    </i>
+                                    <input
+                                        type="text"
+                                        className="form-control form-control-solid w-250px ps-13"
+                                        placeholder="Search Admins"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -204,11 +255,7 @@ const AdminAdminsIndex = () => {
                                 </thead>
                                 <tbody className="fw-semibold text-gray-600">
                                     {loading ? (
-                                        <tr><td colSpan="10" className="text-center py-5">
-                                            <div className="spinner-border text-primary" role="status">
-                                                <span className="visually-hidden">Loading...</span>
-                                            </div>
-                                        </td></tr>
+                                        renderSkeletonRows()
                                     ) : admins.length === 0 ? (
                                         <tr><td colSpan="10" className="text-center py-5">No admins found</td></tr>
                                     ) : (

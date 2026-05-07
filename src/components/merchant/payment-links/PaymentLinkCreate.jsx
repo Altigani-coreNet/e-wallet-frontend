@@ -10,6 +10,7 @@ const PaymentLinkCreate = () => {
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [validationErrors, setValidationErrors] = useState({});
 
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
@@ -43,6 +44,7 @@ const PaymentLinkCreate = () => {
     const handleSubmit = async (formData) => {
         setLoading(true);
         setError(null);
+        setValidationErrors({});
 
         try {
             const response = await createPaymentLink(formData);
@@ -57,12 +59,17 @@ const PaymentLinkCreate = () => {
                 });
                 navigate('/merchant/payment-links');
             } else {
-                setError(response.error || 'Failed to create payment link');
-                Swal.fire('Error!', response.error || 'Failed to create payment link.', 'error');
+                const message = response.error || response.message || 'Failed to create payment link';
+                setError(message);
+                if (response.errors) setValidationErrors(response.errors);
+                Swal.fire('Error!', message, 'error');
             }
         } catch (err) {
-            setError('An unexpected error occurred');
-            Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+            const apiErrors = err?.response?.data?.errors || {};
+            const message = err?.response?.data?.message || 'An unexpected error occurred';
+            setValidationErrors(apiErrors);
+            setError(message);
+            Swal.fire('Error!', message, 'error');
         } finally {
             setLoading(false);
         }
@@ -75,6 +82,7 @@ const PaymentLinkCreate = () => {
                 onSubmit={handleSubmit}
                 loading={loading}
                 error={error}
+                validationErrors={validationErrors}
             />
         </div>
     );

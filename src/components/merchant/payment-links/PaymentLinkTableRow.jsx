@@ -15,6 +15,8 @@ const PaymentLinkTableRow = ({
     const navigate = useNavigate();
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
+    const triggerRef = useRef(null);
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
     const canView = useCan('pos.payment_links.view');
     const canEdit = useCan('pos.payment_links.edit');
     const canDelete = useCan('pos.payment_links.delete');
@@ -39,6 +41,31 @@ const PaymentLinkTableRow = ({
     const toggleDropdown = () => {
         setShowDropdown(!showDropdown);
     };
+
+    const updateDropdownPosition = () => {
+        if (!triggerRef.current) return;
+        const rect = triggerRef.current.getBoundingClientRect();
+        const menuWidth = 220; // close to w-200px + padding
+        const viewportPadding = 12;
+        const left = Math.min(
+            Math.max(viewportPadding, rect.right - menuWidth),
+            window.innerWidth - menuWidth - viewportPadding
+        );
+        const top = rect.bottom + 8;
+        setDropdownPos({ top, left });
+    };
+
+    useEffect(() => {
+        if (!showDropdown) return;
+        updateDropdownPosition();
+        const onReposition = () => updateDropdownPosition();
+        window.addEventListener('resize', onReposition);
+        window.addEventListener('scroll', onReposition, true);
+        return () => {
+            window.removeEventListener('resize', onReposition);
+            window.removeEventListener('scroll', onReposition, true);
+        };
+    }, [showDropdown]);
 
     const handleDelete = async () => {
         setShowDropdown(false);
@@ -127,7 +154,7 @@ const PaymentLinkTableRow = ({
     };
 
     const getPaymentLinkUrl = () => {
-        return `${window.location.origin}/payment/${paymentLink.uuid}`;
+        return `${window.location.origin}/payments/${paymentLink.uuid}`;
     };
 
     const handleCopyLink = () => {
@@ -211,6 +238,7 @@ const PaymentLinkTableRow = ({
             <td className="text-end">
                 <div className="position-relative" ref={dropdownRef}>
                     <button
+                        ref={triggerRef}
                         type="button"
                         className="btn btn-sm btn-icon btn-light btn-active-light-primary"
                         onClick={toggleDropdown}
@@ -226,11 +254,10 @@ const PaymentLinkTableRow = ({
                         <div 
                             className="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4 show" 
                             style={{
-                                position: 'absolute',
-                                right: 0,
-                                top: '100%',
-                                zIndex: 105,
-                                marginTop: '0.5rem'
+                                position: 'fixed',
+                                top: `${dropdownPos.top}px`,
+                                left: `${dropdownPos.left}px`,
+                                zIndex: 2000
                             }}
                         >
                             {canView && (

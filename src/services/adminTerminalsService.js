@@ -416,9 +416,12 @@ export const useAdminTerminals = (page, perPage, filters) => {
     return useQuery({
         queryKey: ['admin-terminals', page, perPage, filters],
         queryFn: () => fetchAdminTerminals({ page, perPage, filters }),
-        staleTime: 30 * 1000, // 30 seconds
-        cacheTime: 5 * 60 * 1000, // 5 minutes
-        keepPreviousData: true
+        staleTime: 0,
+        cacheTime: 0,
+        keepPreviousData: false,
+        refetchOnMount: 'always',
+        refetchOnWindowFocus: true,
+        refetchOnReconnect: true
     });
 };
 

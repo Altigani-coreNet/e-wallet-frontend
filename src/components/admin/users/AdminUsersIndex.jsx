@@ -281,7 +281,7 @@ const AdminUsersIndex = () => {
             if (isSuccess) {
                 // Update local state instead of refetching
                 setUsers(users.map(user => 
-                    user.id === id ? { ...user, status: 'active' } : user
+                    user.id === id ? { ...user, status: 1, is_active: true } : user
                 ));
                 toast.success('User activated successfully');
             }
@@ -308,7 +308,7 @@ const AdminUsersIndex = () => {
             if (isSuccess) {
                 // Update local state instead of refetching
                 setUsers(users.map(user => 
-                    user.id === id ? { ...user, status: 'inactive' } : user
+                    user.id === id ? { ...user, status: 0, is_active: false } : user
                 ));
                 toast.success('User deactivated successfully');
             }

@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { useToolbar } from '../../../contexts/ToolbarContext';
-import { ADMIN_ENDPOINTS, ADMIN_SYSTEM_ENDPOINTS, AUTH_SERVICE_BASE } from '../../../utils/constants';
+import { ADMIN_ENDPOINTS, AUTH_SERVICE_BASE } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { fetchProductsByService, deleteProduct, toggleProductStatus } from '../../../services/serviceProductsService';
 import ServiceProductModel from '../../../services/ServiceProductModel';
@@ -18,7 +18,6 @@ const ServiceShow = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [loadingProducts, setLoadingProducts] = useState(false);
-    const [loadingCountry, setLoadingCountry] = useState(false);
 
     const resolveImageUrl = (path) => {
         if (!path) return '';
@@ -137,7 +136,11 @@ const ServiceShow = () => {
                 const serviceData = response.data.data || response.data;
                 const serviceModel = new ServiceModel(serviceData);
                 setService(serviceModel);
-                setCountryDetails(null);
+                setCountryDetails(
+                    serviceData?.country && typeof serviceData.country === 'object'
+                        ? serviceData.country
+                        : null
+                );
                 
                 // Always fetch products from products endpoint to get complete fields (name/forms_count/status).
                 loadProducts(serviceData.id);
@@ -153,37 +156,6 @@ const ServiceShow = () => {
             setLoading(false);
         }
     };
-
-    const loadCountryDetails = async (countryId) => {
-        if (!countryId) {
-            setCountryDetails(null);
-            return;
-        }
-        try {
-            setLoadingCountry(true);
-            const response = await axios.get(ADMIN_SYSTEM_ENDPOINTS.COUNTRY_DETAILS(countryId), {
-                headers: {
-                    Authorization: `Bearer ${getToken()}`,
-                    Accept: 'application/json',
-                },
-            });
-            const payload = response.data?.data || response.data;
-            // common API shapes: {success:true,data:{...}} OR {status:true,data:{...}}
-            const country = payload?.data || payload;
-            setCountryDetails(country && typeof country === 'object' ? country : null);
-        } catch (error) {
-            console.error('Error loading country:', error);
-            setCountryDetails(null);
-        } finally {
-            setLoadingCountry(false);
-        }
-    };
-
-    useEffect(() => {
-        if (!service?.country_id) return;
-        loadCountryDetails(service.country_id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [service?.country_id]);
 
     const loadProducts = async (serviceUuid = null) => {
         const targetServiceId = serviceUuid || service?.id;
@@ -359,7 +331,7 @@ const ServiceShow = () => {
                                         />
                                     )}
                                     <span className="fw-bold">
-                                        {loadingCountry ? 'Loading…' : countryName}
+                                        {countryName}
                                     </span>
                                 </div>
                             </div>

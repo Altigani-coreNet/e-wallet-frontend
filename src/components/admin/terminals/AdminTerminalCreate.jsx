@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import Swal from 'sweetalert2';
 import AdminTerminalForm from './AdminTerminalForm';
@@ -7,6 +8,7 @@ import { createAdminTerminal } from '../../../services/adminTerminalsService';
 
 const AdminTerminalCreate = () => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [loading, setLoading] = useState(false);
 
@@ -42,6 +44,7 @@ const AdminTerminalCreate = () => {
             const response = await createAdminTerminal(formData);
             
             if (response.success) {
+                await queryClient.invalidateQueries({ queryKey: ['admin-terminals'] });
                 await Swal.fire({
                     title: 'Success!',
                     text: 'Terminal created successfully.',

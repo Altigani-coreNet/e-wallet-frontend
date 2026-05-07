@@ -140,10 +140,15 @@ const AdminMerchantView = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                const merchantData = response.data.data.merchant || response.data.data;
-                setMerchant(merchantData);
-                setProfileCompletion(calculateProfileCompletion(merchantData));
-                setPendingChangeRequests(response.data.data.pending_change_requests || 0);
+                const merchantData = response.data.data?.merchant || response.data.data;
+                const mergedMerchant = {
+                    ...(merchantData || {}),
+                    user: merchantData?.user || null,
+                };
+                setMerchant(mergedMerchant);
+                setProfileCompletion(calculateProfileCompletion(mergedMerchant));
+                setPendingChangeRequests(0);
+                setTabData(prev => ({ ...prev, events: merchantData?.events || [] }));
             }
         } catch (error) {
             toast.error('Failed to load merchant details');
@@ -170,8 +175,7 @@ const AdminMerchantView = () => {
                     endpoint = `${ADMIN_ENDPOINTS.USERS}?merchant_id=${id}`;
                     break;
                 case 'events':
-                    // Events are already loaded with merchant (logs)
-                    setTabData(prev => ({ ...prev, events: merchant.logs || [] }));
+                    setTabData(prev => ({ ...prev, events: merchant?.events || [] }));
                     setTabLoading(false);
                     return;
                 case 'attachments':
@@ -228,14 +232,14 @@ const AdminMerchantView = () => {
         }
     };
 
-    const getCountryName = (country) => {
-        if (!country) return 'N/A';
-        return country.name?.en || country.name || 'N/A';
+    const getCountryName = (merchant) => {
+        if (!merchant) return 'N/A';
+        return merchant.country_name || merchant.country?.name?.en || merchant.country?.name || 'N/A';
     };
 
-    const getCityName = (city) => {
-        if (!city) return 'N/A';
-        return city.name?.en || city.name || 'N/A';
+    const getCityName = (merchant) => {
+        if (!merchant) return 'N/A';
+        return merchant.city_name || merchant.city?.name?.en || merchant.city?.name || 'N/A';
     };
 
     const fetchScopes = async () => {
@@ -1048,14 +1052,14 @@ const AdminMerchantView = () => {
                                         <div className="row mb-7">
                                             <label className="col-lg-4 fw-bold text-muted">Country</label>
                                             <div className="col-lg-8">
-                                                <span className="fs-6 text-gray-800">{getCountryName(merchant.country)}</span>
+                                                <span className="fs-6 text-gray-800">{getCountryName(merchant)}</span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
                                             <label className="col-lg-4 fw-bold text-muted">City</label>
                                             <div className="col-lg-8">
-                                                <span className="fs-6 text-gray-800">{getCityName(merchant.city)}</span>
+                                                <span className="fs-6 text-gray-800">{getCityName(merchant)}</span>
                                             </div>
                                         </div>
 
@@ -1075,14 +1079,12 @@ const AdminMerchantView = () => {
                                             </div>
                                         )}
 
-                                        {merchant.tax_number && (
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-bold text-muted">Tax Number</label>
-                                                <div className="col-lg-8">
-                                                    <span className="fs-6 text-gray-800">{merchant.tax_number}</span>
-                                                </div>
+                                        <div className="row mb-7">
+                                            <label className="col-lg-4 fw-bold text-muted">Tax Number</label>
+                                            <div className="col-lg-8">
+                                                <span className="fs-6 text-gray-800">{merchant.tax_number || 'N/A'}</span>
                                             </div>
-                                        )}
+                                        </div>
 
                                         <div className="row mb-7">
                                             <label className="col-lg-4 fw-bold text-muted">Scopes</label>
@@ -1125,7 +1127,7 @@ const AdminMerchantView = () => {
                                         </div>
 
                                     <div className="card-body p-9">
-                                        <div className="row mb-7">
+                                        <div className="row mb-7">  
                                             <label className="col-lg-4 fw-bold text-muted">Full Name</label>
                                             <div className="col-lg-8">
                                                 <span className="fs-6 text-gray-800">{merchant.user?.name || 'N/A'}</span>
@@ -1183,15 +1185,15 @@ const AdminMerchantView = () => {
                                             <h3 className="card-title align-items-start flex-column">
                                                 <span className="fw-bolder mb-2 text-dark">Events</span>
                                                 <span className="text-muted fw-bold fs-7">
-                                                    {merchant.logs?.length || 0} recent events
+                                                    {tabData.events?.length || 0} recent events
                                                 </span>
                                             </h3>
                                         </div>
 
                                         <div className="card-body pt-5">
                                             <div className="timeline-label">
-                                                {merchant.logs && merchant.logs.length > 0 ? (
-                                                    merchant.logs.slice(0, 5).map((event, index) => (
+                                                {tabData.events && tabData.events.length > 0 ? (
+                                                    tabData.events.slice(0, 5).map((event, index) => (
                                                         <div key={index} className="timeline-item mb-5">
                                                             <div className="timeline-label fw-bolder text-gray-800 fs-6" style={{ width: '100px' }}>
                                                                 {new Date(event.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -1246,9 +1248,9 @@ const AdminMerchantView = () => {
                         <div className="card-body">
                             {tabLoading ? (
                                 <LoadingSkeleton />
-                            ) : merchant.logs && merchant.logs.length > 0 ? (
+                            ) : tabData.events && tabData.events.length > 0 ? (
                                 <div className="timeline-label">
-                                    {merchant.logs.map((event, index) => (
+                                    {tabData.events.map((event, index) => (
                                         <div key={index} className="timeline-item mb-8">
                                             <div className="timeline-label fw-bolder text-gray-800 fs-6" style={{ width: '150px' }}>
                                                 {new Date(event.created_at).toLocaleDateString()}<br/>

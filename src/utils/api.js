@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { APP_CONFIG } from './constants';
 import { isSoftPosAdminJwtRoute } from './softposAdminRoutes';
+import { showApiWarningToast } from './apiWarnings';
 
 /**
  * Controls whether `apiClient` treats HTTP 401 as “session dead” (clear token + `unauthorized` → login redirect).
@@ -274,7 +275,10 @@ apiClient.interceptors.request.use(
 
 // Response interceptor to handle errors globally
 apiClient.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        showApiWarningToast(response);
+        return response;
+    },
     (error) => {
         if (error.response) {
             // Handle 401 Unauthorized (align with global axios: never logout on auth endpoints / login pages)

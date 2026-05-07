@@ -31,6 +31,7 @@ import ResetPasswordFromEmail from './components/auth/merchant/ResetPasswordFrom
 import MainLayout from './components/layout/MainLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import PermissionRoute from './components/common/PermissionRoute';
+import { USER_GROUP_EDIT_PERMISSIONS } from './utils/permissions';
 
 // Public Pages
 import LandingPage from './pages/LandingPage';
@@ -320,6 +321,7 @@ import PgServiceCreate from './pages/payment-getway/ServiceCreate';
 import PgServiceEdit from './pages/payment-getway/ServiceEdit';
 import PgServiceWizard from './pages/payment-getway/ServiceWizard';
 import PgServiceShow from './pages/payment-getway/services/ServiceShow';
+import HomeScreenServicesConfigPage from './pages/payment-getway/services/HomeScreenServicesConfigPage';
 import PgServiceProducts from './pages/payment-getway/products/ServiceProducts';
 import PgGatewayProductsIndex from './pages/payment-getway/products/Products';
 import PgGatewayProductCreate from './pages/payment-getway/products/ProductCreate';
@@ -728,6 +730,8 @@ function App() {
             <Route path="/invoice/:id" element={<AdminInvoicePrint />} />
             {/* SoftPOS card transaction invoice (POS device) */}
             <Route path="/pos-invoice/:id" element={<PosInvoicePrint />} />
+            {/* Payment-link invoice by UUID */}
+            <Route path="/link-invoice/:uuid" element={<PosInvoicePrint />} />
 
             {/* Admin Protected Routes */}
                 <Route path="/admin" element={
@@ -769,6 +773,7 @@ function App() {
                     <Route path="services/:id/edit" element={<PgServiceEdit />} />
                     <Route path="services/:id/products" element={<PgServiceProducts />} />
                     <Route path="services/:id" element={<PgServiceShow />} />
+                    <Route path="services/home-config" element={<HomeScreenServicesConfigPage />} />
                     <Route path="services" element={<PgServicesPage />} />
 
                     <Route path="service-products/create" element={<PgGatewayProductCreate />} />
@@ -915,7 +920,7 @@ function App() {
                         </PermissionRoute>
                     } />
                     <Route path="user-groups/:id/edit" element={
-                        <PermissionRoute anyOf={['pos.users_groups.edit', 'pos.user_groups.edit_users_group']}>
+                        <PermissionRoute anyOf={USER_GROUP_EDIT_PERMISSIONS}>
                             <AdminUserGroupEdit />
                         </PermissionRoute>
                     } />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { getToken } from '../../../utils/api';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
@@ -14,6 +14,7 @@ const CustomUserGroupSelector = ({
     const [loading, setLoading] = useState(false);
     const [apiLoading, setApiLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const previousMerchantIdRef = useRef(undefined);
 
     // Load user groups on component mount and when merchant changes
     useEffect(() => {
@@ -134,10 +135,20 @@ const CustomUserGroupSelector = ({
         }
     };
 
-    // Reset selection when merchant changes
+    // Reset selection only when merchant actually changes (e.g. user picks another merchant).
+    // Do not clear on first mount — edit forms hydrate user_group_ids from the API and this
+    // effect was wiping them and blocking submit/PUT.
     useEffect(() => {
-        onUserGroupChange([]);
-    }, [merchantId]);
+        const prev = previousMerchantIdRef.current;
+        if (prev === undefined) {
+            previousMerchantIdRef.current = merchantId;
+            return;
+        }
+        if (prev !== merchantId) {
+            previousMerchantIdRef.current = merchantId;
+            onUserGroupChange([]);
+        }
+    }, [merchantId]); // eslint-disable-line react-hooks/exhaustive-deps -- only merchantId should trigger reset
 
     if (!merchantId) {
         return (

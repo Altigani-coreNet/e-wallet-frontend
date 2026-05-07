@@ -1,0 +1,205 @@
+.ps-page {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 16px;
+    background:
+        radial-gradient(circle at 50% -10%, rgba(35, 162, 109, 0.34) 0%, rgba(35, 162, 109, 0.16) 28%, rgba(35, 162, 109, 0.04) 52%, rgba(35, 162, 109, 0) 72%),
+        radial-gradient(circle at 50% 0%, #ecfff5 0%, #f2fff8 28%, #f6f9fc 60%, #eef1f6 100%);
+    font-family: 'Poppins', 'Inter', sans-serif;
+}
+
+.ps-receipt-card {
+    width: min(100%, 520px);
+    background: #ffffff;
+    box-shadow: 0 13px 40px rgba(170, 170, 170, 0.12);
+    border-radius: 30px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.ps-header {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.ps-success-icon {
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    background: rgba(35, 162, 109, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #23a26d;
+}
+
+.ps-header-text {
+    width: 100%;
+    text-align: center;
+}
+
+.ps-header-text h1 {
+    margin: 0;
+    color: #474747;
+    font-size: 26px;
+    font-weight: 500;
+}
+
+.ps-header-text h2 {
+    margin: 6px 0 4px;
+    color: #121212;
+    font-size: 34px;
+    font-weight: 700;
+}
+
+.ps-header-text p {
+    margin: 0;
+    font-size: 14px;
+    color: #6e6e6e;
+}
+
+.ps-line {
+    width: 100%;
+    border-top: 1.7px solid #ededed;
+}
+
+.ps-dash {
+    width: 100%;
+    border-top: 1.7px dashed #ededed;
+}
+
+.ps-details,
+.ps-amounts {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ps-detail-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align-items: center;
+}
+
+.ps-detail-row span {
+    color: #707070;
+    font-size: 16px;
+}
+
+.ps-detail-row strong {
+    color: #121212;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: right;
+    max-width: 50%;
+    word-break: break-word;
+}
+
+.ps-qr-block {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid #eceef4;
+    border-radius: 18px;
+    background: #fafbff;
+}
+
+.ps-qr-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #3b3b3b;
+    font-weight: 600;
+}
+
+.ps-qr-image {
+    width: 150px;
+    height: 150px;
+    object-fit: contain;
+    border-radius: 10px;
+    background: #fff;
+    padding: 8px;
+}
+
+.ps-qr-block small {
+    color: #7a7a7a;
+}
+
+.ps-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.ps-btn {
+    height: 42px;
+    border-radius: 10px;
+    border: none;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.ps-btn-light {
+    background: #f3f5f9;
+    color: #232323;
+}
+
+.ps-btn-primary {
+    background: #23a26d;
+    color: #fff;
+}
+
+@media (max-width: 640px) {
+    .ps-page {
+        padding: 24px 12px;
+    }
+
+    .ps-receipt-card {
+        border-radius: 22px;
+        padding: 24px 18px;
+    }
+
+    .ps-header-text h1 {
+        font-size: 24px;
+    }
+
+    .ps-header-text h2 {
+        font-size: 32px;
+    }
+
+    .ps-detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .ps-detail-row strong {
+        max-width: 100%;
+        text-align: left;
+    }
+
+    .ps-actions {
+        grid-template-columns: 1fr;
+    }
+}

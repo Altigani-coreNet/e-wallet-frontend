@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
@@ -8,6 +9,7 @@ import { useAdminTerminal, updateAdminTerminal } from '../../../services/adminTe
 
 const AdminTerminalEdit = () => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const { id } = useParams();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [loading, setLoading] = useState(false);
@@ -58,6 +60,10 @@ const AdminTerminalEdit = () => {
             const response = await updateAdminTerminal(id, formData);
             
             if (response.success) {
+                await Promise.all([
+                    queryClient.invalidateQueries({ queryKey: ['admin-terminals'] }),
+                    queryClient.invalidateQueries({ queryKey: ['admin-terminal', id] })
+                ]);
                 await Swal.fire({
                     title: 'Success!',
                     text: 'Terminal updated successfully.',

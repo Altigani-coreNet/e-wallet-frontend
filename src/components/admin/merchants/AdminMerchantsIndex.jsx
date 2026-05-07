@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
+import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { useCan } from '../../../utils/permissions';
@@ -12,6 +12,7 @@ import MerchantTableRow from './MerchantTableRow';
 import MerchantImportModal from './MerchantImportModal';
 import BulkActionBar from '../../common/BulkActionBar';
 import MerchantRejectModal from './MerchantRejectModal';
+import { getMerchantsList } from '../../../services/adminMerchantsService';
 
 const PLACEHOLDER_ROWS = 6;
 
@@ -129,28 +130,16 @@ const AdminMerchantsIndex = () => {
     const fetchMerchants = async () => {
         setLoading(true);
         try {
-            const token = getToken();
             const params = {
                 page: pagination.current_page,
                 per_page: pagination.per_page,
                 ...filters
             };
 
-            const response = await axios.get(ADMIN_ENDPOINTS.MERCHANTS, {
-                params,
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            // Handle both 'success' and 'status' response formats
-            const isSuccess = response.data.success || response.data.status;
-            if (isSuccess) {
-                setMerchants(response.data.data.data || []);
-                setPagination({
-                    current_page: response.data.data.current_page,
-                    per_page: response.data.data.per_page,
-                    total: response.data.data.total,
-                    last_page: response.data.data.last_page
-                });
+            const { merchants: normalizedMerchants, pagination: paginationMeta } = await getMerchantsList(params);
+            setMerchants(normalizedMerchants);
+            if (paginationMeta) {
+                setPagination(paginationMeta);
             }
         } catch (error) {
             toast.error('Failed to load merchants');

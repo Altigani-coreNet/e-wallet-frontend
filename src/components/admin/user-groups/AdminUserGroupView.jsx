@@ -6,12 +6,14 @@ import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { getTranslatedText } from '../../../utils/helpers';
+import { useCan, USER_GROUP_EDIT_PERMISSIONS } from '../../../utils/permissions';
 import UserGroupViewSkeleton from './UserGroupViewSkeleton';
 
 const AdminUserGroupView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
+    const canEditUserGroup = useCan(USER_GROUP_EDIT_PERMISSIONS);
     const [userGroup, setUserGroup] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -19,13 +21,15 @@ const AdminUserGroupView = () => {
         setTitle('User Group Details');
         setActions(
             <div className="d-flex align-items-center gap-2">
-                <Link to={`/admin/user-groups/${id}/edit`} className="btn btn-sm btn-primary">
-                    <i className="ki-duotone ki-pencil fs-3">
-                        <span className="path1"></span>
-                        <span className="path2"></span>
-                    </i>
-                    Edit Group
-                </Link>
+                {canEditUserGroup && (
+                    <Link to={`/admin/user-groups/${id}/edit`} className="btn btn-sm btn-primary">
+                        <i className="ki-duotone ki-pencil fs-3">
+                            <span className="path1"></span>
+                            <span className="path2"></span>
+                        </i>
+                        Edit Group
+                    </Link>
+                )}
                 <Link to="/admin/user-groups" className="btn btn-sm btn-light">
                     <i className="ki-duotone ki-arrow-left fs-2">
                         <span className="path1"></span>
@@ -36,7 +40,7 @@ const AdminUserGroupView = () => {
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, id]);
+    }, [setTitle, setActions, id, canEditUserGroup]);
 
     useEffect(() => {
         fetchUserGroup();
@@ -368,16 +372,18 @@ const AdminUserGroupView = () => {
 
                             <div className="card-body border-top p-9">
                                 <div className="d-flex flex-column gap-5">
-                                    <Link 
-                                        to={`/admin/user-groups/${id}/edit`}
-                                        className="btn btn-primary"
-                                    >
-                                        <i className="ki-duotone ki-pencil fs-3 me-2">
-                                            <span className="path1"></span>
-                                            <span className="path2"></span>
-                                        </i>
-                                        Edit Group
-                                    </Link>
+                                    {canEditUserGroup && (
+                                        <Link 
+                                            to={`/admin/user-groups/${id}/edit`}
+                                            className="btn btn-primary"
+                                        >
+                                            <i className="ki-duotone ki-pencil fs-3 me-2">
+                                                <span className="path1"></span>
+                                                <span className="path2"></span>
+                                            </i>
+                                            Edit Group
+                                        </Link>
+                                    )}
 
                                     {userGroup.is_active ? (
                                         <button

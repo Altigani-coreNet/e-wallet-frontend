@@ -77,6 +77,8 @@ const AdminInvoicePrint = () => {
         });
     };
 
+    const merchantCode = invoice?.shop?.merchant_code || invoice?.merchant_code || 'N/A';
+
     if (loading) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh', background: '#f5f5f5' }}>
@@ -389,8 +391,8 @@ const AdminInvoicePrint = () => {
                             <span className="detail-value">{invoice.time || formatTime(invoice.created_at)}</span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Merchant ID:</span>
-                            <span className="detail-value">{invoice.shop?.merchant_code || invoice.merchant_id || 'N/A'}</span>
+                            <span className="detail-label">Merchant Code:</span>
+                            <span className="detail-value">{merchantCode}</span>
                         </div>
                         <div className="detail-row">
                             <span className="detail-label">Terminal ID:</span>
@@ -410,11 +412,15 @@ const AdminInvoicePrint = () => {
                                 {invoice.meta.map((metaItem, index) => (
                                     <div key={`meta-${index}`} className="detail-row">
                                         <span className="detail-label">
-                                            {(metaItem?.key || '').toString().replace(/_/g, ' ')}:
+                                            {(metaItem?.key || '').toString().toLowerCase() === 'mid'
+                                                ? 'merchant code'
+                                                : (metaItem?.key || '').toString().replace(/_/g, ' ')}:
                                         </span>
                                         <span className="detail-value">
                                             {metaItem?.value !== null && metaItem?.value !== undefined && metaItem?.value !== ''
-                                                ? metaItem.value.toString()
+                                                ? ((metaItem?.key || '').toString().toLowerCase() === 'mid'
+                                                    ? merchantCode
+                                                    : metaItem.value.toString())
                                                 : 'N/A'}
                                         </span>
                                     </div>
