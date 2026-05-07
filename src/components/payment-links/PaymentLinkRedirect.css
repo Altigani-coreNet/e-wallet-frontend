@@ -28,6 +28,44 @@
   color: #374151;
 }
 
+.pl-platform-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pl-platform-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 50%, #22c55e 130%);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.4px;
+  box-shadow: 0 10px 18px rgba(37, 99, 235, 0.2);
+}
+
+.pl-platform-text {
+  display: grid;
+  line-height: 1.1;
+}
+
+.pl-platform-text strong {
+  font-size: 16px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.pl-platform-text span {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+}
+
 .pl-merchant-pill em {
   background: #0b2f4f;
   color: #fff;
@@ -578,14 +616,90 @@
 @media (max-width: 980px) {
   .pl-checkout-page {
     background: #f7f7f7;
+    padding: 14px 12px;
   }
 
   .pl-checkout-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: 14px;
   }
 
-  .pl-product-amount {
-    font-size: 36px;
+  .pl-summary-panel,
+  .pl-summary-panel-loading {
+    display: none;
+  }
+
+  .pl-payment-panel,
+  .pl-form {
+    width: 100%;
+  }
+
+  .pl-form h4 {
+    font-size: 20px;
+  }
+
+  .pl-card-box,
+  .pl-wallet-box,
+  .pl-checkbox {
+    padding: 12px;
+  }
+
+  .pl-stripe-input {
+    padding-right: 72px;
+  }
+
+  .pl-card-icons {
+    right: 8px;
+    gap: 6px;
+  }
+
+  .pl-card-icon {
+    width: 24px;
+    height: 16px;
+  }
+
+  .pl-powered {
+    margin-top: 8px;
+    gap: 8px;
+  }
+
+  .pl-powered-top {
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .pl-powered-icons {
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .pl-powered-icon {
+    width: calc(33.333% - 8px);
+    min-width: 78px;
+    max-width: 112px;
+    height: 44px;
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 520px) {
+  .pl-form-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .pl-pay-btn,
+  .pl-cancel-btn {
+    width: 100%;
+    height: 44px;
+    font-size: 15px;
+  }
+
+  .pl-powered-icon {
+    width: calc(50% - 8px);
+    min-width: 120px;
+    height: 42px;
   }
 }

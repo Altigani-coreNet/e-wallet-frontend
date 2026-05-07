@@ -255,8 +255,12 @@ const CheckoutForm = ({ uuid, linkData, amount, currencySymbol, currencyCode, me
             <div className="pl-checkout-grid">
                 {/* ── Left: order summary ── */}
                 <aside className="pl-summary-panel">
-                    <div className="pl-merchant-pill">
-                        <span>{merchantName}</span>
+                    <div className="pl-platform-brand">
+                        <div className="pl-platform-logo" aria-hidden="true">FP</div>
+                        <div className="pl-platform-text">
+                            <strong>FastPay</strong>
+                            <span>Payment Platform</span>
+                        </div>
                         <em>Sandbox</em>
                     </div>
                     <div className="pl-product-title">{orderTitle}</div>
