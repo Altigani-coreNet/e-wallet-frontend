@@ -77,6 +77,41 @@
     gap: 10px;
 }
 
+.pe-reason-text {
+    margin: 8px 0 0;
+    font-weight: 500;
+    line-height: 1.45;
+}
+
+.pe-details {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 0;
+}
+
+.pe-detail-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    font-size: 14px;
+}
+
+.pe-detail-row span {
+    color: #707070;
+    flex-shrink: 0;
+}
+
+.pe-detail-row strong {
+    color: #121212;
+    font-weight: 600;
+    text-align: right;
+    word-break: break-word;
+}
+
 .pe-note {
     border: 1px solid #ffd9dc;
     background: #fff7f8;
@@ -135,6 +170,15 @@
 
     .pe-header-text h2 {
         font-size: 30px;
+    }
+
+    .pe-detail-row {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .pe-detail-row strong {
+        text-align: left;
     }
 
     .pe-actions {

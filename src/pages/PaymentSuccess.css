@@ -61,9 +61,10 @@
 }
 
 .ps-header-text p {
-    margin: 0;
+    margin: 12px 0 0;
     font-size: 14px;
     color: #6e6e6e;
+    line-height: 1.5;
 }
 
 .ps-line {

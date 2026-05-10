@@ -422,6 +422,7 @@ function App() {
                         <Route path="payments/error" element={<PaymentError />} />
                         <Route path="payment/success" element={<PaymentSuccess />} />
                         <Route path="payments/success" element={<PaymentSuccess />} />
+                        <Route path="payments" element={<PaymentLinkRedirect />} />
                         <Route path="payments/:uuid" element={<PaymentLinkRedirect />} />
 
                         {/* Protected Routes */}

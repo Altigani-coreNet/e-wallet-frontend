@@ -1,12 +1,21 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { CircleAlert, RotateCcw, Home } from 'lucide-react';
 import './PaymentError.css';
 
 const PaymentError = () => {
-    const { search } = useLocation();
-    const params = new URLSearchParams(search);
-    const reason = params.get('reason') || 'The payment could not be completed. Please try again.';
+    const [searchParams] = useSearchParams();
+    const reason = searchParams.get('reason') || 'The payment could not be completed.';
+    const amount = searchParams.get('amount') || '';
+    const currency = searchParams.get('currency') || '';
+
+    const formattedAmount =
+        amount !== '' && !Number.isNaN(Number(amount))
+            ? `${currency || 'USD'} ${Number(amount).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+              })}`
+            : '';
 
     return (
         <div className="pe-page">
@@ -18,7 +27,7 @@ const PaymentError = () => {
                     <div className="pe-header-text">
                         <h1>Payment Failed</h1>
                         <h2>Something went wrong</h2>
-                        <p>{reason}</p>
+                        <p>The payment could not be completed. Please try again.</p>
                     </div>
                 </div>
 
@@ -26,15 +35,24 @@ const PaymentError = () => {
 
                 <div className="pe-content">
                     <div className="pe-note">
-                        This can happen if the card is rejected, the payment link is expired, or the payment was interrupted.
+                        <strong>Details</strong>
+                        <p className="pe-reason-text">{reason}</p>
                     </div>
+                    {formattedAmount ? (
+                        <div className="pe-details">
+                            <div className="pe-detail-row">
+                                <span>Attempted amount</span>
+                                <strong>{formattedAmount}</strong>
+                            </div>
+                        </div>
+                    ) : null}
                     <div className="pe-note pe-note-muted">
                         Please verify details and try again from the payment link page.
                     </div>
                 </div>
 
                 <div className="pe-actions">
-                    <button className="pe-btn pe-btn-light" onClick={() => window.history.back()}>
+                    <button type="button" className="pe-btn pe-btn-light" onClick={() => window.history.back()}>
                         <RotateCcw size={16} />
                         Try Again
                     </button>
@@ -49,5 +67,3 @@ const PaymentError = () => {
 };
 
 export default PaymentError;
-
-

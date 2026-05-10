@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { loadStripe } from '@stripe/stripe-js';
 import {
@@ -42,12 +42,96 @@ const isPayableStatus = (status) => {
     return payable.has(status);
 };
 
+/** Resolve ISO currency code + display symbol from API (flat fields, currency_object, or legacy nested currency). */
+const resolveLinkCurrency = (linkData) => {
+    if (!linkData || typeof linkData !== 'object') {
+        return { currencyCode: 'USD', currencySymbol: '$' };
+    }
+    const obj =
+        linkData.currency_object && typeof linkData.currency_object === 'object'
+            ? linkData.currency_object
+            : null;
+    const nested =
+        linkData.currency &&
+        typeof linkData.currency === 'object' &&
+        !Array.isArray(linkData.currency)
+            ? linkData.currency
+            : null;
+
+    const rawCode =
+        linkData.currency_code ||
+        nested?.currency_code ||
+        obj?.currency_code ||
+        obj?.code ||
+        '';
+    const code = String(rawCode || 'USD')
+        .trim()
+        .toUpperCase();
+
+    const rawSym =
+        linkData.currency_symbol || nested?.currency_symbol || obj?.symbol || obj?.currency_symbol || '';
+    let symbol = String(rawSym || '').trim();
+    if (!symbol) {
+        symbol = code === 'USD' ? '$' : code;
+    }
+
+    return { currencyCode: code, currencySymbol: symbol };
+};
+
+/**
+ * Currency sent to Stripe (PaymentIntent + Payment Request). Must match SoftPos
+ * `App\Support\StripePaymentLinkCurrency`: Sudan (SDG/SUD) is charged as USD on Stripe for demo.
+ */
+const DISPLAY_CODES_CHARGED_AS_STRIPE_USD = new Set(['SDG', 'SUD']);
+
+const stripeSettlementCurrencyFromDisplay = (displayCode) => {
+    const c = String(displayCode || '').toUpperCase();
+    if (DISPLAY_CODES_CHARGED_AS_STRIPE_USD.has(c)) {
+        return 'usd';
+    }
+    const d = String(displayCode || 'USD').trim();
+    return d ? d.toLowerCase() : 'usd';
+};
+
 /* ─────────────────────────────────────────────────
    Inner form — must be rendered inside <Elements>
 ───────────────────────────────────────────────── */
+const parsePaymentMetadata = (raw) => {
+    if (!raw) return {};
+    if (typeof raw === 'string') {
+        try {
+            return JSON.parse(raw);
+        } catch {
+            return {};
+        }
+    }
+    return typeof raw === 'object' ? raw : {};
+};
+
 const CheckoutForm = ({ uuid, linkData, amount, currencySymbol, currencyCode, merchantName, orderTitle, notes }) => {
     const stripe   = useStripe();
     const elements = useElements();
+
+    const metadata = useMemo(() => parsePaymentMetadata(linkData?.metadata), [linkData?.metadata]);
+    const lineItems = useMemo(() => {
+        const raw = metadata.line_items;
+        return Array.isArray(raw) ? raw : [];
+    }, [metadata.line_items]);
+    const summarySubtotal = useMemo(() => {
+        if (metadata.subtotal != null && metadata.subtotal !== '') {
+            return Number(metadata.subtotal);
+        }
+        return lineItems.reduce(
+            (sum, item) => sum + (Number(item.price || 0) * Number(item.quantity ?? 1)) / 100,
+            0,
+        );
+    }, [metadata.subtotal, lineItems]);
+    const summaryTax = useMemo(() => {
+        if (metadata.tax_total != null && metadata.tax_total !== '') {
+            return Number(metadata.tax_total);
+        }
+        return 0;
+    }, [metadata.tax_total]);
 
     const [submitting, setSubmitting] = useState(false);
     const [cardName, setCardName]     = useState('');
@@ -60,7 +144,10 @@ const CheckoutForm = ({ uuid, linkData, amount, currencySymbol, currencyCode, me
             reason: message || 'Payment failed',
             uuid: uuid || '',
         });
-        window.location.assign(`/payment/error?${params.toString()}`);
+        if (amount != null && amount !== '') params.set('amount', String(amount));
+        if (currencyCode) params.set('currency', currencyCode);
+        if (merchantName) params.set('merchant', merchantName);
+        window.location.assign(`/payments/error?${params.toString()}`);
     };
 
     const displayAmount = `${currencyCode} ${Number(amount || 0).toLocaleString(undefined, {
@@ -69,6 +156,7 @@ const CheckoutForm = ({ uuid, linkData, amount, currencySymbol, currencyCode, me
     })}`;
     const formatMoney = (val) =>
         `${currencySymbol}${Number(val || 0).toFixed(2)} ${currencyCode}`;
+    const formatAmountShort = (val) => `${currencySymbol}${Number(val || 0).toFixed(2)}`;
 
     const onPayNow = async (e) => {
         e.preventDefault();
@@ -140,7 +228,7 @@ const CheckoutForm = ({ uuid, linkData, amount, currencySymbol, currencyCode, me
                     uuid: uuid || '',
                     intent: paymentIntent.id || '',
                 });
-                window.location.assign(`/payment/success?${successParams.toString()}`);
+                window.location.assign(`/payments/success?${successParams.toString()}`);
                 return;
             }
 
@@ -156,9 +244,11 @@ const CheckoutForm = ({ uuid, linkData, amount, currencySymbol, currencyCode, me
         if (!stripe) return;
         if (!amount || amount <= 0) return;
 
+        const stripeCurrency = stripeSettlementCurrencyFromDisplay(currencyCode);
+
         const pr = stripe.paymentRequest({
             country: 'US',
-            currency: String(currencyCode || 'USD').toLowerCase(),
+            currency: stripeCurrency,
             total: {
                 label: orderTitle || 'Total',
                 amount: Math.round(Number(amount) * 100),
@@ -224,7 +314,7 @@ const CheckoutForm = ({ uuid, linkData, amount, currencySymbol, currencyCode, me
                             uuid: uuid || '',
                             intent: pi2.id || '',
                         });
-                        window.location.assign(`/payment/success?${successParams.toString()}`);
+                        window.location.assign(`/payments/success?${successParams.toString()}`);
                         return;
                     }
                 }
@@ -238,7 +328,7 @@ const CheckoutForm = ({ uuid, linkData, amount, currencySymbol, currencyCode, me
                         uuid: uuid || '',
                         intent: paymentIntent.id || '',
                     });
-                    window.location.assign(`/payment/success?${successParams.toString()}`);
+                    window.location.assign(`/payments/success?${successParams.toString()}`);
                     return;
                 }
 
@@ -266,18 +356,42 @@ const CheckoutForm = ({ uuid, linkData, amount, currencySymbol, currencyCode, me
                     <div className="pl-product-title">{orderTitle}</div>
                     <div className="pl-product-amount">{displayAmount}</div>
                     {notes && <div className="pl-summary-note">{notes}</div>}
+
+                    {lineItems.length > 0 ? (
+                        <div className="pl-line-items" aria-label="Order items">
+                            <div className="pl-line-items-heading">Items</div>
+                            <ul className="pl-line-items-list">
+                                {lineItems.map((item, idx) => {
+                                    const qty = Number(item.quantity ?? 1);
+                                    const unitMinor = Number(item.price || 0);
+                                    const lineMajor = (unitMinor * qty) / 100;
+                                    return (
+                                        <li key={`${item.name || 'item'}-${idx}`} className="pl-line-item">
+                                            <div className="pl-line-item-main">
+                                                <span className="pl-line-item-name">{item.name || 'Item'}</span>
+                                                <span className="pl-line-item-qty">
+                                                    {qty} × {formatAmountShort(unitMinor / 100)}
+                                                </span>
+                                            </div>
+                                            <strong className="pl-line-item-total">{formatMoney(lineMajor)}</strong>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    ) : null}
+
                     <div className="pl-summary-meta">
                         <div className="pl-item-row">
                             <span>Subtotal</span>
-                            <strong>{formatMoney(amount)}</strong>
+                            <strong>{formatMoney(summarySubtotal)}</strong>
                         </div>
                         <div className="pl-item-row">
                             <span>Tax</span>
-                            <strong>{formatMoney(0)}</strong>
+                            <strong>{formatMoney(summaryTax)}</strong>
                         </div>
-                        <div className="pl-divider" />
                         <div className="pl-grand-row">
-                            <span>Total due</span>
+                            <span>Total</span>
                             <strong>{formatMoney(amount)}</strong>
                         </div>
                     </div>
@@ -355,10 +469,10 @@ const CheckoutForm = ({ uuid, linkData, amount, currencySymbol, currencyCode, me
                             />
                         </div>
 
-                        <label className="pl-checkbox">
+                        {/* <label className="pl-checkbox">
                             <input type="checkbox" defaultChecked />
                             <span>Save my information for faster checkout.</span>
-                        </label>
+                        </label> */}
 
                         <button type="submit" className="pl-pay-btn" disabled={submitting || !stripe}>
                             {submitting ? (
@@ -406,7 +520,10 @@ const CheckoutForm = ({ uuid, linkData, amount, currencySymbol, currencyCode, me
    Outer wrapper — loads link data, wraps in Elements
 ───────────────────────────────────────────────── */
 const PaymentLinkRedirect = () => {
-    const { uuid }        = useParams();
+    const { uuid: uuidFromPath } = useParams();
+    const [searchParams] = useSearchParams();
+    const uuid =
+        (uuidFromPath || searchParams.get('uuid') || searchParams.get('id') || '').trim();
     const [loading, setLoading]   = useState(true);
     const [linkData, setLinkData] = useState(null);
     const [linkUrl, setLinkUrl]   = useState('');
@@ -431,7 +548,7 @@ const PaymentLinkRedirect = () => {
                         ? `Payment link status is "${status}" and cannot be paid.`
                         : 'Payment link status is invalid.';
                     const params = new URLSearchParams({ reason, uuid: uuid || '' });
-                    window.location.assign(`/payment/error?${params.toString()}`);
+                    window.location.assign(`/payments/error?${params.toString()}`);
                     return;
                 }
 
@@ -442,16 +559,18 @@ const PaymentLinkRedirect = () => {
                     reason: err.message || 'Unable to load payment link.',
                     uuid: uuid || '',
                 });
-                window.location.assign(`/payment/error?${params.toString()}`);
+                window.location.assign(`/payments/error?${params.toString()}`);
             } finally {
                 setLoading(false);
             }
         })();
     }, [uuid]);
 
-    const amount         = useMemo(() => Number(linkData?.amount || 0), [linkData]);
-    const currencySymbol = linkData?.currency_symbol || '$';
-    const currencyCode   = linkData?.currency_code   || 'USD';
+    const amount = useMemo(() => Number(linkData?.amount || 0), [linkData]);
+    const { currencyCode, currencySymbol } = useMemo(
+        () => resolveLinkCurrency(linkData),
+        [linkData],
+    );
     const merchantName   = linkData?.merchant_name   || 'Merchant';
     const orderTitle     = linkData?.title           || 'Payment Link Checkout';
     const notes          = linkData?.description     || '';
@@ -476,7 +595,6 @@ const PaymentLinkRedirect = () => {
                                 <span className="pl-loader-line pl-loader-label-inline" />
                                 <strong className="pl-loader-line pl-loader-value-inline" />
                             </div>
-                            <div className="pl-divider" />
                             <div className="pl-grand-row">
                                 <span className="pl-loader-line pl-loader-label-inline" />
                                 <strong className="pl-loader-line pl-loader-value-inline" />

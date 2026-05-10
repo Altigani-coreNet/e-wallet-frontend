@@ -154,7 +154,7 @@ const PaymentLinkTableRow = ({
     };
 
     const getPaymentLinkUrl = () => {
-        return `${window.location.origin}/payments/${paymentLink.uuid}`;
+        return `${window.location.origin}/payments?uuid=${paymentLink.uuid}`;
     };
 
     const handleCopyLink = () => {
