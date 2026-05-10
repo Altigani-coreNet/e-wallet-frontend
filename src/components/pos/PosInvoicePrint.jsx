@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import QRCode from 'react-qr-code';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { SOFTPOS_ENDPOINTS } from '../../utils/constants';
 
@@ -266,12 +267,14 @@ const PosInvoicePrint = () => {
                     {/* QR Code Section */}
                     <div className="qr-section">
                         <div className="qr-title">Scan QR For E-Receipt</div>
-                        <div className="qr-code">
-                            <img
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-                                    invoice.invoice_url || window.location.href
-                                )}`}
-                                alt="Receipt QR Code"
+                        <div className="qr-code" role="img" aria-label="Receipt QR Code">
+                            <QRCode
+                                value={
+                                    invoice.invoice_url ||
+                                    (typeof window !== 'undefined' ? window.location.href : '')
+                                }
+                                size={200}
+                                level="M"
                             />
                         </div>
                         <div className="qr-instruction">
@@ -339,7 +342,7 @@ const PosInvoicePrint = () => {
                 .qr-section { text-align: center; padding-top: 10px; }
                 .qr-title { font-size: 13px; font-weight: 600; color: #000; margin-bottom: 12px; }
                 .qr-code { display: flex; justify-content: center; margin-bottom: 12px; }
-                .qr-code img { width: 160px; height: 160px; border: 1px solid #e0e0e0; }
+                .qr-code svg { width: 160px; height: 160px; border: 1px solid #e0e0e0; display: block; }
                 .qr-instruction { font-size: 12px; color: #666; }
                 .transaction-details-footer { margin-top: 15px; }
                 .transaction-details-title {

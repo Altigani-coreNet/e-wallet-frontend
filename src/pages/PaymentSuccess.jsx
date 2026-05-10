@@ -1,6 +1,7 @@
 import React, { useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Download, Home, QrCode } from 'lucide-react';
+import QRCode from 'react-qr-code';
 import html2pdf from 'html2pdf.js';
 import './PaymentSuccess.css';
 
@@ -13,6 +14,7 @@ const PaymentSuccess = () => {
     const currency = searchParams.get('currency') || 'USD';
     const method = searchParams.get('method') || 'Card';
     const intent = searchParams.get('intent') || searchParams.get('reference') || '';
+    const uuid = (searchParams.get('uuid') || '').trim();
 
     const formattedAmount = useMemo(() => {
         if (amount === '' || Number.isNaN(Number(amount))) return null;
@@ -22,16 +24,24 @@ const PaymentSuccess = () => {
         })}`;
     }, [amount, currency]);
 
-    const qrSrc = useMemo(() => {
+    /** Same-origin URL as this app — opens <Route path="/link-invoice/:uuid" /> (PosInvoicePrint). */
+    const invoicePageUrl = useMemo(() => {
+        if (!uuid || typeof window === 'undefined') return null;
+        const base = import.meta.env.VITE_PUBLIC_APP_URL?.replace(/\/$/, '') || window.location.origin;
+        return `${base}/link-invoice/${uuid}`;
+    }, [uuid]);
+
+    /** Payload encoded in the QR (invoice URL preferred; otherwise a short text summary). Rendered locally — no third-party QR image API. */
+    const qrPayload = useMemo(() => {
+        if (invoicePageUrl) return invoicePageUrl;
         const lines = [
             formattedAmount && `Amount: ${formattedAmount}`,
             method && `Method: ${method}`,
             intent && `Reference: ${intent}`,
         ].filter(Boolean);
         if (lines.length === 0) return null;
-        const data = lines.join('\n');
-        return `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=10&data=${encodeURIComponent(data)}`;
-    }, [formattedAmount, method, intent]);
+        return lines.join('\n');
+    }, [invoicePageUrl, formattedAmount, method, intent]);
 
     const onDownloadInvoice = async () => {
         if (!invoiceRef.current) return;
@@ -94,7 +104,7 @@ const PaymentSuccess = () => {
                     ) : null}
                 </div>
 
-                {qrSrc ? (
+                {qrPayload ? (
                     <>
                         <div className="ps-dash" />
                         <div className="ps-qr-block">
@@ -102,8 +112,19 @@ const PaymentSuccess = () => {
                                 <QrCode size={20} aria-hidden />
                                 Receipt QR
                             </div>
-                            <img className="ps-qr-image" src={qrSrc} alt="Receipt summary QR code" />
-                            <small>Scan to view a short summary of this payment.</small>
+                            <div className="ps-qr-image ps-qr-svg" role="img" aria-label="Receipt QR code">
+                                <QRCode value={qrPayload} size={180} level="M" />
+                            </div>
+                            <small>
+                                {invoicePageUrl
+                                    ? 'Scan to open your e-receipt in the browser.'
+                                    : 'Scan to view a short summary of this payment.'}
+                            </small>
+                            {invoicePageUrl ? (
+                                <a className="ps-qr-link" href={invoicePageUrl} target="_blank" rel="noopener noreferrer">
+                                    Open receipt
+                                </a>
+                            ) : null}
                         </div>
                     </>
                 ) : null}

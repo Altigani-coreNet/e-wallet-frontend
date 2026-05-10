@@ -136,8 +136,34 @@
     padding: 8px;
 }
 
+.ps-qr-svg {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.ps-qr-svg svg {
+    display: block;
+    width: 100%;
+    max-width: 180px;
+    height: auto;
+}
+
 .ps-qr-block small {
     color: #7a7a7a;
+}
+
+.ps-qr-link {
+    margin-top: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2563eb;
+    text-decoration: none;
+}
+
+.ps-qr-link:hover {
+    text-decoration: underline;
 }
 
 .ps-actions {
