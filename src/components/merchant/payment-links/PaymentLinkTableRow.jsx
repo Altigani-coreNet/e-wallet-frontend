@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { deletePaymentLink } from '../../../services/paymentLinksService';
 import Swal from 'sweetalert2';
 import { useCan } from '../../../utils/permissions';
@@ -12,7 +13,7 @@ const PaymentLinkTableRow = ({
     onReschedule,
     onSend
 }) => {
-    const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
     const triggerRef = useRef(null);
@@ -70,14 +71,14 @@ const PaymentLinkTableRow = ({
     const handleDelete = async () => {
         setShowDropdown(false);
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
+            title: t('merchant.paymentLinks.row.deleteConfirmTitle'),
+            text: t('merchant.paymentLinks.row.deleteConfirmText'),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('merchant.common.yesDelete'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (result.isConfirmed) {
@@ -85,18 +86,18 @@ const PaymentLinkTableRow = ({
                 const response = await deletePaymentLink(paymentLink.id);
                 if (response.success) {
                     await Swal.fire({
-                        title: 'Deleted!',
-                        text: 'Payment link has been deleted.',
+                        title: t('merchant.paymentLinks.row.deleteSuccessTitle'),
+                        text: t('merchant.paymentLinks.row.deleteSuccessText'),
                         icon: 'success',
                         timer: 2000,
                         showConfirmButton: false
                     });
                     onRefresh();
                 } else {
-                    Swal.fire('Error!', response.error || 'Failed to delete payment link.', 'error');
+                    Swal.fire(t('merchant.paymentLinks.row.deleteErrorTitle'), response.error || t('merchant.paymentLinks.row.deleteFailed'), 'error');
                 }
             } catch (error) {
-                Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+                Swal.fire(t('merchant.paymentLinks.row.deleteErrorTitle'), t('merchant.paymentLinks.unexpectedError'), 'error');
             }
         }
     };
@@ -111,16 +112,21 @@ const PaymentLinkTableRow = ({
         };
 
         const statusClass = statusClasses[status?.toLowerCase()] || 'badge-light-secondary';
+        const key = status?.toLowerCase();
+        const label = key
+            ? t(`merchant.paymentLinks.status.${key}`, { defaultValue: status.charAt(0).toUpperCase() + status.slice(1) })
+            : t('merchant.common.na');
         return (
             <span className={`badge ${statusClass}`}>
-                {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'N/A'}
+                {label}
             </span>
         );
     };
 
     const formatDate = (date) => {
-        if (!date) return 'N/A';
-        return new Date(date).toLocaleString('en-US', {
+        if (!date) return t('merchant.common.na');
+        const loc = (i18n.language || 'en').toLowerCase().startsWith('ar') ? 'ar-SA' : 'en-US';
+        return new Date(date).toLocaleString(loc, {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -137,13 +143,13 @@ const PaymentLinkTableRow = ({
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
         if (diffDays < 0) {
-            return 'Past due';
+            return t('merchant.paymentLinks.scheduled.pastDue');
         } else if (diffDays === 0) {
-            return 'Today';
+            return t('merchant.paymentLinks.scheduled.today');
         } else if (diffDays === 1) {
-            return 'Tomorrow';
+            return t('merchant.paymentLinks.scheduled.tomorrow');
         } else if (diffDays < 7) {
-            return `In ${diffDays} days`;
+            return t('merchant.paymentLinks.scheduled.inDays', { count: diffDays });
         } else {
             return formatDate(date);
         }
@@ -164,7 +170,7 @@ const PaymentLinkTableRow = ({
                 toast: true,
                 position: 'top-end',
                 icon: 'success',
-                title: 'Link copied to clipboard!',
+                title: t('merchant.paymentLinks.row.linkCopied'),
                 showConfirmButton: false,
                 timer: 2000
             });
@@ -190,14 +196,14 @@ const PaymentLinkTableRow = ({
             </td>
             <td>
                 <span className="text-gray-800 fw-bold">
-                    {paymentLink.uuid || 'N/A'}
+                    {paymentLink.uuid || t('merchant.common.na')}
                 </span>
             </td>
             <td>
                 <div className="d-flex align-items-center">
                     <div className="d-flex flex-column">
                         <span className="text-gray-800 text-hover-primary mb-1">
-                            {paymentLink.customer_name || 'N/A'}
+                            {paymentLink.customer_name || t('merchant.common.na')}
                         </span>
                         {paymentLink.customer_email && (
                             <span className="text-muted fs-7">
@@ -219,7 +225,7 @@ const PaymentLinkTableRow = ({
             </td>
             <td>
                 <span className="text-gray-600">
-                    {paymentLink.currency_code || 'N/A'}
+                    {paymentLink.currency_code || t('merchant.common.na')}
                 </span>
             </td>
             <td>
@@ -271,7 +277,7 @@ const PaymentLinkTableRow = ({
                                             <span className="path2"></span>
                                             <span className="path3"></span>
                                         </i>
-                                        View
+                                        {t('merchant.paymentLinks.row.view')}
                                     </Link>
                                 </div>
                             )}
@@ -285,7 +291,7 @@ const PaymentLinkTableRow = ({
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Edit
+                                        {t('merchant.paymentLinks.row.edit')}
                                     </Link>
                                 </div>
                             )}
@@ -298,7 +304,7 @@ const PaymentLinkTableRow = ({
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Copy Link
+                                    {t('merchant.paymentLinks.row.copyLink')}
                                 </button>
                             </div>
                             {canEdit && (
@@ -314,7 +320,7 @@ const PaymentLinkTableRow = ({
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Send
+                                        {t('merchant.paymentLinks.row.send')}
                                     </button>
                                 </div>
                             )}
@@ -331,7 +337,7 @@ const PaymentLinkTableRow = ({
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Reschedule
+                                        {t('merchant.paymentLinks.row.reschedule')}
                                     </button>
                                 </div>
                             )}
@@ -349,7 +355,7 @@ const PaymentLinkTableRow = ({
                                             <span className="path4"></span>
                                             <span className="path5"></span>
                                         </i>
-                                        Delete
+                                        {t('merchant.paymentLinks.row.delete')}
                                     </button>
                                 </div>
                             )}

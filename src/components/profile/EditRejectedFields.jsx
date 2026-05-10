@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getRejectedFields, updateRejectedFields } from '../../services/profileService';
 import { toast } from 'react-toastify';
 
@@ -9,6 +10,7 @@ import { toast } from 'react-toastify';
  * It fetches rejection details and displays only the rejected fields for editing.
  */
 const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
+    const { t, i18n } = useTranslation();
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [rejection, setRejection] = useState(null);
@@ -50,7 +52,7 @@ const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
             }
         } catch (error) {
             console.error('Failed to fetch rejected fields:', error);
-            toast.error('Failed to load rejection details. Please try again.');
+            toast.error(t('merchant.profile.toastLoadRejectionDetailsFailed'));
         } finally {
             setLoading(false);
         }
@@ -79,7 +81,7 @@ const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
             const response = await updateRejectedFields(formData, files);
 
             if (response.success) {
-                toast.success(response.message || 'Profile updated successfully!');
+                toast.success(response.message || t('merchant.profile.toastSubmitRejectedSuccess'));
                 if (onSuccess) onSuccess(response.data);
             }
         } catch (error) {
@@ -87,9 +89,9 @@ const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
             
             if (error.response?.data?.errors) {
                 setErrors(error.response.data.errors);
-                toast.error('Please fix the errors and try again.');
+                toast.error(t('merchant.profile.toastFixValidationErrors'));
             } else {
-                const errorMsg = error.response?.data?.message || 'Failed to update profile. Please try again.';
+                const errorMsg = error.response?.data?.message || t('merchant.profile.toastUpdateProfileGenericFailed');
                 toast.error(errorMsg);
             }
         } finally {
@@ -98,36 +100,20 @@ const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
     };
 
     const getFieldLabel = (field) => {
-        const labels = {
-            name: 'Merchant Name',
-            owner_name: 'Owner Name',
-            email: 'Email',
-            phone: 'Phone',
-            business_type: 'Business Type',
-            address: 'Address',
-            trade_license_number: 'Trade License Number',
-            tax_certified_number: 'Tax Number',
-            country_id: 'Country',
-            city_id: 'City',
-        };
-        return labels[field] || field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const key = `merchant.profile.rejectedFieldLabels.${field}`;
+        return i18n.exists(key) ? t(key) : field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
 
     const getAttachmentLabel = (attachment) => {
-        const labels = {
-            company_logo: 'Company Logo',
-            tax_certification: 'Tax Certificate',
-            trade_license: 'Trade License',
-            user_id_document: 'ID Document',
-        };
-        return labels[attachment] || attachment.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const key = `merchant.profile.attachments.${attachment}`;
+        return i18n.exists(key) ? t(key) : attachment.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     };
 
     if (loading) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
                 <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                    <span className="visually-hidden">{t('merchant.profile.loading')}</span>
                 </div>
             </div>
         );
@@ -144,8 +130,8 @@ const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
                             <span className="path3"></span>
                         </i>
                         <div className="d-flex flex-column">
-                            <h4 className="mb-1 text-warning">No Rejection Information</h4>
-                            <span>No rejection information found for this merchant.</span>
+                            <h4 className="mb-1 text-warning">{t('merchant.profile.noRejectionTitle')}</h4>
+                            <span>{t('merchant.profile.noRejectionDesc')}</span>
                         </div>
                     </div>
                 </div>
@@ -172,7 +158,7 @@ const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Cancel
+                                {t('merchant.profile.cancel')}
                             </button>
                         </div>
                     </div>
@@ -186,8 +172,8 @@ const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
                                 <span className="path3"></span>
                             </i>
                             <div className="d-flex flex-column">
-                                <h4 className="mb-1 text-danger">Rejection Reason</h4>
-                                <span>{rejection.rejection_reason || 'No reason provided'}</span>
+                                <h4 className="mb-1 text-danger">{t('merchant.profile.rejectionReason')}</h4>
+                                <span>{rejection.rejection_reason || t('merchant.profile.noReasonProvided')}</span>
                             </div>
                         </div>
 
@@ -195,7 +181,7 @@ const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
                             {/* Invalid Fields Section */}
                             {rejection.invalid_fields && rejection.invalid_fields.length > 0 && (
                                 <div className="mb-10">
-                                    <h3 className="fw-bolder mb-6">Rejected Fields</h3>
+                                    <h3 className="fw-bolder mb-6">{t('merchant.profile.rejectedFieldsSection')}</h3>
                                     
                                     {rejection.invalid_fields.map(field => (
                                         <div key={field} className="row mb-6">
@@ -234,7 +220,7 @@ const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
                             {/* Missing Attachments Section */}
                             {rejection.missing_attachments && rejection.missing_attachments.length > 0 && (
                                 <div className="mb-10">
-                                    <h3 className="fw-bolder mb-6">Missing Attachments</h3>
+                                    <h3 className="fw-bolder mb-6">{t('merchant.profile.missingAttachmentsSection')}</h3>
                                     
                                     {rejection.missing_attachments.map(attachment => (
                                         <div key={attachment} className="row mb-6">
@@ -254,7 +240,7 @@ const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
                                                 )}
                                                 {attachments[attachment.replace('_document', '').replace('certification', 'certificate')] && (
                                                     <div className="form-text">
-                                                        Current: {attachments[attachment.replace('_document', '').replace('certification', 'certificate')].split('/').pop()}
+                                                        {t('merchant.profile.currentFileLabel', { name: attachments[attachment.replace('_document', '').replace('certification', 'certificate')].split('/').pop() })}
                                                     </div>
                                                 )}
                                             </div>
@@ -270,7 +256,7 @@ const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
                                     className="btn btn-light btn-active-light-primary me-2"
                                     disabled={submitting}
                                 >
-                                    Cancel
+                                    {t('merchant.profile.cancel')}
                                 </button>
                                 <button
                                     type="submit"
@@ -280,10 +266,10 @@ const EditRejectedFields = ({ merchant, onSuccess, onCancel }) => {
                                     {submitting ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            Updating...
+                                            {t('merchant.profile.updating')}
                                         </>
                                     ) : (
-                                        'Update Profile'
+                                        t('merchant.profile.updateProfile')
                                     )}
                                 </button>
                             </div>

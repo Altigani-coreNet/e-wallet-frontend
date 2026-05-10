@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import AdminPaymentLinkTableRow from './AdminPaymentLinkTableRow';
 
 const AdminPaymentLinksTable = ({
@@ -10,6 +11,7 @@ const AdminPaymentLinksTable = ({
     onPerPageChange,
     referenceData = {},
 }) => {
+    const { t } = useTranslation();
     const { merchantsMap = {}, countriesMap = {} } = referenceData;
 
     useEffect(() => {
@@ -24,14 +26,14 @@ const AdminPaymentLinksTable = ({
         return (
             <div className="text-center py-5">
                 <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                    <span className="visually-hidden">{t('admin.common.loading')}</span>
                 </div>
             </div>
         );
     }
 
     if (error) {
-        const message = error?.response?.data?.message || error.message || 'Failed to load payment links';
+        const message = error?.response?.data?.message || error.message || t('admin.paymentLinksIndex.loadFailed');
         return (
             <div className="alert alert-danger" role="alert">
                 {message}
@@ -42,7 +44,7 @@ const AdminPaymentLinksTable = ({
     if (!paymentLinks || paymentLinks.length === 0) {
         return (
             <div className="text-center py-5">
-                <div className="text-gray-600">No payment links found.</div>
+                <div className="text-gray-600">{t('admin.paymentLinksIndex.noLinksFound')}</div>
             </div>
         );
     }
@@ -53,17 +55,17 @@ const AdminPaymentLinksTable = ({
                 <table className="table align-middle table-row-dashed fs-6 gy-5">
                     <thead>
                         <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                            <th>ID</th>
-                            <th>UUID</th>
-                            <th>Merchant</th>
-                            <th>Country</th>
-                            <th>Customer</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Created At</th>
-                            <th>Scheduled Date</th>
-                            <th>Expired Date</th>
-                            <th className="text-end min-w-100px">Actions</th>
+                            <th>{t('admin.paymentLinksIndex.id')}</th>
+                            <th>{t('admin.paymentLinksIndex.uuid')}</th>
+                            <th>{t('admin.paymentLinksIndex.merchant')}</th>
+                            <th>{t('admin.paymentLinksIndex.country')}</th>
+                            <th>{t('admin.paymentLinksIndex.customer')}</th>
+                            <th>{t('admin.paymentLinksIndex.amount')}</th>
+                            <th>{t('admin.paymentLinksIndex.status')}</th>
+                            <th>{t('admin.paymentLinksIndex.createdAt')}</th>
+                            <th>{t('admin.paymentLinksIndex.scheduledDate')}</th>
+                            <th>{t('admin.paymentLinksIndex.expiredDate')}</th>
+                            <th className="text-end min-w-100px">{t('admin.paymentLinksIndex.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="text-gray-600 fw-semibold">
@@ -97,9 +99,11 @@ const AdminPaymentLinksTable = ({
                         </label>
                     </div>
                     <div className="dataTables_info ms-3">
-                        Showing {paymentLinks.length > 0 ? ((pagination.current_page - 1) * pagination.per_page) + 1 : 0} to{' '}
-                        {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of{' '}
-                        {pagination.total} entries
+                        {t('admin.paymentLinksIndex.showingResults', {
+                            from: paymentLinks.length > 0 ? ((pagination.current_page - 1) * pagination.per_page) + 1 : 0,
+                            to: Math.min(pagination.current_page * pagination.per_page, pagination.total),
+                            total: pagination.total
+                        })}
                     </div>
                 </div>
                 <div className="col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end">

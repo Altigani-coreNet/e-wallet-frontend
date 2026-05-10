@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
     getWebhookEvents, 
@@ -51,11 +52,11 @@ const WebhookForm = () => {
                 setAvailableEvents(response.data.categories);
             } else {
                 console.error('Unexpected response structure:', response);
-                Swal.fire('Warning', 'Unexpected response format from server', 'warning');
+                Swal.fire(t('merchant.common.warning'), t('merchant.webhooks.form.unexpectedResponse'), 'warning');
             }
         } catch (error) {
             console.error('Error fetching events:', error);
-            Swal.fire('Error', 'Failed to load available events', 'error');
+            Swal.fire(t('merchant.common.error'), t('merchant.webhooks.form.loadEventsFailed'), 'error');
         } finally {
             setEventsLoading(false);
         }
@@ -78,7 +79,7 @@ const WebhookForm = () => {
             }
         } catch (error) {
             console.error('Error fetching webhook:', error);
-            Swal.fire('Error', 'Failed to load webhook', 'error');
+            Swal.fire(t('merchant.common.error'), t('merchant.webhooks.form.loadWebhookFailed'), 'error');
             navigate('/merchant/webhooks');
         } finally {
             setLoading(false);
@@ -133,7 +134,7 @@ const WebhookForm = () => {
         e.preventDefault();
 
         if (formData.event_ids.length === 0) {
-            Swal.fire('Error', 'Please select at least one event', 'error');
+            Swal.fire(t('merchant.common.error'), t('merchant.webhooks.form.selectOneEvent'), 'error');
             return;
         }
 
@@ -147,16 +148,16 @@ const WebhookForm = () => {
 
             // Check for both success and status fields
             if (response.success || response.status) {
-                const message = response.data?.message || response.message || 'Webhook saved successfully';
-                Swal.fire('Success', message, 'success');
+                const message = response.data?.message || response.message || t('merchant.webhooks.form.saveSuccess');
+                Swal.fire(t('merchant.common.success'), message, 'success');
                 navigate('/merchant/webhooks');
             } else {
-                throw new Error('Failed to save webhook');
+                throw new Error(t('merchant.webhooks.form.saveFailed'));
             }
         } catch (error) {
             console.error('Error saving webhook:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to save webhook';
-            Swal.fire('Error', errorMessage, 'error');
+            const errorMessage = error.response?.data?.message || error.message || t('merchant.webhooks.form.saveFailed');
+            Swal.fire(t('merchant.common.error'), errorMessage, 'error');
         } finally {
             setLoading(false);
         }
@@ -206,19 +207,19 @@ const WebhookForm = () => {
                             <input
                                 type="text"
                                 className="form-control"
-                                placeholder="Search events by name or description..."
+                                placeholder={t('merchant.webhooks.form.searchPlaceholder')}
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                             />
                         </div>
-                        <small className="text-muted">{formData.event_ids.length} selected</small>
+                        <small className="text-muted">{t('merchant.common.eventsSelected', { count: formData.event_ids.length })}</small>
                     </div>
                 </div>
 
                 {/* Results Count */}
                 <div className="results-count mb-3 p-2 bg-light rounded">
                     <small className="text-muted">
-                        Showing {filteredEvents.length} of {getAllEvents().length} events
+                        {t('merchant.common.eventsShowing', { filtered: filteredEvents.length, total: getAllEvents().length })}
                     </small>
                 </div>
 
@@ -226,7 +227,7 @@ const WebhookForm = () => {
                 {filteredEvents.length === 0 ? (
                     <div className="text-center py-4 text-muted">
                         <i className="fas fa-search fs-2x mb-2"></i>
-                        <p>No events found matching your criteria</p>
+                        <p>{t('merchant.webhooks.form.noEventsMatch')}</p>
                     </div>
                 ) : (
                     <div className="events-grid">
@@ -274,8 +275,8 @@ const WebhookForm = () => {
             return (
                 <div className="text-center py-5">
                     <i className="fas fa-bell-slash fa-3x text-muted mb-3"></i>
-                    <h5 className="text-muted">No events selected</h5>
-                    <p className="text-muted small">Switch to "All events" tab to select events</p>
+                    <h5 className="text-muted">{t('merchant.webhooks.form.noEventsSelected')}</h5>
+                    <p className="text-muted small">{t('merchant.webhooks.form.noEventsSelectedHint')}</p>
                 </div>
             );
         }
@@ -300,7 +301,7 @@ const WebhookForm = () => {
                                 <div className="d-flex align-items-center">
                                     <h6 className="mb-0 fw-bold text-dark">{category}</h6>
                                 </div>
-                                <span className="badge badge-primary">{events.length} events</span>
+                                <span className="badge badge-primary">{t('merchant.common.eventsInCategory', { count: events.length })}</span>
                             </div>
                         </div>
                         <div className="category-body">
@@ -310,7 +311,7 @@ const WebhookForm = () => {
                                         key={event.id}
                                         className="event-badge badge active"
                                         onClick={() => toggleEventSelection(event.id, event)}
-                                        title={`Click to remove: ${event.description}`}
+                                        title={t('merchant.webhooks.form.clickToRemoveTitle', { description: event.description })}
                                     >
                                         <div className="d-flex align-items-center gap-1">
                                             <code style={{ background: 'transparent', color: 'white', fontSize: '0.85rem' }}>
@@ -336,9 +337,9 @@ const WebhookForm = () => {
         <div className="container-fluid">
             <div className="row mb-4">
                 <div className="col-12">
-                    <h2>{isEditMode ? 'Edit Webhook' : 'Create Webhook'}</h2>
+                    <h2>{isEditMode ? t('merchant.webhooks.form.editTitle') : t('merchant.webhooks.form.createTitle')}</h2>
                     <p className="text-muted">
-                        Configure a webhook endpoint to receive real-time event notifications
+                        {t('merchant.webhooks.form.subtitle')}
                     </p>
                 </div>
             </div>
@@ -349,7 +350,7 @@ const WebhookForm = () => {
                         <div className="card mb-4">
                             <div className="card-body">
                                 <div className="mb-3">
-                                    <label htmlFor="name" className="form-label">Destination name *</label>
+                                    <label htmlFor="name" className="form-label">{t('merchant.webhooks.form.destinationName')}</label>
                                     <input
                                         type="text"
                                         className="form-control"
@@ -357,13 +358,13 @@ const WebhookForm = () => {
                                         name="name"
                                         value={formData.name}
                                         onChange={handleInputChange}
-                                        placeholder="e.g., Payments Web Hooks"
+                                        placeholder={t('merchant.webhooks.form.destinationPlaceholder')}
                                         required
                                     />
                                 </div>
 
                                 <div className="mb-3">
-                                    <label htmlFor="description" className="form-label">Description (optional)</label>
+                                    <label htmlFor="description" className="form-label">{t('merchant.webhooks.form.description')}</label>
                                     <textarea
                                         className="form-control"
                                         id="description"
@@ -371,12 +372,12 @@ const WebhookForm = () => {
                                         rows="3"
                                         value={formData.description}
                                         onChange={handleInputChange}
-                                        placeholder="Check The Meta Data For Payment And Update That In Our System"
+                                        placeholder={t('merchant.webhooks.form.descriptionPlaceholder')}
                                     />
                                 </div>
 
                                 <div className="mb-3">
-                                    <label htmlFor="endpoint_url" className="form-label">Endpoint URL *</label>
+                                    <label htmlFor="endpoint_url" className="form-label">{t('merchant.webhooks.form.endpointUrl')}</label>
                                     <input
                                         type="url"
                                         className="form-control"
@@ -399,7 +400,7 @@ const WebhookForm = () => {
                                         onChange={handleInputChange}
                                     />
                                     <label className="form-check-label" htmlFor="is_active">
-                                        Active
+                                        {t('merchant.webhooks.form.active')}
                                     </label>
                                 </div>
                             </div>
@@ -411,7 +412,7 @@ const WebhookForm = () => {
                             <div className="card-header bg-white border-bottom">
                                 <h5 className="mb-0 fw-bold text-dark">
                                     <i className="fas fa-bell me-2 text-primary"></i>
-                                    Events to send
+                                    {t('merchant.webhooks.form.eventsToSend')}
                                 </h5>
                             </div>
 
@@ -421,7 +422,7 @@ const WebhookForm = () => {
                                     <div className="d-flex align-items-center gap-3">
                                         <span className="badge badge-primary px-3 py-2" style={{ fontSize: '0.9rem' }}>
                                             <i className="fas fa-check-circle me-1"></i>
-                                            {formData.event_ids.length} selected
+                                            {t('merchant.common.eventsSelected', { count: formData.event_ids.length })}
                                         </span>
                                         <div className="d-flex gap-2">
                                             <button
@@ -430,7 +431,7 @@ const WebhookForm = () => {
                                                 onClick={selectAllEvents}
                                             >
                                                 <i className="fas fa-check-double me-1"></i>
-                                                Select all
+                                                {t('merchant.webhooks.form.selectAll')}
                                             </button>
                                             <button
                                                 type="button"
@@ -444,7 +445,7 @@ const WebhookForm = () => {
                                     </div>
                                     <p className="text-muted small mb-0">
                                         <i className="fas fa-info-circle me-1"></i>
-                                        Click on events to select/deselect them
+                                        {t('merchant.webhooks.form.eventsHint')}
                                     </p>
                                 </div>
                             </div>
@@ -462,7 +463,7 @@ const WebhookForm = () => {
                                         onClick={() => setActiveTab('selected')}
                                     >
                                         <i className="fas fa-check-circle me-2"></i>
-                                        Selected events
+                                        {t('merchant.webhooks.form.tabSelected')}
                                         <span className={`badge ms-2 ${
                                             activeTab === 'selected' ? 'badge-primary' : 'badge-secondary'
                                         }`}>
@@ -479,7 +480,7 @@ const WebhookForm = () => {
                                         onClick={() => setActiveTab('all')}
                                     >
                                         <i className="fas fa-list me-2"></i>
-                                        All events
+                                        {t('merchant.webhooks.form.tabAll')}
                                     </button>
                                 </div>
 
@@ -487,9 +488,9 @@ const WebhookForm = () => {
                                 {eventsLoading ? (
                                     <div className="text-center py-5">
                                         <div className="spinner-border text-primary" role="status">
-                                            <span className="sr-only">Loading...</span>
+                                            <span className="sr-only">{t('merchant.common.loading')}</span>
                                         </div>
-                                        <p className="text-muted mt-3">Loading events...</p>
+                                        <p className="text-muted mt-3">{t('merchant.webhooks.form.loadingEvents')}</p>
                                     </div>
                                 ) : (
                                     <div className="p-3" style={{ maxHeight: '800px', overflowY: 'auto' }}>
@@ -522,7 +523,7 @@ const WebhookForm = () => {
                                 className="btn btn-secondary"
                                 onClick={() => navigate('/merchant/webhooks')}
                             >
-                                Cancel
+                                {t('merchant.webhooks.form.cancel')}
                             </button>
                         </div>
                     </div>

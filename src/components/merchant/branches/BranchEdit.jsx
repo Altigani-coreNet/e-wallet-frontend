@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useBranchDetails, updateBranch } from '../../../services/branchesService';
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,6 +9,7 @@ import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import Swal from 'sweetalert2';
 
 const BranchEdit = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -24,12 +26,12 @@ const BranchEdit = () => {
     const branch = branchData?.data || branchData;
 
     useEffect(() => {
-        setTitle('Edit Branch');
+        setTitle(t('merchant.breadcrumbs.editBranch'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Branches', path: '/merchant/branches' },
-            { label: branch?.name || 'Edit Branch', path: `/merchant/branches/${id}/edit`, active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.branches'), path: '/merchant/branches' },
+            { label: branch?.name || t('merchant.breadcrumbs.editBranch'), path: `/merchant/branches/${id}/edit`, active: true }
         ]);
         
         setActions(
@@ -41,7 +43,7 @@ const BranchEdit = () => {
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back to View
+                {t('merchant.common.backToView')}
             </button>
         );
 
@@ -49,7 +51,7 @@ const BranchEdit = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions, navigate, id, branch?.name]);
+    }, [setTitle, setBreadcrumbs, setActions, navigate, id, branch?.name, t, i18n.language]);
 
     const handleSubmit = async (formData) => {
         setSubmitLoading(true);

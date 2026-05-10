@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
     fetchPaymentLinks, 
@@ -18,6 +19,7 @@ import { toast } from 'react-toastify';
 import { useCan, canExport } from '../../../utils/permissions';
 
 const PaymentLinksIndex = ({ merchantId: propMerchantId }) => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { user, merchant } = useAuthStore();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -57,14 +59,14 @@ const PaymentLinksIndex = ({ merchantId: propMerchantId }) => {
         if (selectedIds.length === 0) return;
 
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete ${selectedIds.length} payment link(s). This action cannot be undone!`,
+            title: t('merchant.common.areYouSure'),
+            text: t('merchant.paymentLinks.bulkDeleteText', { count: selectedIds.length }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete them!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('merchant.common.yesDeleteThem'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (result.isConfirmed) {
@@ -72,8 +74,8 @@ const PaymentLinksIndex = ({ merchantId: propMerchantId }) => {
                 const response = await bulkDeletePaymentLinks(selectedIds);
                 if (response.success) {
                     await Swal.fire({
-                        title: 'Deleted!',
-                        text: 'Payment links have been deleted successfully.',
+                        title: t('merchant.common.deleted'),
+                        text: t('merchant.paymentLinks.deletedSuccess'),
                         icon: 'success',
                         timer: 2000,
                         showConfirmButton: false
@@ -82,13 +84,13 @@ const PaymentLinksIndex = ({ merchantId: propMerchantId }) => {
                     // Trigger refetch by updating pagination
                     setPagination(prev => ({ ...prev, current_page: prev.current_page }));
                 } else {
-                    Swal.fire('Error!', response.error || 'Failed to delete payment links.', 'error');
+                    Swal.fire(t('merchant.common.error'), response.error || t('merchant.paymentLinks.deleteFailed'), 'error');
                 }
             } catch (error) {
-                Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+                Swal.fire(t('merchant.common.error'), t('merchant.paymentLinks.unexpectedError'), 'error');
             }
         }
-    }, [selectedIds]);
+    }, [selectedIds, t]);
 
     const handleExport = useCallback(async () => {
         try {
@@ -104,21 +106,21 @@ const PaymentLinksIndex = ({ merchantId: propMerchantId }) => {
             window.URL.revokeObjectURL(downloadUrl);
             document.body.removeChild(a);
             
-            toast.success('Payment links exported successfully');
+            toast.success(t('merchant.paymentLinks.exportSuccess'));
         } catch (error) {
             console.error('Export error:', error);
-            toast.error('Failed to export payment links');
+            toast.error(t('merchant.paymentLinks.exportFailed'));
         }
-    }, [merchantId, filters]);
+    }, [merchantId, filters, t]);
 
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
-        setTitle('Payment Links');
+        setTitle(t('merchant.breadcrumbs.paymentLinks'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Payment Links', path: '/merchant/payment-links' },
-            { label: 'Payment Links List', path: '/merchant/payment-links', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.paymentLinks'), path: '/merchant/payment-links' },
+            { label: t('merchant.breadcrumbs.paymentLinksList'), path: '/merchant/payment-links', active: true }
         ]);
         
         setActions(
@@ -131,7 +133,7 @@ const PaymentLinksIndex = ({ merchantId: propMerchantId }) => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Filter
+                    {t('merchant.common.filter')}
                 </button>
 
                 {selectedIds.length > 0 && canDelete && (
@@ -146,7 +148,7 @@ const PaymentLinksIndex = ({ merchantId: propMerchantId }) => {
                             <span className="path4"></span>
                             <span className="path5"></span>
                         </i>
-                        Delete Selected ({selectedIds.length})
+                        {t('merchant.paymentLinks.deleteSelected', { count: selectedIds.length })}
                     </button>
                 )}
 
@@ -159,7 +161,7 @@ const PaymentLinksIndex = ({ merchantId: propMerchantId }) => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Export
+                        {t('merchant.paymentLinks.export')}
                     </button>
                 )}
 
@@ -172,7 +174,7 @@ const PaymentLinksIndex = ({ merchantId: propMerchantId }) => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Add Payment Link
+                        {t('merchant.paymentLinks.addNew')}
                     </Link>
                 )}
             </>
@@ -182,7 +184,7 @@ const PaymentLinksIndex = ({ merchantId: propMerchantId }) => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions, selectedIds.length, showFilters, handleBulkDelete, handleExport]);
+    }, [setTitle, setBreadcrumbs, setActions, selectedIds.length, showFilters, handleBulkDelete, handleExport, t, i18n.language, canCreate]);
 
     // Fetch payment links when dependencies change
     useEffect(() => {
@@ -208,20 +210,20 @@ const PaymentLinksIndex = ({ merchantId: propMerchantId }) => {
                         }));
                     }
                 } else {
-                    setError(data.error || data.message || 'Failed to fetch payment links');
-                    toast.error('Failed to load payment links');
+                    setError(data.error || data.message || t('merchant.paymentLinks.fetchFailedGeneric'));
+                    toast.error(t('merchant.paymentLinks.loadFailed'));
                 }
             } catch (error) {
                 console.error('Error fetching payment links:', error);
-                setError(error.message || 'An unexpected error occurred while fetching payment links');
-                toast.error('Failed to load payment links');
+                setError(error.message || t('merchant.paymentLinks.fetchUnexpected'));
+                toast.error(t('merchant.paymentLinks.loadFailed'));
             } finally {
                 setLoading(false);
             }
         };
 
         loadPaymentLinks();
-    }, [merchantId, pagination.current_page, pagination.per_page, filters.search, filters.customer, filters.from_date, filters.to_date]);
+    }, [merchantId, pagination.current_page, pagination.per_page, filters.search, filters.customer, filters.from_date, filters.to_date, t]);
 
     // Fetch statistics
     useEffect(() => {
@@ -312,7 +314,7 @@ const PaymentLinksIndex = ({ merchantId: propMerchantId }) => {
             <div className="card">
                 <div className="card-header border-0 pt-6">
                     <div className="card-title">
-                        <h3 className="card-label">Payment Links List</h3>
+                        <h3 className="card-label">{t('merchant.paymentLinks.listHeading')}</h3>
                     </div>
                 </div>
                 <div className="card-body pt-0">

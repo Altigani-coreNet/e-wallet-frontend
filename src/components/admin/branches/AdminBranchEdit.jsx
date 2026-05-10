@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
@@ -18,6 +19,7 @@ const debounce = (func, delay) => {
 const AdminBranchEdit = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
 
     const [formData, setFormData] = useState({
@@ -50,12 +52,12 @@ const AdminBranchEdit = () => {
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        setTitle('Edit Branch');
+        setTitle(t('admin.branchEdit.title'));
         setActions(null);
         fetchBranchDetails();
         fetchMerchants();
         // Don't load all countries initially - will load on dropdown open or search
-    }, [id, setTitle, setActions]);
+    }, [id, setTitle, setActions, t]);
 
     useEffect(() => {
         if (formData.country_id && !selectedCountry) {
@@ -110,7 +112,7 @@ const AdminBranchEdit = () => {
                 });
             }
         } catch (error) {
-            toast.error('Failed to load branch details');
+            toast.error(t('admin.branchEdit.loadFailed'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -157,7 +159,11 @@ const AdminBranchEdit = () => {
                     const country = countriesList.find(c => c.id === formData.country_id);
                     if (country) {
                         setSelectedCountry(country);
-                        setCountrySearchTerm(country.text || country.name);
+                        let name = country.text || country.name;
+                        if (typeof name === 'object' && name !== null) {
+                            name = name[i18n.language] || name.en || name.ar || '';
+                        }
+                        setCountrySearchTerm(name);
                     }
                 }
             }
@@ -194,7 +200,11 @@ const AdminBranchEdit = () => {
                     const city = citiesList.find(c => c.id === formData.city_id);
                     if (city) {
                         setSelectedCity(city);
-                        setCitySearchTerm(city.text || city.name);
+                        let name = city.text || city.name;
+                        if (typeof name === 'object' && name !== null) {
+                            name = name[i18n.language] || name.en || name.ar || '';
+                        }
+                        setCitySearchTerm(name);
                     }
                 }
             }
@@ -349,15 +359,15 @@ const AdminBranchEdit = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Branch updated successfully!');
+                toast.success(t('admin.branchEdit.success'));
                 navigate('/admin/branches');
             }
         } catch (error) {
             if (error.response?.status === 422) {
                 setErrors(error.response.data.errors || {});
-                toast.error('Please fix the validation errors');
+                toast.error(t('admin.branchCreate.validationError'));
             } else {
-                toast.error(error.response?.data?.message || 'Failed to update branch');
+                toast.error(error.response?.data?.message || t('admin.branchEdit.failed'));
             }
         } finally {
             setSaving(false);
@@ -576,7 +586,7 @@ const AdminBranchEdit = () => {
 
                                 {/* City */}
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold">City</label>
+                                    <label className="form-label fw-bold">{t('admin.branchCreate.city')}</label>
                                     <div className="position-relative">
                                         <div 
                                             className={`form-control h-50px d-flex align-items-center justify-content-between ${errors.city_id ? 'is-invalid' : ''} ${!formData.country_id ? 'bg-light' : ''}`}
@@ -585,9 +595,17 @@ const AdminBranchEdit = () => {
                                         >
                                             <div className="d-flex align-items-center">
                                                 {selectedCity ? (
-                                                    <span className="text-gray-800">{selectedCity.text || selectedCity.name}</span>
+                                                    <span className="text-gray-800">
+                                                        {(() => {
+                                                            let name = selectedCity.text || selectedCity.name;
+                                                            if (typeof name === 'object' && name !== null) {
+                                                                name = name[i18n.language] || name.en || name.ar || '';
+                                                            }
+                                                            return name;
+                                                        })()}
+                                                    </span>
                                                 ) : (
-                                                    <span className="text-muted">{formData.country_id ? 'Select City' : 'Select country first'}</span>
+                                                    <span className="text-muted">{formData.country_id ? t('admin.branchCreate.selectCity') : t('admin.branchCreate.selectCountryFirst')}</span>
                                                 )}
                                             </div>
                                             <div className="d-flex align-items-center">
@@ -616,7 +634,7 @@ const AdminBranchEdit = () => {
                                                     <input 
                                                         type="text" 
                                                         className="form-control form-control-sm mb-2" 
-                                                        placeholder="Search cities..."
+                                                        placeholder={t('admin.branchCreate.searchCities')}
                                                         value={citySearchTerm}
                                                         onChange={(e) => handleCitySearch(e.target.value)}
                                                         onClick={(e) => e.stopPropagation()}
@@ -624,18 +642,24 @@ const AdminBranchEdit = () => {
                                                     />
                                                 </div>
                                                 {filteredCities.length > 0 ? (
-                                                    filteredCities.map((city) => (
-                                                        <div 
-                                                            key={city.id}
-                                                            className="p-3 border-bottom cursor-pointer hover-bg-light"
-                                                            onMouseDown={(e) => { e.preventDefault(); handleCitySelect(city); }}
-                                                            style={{ cursor: 'pointer' }}
-                                                        >
-                                                            <div className="text-gray-800">{city.text || city.name}</div>
-                                                        </div>
-                                                    ))
+                                                    filteredCities.map((city) => {
+                                                        let name = city.text || city.name;
+                                                        if (typeof name === 'object' && name !== null) {
+                                                            name = name[i18n.language] || name.en || name.ar || '';
+                                                        }
+                                                        return (
+                                                            <div 
+                                                                key={city.id}
+                                                                className="p-3 border-bottom cursor-pointer hover-bg-light"
+                                                                onMouseDown={(e) => { e.preventDefault(); handleCitySelect(city); }}
+                                                                style={{ cursor: 'pointer' }}
+                                                            >
+                                                                <div className="text-gray-800">{name}</div>
+                                                            </div>
+                                                        );
+                                                    })
                                                 ) : (
-                                                    <div className="p-3 text-muted text-center">No cities found</div>
+                                                    <div className="p-3 text-muted text-center">{t('admin.branchCreate.noCities')}</div>
                                                 )}
                                             </div>
                                         )}
@@ -645,7 +669,7 @@ const AdminBranchEdit = () => {
 
                                 {/* Active Status */}
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold">Active Status</label>
+                                    <label className="form-label fw-bold">{t('admin.branchCreate.activeStatus')}</label>
                                     <div className="form-check form-switch form-check-custom form-check-solid mt-2">
                                         <input
                                             className="form-check-input"
@@ -655,7 +679,7 @@ const AdminBranchEdit = () => {
                                             onChange={handleInputChange}
                                         />
                                         <label className="form-check-label">
-                                            {formData.is_active ? 'Active' : 'Inactive'}
+                                            {formData.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                         </label>
                                     </div>
                                 </div>
@@ -664,13 +688,13 @@ const AdminBranchEdit = () => {
 
                         <div className="card-footer d-flex justify-content-end py-6 px-9">
                             <Link to="/admin/branches" className="btn btn-light btn-active-light-primary me-2">
-                                Cancel
+                                {t('admin.common.cancel')}
                             </Link>
                             <button type="submit" className="btn btn-primary" disabled={saving}>
                                 {saving ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2"></span>
-                                        Updating...
+                                        {t('admin.branchEdit.updating')}
                                     </>
                                 ) : (
                                     <>
@@ -678,7 +702,7 @@ const AdminBranchEdit = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Update Branch
+                                        {t('admin.branchEdit.update')}
                                     </>
                                 )}
                             </button>

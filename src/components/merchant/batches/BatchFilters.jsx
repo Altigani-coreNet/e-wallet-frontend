@@ -1,8 +1,15 @@
 import React, { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const BatchFilters = ({ filters, onFilterChange, onClearFilters }) => {
+    const { t } = useTranslation();
     const fromDateRef = useRef(null);
     const toDateRef = useRef(null);
+
+    const statusLabel = (value) => {
+        const m = { settled: 'statusSettled', pending: 'statusPending', failed: 'statusFailed' }[value?.toLowerCase()];
+        return m ? t(`merchant.batches.${m}`) : value;
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -11,16 +18,12 @@ const BatchFilters = ({ filters, onFilterChange, onClearFilters }) => {
 
     const handleDateInputClick = (ref) => {
         if (ref && ref.current) {
-            // Try to use the showPicker() method if available (modern browsers)
             if (ref.current.showPicker && typeof ref.current.showPicker === 'function') {
-                ref.current.showPicker().catch((err) => {
-                    // Fallback: if showPicker fails, just focus the input
+                ref.current.showPicker().catch(() => {
                     ref.current.focus();
                 });
             } else {
-                // Fallback for browsers that don't support showPicker()
                 ref.current.focus();
-                // For some browsers, we need to trigger click after focus
                 setTimeout(() => {
                     ref.current.click();
                 }, 10);
@@ -32,37 +35,35 @@ const BatchFilters = ({ filters, onFilterChange, onClearFilters }) => {
         <div className="card bg-white card-xl-stretch mb-5">
             <div className="card-body">
                 <div className="row">
-                    {/* Search */}
                     <div className="col-md-3">
-                        <label className="form-label">Search</label>
+                        <label className="form-label">{t('merchant.common.search')}</label>
                         <input
                             type="text"
                             name="search"
                             className="form-control form-control-sm"
-                            placeholder="Search by batch number..."
+                            placeholder={t('merchant.batches.filterSearchPlaceholder')}
                             value={filters.search || ''}
                             onChange={handleInputChange}
                         />
                     </div>
 
-                    {/* Status */}
                     <div className="col-md-3">
-                        <label className="form-label">Status</label>
+                        <label className="form-label">{t('merchant.common.status')}</label>
                         <select
                             name="status"
                             className="form-select form-select-sm"
                             value={filters.status || ''}
                             onChange={handleInputChange}
                         >
-                            <option value="">All</option>
-                            <option value="settled">Settled</option>
-                            <option value="pending">Pending</option>
-                            <option value="failed">Failed</option>
+                            <option value="">{t('merchant.common.all')}</option>
+                            <option value="settled">{t('merchant.batches.statusSettled')}</option>
+                            <option value="pending">{t('merchant.batches.statusPending')}</option>
+                            <option value="failed">{t('merchant.batches.statusFailed')}</option>
                         </select>
                     </div>
 
                     <div className="col-md-3">
-                        <label className="form-label">From Date</label>
+                        <label className="form-label">{t('merchant.common.fromDate')}</label>
                         <input
                             ref={fromDateRef}
                             type="date"
@@ -75,7 +76,7 @@ const BatchFilters = ({ filters, onFilterChange, onClearFilters }) => {
                         />
                     </div>
                     <div className="col-md-3">
-                        <label className="form-label">To Date</label>
+                        <label className="form-label">{t('merchant.common.toDate')}</label>
                         <input
                             ref={toDateRef}
                             type="date"
@@ -89,7 +90,6 @@ const BatchFilters = ({ filters, onFilterChange, onClearFilters }) => {
                     </div>
                 </div>
 
-                {/* Filter Summary and Clear Button */}
                 <div className="row mt-3">
                     <div className="col-8">
                         {(filters.search || filters.status || filters.from_date || filters.to_date) && (
@@ -100,10 +100,10 @@ const BatchFilters = ({ filters, onFilterChange, onClearFilters }) => {
                                 </i>
                                 <span>
                                     {[
-                                        filters.search && `Search: "${filters.search}"`,
-                                        filters.status && `Status: ${filters.status}`,
-                                        filters.from_date && `From: ${filters.from_date}`,
-                                        filters.to_date && `To: ${filters.to_date}`
+                                        filters.search && t('merchant.batches.filterSummarySearch', { value: filters.search }),
+                                        filters.status && t('merchant.batches.filterSummaryStatus', { value: statusLabel(filters.status) }),
+                                        filters.from_date && t('merchant.batches.filterSummaryFrom', { value: filters.from_date }),
+                                        filters.to_date && t('merchant.batches.filterSummaryTo', { value: filters.to_date })
                                     ].filter(Boolean).join(', ')}
                                 </span>
                             </div>
@@ -119,7 +119,7 @@ const BatchFilters = ({ filters, onFilterChange, onClearFilters }) => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Clear Filters
+                            {t('merchant.batches.clearFilters')}
                         </button>
                     </div>
                 </div>
@@ -129,4 +129,3 @@ const BatchFilters = ({ filters, onFilterChange, onClearFilters }) => {
 };
 
 export default BatchFilters;
-

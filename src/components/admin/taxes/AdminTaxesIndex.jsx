@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { exportTaxes, useAdminTaxes } from '../../../services/adminTaxesService';
 import useAdminReferenceData from '../../../hooks/useAdminReferenceData';
@@ -19,6 +20,7 @@ const initialFilters = {
 };
 
 const AdminTaxesIndex = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const { merchantsMap, countriesMap, loading: refDataLoading } = useAdminReferenceData();
 
@@ -68,18 +70,18 @@ const AdminTaxesIndex = () => {
                 });
 
                 downloadCSV(transformedRows, exportPayload?.filename || 'taxes_export.csv');
-                toast.success('Taxes export ready');
+                toast.success(t('admin.taxesIndex.exportReady'));
             } else {
-                toast.info('No taxes to export');
+                toast.info(t('admin.taxesIndex.noTaxesToExport'));
             }
         } catch (error) {
             console.error('Error exporting taxes:', error);
-            toast.error('Failed to export taxes');
+            toast.error(t('admin.taxesIndex.exportFailed'));
         }
     }, [appliedFilters]);
 
     useEffect(() => {
-        setTitle('Taxes Management');
+        setTitle(t('admin.pages.taxesManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button
@@ -90,16 +92,16 @@ const AdminTaxesIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Toggle Filters
+                    {t('admin.common.toggleFilters')}
                 </button>
                 <button className="btn btn-sm btn-flex btn-light-primary fw-bold" onClick={handleExport}>
                     <i className="ki-duotone ki-file-down fs-6 text-primary me-1"><span className="path1"></span><span className="path2"></span></i>
-                    Export
+                    {t('admin.common.export')}
                 </button>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters, handleExport]);
+    }, [setTitle, setActions, showFilters, handleExport, t, i18n.language]);
 
     const taxParams = useMemo(() => ({
         page: pagination.current_page,
@@ -148,14 +150,14 @@ const AdminTaxesIndex = () => {
     useEffect(() => {
         if (!taxesData) return;
         if (taxesData.success === false) {
-            const message = taxesData?.message || taxesData?.error || taxesData?.data?.message || 'Failed to load taxes';
+            const message = taxesData?.message || taxesData?.error || taxesData?.data?.message || t('admin.taxesIndex.failedToLoad');
             toast.error(message);
         }
     }, [taxesData]);
 
     useEffect(() => {
         if (!taxesError) return;
-        const message = taxesError?.response?.data?.message || taxesError.message || 'Failed to load taxes';
+        const message = taxesError?.response?.data?.message || taxesError.message || t('admin.taxesIndex.failedToLoad');
         toast.error(message);
     }, [taxesError]);
 
@@ -270,7 +272,7 @@ const AdminTaxesIndex = () => {
 
     const renderMerchant = useCallback((shopId) => {
         if (!shopId) {
-            return 'N/A';
+            return t('admin.common.na');
         }
 
         const lookupRecord = merchantLookups.getMerchantRecord(shopId);
@@ -287,7 +289,7 @@ const AdminTaxesIndex = () => {
 
     const renderCountry = useCallback((shopId) => {
         if (!shopId) {
-            return 'N/A';
+            return t('admin.common.na');
         }
 
         const remoteCountryName = merchantLookups.getCountryName(null, shopId);
@@ -296,7 +298,7 @@ const AdminTaxesIndex = () => {
         }
 
         if (refDataLoading || isLookupLoading) return countryPlaceholder;
-        return 'N/A';
+        return t('admin.common.na');
     }, [countryPlaceholder, isLookupLoading, merchantLookups, refDataLoading]);
 
     const filtersCard = showFilters ? (
@@ -325,7 +327,7 @@ const AdminTaxesIndex = () => {
                                 <input
                                     type="text"
                                     className="form-control form-control-solid w-250px ps-12"
-                                    placeholder="Quick search: Tax name, rate..."
+                                    placeholder={t('admin.taxesIndex.quickSearchPlaceholder')}
                                     value={filters.search}
                                     onChange={(e) => handleQuickSearch(e.target.value)}
                                 />
@@ -333,7 +335,7 @@ const AdminTaxesIndex = () => {
                         </div>
                         <div className="card-toolbar">
                             <div className="d-flex align-items-center gap-2">
-                                <label className="form-label mb-0 text-nowrap">Show:</label>
+                                <label className="form-label mb-0 text-nowrap">{t('admin.taxesIndex.show')}</label>
                                 <select 
                                     className="form-select form-select-sm" 
                                     value={pagination.per_page}
@@ -355,22 +357,22 @@ const AdminTaxesIndex = () => {
                                 <thead>
                                     <tr className="fw-bold text-muted">
                                         <th className="min-w-50px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('id')}>
-                                            ID {getSortIcon('id')}
+                                            {t('admin.taxesIndex.colId')} {getSortIcon('id')}
                                         </th>
                                         <th className="min-w-150px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('merchant_id')}>
-                                            Merchant {getSortIcon('merchant_id')}
+                                            {t('admin.taxesIndex.colMerchant')} {getSortIcon('merchant_id')}
                                         </th>
                                         <th className="min-w-150px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>
-                                            Name {getSortIcon('name')}
+                                            {t('admin.taxesIndex.colName')} {getSortIcon('name')}
                                         </th>
                                         <th className="min-w-100px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('rate')}>
-                                            Rate (%) {getSortIcon('rate')}
+                                            {t('admin.taxesIndex.colRate')} {getSortIcon('rate')}
                                         </th>
                                         <th className="min-w-150px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('type')}>
-                                            Type {getSortIcon('type')}
+                                            {t('admin.taxesIndex.colType')} {getSortIcon('type')}
                                         </th>
-                                        <th className="min-w-150px">Country</th>
-                                        <th className="min-w-100px text-end">Actions</th>
+                                        <th>{t('admin.taxesIndex.colCountry')}</th>
+                                        <th className="min-w-100px text-end">{t('admin.taxesIndex.colActions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -408,7 +410,7 @@ const AdminTaxesIndex = () => {
                             <input
                                 type="text"
                                 className="form-control form-control-solid w-250px ps-12"
-                                placeholder="Quick search: Tax name, rate..."
+                                placeholder={t('admin.taxesIndex.quickSearchPlaceholder')}
                                 value={filters.search}
                                 onChange={(e) => handleQuickSearch(e.target.value)}
                             />
@@ -416,7 +418,7 @@ const AdminTaxesIndex = () => {
                     </div>
                     <div className="card-toolbar">
                         <div className="d-flex align-items-center gap-2">
-                            <label className="form-label mb-0 text-nowrap">Show:</label>
+                            <label className="form-label mb-0 text-nowrap">{t('admin.taxesIndex.show')}</label>
                             <select 
                                 className="form-select form-select-sm" 
                                 value={pagination.per_page}
@@ -436,7 +438,7 @@ const AdminTaxesIndex = () => {
                     {isFetching && !isLoading && (
                         <div className="alert alert-info py-3 mb-5">
                             <span className="spinner-border spinner-border-sm align-middle me-2"></span>
-                            Refreshing taxes...
+                            {t('admin.taxesIndex.refreshingTaxes')}
                         </div>
                     )}
                     <div className="table-responsive">
@@ -458,8 +460,8 @@ const AdminTaxesIndex = () => {
                                 <th className="min-w-150px user-select-none" style={{ cursor: 'pointer' }} onClick={() => handleSort('type')}>
                                     Type {getSortIcon('type')}
                                 </th>
-                                <th className="min-w-150px">Country</th>
-                                <th className="min-w-100px text-end">Actions</th>
+                                <th>{t('admin.taxesIndex.colCountry')}</th>
+                                <th className="min-w-100px text-end">{t('admin.taxesIndex.colActions')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -485,7 +487,7 @@ const AdminTaxesIndex = () => {
                                                 to={`/admin/sales/taxes/${tax.id}`}
                                                 className="btn btn-sm btn-light-primary"
                                             >
-                                                View
+                                                {t('admin.taxesIndex.view')}
                                             </Link>
                                         </td>
                                     </tr>
@@ -493,7 +495,7 @@ const AdminTaxesIndex = () => {
                             ) : (
                                 <tr>
                                     <td colSpan="7" className="text-center py-5">
-                                        <div className="text-muted">No taxes found</div>
+                                        <div className="text-muted">{t('admin.taxesIndex.noTaxesFound')}</div>
                                     </td>
                                 </tr>
                             )}
@@ -513,7 +515,7 @@ const AdminTaxesIndex = () => {
                                     }
                                     const start = ((currentPage - 1) * perPage) + 1;
                                     const end = Math.min(currentPage * perPage, total);
-                                    return `Showing ${start} to ${end} of ${total} entries`;
+                                    return t('admin.taxesIndex.showingEntries', { start, end, total });
                                 })()}
                             </div>
                             <ul className="pagination">
@@ -523,7 +525,7 @@ const AdminTaxesIndex = () => {
                                         onClick={() => handlePageChange(pagination.current_page - 1)}
                                         disabled={pagination.current_page === 1}
                                     >
-                                        Previous
+                                        {t('admin.common.previous')}
                                     </button>
                                 </li>
                                 {[...Array(resolvedPagination.last_page)].map((_, index) => (
@@ -542,7 +544,7 @@ const AdminTaxesIndex = () => {
                                         onClick={() => handlePageChange(pagination.current_page + 1)}
                                         disabled={pagination.current_page === resolvedPagination.last_page}
                                     >
-                                        Next
+                                        {t('admin.common.next')}
                                     </button>
                                 </li>
                             </ul>

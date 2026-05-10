@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { useCan } from '../../../../utils/permissions';
 import { getAdminsData, bulkDeleteAdmins } from '../../../../services/adminAdminsService';
@@ -9,6 +10,7 @@ import AdminFiltersPanel from './AdminFiltersPanel';
 import BulkActionBar from '../../../common/BulkActionBar';
 
 const AdminAdminsIndex = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const canCreateAdmin = useCan('pos.admins.create_admins');
     const [admins, setAdmins] = useState([]);
@@ -31,7 +33,7 @@ const AdminAdminsIndex = () => {
     });
 
     useEffect(() => {
-        setTitle('Admin Management');
+        setTitle(t('admin.pages.adminsManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button
@@ -42,7 +44,7 @@ const AdminAdminsIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">{showFilters ? 'Hide' : 'Show'} Filters</span>
+                    <span className="d-none d-md-inline ms-1">{showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}</span>
                 </button>
 
                 {canCreateAdmin && (
@@ -51,13 +53,13 @@ const AdminAdminsIndex = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        <span className="d-none d-md-inline ms-1">Add Admin</span>
+                        <span className="d-none d-md-inline ms-1">{t('admin.common.addAdmin')}</span>
                     </Link>
                 )}
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters]);
+    }, [setTitle, setActions, showFilters, t, i18n.language]);
 
     useEffect(() => {
         fetchAdmins();
@@ -98,31 +100,31 @@ const AdminAdminsIndex = () => {
                     last_page: meta?.last_page || 1
                 }));
             } else {
-                toast.error(response.error || 'Failed to fetch admins');
+                toast.error(response.error || t('admin.adminsIndex.fetchFailed'));
             }
         } catch (error) {
             console.error('Error fetching admins:', error);
-            toast.error('Failed to fetch admins');
+            toast.error(t('admin.adminsIndex.fetchFailed'));
         } finally {
             setLoading(false);
         }
     };
 
     const handleBulkDelete = async () => {
-        if (selectedIds.length === 0) return toast.warning('Please select admins to delete');
-        if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} admin(s)?`)) return;
+        if (selectedIds.length === 0) return toast.warning(t('admin.common.pleaseSelectToDelete'));
+        if (!window.confirm(t('admin.adminsIndex.deleteConfirm', { count: selectedIds.length }))) return;
 
         try {
             const response = await bulkDeleteAdmins(selectedIds);
             if (response.success) {
-                toast.success('Admins deleted successfully');
+                toast.success(t('admin.adminsIndex.deleted'));
                 setSelectedIds([]);
                 fetchAdmins();
             } else {
-                toast.error(response.error || 'Failed to delete admins');
+                toast.error(response.error || t('admin.adminsIndex.deleteFailed'));
             }
         } catch (error) {
-            toast.error('Failed to delete admins');
+            toast.error(t('admin.adminsIndex.deleteFailed'));
         }
     };
 
@@ -221,7 +223,7 @@ const AdminAdminsIndex = () => {
                                     <input
                                         type="text"
                                         className="form-control form-control-solid w-250px ps-13"
-                                        placeholder="Search Admins"
+                                        placeholder={t('admin.adminsIndex.searchPlaceholder')}
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
@@ -242,22 +244,22 @@ const AdminAdminsIndex = () => {
                                                     onChange={handleSelectAll} />
                                             </div>
                                         </th>
-                                        <th>Admin</th>
-                                        <th>Email</th>
-                                        <th>Phone</th>
-                                        <th>Roles</th>
-                                        <th>Custom Region</th>
-                                        <th>Regions</th>
-                                        <th>Status</th>
-                                        <th>Created At</th>
-                                        <th className="text-end min-w-100px">Actions</th>
+                                        <th>{t('admin.adminsIndex.colAdmin')}</th>
+                                        <th>{t('admin.adminsIndex.colEmail')}</th>
+                                        <th>{t('admin.adminsIndex.colPhone')}</th>
+                                        <th>{t('admin.adminsIndex.colRoles')}</th>
+                                        <th>{t('admin.adminsIndex.colCustomRegion')}</th>
+                                        <th>{t('admin.adminsIndex.colRegions')}</th>
+                                        <th>{t('admin.adminsIndex.colStatus')}</th>
+                                        <th>{t('admin.adminsIndex.colCreatedAt')}</th>
+                                        <th className="text-end min-w-100px">{t('admin.common.actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="fw-semibold text-gray-600">
                                     {loading ? (
                                         renderSkeletonRows()
                                     ) : admins.length === 0 ? (
-                                        <tr><td colSpan="10" className="text-center py-5">No admins found</td></tr>
+                                        <tr><td colSpan="10" className="text-center py-5">{t('admin.adminsIndex.noAdminsFound')}</td></tr>
                                     ) : (
                                         admins.map(admin => (
                                             <AdminTableRow key={admin.id} admin={admin}
@@ -272,14 +274,14 @@ const AdminAdminsIndex = () => {
                         {!loading && pagination.last_page > 1 && (
                             <div className="row">
                                 <div className="col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start">
-                                    <div className="dataTables_length">Showing page {pagination.current_page} of {pagination.last_page}</div>
+                                    <div className="dataTables_length">{t('admin.common.showingPage', { current: pagination.current_page, total: pagination.last_page })}</div>
                                 </div>
                                 <div className="col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end">
                                     <div className="dataTables_paginate paging_simple_numbers">
                                         <ul className="pagination">
                                             <li className={`paginate_button page-item previous ${pagination.current_page === 1 ? 'disabled' : ''}`}>
                                                 <button className="page-link" onClick={() => handlePageChange(pagination.current_page - 1)}
-                                                    disabled={pagination.current_page === 1}><i className="previous"></i></button>
+                                                    disabled={pagination.current_page === 1}><i className="previous"></i> {t('admin.common.previous')}</button>
                                             </li>
                                             {[...Array(pagination.last_page)].map((_, idx) => (
                                                 <li key={idx + 1} className={`paginate_button page-item ${pagination.current_page === idx + 1 ? 'active' : ''}`}>
@@ -288,7 +290,7 @@ const AdminAdminsIndex = () => {
                                             ))}
                                             <li className={`paginate_button page-item next ${pagination.current_page === pagination.last_page ? 'disabled' : ''}`}>
                                                 <button className="page-link" onClick={() => handlePageChange(pagination.current_page + 1)}
-                                                    disabled={pagination.current_page === pagination.last_page}><i className="next"></i></button>
+                                                    disabled={pagination.current_page === pagination.last_page}>{t('admin.common.next')} <i className="next"></i></button>
                                             </li>
                                         </ul>
                                     </div>

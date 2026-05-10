@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { getApiKeys, generateApiKey, regenerateApiKey } from '../../../services/apiKeysService';
 
 const ApiKeysIndex = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [apiKeys, setApiKeys] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -11,18 +13,18 @@ const ApiKeysIndex = () => {
     const [showKeys, setShowKeys] = useState({});
 
     useEffect(() => {
-        setTitle('API Keys');
+        setTitle(t('merchant.apiKeys.title'));
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Developer Settings', path: '/merchant/api-keys' },
-            { label: 'API Keys', path: '/merchant/api-keys', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.developerSettings'), path: '/merchant/api-keys' },
+            { label: t('merchant.breadcrumbs.apiKeys'), path: '/merchant/api-keys', active: true }
         ]);
         setActions(null);
         return () => {
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [setTitle, setBreadcrumbs, setActions]);
+    }, [setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     useEffect(() => {
         fetchApiKeys();
@@ -36,11 +38,11 @@ const ApiKeysIndex = () => {
                 const data = response.data.data || [];
                 setApiKeys(data);
             } else {
-                toast.error(response.error || 'Failed to fetch API keys');
+                toast.error(response.error || t('merchant.apiKeys.fetchFailed'));
             }
         } catch (error) {
             console.error('Error fetching API keys:', error);
-            toast.error('Failed to fetch API keys');
+            toast.error(t('merchant.apiKeys.fetchFailed'));
         } finally {
             setLoading(false);
         }
@@ -51,7 +53,7 @@ const ApiKeysIndex = () => {
         try {
             const response = await generateApiKey(mode);
             if (response.success) {
-                toast.success(response.data.message || 'API key generated successfully');
+                toast.success(response.data.message || t('merchant.apiKeys.generateSuccess'));
                 // Update local state instead of refetching
                 const newKey = response.data.data;
                 setApiKeys(prev => {
@@ -69,18 +71,18 @@ const ApiKeysIndex = () => {
                 // Auto-show the newly generated key
                 setShowKeys(prev => ({ ...prev, [mode]: true }));
             } else {
-                toast.error(response.error || 'Failed to generate API key');
+                toast.error(response.error || t('merchant.apiKeys.generateFailed'));
             }
         } catch (error) {
             console.error('Error generating API key:', error);
-            toast.error('Failed to generate API key');
+            toast.error(t('merchant.apiKeys.generateFailed'));
         } finally {
             setGenerating(prev => ({ ...prev, [mode]: false }));
         }
     };
 
     const handleRegenerate = async (id, mode) => {
-        if (!window.confirm('Are you sure you want to regenerate this API key? The old key will be deactivated and cannot be used anymore.')) {
+        if (!window.confirm(t('merchant.apiKeys.regenerateConfirm'))) {
             return;
         }
 
@@ -88,28 +90,30 @@ const ApiKeysIndex = () => {
         try {
             const response = await regenerateApiKey(id);
             if (response.success) {
-                toast.success(response.data.message || 'API key regenerated successfully');
+                toast.success(response.data.message || t('merchant.apiKeys.regenerateSuccess'));
                 // Update local state
                 const newKey = response.data.data;
                 setApiKeys(prev => prev.map(k => k.id === id ? newKey : k));
                 // Auto-show the newly regenerated key
                 setShowKeys(prev => ({ ...prev, [mode]: true }));
             } else {
-                toast.error(response.error || 'Failed to regenerate API key');
+                toast.error(response.error || t('merchant.apiKeys.regenerateFailed'));
             }
         } catch (error) {
             console.error('Error regenerating API key:', error);
-            toast.error('Failed to regenerate API key');
+            toast.error(t('merchant.apiKeys.regenerateFailed'));
         } finally {
             setGenerating(prev => ({ ...prev, [mode]: false }));
         }
     };
 
+    const formatDt = (d) => (d ? new Date(d).toLocaleString((i18n.language || 'en').toLowerCase().startsWith('ar') ? 'ar-SA' : 'en-US') : '');
+
     const handleCopy = (text, label) => {
         navigator.clipboard.writeText(text).then(() => {
-            toast.success(`${label} copied to clipboard`);
+            toast.success(t('merchant.common.copied', { label }));
         }).catch(() => {
-            toast.error('Failed to copy to clipboard');
+            toast.error(t('merchant.common.copyFailed'));
         });
     };
 
@@ -167,9 +171,9 @@ const ApiKeysIndex = () => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Test Mode
+                                {t('merchant.apiKeys.testMode')}
                             </h3>
-                            <span className="badge badge-light-warning">Test</span>
+                            <span className="badge badge-light-warning">{t('merchant.apiKeys.badgeTest')}</span>
                         </div>
                     </div>
                     
@@ -178,7 +182,7 @@ const ApiKeysIndex = () => {
                             <>
                                 {/* Public Key */}
                                 <div className="mb-5">
-                                    <label className="form-label fw-semibold">Public Key</label>
+                                    <label className="form-label fw-semibold">{t('merchant.apiKeys.publicKey')}</label>
                                     <div className="input-group">
                                         <input
                                             type={showKeys.test ? "text" : "password"}
@@ -190,7 +194,7 @@ const ApiKeysIndex = () => {
                                         <button
                                             className="btn btn-icon btn-light-primary"
                                             onClick={() => toggleShowKey('test')}
-                                            title={showKeys.test ? 'Hide' : 'Show'}
+                                            title={showKeys.test ? t('merchant.apiKeys.hide') : t('merchant.apiKeys.show')}
                                         >
                                             <i className={`ki-duotone ${showKeys.test ? 'ki-eye-slash' : 'ki-eye'} fs-2`}>
                                                 <span className="path1"></span>
@@ -200,8 +204,8 @@ const ApiKeysIndex = () => {
                                         </button>
                                         <button
                                             className="btn btn-icon btn-light-primary"
-                                            onClick={() => handleCopy(testKey.public_key, 'Public key')}
-                                            title="Copy"
+                                            onClick={() => handleCopy(testKey.public_key, t('merchant.apiKeys.copyPublicKey'))}
+                                            title={t('merchant.apiKeys.copyTitle')}
                                         >
                                             <i className="ki-duotone ki-copy fs-2">
                                                 <span className="path1"></span>
@@ -213,7 +217,7 @@ const ApiKeysIndex = () => {
 
                                 {/* Secret Key */}
                                 <div className="mb-5">
-                                    <label className="form-label fw-semibold">Secret Key</label>
+                                    <label className="form-label fw-semibold">{t('merchant.apiKeys.secretKey')}</label>
                                     <div className="input-group">
                                         <input
                                             type={showKeys.test ? "text" : "password"}
@@ -225,7 +229,7 @@ const ApiKeysIndex = () => {
                                         <button
                                             className="btn btn-icon btn-light-primary"
                                             onClick={() => toggleShowKey('test')}
-                                            title={showKeys.test ? 'Hide' : 'Show'}
+                                            title={showKeys.test ? t('merchant.apiKeys.hide') : t('merchant.apiKeys.show')}
                                         >
                                             <i className={`ki-duotone ${showKeys.test ? 'ki-eye-slash' : 'ki-eye'} fs-2`}>
                                                 <span className="path1"></span>
@@ -235,8 +239,8 @@ const ApiKeysIndex = () => {
                                         </button>
                                         <button
                                             className="btn btn-icon btn-light-primary"
-                                            onClick={() => handleCopy(testKey.secret_key, 'Secret key')}
-                                            title="Copy"
+                                            onClick={() => handleCopy(testKey.secret_key, t('merchant.apiKeys.copySecretKey'))}
+                                            title={t('merchant.apiKeys.copyTitle')}
                                         >
                                             <i className="ki-duotone ki-copy fs-2">
                                                 <span className="path1"></span>
@@ -250,7 +254,7 @@ const ApiKeysIndex = () => {
                                 {testKey.last_used_at && (
                                     <div className="mb-3">
                                         <span className="text-muted small">
-                                            Last used: {new Date(testKey.last_used_at).toLocaleString()}
+                                            {t('merchant.apiKeys.lastUsed', { date: formatDt(testKey.last_used_at) })}
                                         </span>
                                     </div>
                                 )}
@@ -258,7 +262,7 @@ const ApiKeysIndex = () => {
                                 {/* Created Date */}
                                 <div className="mb-3">
                                     <span className="text-muted small">
-                                        Created: {new Date(testKey.created_at).toLocaleString()}
+                                        {t('merchant.apiKeys.createdAt', { date: formatDt(testKey.created_at) })}
                                     </span>
                                 </div>
                             </>
@@ -268,8 +272,8 @@ const ApiKeysIndex = () => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                <p className="text-muted mb-0">No test API key generated yet</p>
-                                <p className="text-muted small">Click the button below to generate your test API keys</p>
+                                <p className="text-muted mb-0">{t('merchant.apiKeys.noTestKey')}</p>
+                                <p className="text-muted small">{t('merchant.apiKeys.noTestKeyHint')}</p>
                             </div>
                         )}
                     </div>
@@ -285,7 +289,7 @@ const ApiKeysIndex = () => {
                                 {generating.test ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                                        Regenerating...
+                                        {t('merchant.apiKeys.regenerating')}
                                     </>
                                 ) : (
                                     <>
@@ -293,7 +297,7 @@ const ApiKeysIndex = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Regenerate Key
+                                        {t('merchant.apiKeys.regenerateKey')}
                                     </>
                                 )}
                             </button>
@@ -307,7 +311,7 @@ const ApiKeysIndex = () => {
                                 {generating.test ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                                        Generating...
+                                        {t('merchant.apiKeys.generating')}
                                     </>
                                 ) : (
                                     <>
@@ -315,7 +319,7 @@ const ApiKeysIndex = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Generate Key
+                                        {t('merchant.apiKeys.generateKey')}
                                     </>
                                 )}
                             </button>
@@ -334,9 +338,9 @@ const ApiKeysIndex = () => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Live Mode
+                                {t('merchant.apiKeys.liveMode')}
                             </h3>
-                            <span className="badge badge-light-success">Live</span>
+                            <span className="badge badge-light-success">{t('merchant.apiKeys.badgeLive')}</span>
                         </div>
                     </div>
                     
@@ -345,7 +349,7 @@ const ApiKeysIndex = () => {
                             <>
                                 {/* Public Key */}
                                 <div className="mb-5">
-                                    <label className="form-label fw-semibold">Public Key</label>
+                                    <label className="form-label fw-semibold">{t('merchant.apiKeys.publicKey')}</label>
                                     <div className="input-group">
                                         <input
                                             type={showKeys.live ? "text" : "password"}
@@ -357,7 +361,7 @@ const ApiKeysIndex = () => {
                                         <button
                                             className="btn btn-icon btn-light-primary"
                                             onClick={() => toggleShowKey('live')}
-                                            title={showKeys.live ? 'Hide' : 'Show'}
+                                            title={showKeys.live ? t('merchant.apiKeys.hide') : t('merchant.apiKeys.show')}
                                         >
                                             <i className={`ki-duotone ${showKeys.live ? 'ki-eye-slash' : 'ki-eye'} fs-2`}>
                                                 <span className="path1"></span>
@@ -367,8 +371,8 @@ const ApiKeysIndex = () => {
                                         </button>
                                         <button
                                             className="btn btn-icon btn-light-primary"
-                                            onClick={() => handleCopy(liveKey.public_key, 'Public key')}
-                                            title="Copy"
+                                            onClick={() => handleCopy(liveKey.public_key, t('merchant.apiKeys.copyPublicKey'))}
+                                            title={t('merchant.apiKeys.copyTitle')}
                                         >
                                             <i className="ki-duotone ki-copy fs-2">
                                                 <span className="path1"></span>
@@ -380,7 +384,7 @@ const ApiKeysIndex = () => {
 
                                 {/* Secret Key */}
                                 <div className="mb-5">
-                                    <label className="form-label fw-semibold">Secret Key</label>
+                                    <label className="form-label fw-semibold">{t('merchant.apiKeys.secretKey')}</label>
                                     <div className="input-group">
                                         <input
                                             type={showKeys.live ? "text" : "password"}
@@ -392,7 +396,7 @@ const ApiKeysIndex = () => {
                                         <button
                                             className="btn btn-icon btn-light-primary"
                                             onClick={() => toggleShowKey('live')}
-                                            title={showKeys.live ? 'Hide' : 'Show'}
+                                            title={showKeys.live ? t('merchant.apiKeys.hide') : t('merchant.apiKeys.show')}
                                         >
                                             <i className={`ki-duotone ${showKeys.live ? 'ki-eye-slash' : 'ki-eye'} fs-2`}>
                                                 <span className="path1"></span>
@@ -402,8 +406,8 @@ const ApiKeysIndex = () => {
                                         </button>
                                         <button
                                             className="btn btn-icon btn-light-primary"
-                                            onClick={() => handleCopy(liveKey.secret_key, 'Secret key')}
-                                            title="Copy"
+                                            onClick={() => handleCopy(liveKey.secret_key, t('merchant.apiKeys.copySecretKey'))}
+                                            title={t('merchant.apiKeys.copyTitle')}
                                         >
                                             <i className="ki-duotone ki-copy fs-2">
                                                 <span className="path1"></span>
@@ -417,7 +421,7 @@ const ApiKeysIndex = () => {
                                 {liveKey.last_used_at && (
                                     <div className="mb-3">
                                         <span className="text-muted small">
-                                            Last used: {new Date(liveKey.last_used_at).toLocaleString()}
+                                            {t('merchant.apiKeys.lastUsed', { date: formatDt(liveKey.last_used_at) })}
                                         </span>
                                     </div>
                                 )}
@@ -425,7 +429,7 @@ const ApiKeysIndex = () => {
                                 {/* Created Date */}
                                 <div className="mb-3">
                                     <span className="text-muted small">
-                                        Created: {new Date(liveKey.created_at).toLocaleString()}
+                                        {t('merchant.apiKeys.createdAt', { date: formatDt(liveKey.created_at) })}
                                     </span>
                                 </div>
                             </>
@@ -452,7 +456,7 @@ const ApiKeysIndex = () => {
                                 {generating.live ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                                        Regenerating...
+                                        {t('merchant.apiKeys.regenerating')}
                                     </>
                                 ) : (
                                     <>
@@ -460,7 +464,7 @@ const ApiKeysIndex = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Regenerate Key
+                                        {t('merchant.apiKeys.regenerateKey')}
                                     </>
                                 )}
                             </button>
@@ -474,7 +478,7 @@ const ApiKeysIndex = () => {
                                 {generating.live ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                                        Generating...
+                                        {t('merchant.apiKeys.generating')}
                                     </>
                                 ) : (
                                     <>
@@ -482,7 +486,7 @@ const ApiKeysIndex = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Generate Key
+                                        {t('merchant.apiKeys.generateKey')}
                                     </>
                                 )}
                             </button>
@@ -502,20 +506,12 @@ const ApiKeysIndex = () => {
                                 <span className="path3"></span>
                             </i>
                             <div>
-                                <h4 className="fw-bold mb-3">Important Information</h4>
+                                <h4 className="fw-bold mb-3">{t('merchant.apiKeys.importantInfo')}</h4>
                                 <ul className="mb-0">
-                                    <li className="mb-2">
-                                        <strong>Test Mode:</strong> Use test API keys for development and testing. No real transactions will be processed.
-                                    </li>
-                                    <li className="mb-2">
-                                        <strong>Live Mode:</strong> Use live API keys for production. Real transactions will be processed and charged.
-                                    </li>
-                                    <li className="mb-2">
-                                        <strong>Security:</strong> Keep your secret keys secure and never share them publicly. Treat them like passwords.
-                                    </li>
-                                    <li className="mb-2">
-                                        <strong>Regeneration:</strong> Regenerating a key will deactivate the old key immediately. Update your applications before regenerating.
-                                    </li>
+                                    <li className="mb-2">{t('merchant.apiKeys.infoTestMode')}</li>
+                                    <li className="mb-2">{t('merchant.apiKeys.infoLiveMode')}</li>
+                                    <li className="mb-2">{t('merchant.apiKeys.infoSecurity')}</li>
+                                    <li className="mb-2">{t('merchant.apiKeys.infoRegeneration')}</li>
                                 </ul>
                             </div>
                         </div>

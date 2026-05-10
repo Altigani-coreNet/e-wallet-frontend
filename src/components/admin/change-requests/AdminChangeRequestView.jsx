@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { getChangeRequestById, approveChangeRequest, rejectChangeRequest } from '../../../services/adminChangeRequestsService';
 import Swal from 'sweetalert2';
@@ -21,16 +22,16 @@ const statusBadgeClass = (status) => {
     }
 };
 
-const formatStatus = (status) => {
-    if (!status) return 'Unknown';
+const formatStatus = (status, t) => {
+    if (!status) return t('admin.changeRequestView.unknown');
     return status
         .split('_')
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
         .join(' ');
 };
 
-const formatDateTime = (value) => {
-    if (!value) return 'N/A';
+const formatDateTime = (value, t) => {
+    if (!value) return t('admin.changeRequestView.na');
     try {
         return new Date(value).toLocaleString();
     } catch {
@@ -38,9 +39,9 @@ const formatDateTime = (value) => {
     }
 };
 
-const renderActor = (actor) => {
+const renderActor = (actor, t) => {
     if (!actor) {
-        return 'System';
+        return t('admin.changeRequestView.system');
     }
     return actor.name || actor.email || `#${actor.id}`;
 };
@@ -75,6 +76,7 @@ const resolveAttachmentUrl = (value) => {
 };
 
 const AdminChangeRequestView = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const { setTitle, setActions } = useToolbar();
 
@@ -114,7 +116,7 @@ const AdminChangeRequestView = () => {
 
         const url = getAttachmentUrlFor(entry, key);
         if (!url) {
-            return <span className="text-muted">No file</span>;
+            return <span className="text-muted">{t('admin.changeRequestView.noFile')}</span>;
         }
 
         const fileName = getAttachmentFileName(entry, key) || 'attachment';
@@ -146,24 +148,24 @@ const AdminChangeRequestView = () => {
                 rel="noopener noreferrer"
                 className="btn btn-sm btn-light-primary"
             >
-                Download {fileName}
+                {t('admin.changeRequestView.download', { fileName })}
             </a>
         );
-    }, [getAttachmentFileName, getAttachmentUrlFor]);
+    }, [getAttachmentFileName, getAttachmentUrlFor, t]);
 
     useEffect(() => {
-        setTitle('Change Request Detail');
+        setTitle(t('admin.changeRequestView.changeRequestDetail'));
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t]);
 
     const loadChangeRequest = useCallback(async () => {
         const response = await getChangeRequestById(id);
         const success = response?.status ?? response?.success ?? false;
         if (!success) {
-            throw new Error(response?.message || 'Failed to load change request');
+            throw new Error(response?.message || t('admin.changeRequestView.failedToLoad'));
         }
         return response?.data ?? null;
-    }, [id]);
+    }, [id, t]);
 
     useEffect(() => {
         let isMounted = true;
@@ -175,12 +177,12 @@ const AdminChangeRequestView = () => {
                 setChangeRequest(data);
                 setModerationNote(data?.moderation_note || '');
                 if (data?.id) {
-                    setTitle(`Change Request #${data.id}`);
+                    setTitle(t('admin.changeRequestView.changeRequest', { id: data.id }));
                 }
             } catch (error) {
                 if (isMounted) {
                     console.error('Error loading change request details:', error);
-                    toast.error(error?.message || 'Failed to load change request');
+                    toast.error(error?.message || t('admin.changeRequestView.failedToLoad'));
                 }
             } finally {
                 if (isMounted) {
@@ -193,7 +195,7 @@ const AdminChangeRequestView = () => {
         return () => {
             isMounted = false;
         };
-    }, [loadChangeRequest, setTitle]);
+    }, [loadChangeRequest, setTitle, t]);
 
     const handleApprove = useCallback(async () => {
         if (!changeRequest || actionLoading) {
@@ -201,12 +203,12 @@ const AdminChangeRequestView = () => {
         }
 
         const result = await Swal.fire({
-            title: 'Approve change request?',
-            text: 'This will apply the requested changes.',
+            title: t('admin.changeRequestView.approveConfirmTitle'),
+            text: t('admin.changeRequestView.approveConfirmText'),
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Yes, approve',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.changeRequestView.approveConfirmButton'),
+            cancelButtonText: t('admin.changeRequestView.cancel'),
             confirmButtonColor: '#50cd89',
         });
 
@@ -222,7 +224,7 @@ const AdminChangeRequestView = () => {
             const success = response?.status ?? response?.success ?? false;
 
             if (!success) {
-                throw new Error(response?.message || 'Failed to approve change request');
+                throw new Error(response?.message || t('admin.changeRequestView.approveFailed'));
             }
 
             const payload = response?.data ?? {};
@@ -231,14 +233,14 @@ const AdminChangeRequestView = () => {
                 setModerationNote(payload.change_request.moderation_note || '');
             }
 
-            toast.success(payload?.message || 'Change request approved successfully');
+            toast.success(payload?.message || t('admin.changeRequestView.approveSuccess'));
         } catch (error) {
             console.error('Error approving change request:', error);
-            toast.error(error?.message || 'Failed to approve change request');
+            toast.error(error?.message || t('admin.changeRequestView.approveFailed'));
         } finally {
             setActionLoading(false);
         }
-    }, [actionLoading, changeRequest, moderationNote]);
+    }, [actionLoading, changeRequest, moderationNote, t]);
 
     const handleReject = useCallback(async () => {
         if (!changeRequest || actionLoading) {
@@ -246,17 +248,17 @@ const AdminChangeRequestView = () => {
         }
 
         const result = await Swal.fire({
-            title: 'Reject change request',
+            title: t('admin.changeRequestView.rejectConfirmTitle'),
             input: 'textarea',
-            inputLabel: 'Reason (optional)',
-            inputPlaceholder: 'Provide a reason for rejecting this request',
+            inputLabel: t('admin.changeRequestView.rejectInputLabel'),
+            inputPlaceholder: t('admin.changeRequestView.rejectInputPlaceholder'),
             inputValue: '',
             inputAttributes: {
-                'aria-label': 'Rejection reason',
+                'aria-label': t('admin.changeRequestView.rejectInputLabel'),
             },
             showCancelButton: true,
-            confirmButtonText: 'Reject',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.changeRequestView.rejectConfirmButton'),
+            cancelButtonText: t('admin.changeRequestView.cancel'),
             confirmButtonColor: '#f1416c',
             focusConfirm: false,
         });
@@ -275,7 +277,7 @@ const AdminChangeRequestView = () => {
             const success = response?.status ?? response?.success ?? false;
 
             if (!success) {
-                throw new Error(response?.message || 'Failed to reject change request');
+                throw new Error(response?.message || t('admin.changeRequestView.rejectFailed'));
             }
 
             const payload = response?.data ?? {};
@@ -286,21 +288,21 @@ const AdminChangeRequestView = () => {
                 setModerationNote(note);
             }
 
-            toast.success(payload?.message || 'Change request rejected successfully');
+            toast.success(payload?.message || t('admin.changeRequestView.rejectSuccess'));
         } catch (error) {
             console.error('Error rejecting change request:', error);
-            toast.error(error?.message || 'Failed to reject change request');
+            toast.error(error?.message || t('admin.changeRequestView.rejectFailed'));
         } finally {
             setActionLoading(false);
         }
-    }, [actionLoading, changeRequest]);
+    }, [actionLoading, changeRequest, t]);
 
     const toolbarActions = useMemo(() => {
         const items = [];
 
         items.push(
             <Link key="history" to="/admin/merchants/change-requests" className="btn btn-sm btn-light">
-                Back to History
+                {t('admin.changeRequestView.backToHistory')}
             </Link>
         );
 
@@ -315,7 +317,7 @@ const AdminChangeRequestView = () => {
             if (changeableLink) {
                 items.push(
                     <Link key="subject" to={changeableLink} className="btn btn-sm btn-light-primary">
-                        View {changeRequest.changeable_label || 'Subject'}
+                        {t('admin.changeRequestView.viewSubject', { label: changeRequest.changeable_label || t('admin.changeRequestView.subject') })}
                     </Link>
                 );
             }
@@ -332,7 +334,7 @@ const AdminChangeRequestView = () => {
                             {actionLoading ? (
                                 <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
                             ) : null}
-                            Approve
+                            {t('admin.changeRequestView.approve')}
                         </button>
                         <button
                             type="button"
@@ -343,7 +345,7 @@ const AdminChangeRequestView = () => {
                             {actionLoading ? (
                                 <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
                             ) : null}
-                            Reject
+                            {t('admin.changeRequestView.reject')}
                         </button>
                     </div>
                 );
@@ -351,7 +353,7 @@ const AdminChangeRequestView = () => {
         }
 
         return <div className="d-flex align-items-center gap-2">{items}</div>;
-    }, [actionLoading, changeRequest, handleApprove, handleReject]);
+    }, [actionLoading, changeRequest, handleApprove, handleReject, t]);
 
     useEffect(() => {
         setActions(toolbarActions);
@@ -375,9 +377,9 @@ const AdminChangeRequestView = () => {
         return (
             <div className="card">
                 <div className="card-body text-center py-20">
-                    <h3 className="mb-3">Change request not found</h3>
+                    <h3 className="mb-3">{t('admin.changeRequestView.notFoundTitle')}</h3>
                     <Link to="/admin/merchants/change-requests" className="btn btn-light-primary">
-                        Back to Change Request History
+                        {t('admin.changeRequestView.backToHistoryButton')}
                     </Link>
                 </div>
             </div>
@@ -394,52 +396,52 @@ const AdminChangeRequestView = () => {
                 <div className="card-body">
                     <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-4">
                         <div>
-                            <h2 className="fw-bold mb-1">Change Request #{changeRequest.id}</h2>
+                            <h2 className="fw-bold mb-1">{t('admin.changeRequestView.changeRequest', { id: changeRequest.id })}</h2>
                             <div className="d-flex flex-wrap align-items-center gap-2">
                                 <span className={`badge ${statusBadgeClass(changeRequest.status)}`}>
-                                    {formatStatus(changeRequest.status)}
+                                    {formatStatus(changeRequest.status, t)}
                                 </span>
                                 <span className="badge badge-light-info text-capitalize">
-                                    {changeRequest.changeable_type || 'unknown'}
+                                    {changeRequest.changeable_type || t('admin.changeRequestView.unknown')}
                                 </span>
                                 <span className={`badge ${requestTypeBadge}`}>
-                                    {changeRequest.request_type || 'Profile'}
+                                    {changeRequest.request_type || t('admin.changeRequestView.profile')}
                                 </span>
                                 {changeRequest.has_file && (
                                     <span className="badge badge-light-success">
-                                        Includes Attachments
+                                        {t('admin.changeRequestView.includesAttachments')}
                                     </span>
                                 )}
                             </div>
                         </div>
                         <div className="text-muted text-end">
-                            <div>Created: <strong>{formatDateTime(changeRequest.created_at)}</strong></div>
-                            <div>Approved: <strong>{formatDateTime(changeRequest.approved_at)}</strong></div>
-                            <div>Rejected: <strong>{formatDateTime(changeRequest.rejected_at)}</strong></div>
+                            <div>{t('admin.changeRequestView.created')} <strong>{formatDateTime(changeRequest.created_at, t)}</strong></div>
+                            <div>{t('admin.changeRequestView.approved')} <strong>{formatDateTime(changeRequest.approved_at, t)}</strong></div>
+                            <div>{t('admin.changeRequestView.rejected')} <strong>{formatDateTime(changeRequest.rejected_at, t)}</strong></div>
                         </div>
                     </div>
 
                     <div className="row g-5 mt-5">
                         <div className="col-lg-6">
                             <div className="border rounded p-4 h-100">
-                                <h5 className="fw-bold mb-3">Subject</h5>
+                                <h5 className="fw-bold mb-3">{t('admin.changeRequestView.subject')}</h5>
                                 <div className="d-flex flex-column gap-3">
                                     <div>
-                                        <span className="text-muted d-block">Type</span>
+                                        <span className="text-muted d-block">{t('admin.changeRequestView.type')}</span>
                                         <span className="fw-semibold text-capitalize">
-                                            {changeRequest.changeable_label || 'Unknown'}
+                                            {changeRequest.changeable_label || t('admin.changeRequestView.unknown')}
                                         </span>
                                     </div>
                                     <div>
-                                        <span className="text-muted d-block">Name</span>
+                                        <span className="text-muted d-block">{t('admin.changeRequestView.name')}</span>
                                         <span className="fw-semibold">
-                                            {changeRequest.changeable_name || 'N/A'}
+                                            {changeRequest.changeable_name || t('admin.changeRequestView.na')}
                                         </span>
                                     </div>
                                     <div>
-                                        <span className="text-muted d-block">Reason</span>
+                                        <span className="text-muted d-block">{t('admin.changeRequestView.reason')}</span>
                                         <span className="fw-semibold">
-                                            {changeRequest.reason || 'No reason provided'}
+                                            {changeRequest.reason || t('admin.changeRequestView.noReasonProvided')}
                                         </span>
                                     </div>
                                 </div>
@@ -447,22 +449,22 @@ const AdminChangeRequestView = () => {
                         </div>
                         <div className="col-lg-6">
                             <div className="border rounded p-4 h-100">
-                                <h5 className="fw-bold mb-3">Review Information</h5>
+                                <h5 className="fw-bold mb-3">{t('admin.changeRequestView.reviewInformation')}</h5>
                                 <div className="d-flex flex-column gap-3">
                                     <div>
-                                        <span className="text-muted d-block">Requested By</span>
+                                        <span className="text-muted d-block">{t('admin.changeRequestView.requestedBy')}</span>
                                         <span className="fw-semibold">
-                                            {renderActor(changeRequest.requester)}
+                                            {renderActor(changeRequest.requester, t)}
                                         </span>
                                     </div>
                                     <div>
-                                        <span className="text-muted d-block">Reviewed By</span>
+                                        <span className="text-muted d-block">{t('admin.changeRequestView.reviewedBy')}</span>
                                         <span className="fw-semibold">
-                                            {renderActor(changeRequest.approver)}
+                                            {renderActor(changeRequest.approver, t)}
                                         </span>
                                     </div>
                                     <div>
-                                        <span className="text-muted d-block">Moderator Note</span>
+                                        <span className="text-muted d-block">{t('admin.changeRequestView.moderatorNote')}</span>
                                         <span className="fw-semibold">
                                             {changeRequest.moderation_note || '—'}
                                         </span>
@@ -476,7 +478,7 @@ const AdminChangeRequestView = () => {
 
             <div className="card">
                 <div className="card-header">
-                    <h3 className="card-title">Field Comparison</h3>
+                    <h3 className="card-title">{t('admin.changeRequestView.fieldComparison')}</h3>
                 </div>
                 <div className="card-body">
                     {changeEntries.length > 0 ? (
@@ -484,9 +486,9 @@ const AdminChangeRequestView = () => {
                             <table className="table table-row-bordered align-middle">
                                 <thead>
                                     <tr className="fw-bold text-muted">
-                                        <th>Field</th>
-                                        <th>Current Value</th>
-                                        <th>Requested Value</th>
+                                        <th>{t('admin.changeRequestView.field')}</th>
+                                        <th>{t('admin.changeRequestView.currentValue')}</th>
+                                        <th>{t('admin.changeRequestView.requestedValue')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -507,7 +509,7 @@ const AdminChangeRequestView = () => {
                         </div>
                     ) : (
                         <div className="alert alert-secondary mb-0">
-                            No field-level differences were recorded for this request. This typically indicates the submission contained attachments or metadata only.
+                            {t('admin.changeRequestView.noDifferences')}
                         </div>
                     )}
                 </div>

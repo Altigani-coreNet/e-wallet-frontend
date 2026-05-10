@@ -1,24 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import Swal from 'sweetalert2';
 import AdminTerminalForm from './AdminTerminalForm';
 import { createAdminTerminal } from '../../../services/adminTerminalsService';
 
 const AdminTerminalCreate = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        setTitle('Create Terminal');
+        setTitle(t('admin.terminalCreate.title'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/admin/dashboard' },
-            { label: 'Terminals', path: '/admin/terminals' },
-            { label: 'Create Terminal', path: '/admin/terminals/create', active: true }
+            { label: t('admin.header.dashboard'), path: '/admin/dashboard' },
+            { label: t('admin.sidebar.terminals'), path: '/admin/terminals' },
+            { label: t('admin.terminalCreate.title'), path: '/admin/terminals/create', active: true }
         ]);
         
         setActions(
@@ -27,7 +29,7 @@ const AdminTerminalCreate = () => {
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back to List
+                {t('admin.terminalView.backToList')}
             </Link>
         );
 
@@ -35,7 +37,7 @@ const AdminTerminalCreate = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions]);
+    }, [setTitle, setBreadcrumbs, setActions, t]);
 
     const handleSubmit = async (formData) => {
         setLoading(true);
@@ -46,19 +48,19 @@ const AdminTerminalCreate = () => {
             if (response.success) {
                 await queryClient.invalidateQueries({ queryKey: ['admin-terminals'] });
                 await Swal.fire({
-                    title: 'Success!',
-                    text: 'Terminal created successfully.',
+                    title: t('admin.common.success'),
+                    text: t('admin.terminalCreate.success'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
                 });
                 navigate('/admin/terminals');
             } else {
-                Swal.fire('Error!', response.error || 'Failed to create terminal.', 'error');
+                Swal.fire(t('admin.common.error'), response.error || t('admin.terminalCreate.error'), 'error');
             }
         } catch (err) {
             console.error('Error creating terminal:', err);
-            Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+            Swal.fire(t('admin.common.error'), t('admin.common.unexpectedError'), 'error');
         } finally {
             setLoading(false);
         }

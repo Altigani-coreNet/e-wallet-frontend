@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Swal from 'sweetalert2';
 
 const AdminPaymentLinkTableRow = ({ paymentLink, merchantsMap = {}, countriesMap = {} }) => {
+    const { t, i18n } = useTranslation();
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -16,7 +18,7 @@ const AdminPaymentLinkTableRow = ({ paymentLink, merchantsMap = {}, countriesMap
                 return value;
             }
         }
-        return 'N/A';
+        return t('admin.paymentLinksIndex.na');
     };
 
     useEffect(() => {
@@ -38,8 +40,8 @@ const AdminPaymentLinkTableRow = ({ paymentLink, merchantsMap = {}, countriesMap
     const toggleDropdown = () => setShowDropdown((prev) => !prev);
 
     const formatDate = (date) => {
-        if (!date) return 'N/A';
-        return new Date(date).toLocaleString('en-US', {
+        if (!date) return t('admin.paymentLinksIndex.na');
+        return new Date(date).toLocaleString(i18n.language === 'ar' ? 'ar-EG' : 'en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -65,11 +67,21 @@ const AdminPaymentLinkTableRow = ({ paymentLink, merchantsMap = {}, countriesMap
             scheduled: 'badge-light-primary',
         };
 
+        const statusLabels = {
+            active: t('admin.paymentLinksIndex.statusActive'),
+            inactive: t('admin.paymentLinksIndex.statusInactive'),
+            expired: t('admin.paymentLinksIndex.statusExpired'),
+            completed: t('admin.paymentLinksIndex.statusCompleted'),
+            scheduled: t('admin.paymentLinksIndex.statusScheduled'),
+        };
+
         const value = status?.toLowerCase();
         const statusClass = statusClasses[value] || 'badge-light-secondary';
+        const label = statusLabels[value] || (status ? status.charAt(0).toUpperCase() + status.slice(1) : t('admin.paymentLinksIndex.na'));
+        
         return (
             <span className={`badge ${statusClass}`}>
-                {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'N/A'}
+                {label}
             </span>
         );
     };
@@ -80,7 +92,7 @@ const AdminPaymentLinkTableRow = ({ paymentLink, merchantsMap = {}, countriesMap
                 toast: true,
                 position: 'top-end',
                 icon: 'info',
-                title: 'No link available to copy',
+                title: t('admin.paymentLinksIndex.noLinkToCopy'),
                 showConfirmButton: false,
                 timer: 2000,
             });
@@ -93,7 +105,7 @@ const AdminPaymentLinkTableRow = ({ paymentLink, merchantsMap = {}, countriesMap
                 toast: true,
                 position: 'top-end',
                 icon: 'success',
-                title: 'Link copied to clipboard!',
+                title: t('admin.paymentLinksIndex.linkCopied'),
                 showConfirmButton: false,
                 timer: 2000,
             });
@@ -106,7 +118,7 @@ const AdminPaymentLinkTableRow = ({ paymentLink, merchantsMap = {}, countriesMap
                 <span className="text-gray-800 fw-bold">{paymentLink.id}</span>
             </td>
             <td>
-                <span className="text-gray-800 fw-semibold">{paymentLink.uuid || 'N/A'}</span>
+                <span className="text-gray-800 fw-semibold">{paymentLink.uuid || t('admin.paymentLinksIndex.na')}</span>
             </td>
             <td>
                 <span className="text-gray-600">
@@ -128,7 +140,7 @@ const AdminPaymentLinkTableRow = ({ paymentLink, merchantsMap = {}, countriesMap
             </td>
             <td>
                 <div className="d-flex flex-column">
-                    <span className="text-gray-800">{paymentLink.customer_name || 'N/A'}</span>
+                    <span className="text-gray-800">{paymentLink.customer_name || t('admin.paymentLinksIndex.na')}</span>
                     {paymentLink.customer_email && (
                         <span className="text-muted fs-7">{paymentLink.customer_email}</span>
                     )}
@@ -187,7 +199,7 @@ const AdminPaymentLinkTableRow = ({ paymentLink, merchantsMap = {}, countriesMap
                                         <span className="path2"></span>
                                         <span className="path3"></span>
                                     </i>
-                                    View
+                                    {t('admin.paymentLinksIndex.view')}
                                 </Link>
                             </div>
                             <div className="menu-item px-3">
@@ -202,7 +214,7 @@ const AdminPaymentLinkTableRow = ({ paymentLink, merchantsMap = {}, countriesMap
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Copy Link
+                                    {t('admin.paymentLinksIndex.copyLink')}
                                 </button>
                             </div>
                         </div>

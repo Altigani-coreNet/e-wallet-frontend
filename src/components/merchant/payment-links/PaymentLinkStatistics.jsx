@@ -1,21 +1,23 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const PaymentLinkStatistics = ({ statistics }) => {
+    const { t } = useTranslation();
     if (!statistics) return null;
 
     const stats = [
         {
-            label: 'Total Payment Links',
+            label: t('merchant.paymentLinks.statistics.total'),
             value: statistics.total || 0,
             bgClass: 'bg-light-dark'
         },
         {
-            label: 'Completed',
+            label: t('merchant.paymentLinks.statistics.completed'),
             value: statistics.completed || 0,
             bgClass: 'bg-light-success'
         },
         {
-            label: 'Expired',
+            label: t('merchant.paymentLinks.statistics.expired'),
             value: statistics.expired || 0,
             bgClass: 'bg-light-warning'
         }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
@@ -9,6 +10,7 @@ import CityFiltersPanel from './CityFiltersPanel';
 import BulkActionBar from '../../../common/BulkActionBar';
 
 const AdminCitiesIndex = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const canCreateCity = useCan('pos.cities.create_cities');
     const [cities, setCities] = useState([]);
@@ -20,23 +22,23 @@ const AdminCitiesIndex = () => {
     const [filters, setFilters] = useState({ status: '', merchant_id: '', country_id: '' });
 
     useEffect(() => {
-        setTitle('Cities Management');
+        setTitle(t('admin.pages.citiesManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button className="btn btn-sm btn-flex btn-secondary fw-bold" onClick={() => setShowFilters(!showFilters)}>
                     <i className="ki-duotone ki-filter fs-3"><span className="path1"></span><span className="path2"></span></i>
-                    <span className="d-none d-md-inline ms-1">{showFilters ? 'Hide' : 'Show'} Filters</span>
+                    <span className="d-none d-md-inline ms-1">{showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}</span>
                 </button>
                 {canCreateCity && (
                     <Link to="/admin/system/cities/create" className="btn btn-sm fw-bold btn-primary">
                         <i className="ki-duotone ki-plus fs-3"><span className="path1"></span><span className="path2"></span></i>
-                        <span className="d-none d-md-inline ms-1">Add City</span>
+                        <span className="d-none d-md-inline ms-1">{t('admin.common.addCity')}</span>
                     </Link>
                 )}
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters]);
+    }, [setTitle, setActions, showFilters, t, i18n.language]);
 
     useEffect(() => { fetchCities(); }, [pagination.current_page]);
     useEffect(() => {
@@ -59,20 +61,20 @@ const AdminCitiesIndex = () => {
                 const lastPage = responseData?.last_page || Math.ceil(total / pagination.per_page);
                 setPagination(prev => ({ ...prev, total, last_page: lastPage }));
             } else {
-                toast.error(response.error || 'Failed to fetch cities');
+                toast.error(response.error || t('admin.citiesIndex.fetchFailed'));
             }
         } catch (error) {
-            toast.error('Failed to fetch cities');
+            toast.error(t('admin.citiesIndex.fetchFailed'));
         } finally {
             setLoading(false);
         }
     };
 
     const handleBulkDelete = async () => {
-        if (selectedIds.length === 0) return toast.warning('Please select cities');
-        if (!window.confirm(`Delete ${selectedIds.length} city(ies)?`)) return;
+        if (selectedIds.length === 0) return toast.warning(t('admin.common.pleaseSelectToDelete'));
+        if (!window.confirm(t('admin.citiesIndex.deleteConfirm', { count: selectedIds.length }))) return;
         const response = await bulkDeleteCities(selectedIds);
-        response.success ? (toast.success('Cities deleted'), setSelectedIds([]), fetchCities()) : toast.error('Failed to delete');
+        response.success ? (toast.success(t('admin.citiesIndex.deleted')), setSelectedIds([]), fetchCities()) : toast.error(t('admin.citiesIndex.deleteFailed'));
     };
 
     return (
@@ -85,7 +87,7 @@ const AdminCitiesIndex = () => {
                         <div className="card-title">
                             <div className="d-flex align-items-center position-relative my-1">
                                 <i className="ki-duotone ki-magnifier fs-3 position-absolute ms-5"><span className="path1"></span><span className="path2"></span></i>
-                                <input type="text" className="form-control form-control-solid w-250px ps-13" placeholder="Search Cities" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                <input type="text" className="form-control form-control-solid w-250px ps-13" placeholder={t('admin.citiesIndex.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                             </div>
                         </div>
                     </div>
@@ -97,19 +99,19 @@ const AdminCitiesIndex = () => {
                                     <th className="w-10px pe-2"><div className="form-check form-check-sm form-check-custom form-check-solid me-3">
                                         <input className="form-check-input" type="checkbox" checked={selectedIds.length === cities.length && cities.length > 0} onChange={(e) => setSelectedIds(e.target.checked ? cities.map(c => c.id) : [])} />
                                     </div></th>
-                                    <th>Name (EN)</th>
-                                    <th>Name (AR)</th>
-                                    <th>Country</th>
-                                    <th>Status</th>
-                                    <th>Created At</th>
-                                    <th className="text-end min-w-100px">Actions</th>
+                                    <th>{t('admin.table.nameEn')}</th>
+                                    <th>{t('admin.table.nameAr')}</th>
+                                    <th>{t('admin.table.country')}</th>
+                                    <th>{t('admin.common.status')}</th>
+                                    <th>{t('admin.common.createdAt')}</th>
+                                    <th className="text-end min-w-100px">{t('admin.common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="fw-semibold text-gray-600">
                                 {loading ? (
-                                    <tr><td colSpan="7" className="text-center py-5"><div className="spinner-border text-primary"><span className="visually-hidden">Loading...</span></div></td></tr>
+                                    <tr><td colSpan="7" className="text-center py-5"><div className="spinner-border text-primary" role="status"><span className="visually-hidden">{t('admin.common.loading')}</span></div></td></tr>
                                 ) : cities.length === 0 ? (
-                                    <tr><td colSpan="7" className="text-center py-5">No cities found</td></tr>
+                                    <tr><td colSpan="7" className="text-center py-5">{t('admin.common.noData')}</td></tr>
                                 ) : (
                                     cities.map(city => <CityTableRow key={city.id} city={city} isSelected={selectedIds.includes(city.id)} onSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])} onRefresh={fetchCities} />)
                                 )}
@@ -119,7 +121,7 @@ const AdminCitiesIndex = () => {
                         {!loading && pagination.last_page > 1 && (
                             <div className="row">
                                 <div className="col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start">
-                                    <div className="dataTables_length">Showing page {pagination.current_page} of {pagination.last_page}</div>
+                                    <div className="dataTables_length">{t('admin.common.showingPage', { current: pagination.current_page, total: pagination.last_page })}</div>
                                 </div>
                                 <div className="col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end">
                                     <div className="dataTables_paginate paging_simple_numbers">

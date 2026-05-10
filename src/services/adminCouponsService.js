@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { attachAcceptLanguageInterceptor } from '../i18n/acceptLanguage';
 import { useQuery } from '@tanstack/react-query';
 import { ADMIN_ENDPOINTS } from '../utils/constants';
 import { getToken } from '../utils/api';
@@ -9,6 +10,8 @@ const api = axios.create({
         'Content-Type': 'application/json',
     },
 });
+
+attachAcceptLanguageInterceptor(api);
 
 api.interceptors.request.use((config) => {
     const token = getToken();

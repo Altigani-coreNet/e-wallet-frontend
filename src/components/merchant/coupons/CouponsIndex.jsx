@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 import Swal from 'sweetalert2';
@@ -18,6 +19,7 @@ import InventoryToolbar from '../..//sales/inventory/InventoryToolbar';
 import ImportInventoryModal from '../..//sales/inventory/ImportInventoryModal';
 
 const CouponsIndex = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const queryClient = useQueryClient();
 
@@ -106,7 +108,7 @@ const CouponsIndex = () => {
         },
         onError: (err) => {
             console.error('Error fetching coupons:', err);
-            toast.error('Failed to load coupons');
+            toast.error(t('merchant.coupons.loadFailed'));
         },
     });
 
@@ -117,38 +119,18 @@ const CouponsIndex = () => {
 
     // Title & breadcrumbs
     useEffect(() => {
-        setTitle('Coupons Management');
+        setTitle(t('merchant.coupons.title'));
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/sales/dashboard' },
-            { label: 'Product Management', path: '#' },
-            { label: 'Coupons', path: '/sales/coupons' },
-            { label: 'List Coupons', path: '/sales/coupons', active: true },
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.coupons'), path: '/merchant/coupons' },
+            { label: t('merchant.breadcrumbs.couponsList'), path: '/merchant/coupons', active: true },
         ]);
 
         return () => {
             setBreadcrumbs([]);
             setActions(null);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // Toolbar actions (Add, Import, Export, Bulk delete)
-    useEffect(() => {
-        setActions(
-            <InventoryToolbar
-                onRefresh={() => refetch()}
-                loading={isFetching}
-                onExport={handleExport}
-                onImport={() => setShowImportModal(true)}
-                selectedCount={selectedIds.length}
-                onBulkDelete={handleBulkDelete}
-                onAdd={handleOpenModal}
-                addButtonLabel="Add Coupon"
-            />
-        );
-        return () => setActions(null);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isFetching, selectedIds.length]);
+    }, [setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     // Sorting
     const handleSort = useCallback((column) => {
@@ -224,10 +206,10 @@ const CouponsIndex = () => {
 
             if (editingCoupon) {
                 await updateCoupon(editingCoupon.id, payload);
-                toast.success('Coupon updated successfully');
+                toast.success(t('merchant.coupons.updatedSuccess'));
             } else {
                 await createCoupon(payload);
-                toast.success('Coupon created successfully');
+                toast.success(t('merchant.coupons.createdSuccess'));
             }
 
             handleCloseModal();
@@ -239,7 +221,7 @@ const CouponsIndex = () => {
                 error.response?.data?.message ||
                 (error.response?.data?.errors
                     ? Object.values(error.response.data.errors).flat().join(', ')
-                    : 'Failed to save coupon');
+                    : t('merchant.coupons.saveFailed'));
             toast.error(errorMessage);
         } finally {
             setFormSubmitting(false);
@@ -249,30 +231,30 @@ const CouponsIndex = () => {
     const handleDelete = async (id) => {
         try {
             await deleteCoupon(id);
-            toast.success('Coupon deleted successfully');
+            toast.success(t('merchant.coupons.deletedSuccess'));
             queryClient.invalidateQueries({ queryKey: ['coupons'] });
             await refetch();
         } catch (error) {
             console.error('Error deleting coupon:', error);
-            toast.error('Failed to delete coupon');
+            toast.error(t('merchant.coupons.deleteFailed'));
         }
     };
 
     const handleBulkDelete = useCallback(async () => {
         if (selectedIds.length === 0) {
-            toast.warning('Please select at least one coupon');
+            toast.warning(t('merchant.coupons.selectAtLeastOne'));
             return;
         }
 
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete ${selectedIds.length} coupon(s). This action cannot be undone!`,
+            title: t('merchant.common.areYouSure'),
+            text: t('merchant.coupons.bulkDeleteText', { count: selectedIds.length }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete them!',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('merchant.common.yesDeleteThem'),
+            cancelButtonText: t('merchant.common.cancel'),
         });
 
         if (result.isConfirmed) {
@@ -280,11 +262,15 @@ const CouponsIndex = () => {
                 const response = await bulkDeleteCoupons(selectedIds);
 
                 if (response.success === false) {
-                    Swal.fire('Error!', response.error || 'Failed to delete coupons.', 'error');
+                    Swal.fire(
+                        t('merchant.common.error'),
+                        response.error || t('merchant.coupons.bulkDeleteFailed'),
+                        'error'
+                    );
                 } else {
                     await Swal.fire({
-                        title: 'Deleted!',
-                        text: 'Coupons have been deleted successfully.',
+                        title: t('merchant.common.deleted'),
+                        text: t('merchant.coupons.bulkDeletedSuccess'),
                         icon: 'success',
                         timer: 2000,
                         showConfirmButton: false,
@@ -294,10 +280,10 @@ const CouponsIndex = () => {
                     await refetch();
                 }
             } catch (error) {
-                Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+                Swal.fire(t('merchant.common.error'), t('merchant.coupons.unexpectedError'), 'error');
             }
         }
-    }, [selectedIds, queryClient, refetch]);
+    }, [selectedIds, queryClient, refetch, t]);
 
     const handleExport = useCallback(async () => {
         try {
@@ -316,12 +302,12 @@ const CouponsIndex = () => {
             window.URL.revokeObjectURL(downloadUrl);
             document.body.removeChild(a);
 
-            toast.success('Coupons exported successfully');
+            toast.success(t('merchant.coupons.exportedSuccess'));
         } catch (error) {
             console.error('Export error:', error);
-            toast.error('Failed to export coupons');
+            toast.error(t('merchant.coupons.exportFailed'));
         }
-    }, [debouncedSearchTerm, statusFilter, queryParams]);
+    }, [debouncedSearchTerm, statusFilter, queryParams, t]);
 
     const handleImportSuccess = () => {
         setShowImportModal(false);
@@ -360,7 +346,7 @@ const CouponsIndex = () => {
         });
     };
 
-    const handleOpenModal = () => {
+    const handleOpenModal = useCallback(() => {
         setEditingCoupon(null);
         setFormData({
             name: '',
@@ -373,7 +359,42 @@ const CouponsIndex = () => {
             expired_at: '',
         });
         setShowModal(true);
-    };
+    }, []);
+
+    // Toolbar actions (Add, Import, Export, Bulk delete)
+    useEffect(() => {
+        setActions(
+            <InventoryToolbar
+                onRefresh={() => refetch()}
+                loading={isFetching}
+                onExport={handleExport}
+                onImport={() => setShowImportModal(true)}
+                selectedCount={selectedIds.length}
+                onBulkDelete={handleBulkDelete}
+                onAdd={handleOpenModal}
+                addButtonLabel={t('merchant.coupons.addCoupon')}
+                bulkDeleteLabel={t('merchant.coupons.deleteSelected', { count: selectedIds.length })}
+                bulkDeleteAriaLabel={t('merchant.coupons.bulkDeleteAria', { count: selectedIds.length })}
+                exportButtonLabel={t('merchant.transactions.export')}
+                importButtonLabel={t('merchant.branches.import')}
+                refreshButtonTitle={t('merchant.common.refresh')}
+                exportAriaLabel={t('merchant.coupons.exportAria')}
+                importAriaLabel={t('merchant.coupons.importAria')}
+                refreshAriaLabel={t('merchant.coupons.refreshAria')}
+            />
+        );
+        return () => setActions(null);
+    }, [
+        isFetching,
+        selectedIds.length,
+        setActions,
+        t,
+        i18n.language,
+        refetch,
+        handleExport,
+        handleBulkDelete,
+        handleOpenModal,
+    ]);
 
     const { current_page, per_page, total, last_page } = pagination;
 
@@ -390,7 +411,7 @@ const CouponsIndex = () => {
                             <input
                                 type="text"
                                 className="form-control form-control-solid w-250px ps-13"
-                                placeholder="Search coupons..."
+                                placeholder={t('merchant.coupons.searchPlaceholder')}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -405,12 +426,12 @@ const CouponsIndex = () => {
                                     setPagination((prev) => ({ ...prev, current_page: 1 }));
                                 }}
                             >
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="expired">Expired</option>
+                                <option value="">{t('merchant.coupons.allStatus')}</option>
+                                <option value="active">{t('merchant.common.active')}</option>
+                                <option value="expired">{t('merchant.coupons.statusExpired')}</option>
                             </select>
                             <div className="d-flex align-items-center gap-2">
-                                <label className="form-label mb-0 text-nowrap">Per Page:</label>
+                                <label className="form-label mb-0 text-nowrap">{t('merchant.common.perPage')}</label>
                                 <select
                                     className="form-select form-select-sm"
                                     style={{ width: '80px' }}
@@ -438,10 +459,10 @@ const CouponsIndex = () => {
 
                     {queryError && (
                         <div className="alert alert-danger alert-dismissible mb-4">
-                            <strong>Error:</strong>{' '}
+                            <strong>{t('merchant.common.error')}:</strong>{' '}
                             {queryError?.response?.data?.message ||
                                 queryError.message ||
-                                'Failed to load coupons'}
+                                t('merchant.coupons.loadFailed')}
                         </div>
                     )}
 
@@ -476,7 +497,7 @@ const CouponsIndex = () => {
                                         onClick={() => handleSort('id')}
                                     >
                                         <span className="d-flex align-items-center">
-                                            ID {getSortIcon('id')}
+                                            {t('merchant.coupons.colId')} {getSortIcon('id')}
                                         </span>
                                     </th>
                                     <th
@@ -484,7 +505,7 @@ const CouponsIndex = () => {
                                         onClick={() => handleSort('code')}
                                     >
                                         <span className="d-flex align-items-center">
-                                            Code {getSortIcon('code')}
+                                            {t('merchant.coupons.colCode')} {getSortIcon('code')}
                                         </span>
                                     </th>
                                     <th
@@ -492,28 +513,29 @@ const CouponsIndex = () => {
                                         onClick={() => handleSort('name')}
                                     >
                                         <span className="d-flex align-items-center">
-                                            Name {getSortIcon('name')}
+                                            {t('merchant.coupons.colName')} {getSortIcon('name')}
                                         </span>
                                     </th>
-                                    <th>Type</th>
+                                    <th>{t('merchant.coupons.colType')}</th>
                                     <th
                                         style={{ cursor: 'pointer' }}
                                         onClick={() => handleSort('amount')}
                                     >
                                         <span className="d-flex align-items-center">
-                                            Amount {getSortIcon('amount')}
+                                            {t('merchant.coupons.colAmount')} {getSortIcon('amount')}
                                         </span>
                                     </th>
-                                    <th>Usage</th>
+                                    <th>{t('merchant.coupons.colUsage')}</th>
                                     <th
                                         style={{ cursor: 'pointer' }}
                                         onClick={() => handleSort('expired_at')}
                                     >
                                         <span className="d-flex align-items-center">
-                                            Expires At {getSortIcon('expired_at')}
+                                            {t('merchant.coupons.colExpiresAt')}{' '}
+                                            {getSortIcon('expired_at')}
                                         </span>
                                     </th>
-                                    <th className="text-end">Actions</th>
+                                    <th className="text-end">{t('merchant.coupons.colActions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -603,20 +625,20 @@ const CouponsIndex = () => {
                                                 <td>
                                                     {coupon.expired_at
                                                         ? coupon.expired_at
-                                                        : 'No expiry'}
+                                                        : t('merchant.coupons.noExpiry')}
                                                 </td>
                                                 <td className="text-end">
                                                     <button
                                                         className="btn btn-sm btn-light-primary me-2"
                                                         onClick={() => handleEdit(coupon)}
                                                     >
-                                                        Edit
+                                                        {t('merchant.common.edit')}
                                                     </button>
                                                     <button
                                                         className="btn btn-sm btn-light-danger"
                                                         onClick={() => handleDelete(coupon.id)}
                                                     >
-                                                        Delete
+                                                        {t('merchant.common.delete')}
                                                     </button>
                                                 </td>
                                             </tr>
@@ -625,7 +647,7 @@ const CouponsIndex = () => {
                                 ) : (
                                     <tr>
                                         <td colSpan={9} className="text-center py-10">
-                                            No coupons found
+                                            {t('merchant.coupons.noCouponsFound')}
                                         </td>
                                     </tr>
                                 )}
@@ -636,7 +658,10 @@ const CouponsIndex = () => {
                     {last_page > 1 && (
                         <div className="d-flex justify-content-between align-items-center pt-4">
                             <div className="text-muted">
-                                Showing {coupons.length} of {total} coupons
+                                {t('merchant.coupons.showingCount', {
+                                    shown: coupons.length,
+                                    total,
+                                })}
                             </div>
                             <nav>
                                 <ul className="pagination mb-0">
@@ -652,7 +677,7 @@ const CouponsIndex = () => {
                                             }
                                             disabled={current_page === 1 || isFetching}
                                         >
-                                            Previous
+                                            {t('merchant.common.previous')}
                                         </button>
                                     </li>
                                     {[...Array(Math.min(last_page, 10))].map((_, i) => {
@@ -695,7 +720,7 @@ const CouponsIndex = () => {
                                             }
                                             disabled={current_page === last_page || isFetching}
                                         >
-                                            Next
+                                            {t('merchant.common.next')}
                                         </button>
                                     </li>
                                 </ul>
@@ -715,7 +740,9 @@ const CouponsIndex = () => {
                         <div className="modal-content">
                             <div className="modal-header">
                                 <h5 className="modal-title">
-                                    {editingCoupon ? 'Edit Coupon' : 'Add New Coupon'}
+                                    {editingCoupon
+                                        ? t('merchant.coupons.editCoupon')
+                                        : t('merchant.coupons.addNewCoupon')}
                                 </h5>
                                 <button
                                     type="button"
@@ -726,7 +753,9 @@ const CouponsIndex = () => {
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-body">
                                     <div className="mb-3">
-                                        <label className="form-label required">Name</label>
+                                        <label className="form-label required">
+                                            {t('merchant.coupons.formName')}
+                                        </label>
                                         <input
                                             type="text"
                                             className="form-control"
@@ -741,7 +770,9 @@ const CouponsIndex = () => {
                                         />
                                     </div>
                                     <div className="mb-3">
-                                        <label className="form-label required">Code</label>
+                                        <label className="form-label required">
+                                            {t('merchant.coupons.formCode')}
+                                        </label>
                                         <input
                                             type="text"
                                             className="form-control"
@@ -756,7 +787,7 @@ const CouponsIndex = () => {
                                         />
                                     </div>
                                     <div className="mb-3">
-                                        <label className="form-label">Type</label>
+                                        <label className="form-label">{t('merchant.coupons.formType')}</label>
                                         <select
                                             className="form-select"
                                             value={formData.type}
@@ -767,12 +798,16 @@ const CouponsIndex = () => {
                                                 })
                                             }
                                         >
-                                            <option value="percentage">Percentage</option>
-                                            <option value="fixed">Fixed</option>
+                                            <option value="percentage">
+                                                {t('merchant.coupons.typePercentage')}
+                                            </option>
+                                            <option value="fixed">{t('merchant.coupons.typeFixed')}</option>
                                         </select>
                                     </div>
                                     <div className="mb-3">
-                                        <label className="form-label required">Amount</label>
+                                        <label className="form-label required">
+                                            {t('merchant.coupons.formAmount')}
+                                        </label>
                                         <input
                                             type="number"
                                             step="0.01"
@@ -789,7 +824,9 @@ const CouponsIndex = () => {
                                     </div>
                                     <div className="row">
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">Min Amount</label>
+                                            <label className="form-label">
+                                                {t('merchant.coupons.formMinAmount')}
+                                            </label>
                                             <input
                                                 type="number"
                                                 step="0.01"
@@ -804,7 +841,9 @@ const CouponsIndex = () => {
                                             />
                                         </div>
                                         <div className="col-md-6 mb-3">
-                                            <label className="form-label">Max Amount</label>
+                                            <label className="form-label">
+                                                {t('merchant.coupons.formMaxAmount')}
+                                            </label>
                                             <input
                                                 type="number"
                                                 step="0.01"
@@ -820,7 +859,7 @@ const CouponsIndex = () => {
                                         </div>
                                     </div>
                                     <div className="mb-3">
-                                        <label className="form-label">Quantity</label>
+                                        <label className="form-label">{t('merchant.coupons.formQuantity')}</label>
                                         <input
                                             type="number"
                                             className="form-control"
@@ -834,7 +873,9 @@ const CouponsIndex = () => {
                                         />
                                     </div>
                                     <div className="mb-3">
-                                        <label className="form-label">Expiration Date</label>
+                                        <label className="form-label">
+                                            {t('merchant.coupons.formExpirationDate')}
+                                        </label>
                                         <input
                                             type="date"
                                             className="form-control"
@@ -855,7 +896,7 @@ const CouponsIndex = () => {
                                         onClick={handleCloseModal}
                                         disabled={formSubmitting}
                                     >
-                                        Cancel
+                                        {t('merchant.common.cancel')}
                                     </button>
                                     <button
                                         type="submit"
@@ -865,12 +906,12 @@ const CouponsIndex = () => {
                                         {formSubmitting ? (
                                             <>
                                                 <span className="spinner-border spinner-border-sm me-2"></span>
-                                                Please wait...
+                                                {t('merchant.common.pleaseWait')}
                                             </>
                                         ) : editingCoupon ? (
-                                            'Update'
+                                            t('merchant.common.update')
                                         ) : (
-                                            'Create'
+                                            t('merchant.common.create')
                                         )}
                                     </button>
                                 </div>

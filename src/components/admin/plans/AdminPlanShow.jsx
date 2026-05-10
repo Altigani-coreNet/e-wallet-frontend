@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 
 const AdminPlanShow = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
@@ -14,7 +16,7 @@ const AdminPlanShow = () => {
     const [plan, setPlan] = useState(null);
 
     useEffect(() => {
-        setTitle('Plan Details');
+        setTitle(t('admin.planShow.planDetails'));
         setActions(
             <div className="d-flex align-items-center gap-2">
                 <Link to={`/admin/plans/${id}/edit`} className="btn btn-sm btn-primary">
@@ -22,19 +24,19 @@ const AdminPlanShow = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Edit Plan
+                    {t('admin.planShow.editPlan')}
                 </Link>
                 <Link to="/admin/plans" className="btn btn-sm btn-light-danger">
                     <i className="ki-duotone ki-arrow-left fs-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back
+                    {t('admin.planShow.back')}
                 </Link>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, id]);
+    }, [setTitle, setActions, id, t]);
 
     useEffect(() => {
         fetchPlan();
@@ -53,7 +55,7 @@ const AdminPlanShow = () => {
                 setPlan(response.data.data);
             }
         } catch (error) {
-            toast.error('Failed to load plan details');
+            toast.error(t('admin.planShow.failedToLoad'));
             console.error(error);
             navigate('/admin/plans');
         } finally {
@@ -79,9 +81,9 @@ const AdminPlanShow = () => {
                     <div className="card">
                         <div className="card-body text-center py-10">
                             <div className="spinner-border text-primary" role="status">
-                                <span className="visually-hidden">Loading...</span>
+                                <span className="visually-hidden">{t('admin.common.loading')}</span>
                             </div>
-                            <p className="mt-3">Loading plan details...</p>
+                            <p className="mt-3">{t('admin.planShow.loadingDetails')}</p>
                         </div>
                     </div>
                 </div>
@@ -95,9 +97,9 @@ const AdminPlanShow = () => {
                 <div id="kt_content_container" className="container-xxl">
                     <div className="card">
                         <div className="card-body text-center py-10">
-                            <p>Plan not found</p>
+                            <p>{t('admin.planShow.notFound')}</p>
                             <Link to="/admin/plans" className="btn btn-primary">
-                                Back to Plans
+                                {t('admin.planShow.backToPlans')}
                             </Link>
                         </div>
                     </div>
@@ -107,22 +109,22 @@ const AdminPlanShow = () => {
     }
 
     const posLimits = [
-        { key: 'users', label: 'Users' },
-        { key: 'branches', label: 'Branches' },
-        { key: 'terminals', label: 'Terminals' },
-        { key: 'transactions', label: 'Transactions' },
-        { key: 'batches', label: 'Batches' },
-        { key: 'settlements', label: 'Settlements' },
-        { key: 'payment_links', label: 'Payment Links' }
+        { key: 'users', label: t('admin.planCreate.users') },
+        { key: 'branches', label: t('admin.planCreate.branches') },
+        { key: 'terminals', label: t('admin.dashboard.terminals') },
+        { key: 'transactions', label: t('admin.dashboard.transactions') },
+        { key: 'batches', label: t('admin.dashboard.batches') },
+        { key: 'settlements', label: t('admin.dashboard.settlements') },
+        { key: 'payment_links', label: t('admin.planCreate.paymentLinks') }
     ];
 
     const cashierLimits = [
-        { key: 'categories', label: 'Categories' },
-        { key: 'products', label: 'Products' },
-        { key: 'customers', label: 'Customers' },
-        { key: 'suppliers', label: 'Suppliers' },
-        { key: 'purchases', label: 'Purchases' },
-        { key: 'sales', label: 'Sales' }
+        { key: 'categories', label: t('admin.planCreate.categories') },
+        { key: 'products', label: t('admin.planCreate.products') },
+        { key: 'customers', label: t('admin.planCreate.customers') },
+        { key: 'suppliers', label: t('admin.planCreate.suppliers') },
+        { key: 'purchases', label: t('admin.planCreate.purchases') },
+        { key: 'sales', label: t('admin.planCreate.sales') }
     ];
 
     return (
@@ -131,7 +133,7 @@ const AdminPlanShow = () => {
                 <div className="card">
                     <div className="card-header border-0">
                         <div className="card-title">
-                            <h2>Plan Details</h2>
+                            <h2>{t('admin.planShow.planDetails')}</h2>
                         </div>
                     </div>
 
@@ -139,51 +141,51 @@ const AdminPlanShow = () => {
                         {/* Basic Information */}
                         <div className="row mb-10">
                             <div className="col-md-6 mb-7">
-                                <label className="form-label fw-bold text-muted">Plan Name</label>
+                                <label className="form-label fw-bold text-muted">{t('admin.planShow.planName')}</label>
                                 <div className="fw-semibold fs-6">{plan.name || '-'}</div>
                             </div>
 
                             <div className="col-md-6 mb-7">
-                                <label className="form-label fw-bold text-muted">Price</label>
+                                <label className="form-label fw-bold text-muted">{t('admin.planShow.price')}</label>
                                 <div className="fw-semibold fs-6">${parseFloat(plan.price || 0).toFixed(2)}</div>
                             </div>
 
                             <div className="col-md-6 mb-7">
-                                <label className="form-label fw-bold text-muted">Plan Type</label>
+                                <label className="form-label fw-bold text-muted">{t('admin.planShow.planType')}</label>
                                 <div className="fw-semibold fs-6">{plan.plan_type || '-'}</div>
                             </div>
 
                             <div className="col-md-6 mb-7">
-                                <label className="form-label fw-bold text-muted">Status</label>
+                                <label className="form-label fw-bold text-muted">{t('admin.planShow.status')}</label>
                                 <div>
                                     {plan.status ? (
-                                        <span className="badge badge-success">Active</span>
+                                        <span className="badge badge-success">{t('admin.planShow.active')}</span>
                                     ) : (
-                                        <span className="badge badge-danger">Inactive</span>
+                                        <span className="badge badge-danger">{t('admin.planShow.inactive')}</span>
                                     )}
                                 </div>
                             </div>
 
                             <div className="col-md-6 mb-7">
-                                <label className="form-label fw-bold text-muted">Has Discount</label>
+                                <label className="form-label fw-bold text-muted">{t('admin.planShow.hasDiscount')}</label>
                                 <div>
                                     {plan.has_discount ? (
-                                        <span className="badge badge-info">Yes</span>
+                                        <span className="badge badge-info">{t('admin.planShow.yes')}</span>
                                     ) : (
-                                        <span className="badge badge-secondary">No</span>
+                                        <span className="badge badge-secondary">{t('admin.planShow.no')}</span>
                                     )}
                                 </div>
                             </div>
 
                             {plan.has_discount && plan.current_price && (
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold text-muted">Discounted Price</label>
+                                    <label className="form-label fw-bold text-muted">{t('admin.planShow.discountedPrice')}</label>
                                     <div className="fw-semibold fs-6">${parseFloat(plan.current_price).toFixed(2)}</div>
                                 </div>
                             )}
 
                             <div className="col-md-12 mb-7">
-                                <label className="form-label fw-bold text-muted">Description</label>
+                                <label className="form-label fw-bold text-muted">{t('admin.planShow.description')}</label>
                                 <div className="fw-semibold fs-6">{plan.description || '-'}</div>
                             </div>
                         </div>
@@ -193,12 +195,12 @@ const AdminPlanShow = () => {
                         {/* Plan Scopes */}
                         <div className="row mb-6">
                             <div className="col-12">
-                                <h3 className="fs-6 fw-bold mb-4">Plan Scopes</h3>
+                                <h3 className="fs-6 fw-bold mb-4">{t('admin.planShow.planScopes')}</h3>
                                 
                                 {/* POS Module */}
                                 <div className="card mb-5">
                                     <div className="card-header">
-                                        <h4 className="card-title mb-0">POS Module</h4>
+                                        <h4 className="card-title mb-0">{t('admin.planShow.posModule')}</h4>
                                     </div>
                                     <div className="card-body">
                                         {posLimits.map(({ key, label }) => {
@@ -211,13 +213,13 @@ const AdminPlanShow = () => {
                                                     <div className="col-md-9">
                                                         {scope && scope.is_enabled ? (
                                                             <div className="d-flex align-items-center gap-2">
-                                                                <span className="badge badge-success">Enabled</span>
+                                                                <span className="badge badge-success">{t('admin.planShow.enabled')}</span>
                                                                 <span className="fw-semibold">
-                                                                    {scope.max_count ? `Max: ${scope.max_count}` : 'Unlimited'}
+                                                                    {scope.max_count ? t('admin.planShow.maxCount', { count: scope.max_count }) : t('admin.planShow.unlimited')}
                                                                 </span>
                                                             </div>
                                                         ) : (
-                                                            <span className="badge badge-secondary">Disabled</span>
+                                                            <span className="badge badge-secondary">{t('admin.planShow.disabled')}</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -229,7 +231,7 @@ const AdminPlanShow = () => {
                                 {/* Cashier Module */}
                                 <div className="card mb-5">
                                     <div className="card-header">
-                                        <h4 className="card-title mb-0">Cashier Module</h4>
+                                        <h4 className="card-title mb-0">{t('admin.planShow.cashierModule')}</h4>
                                     </div>
                                     <div className="card-body">
                                         {cashierLimits.map(({ key, label }) => {
@@ -242,13 +244,13 @@ const AdminPlanShow = () => {
                                                     <div className="col-md-9">
                                                         {scope && scope.is_enabled ? (
                                                             <div className="d-flex align-items-center gap-2">
-                                                                <span className="badge badge-success">Enabled</span>
+                                                                <span className="badge badge-success">{t('admin.planShow.enabled')}</span>
                                                                 <span className="fw-semibold">
-                                                                    {scope.max_count ? `Max: ${scope.max_count}` : 'Unlimited'}
+                                                                    {scope.max_count ? t('admin.planShow.maxCount', { count: scope.max_count }) : t('admin.planShow.unlimited')}
                                                                 </span>
                                                             </div>
                                                         ) : (
-                                                            <span className="badge badge-secondary">Disabled</span>
+                                                            <span className="badge badge-secondary">{t('admin.planShow.disabled')}</span>
                                                         )}
                                                     </div>
                                                 </div>
@@ -264,14 +266,14 @@ const AdminPlanShow = () => {
                         {/* Plan Features */}
                         <div className="row mb-6">
                             <div className="col-12">
-                                <h3 className="fs-6 fw-bold mb-4">Plan Features</h3>
+                                <h3 className="fs-6 fw-bold mb-4">{t('admin.planShow.planFeatures')}</h3>
                                 {plan.features && plan.features.length > 0 ? (
                                     <div className="table-responsive">
                                         <table className="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
                                             <thead>
                                                 <tr className="fw-bold text-muted">
-                                                    <th className="min-w-150px">Feature Name</th>
-                                                    <th className="min-w-100px">Status</th>
+                                                    <th className="min-w-150px">{t('admin.planShow.featureName')}</th>
+                                                    <th className="min-w-100px">{t('admin.planShow.status')}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -280,9 +282,9 @@ const AdminPlanShow = () => {
                                                         <td className="fw-semibold">{feature.name}</td>
                                                         <td>
                                                             {feature.is_enabled ? (
-                                                                <span className="badge badge-success">Enabled</span>
+                                                                <span className="badge badge-success">{t('admin.planShow.enabled')}</span>
                                                             ) : (
-                                                                <span className="badge badge-secondary">Disabled</span>
+                                                                <span className="badge badge-secondary">{t('admin.planShow.disabled')}</span>
                                                             )}
                                                         </td>
                                                     </tr>
@@ -291,7 +293,7 @@ const AdminPlanShow = () => {
                                         </table>
                                     </div>
                                 ) : (
-                                    <p className="text-muted">No features defined for this plan.</p>
+                                    <p className="text-muted">{t('admin.planShow.noFeatures')}</p>
                                 )}
                             </div>
                         </div>
@@ -299,10 +301,10 @@ const AdminPlanShow = () => {
 
                     <div className="card-footer text-end">
                         <Link to={`/admin/plans/${id}/edit`} className="btn btn-primary">
-                            Edit Plan
+                            {t('admin.planShow.editPlan')}
                         </Link>
                         <Link to="/admin/plans" className="btn btn-light-danger ms-2">
-                            Back to Plans
+                            {t('admin.planShow.backToPlans')}
                         </Link>
                     </div>
                 </div>

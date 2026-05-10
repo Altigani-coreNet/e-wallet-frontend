@@ -1,16 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { AUTH_SERVICE_BASE, AUTH_ENDPOINTS } from '../../utils/constants';
 import { updateMerchantProfile, updateMerchantAttachments } from '../../services/profileService';
 import { getToken } from '../../utils/api';
 import { toast } from 'react-toastify';
 
-const ATTACHMENT_FIELDS = [
-    { key: 'company_logo', label: 'Company Logo' },
-    { key: 'tax_certification', label: 'Tax Certificate' },
-    { key: 'trade_license', label: 'Trade License' },
-    { key: 'user_id_document', label: 'ID Document' },
-];
+const ATTACHMENT_FIELD_KEYS = ['company_logo', 'tax_certification', 'trade_license', 'user_id_document'];
 
 const ATTACHMENT_KEY_ALIASES = {
     tax_certificate: 'tax_certification',
@@ -20,13 +16,13 @@ const ATTACHMENT_KEY_ALIASES = {
     user_id: 'user_id_document',
 };
 
-const buildEmptyAttachmentState = () => ATTACHMENT_FIELDS.reduce((acc, field) => {
-    acc[field.key] = null;
+const buildEmptyAttachmentState = () => ATTACHMENT_FIELD_KEYS.reduce((acc, key) => {
+    acc[key] = null;
     return acc;
 }, {});
 
-const createFileInputKeys = () => ATTACHMENT_FIELDS.reduce((acc, field) => {
-    acc[field.key] = `${field.key}-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+const createFileInputKeys = () => ATTACHMENT_FIELD_KEYS.reduce((acc, key) => {
+    acc[key] = `${key}-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
     return acc;
 }, {});
 
@@ -160,6 +156,7 @@ const getMerchantCityDisplay = (merchant) => {
  * Creates a change request if merchant is not rejected
  */
 const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState({
         countries: false,
         cities: false,
@@ -462,8 +459,8 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
 
         const attachmentsMap = collectMerchantAttachments(merchant);
         const normalizedAttachments = buildEmptyAttachmentState();
-        ATTACHMENT_FIELDS.forEach((field) => {
-            normalizedAttachments[field.key] = ensureAbsoluteUrl(AUTH_SERVICE_BASE, attachmentsMap[field.key]);
+        ATTACHMENT_FIELD_KEYS.forEach((key) => {
+            normalizedAttachments[key] = ensureAbsoluteUrl(AUTH_SERVICE_BASE, attachmentsMap[key]);
         });
         setExistingAttachments(normalizedAttachments);
         resetAttachmentForm();
@@ -583,18 +580,19 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
     const renderExistingAttachment = (fieldKey) => {
         const url = existingAttachments[fieldKey];
         if (!url) {
-            return <div className="text-muted mb-3">No file uploaded yet.</div>;
+            return <div className="text-muted mb-3">{t('merchant.profile.noFileUploaded')}</div>;
         }
 
         const normalizedUrl = ensureAbsoluteUrl(AUTH_SERVICE_BASE, url);
         const isImage = /\.(svg|png|jpe?g|gif|bmp|webp)$/i.test((normalizedUrl || '').split('?')[0]);
+        const label = t(`merchant.profile.attachments.${fieldKey}`);
 
         if (isImage) {
             return (
                 <div className="mb-3">
                     <img
                         src={normalizedUrl}
-                        alt={`${fieldKey} preview`}
+                        alt={t('merchant.profile.attachmentPreviewAlt', { label })}
                         className="img-fluid rounded border"
                         style={{ maxHeight: '140px', objectFit: 'cover' }}
                     />
@@ -610,7 +608,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                     rel="noopener noreferrer"
                     className="text-primary text-decoration-underline"
                 >
-                    View current file
+                    {t('merchant.profile.viewCurrentFile')}
                 </a>
             </div>
         );
@@ -623,7 +621,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
         const filesToSubmit = {};
         let hasFile = false;
 
-        ATTACHMENT_FIELDS.forEach(({ key }) => {
+        ATTACHMENT_FIELD_KEYS.forEach((key) => {
             const file = attachmentFiles[key];
             if (file instanceof File) {
                 filesToSubmit[key] = file;
@@ -632,14 +630,14 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
         });
 
         if (!hasFile) {
-            toast.warn('Please select at least one document to upload.');
+            toast.warn(t('merchant.profile.pleaseSelectOneDocument'));
             return;
         }
 
         try {
             setAttachmentSubmitting(true);
             const response = await updateMerchantAttachments(filesToSubmit);
-            const message = response?.message || 'Attachments updated successfully!';
+            const message = response?.message || t('merchant.profile.toastAttachmentsSuccess');
 
             toast.success(message);
             resetAttachmentForm();
@@ -651,9 +649,9 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
             console.error('Failed to update attachments:', error);
             if (error.response?.data?.errors) {
                 setAttachmentErrors(error.response.data.errors);
-                toast.error('Please fix the attachment errors and try again.');
+                toast.error(t('merchant.profile.toastFixAttachmentErrors'));
             } else {
-                const errorMsg = error.response?.data?.message || 'Failed to update attachments. Please try again.';
+                const errorMsg = error.response?.data?.message || t('merchant.profile.toastAttachmentUpdateFailed');
                 toast.error(errorMsg);
             }
         } finally {
@@ -671,7 +669,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
             const isSuccess = response?.success === true || response?.status === true;
 
             if (isSuccess) {
-                toast.success(response?.message || 'Profile updated successfully!');
+                toast.success(response?.message || t('merchant.profile.toastProfileSuccess'));
                 if (onSuccess) onSuccess(response?.data);
             }
         } catch (error) {
@@ -679,9 +677,9 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
             
             if (error.response?.data?.errors) {
                 setErrors(error.response.data.errors);
-                toast.error('Please fix the errors and try again.');
+                toast.error(t('merchant.profile.toastFixFormErrors'));
             } else {
-                const errorMsg = error.response?.data?.message || 'Failed to update profile. Please try again.';
+                const errorMsg = error.response?.data?.message || t('merchant.profile.toastProfileUpdateFailedRetry');
                 toast.error(errorMsg);
             }
         } finally {
@@ -689,7 +687,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
         }
     };
 
-    const hasSelectedAttachments = ATTACHMENT_FIELDS.some(({ key }) => attachmentFiles[key] instanceof File);
+    const hasSelectedAttachments = ATTACHMENT_FIELD_KEYS.some((key) => attachmentFiles[key] instanceof File);
 
     return (
         <div className="row">
@@ -697,7 +695,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                 <div className="card mb-5 mb-xl-10">
                     <div className="card-header border-0 cursor-pointer">
                         <div className="card-title m-0">
-                            <h3 className="fw-bolder m-0">Edit Merchant Profile</h3>
+                            <h3 className="fw-bolder m-0">{t('merchant.profile.editMerchantProfile')}</h3>
                         </div>
                         <div className="card-toolbar">
                             <button
@@ -710,7 +708,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Cancel
+                                {t('merchant.profile.cancel')}
                             </button>
                         </div>
                     </div>
@@ -724,21 +722,21 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                     <span className="path3"></span>
                                 </i>
                                 <div className="d-flex flex-column">
-                                    <h4 className="mb-1 text-warning">Change Request Pending</h4>
-                                    <span>You have a pending change request. Submitting this form will create a new request.</span>
+                                    <h4 className="mb-1 text-warning">{t('merchant.profile.changeRequestPending')}</h4>
+                                    <span>{t('merchant.profile.changeRequestPendingSubmitNote')}</span>
                                 </div>
                             </div>
                         )}
 
                         <form onSubmit={handleSubmit}>
                             <div className="row mb-6">
-                                <label className="col-lg-3 col-form-label required fw-bold fs-6">Business Name</label>
+                                <label className="col-lg-3 col-form-label required fw-bold fs-6">{t('merchant.profile.fieldBusinessName')}</label>
                                 <div className="col-lg-9 fv-row">
                                     <input
                                         type="text"
                                         name="name"
                                         className={`form-control form-control-lg form-control-solid ${errors.name ? 'is-invalid' : ''}`}
-                                        placeholder="Business Name"
+                                        placeholder={t('merchant.profile.placeholderBusinessName')}
                                         value={formData.name}
                                         onChange={handleInputChange}
                                         required
@@ -750,13 +748,13 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                             </div>
 
                             <div className="row mb-6">
-                                <label className="col-lg-3 col-form-label required fw-bold fs-6">Owner Name</label>
+                                <label className="col-lg-3 col-form-label required fw-bold fs-6">{t('merchant.profile.fieldOwnerName')}</label>
                                 <div className="col-lg-9 fv-row">
                                     <input
                                         type="text"
                                         name="owner_name"
                                         className={`form-control form-control-lg form-control-solid ${errors.owner_name ? 'is-invalid' : ''}`}
-                                        placeholder="Owner Name"
+                                        placeholder={t('merchant.profile.placeholderOwnerName')}
                                         value={formData.owner_name}
                                         onChange={handleInputChange}
                                         required
@@ -768,13 +766,13 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                             </div>
 
                             <div className="row mb-6">
-                                <label className="col-lg-3 col-form-label required fw-bold fs-6">Email</label>
+                                <label className="col-lg-3 col-form-label required fw-bold fs-6">{t('merchant.profile.fieldEmailShort')}</label>
                                 <div className="col-lg-9 fv-row">
                                     <input
                                         type="email"
                                         name="email"
                                         className={`form-control form-control-lg form-control-solid ${errors.email ? 'is-invalid' : ''}`}
-                                        placeholder="Email"
+                                        placeholder={t('merchant.profile.placeholderEmailShort')}
                                         value={formData.email}
                                         onChange={handleInputChange}
                                         required
@@ -786,13 +784,13 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                             </div>
 
                             <div className="row mb-6">
-                                <label className="col-lg-3 col-form-label required fw-bold fs-6">Phone</label>
+                                <label className="col-lg-3 col-form-label required fw-bold fs-6">{t('merchant.profile.fieldPhoneShort')}</label>
                                 <div className="col-lg-9 fv-row">
                                     <input
                                         type="text"
                                         name="phone"
                                         className={`form-control form-control-lg form-control-solid ${errors.phone ? 'is-invalid' : ''}`}
-                                        placeholder="Phone"
+                                        placeholder={t('merchant.profile.placeholderPhoneShort')}
                                         value={formData.phone}
                                         onChange={handleInputChange}
                                         required
@@ -804,7 +802,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                             </div>
 
                             <div className="row mb-6">
-                                <label className="col-lg-3 col-form-label required fw-bold fs-6">Business Type</label>
+                                <label className="col-lg-3 col-form-label required fw-bold fs-6">{t('merchant.profile.fieldBusinessType')}</label>
                                 <div className="col-lg-9 fv-row">
                                     <select
                                         name="business_type"
@@ -814,7 +812,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                         required
                                         disabled={loading.businessTypes}
                                     >
-                                        <option value="">{loading.businessTypes ? 'Loading...' : 'Select Business Type'}</option>
+                                        <option value="">{loading.businessTypes ? t('merchant.profile.loading') : t('merchant.profile.selectBusinessType')}</option>
                                         {businessTypes.map(type => (
                                             <option key={type.id} value={type.value}>
                                                 {type.text}
@@ -828,13 +826,13 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                             </div>
 
                             <div className="row mb-6">
-                                <label className="col-lg-3 col-form-label required fw-bold fs-6">Address</label>
+                                <label className="col-lg-3 col-form-label required fw-bold fs-6">{t('merchant.profile.fieldAddress')}</label>
                                 <div className="col-lg-9 fv-row">
                                     <textarea
                                         name="address"
                                         className={`form-control form-control-lg form-control-solid ${errors.address ? 'is-invalid' : ''}`}
                                         rows="3"
-                                        placeholder="Address"
+                                        placeholder={t('merchant.profile.placeholderAddress')}
                                         value={formData.address}
                                         onChange={handleInputChange}
                                         required
@@ -846,13 +844,13 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                             </div>
 
                             <div className="row mb-6">
-                                <label className="col-lg-3 col-form-label fw-bold fs-6">Trade License Number</label>
+                                <label className="col-lg-3 col-form-label fw-bold fs-6">{t('merchant.profile.fieldTradeLicenseNumber')}</label>
                                 <div className="col-lg-9 fv-row">
                                     <input
                                         type="text"
                                         name="trade_license_number"
                                         className={`form-control form-control-lg form-control-solid ${errors.trade_license_number ? 'is-invalid' : ''}`}
-                                        placeholder="Trade License Number"
+                                        placeholder={t('merchant.profile.placeholderTradeLicense')}
                                         value={formData.trade_license_number}
                                         onChange={handleInputChange}
                                     />
@@ -863,13 +861,13 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                             </div>
 
                             <div className="row mb-6">
-                                <label className="col-lg-3 col-form-label fw-bold fs-6">Tax Number</label>
+                                <label className="col-lg-3 col-form-label fw-bold fs-6">{t('merchant.profile.fieldTaxNumber')}</label>
                                 <div className="col-lg-9 fv-row">
                                     <input
                                         type="text"
                                         name="tax_certified_number"
                                         className={`form-control form-control-lg form-control-solid ${errors.tax_certified_number ? 'is-invalid' : ''}`}
-                                        placeholder="Tax Number"
+                                        placeholder={t('merchant.profile.placeholderTaxNumberShort')}
                                         value={formData.tax_certified_number}
                                         onChange={handleInputChange}
                                     />
@@ -881,7 +879,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
 
                             {/* Country Dropdown */}
                             <div className="row mb-6">
-                                <label className="col-lg-3 col-form-label fw-bold fs-6">Country</label>
+                                <label className="col-lg-3 col-form-label fw-bold fs-6">{t('merchant.profile.fieldCountry')}</label>
                                 <div className="col-lg-9 fv-row">
                                     <div className="position-relative">
                                         <div 
@@ -904,7 +902,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                                         <span className="fw-bold text-gray-800">{selectedCountry.text}</span>
                                                     </>
                                                 ) : (
-                                                    <span className="text-muted">Select Country</span>
+                                                    <span className="text-muted">{t('merchant.profile.selectCountry')}</span>
                                                 )}
                                             </div>
                                             <div className="d-flex align-items-center">
@@ -937,7 +935,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                                     <input 
                                                         type="text" 
                                                         className="form-control form-control-sm mb-2" 
-                                                        placeholder="Search countries..."
+                                                        placeholder={t('merchant.profile.searchCountries')}
                                                         value={countrySearchTerm}
                                                         onChange={(e) => handleCountrySearch(e.target.value)}
                                                         onClick={(e) => e.stopPropagation()}
@@ -946,9 +944,9 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                                 {loading.countries ? (
                                                     <div className="p-3 text-center">
                                                         <div className="spinner-border spinner-border-sm me-2" role="status">
-                                                            <span className="visually-hidden">Loading...</span>
+                                                            <span className="visually-hidden">{t('merchant.profile.loading')}</span>
                                                         </div>
-                                                        <span className="text-muted">Loading...</span>
+                                                        <span className="text-muted">{t('merchant.profile.loading')}</span>
                                                     </div>
                                                 ) : filteredCountries.length > 0 ? (
                                                     filteredCountries.map((country) => (
@@ -974,7 +972,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <div className="p-3 text-muted text-center">No countries found</div>
+                                                    <div className="p-3 text-muted text-center">{t('merchant.profile.noCountriesFound')}</div>
                                                 )}
                                             </div>
                                         )}
@@ -987,7 +985,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
 
                             {/* City Dropdown */}
                             <div className="row mb-6">
-                                <label className="col-lg-3 col-form-label fw-bold fs-6">City</label>
+                                <label className="col-lg-3 col-form-label fw-bold fs-6">{t('merchant.profile.fieldCity')}</label>
                                 <div className="col-lg-9 fv-row">
                                     <div className="position-relative">
                                         <div 
@@ -1008,7 +1006,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                                     <span className="fw-bold text-gray-800">{selectedCity.text}</span>
                                                 ) : (
                                                     <span className="text-muted">
-                                                        {!(selectedCountry || formData.country_id) ? 'Please select a country first' : 'Select City'}
+                                                        {!(selectedCountry || formData.country_id) ? t('merchant.profile.selectCountryFirst') : t('merchant.profile.selectCity')}
                                                     </span>
                                                 )}
                                             </div>
@@ -1042,7 +1040,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                                     <input 
                                                         type="text" 
                                                         className="form-control form-control-sm mb-2" 
-                                                        placeholder="Search cities..."
+                                                        placeholder={t('merchant.profile.searchCities')}
                                                         value={citySearchTerm}
                                                         onChange={(e) => handleCitySearch(e.target.value)}
                                                         onClick={(e) => e.stopPropagation()}
@@ -1063,7 +1061,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <div className="p-3 text-muted text-center">No cities found</div>
+                                                    <div className="p-3 text-muted text-center">{t('merchant.profile.noCitiesFound')}</div>
                                                 )}
                                             </div>
                                         )}
@@ -1081,7 +1079,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                     className="btn btn-light btn-active-light-primary me-2"
                                     disabled={submitting}
                                 >
-                                    Cancel
+                                    {t('merchant.profile.cancel')}
                                 </button>
                                 <button
                                     type="submit"
@@ -1091,10 +1089,10 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                     {submitting ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                            Submitting...
+                                            {t('merchant.profile.submitting')}
                                         </>
                                     ) : (
-                                        'Submit Changes'
+                                        t('merchant.profile.submitChanges')
                                     )}
                                 </button>
                             </div>
@@ -1107,15 +1105,15 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
             <div className="card mb-5 mb-xl-10">
                 <div className="card-header border-0">
                     <div className="card-title">
-                        <h3 className="fw-bolder m-0">Merchant Attachments</h3>
+                        <h3 className="fw-bolder m-0">{t('merchant.profile.merchantAttachments')}</h3>
                     </div>
                 </div>
                 <div className="card-body border-top p-9">
                     <form onSubmit={handleAttachmentSubmit}>
                         <div className="row">
-                            {ATTACHMENT_FIELDS.map(({ key, label }) => (
+                            {ATTACHMENT_FIELD_KEYS.map((key) => (
                                 <div key={key} className="col-lg-6 mb-6">
-                                    <label className="form-label fw-bold fs-6">{label}</label>
+                                    <label className="form-label fw-bold fs-6">{t(`merchant.profile.attachments.${key}`)}</label>
                                     {renderExistingAttachment(key)}
                                     <input
                                         key={attachmentInputKeys[key]}
@@ -1126,7 +1124,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                         disabled={attachmentSubmitting}
                                     />
                                     {attachmentPreviews[key] && (
-                                        <div className="form-text">Selected file: {attachmentPreviews[key]}</div>
+                                        <div className="form-text">{t('merchant.profile.selectedFile')} {attachmentPreviews[key]}</div>
                                     )}
                                     {attachmentErrors[key] && (
                                         <div className="invalid-feedback d-block">
@@ -1140,7 +1138,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                             onClick={() => handleAttachmentClear(key)}
                                             disabled={attachmentSubmitting}
                                         >
-                                            Remove Selection
+                                            {t('merchant.profile.removeSelection')}
                                         </button>
                                     )}
                                 </div>
@@ -1153,7 +1151,7 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                 onClick={resetAttachmentForm}
                                 disabled={attachmentSubmitting}
                             >
-                                Reset
+                                {t('merchant.profile.reset')}
                             </button>
                             <button
                                 type="submit"
@@ -1163,10 +1161,10 @@ const EditMerchantProfile = ({ merchant, onSuccess, onCancel }) => {
                                 {attachmentSubmitting ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                        Uploading...
+                                        {t('merchant.profile.uploading')}
                                     </>
                                 ) : (
-                                    'Update Attachments'
+                                    t('merchant.profile.updateAttachments')
                                 )}
                             </button>
                         </div>

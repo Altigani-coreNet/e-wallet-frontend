@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const DashboardFilters = ({ 
     filters, 
@@ -7,23 +8,24 @@ const DashboardFilters = ({
     onClearFilters, 
     isCollapsed 
 }) => {
+    const { t } = useTranslation();
     const fromDateRef = useRef(null);
     const toDateRef = useRef(null);
 
-    const transactionStatuses = [
-        { value: '', label: 'All Statuses' },
-        { value: 'pending', label: 'Pending' },
-        { value: 'approved', label: 'Approved' },
-        { value: 'declined', label: 'Declined' },
-        { value: 'failed', label: 'Failed' },
-        { value: 'processed', label: 'Processed' },
-        { value: 'refunded', label: 'Refunded' },
-        { value: 'captured', label: 'Captured' },
-        { value: 'voided', label: 'Voided' },
-        { value: 'cancelled', label: 'Cancelled' },
-        { value: 'expired', label: 'Expired' },
-        { value: 'reversed', label: 'Reversed' },
-    ];
+    const transactionStatuses = useMemo(() => [
+        { value: '', label: t('merchant.common.allStatuses') },
+        { value: 'pending', label: t('merchant.filters.statusPending') },
+        { value: 'approved', label: t('merchant.filters.statusApproved') },
+        { value: 'declined', label: t('merchant.filters.statusDeclined') },
+        { value: 'failed', label: t('merchant.filters.statusFailed') },
+        { value: 'processed', label: t('merchant.filters.statusProcessed') },
+        { value: 'refunded', label: t('merchant.filters.statusRefunded') },
+        { value: 'captured', label: t('merchant.filters.statusCaptured') },
+        { value: 'voided', label: t('merchant.filters.statusVoided') },
+        { value: 'cancelled', label: t('merchant.filters.statusCancelled') },
+        { value: 'expired', label: t('merchant.filters.statusExpired') },
+        { value: 'reversed', label: t('merchant.filters.statusReversed') },
+    ], [t]);
 
     const handleInputChange = (field, value) => {
         onFilterChange({ [field]: value });
@@ -63,7 +65,7 @@ const DashboardFilters = ({
             {/* Card header */}
             <div className="card-header border-0 pt-6">
                 <div className="card-title">
-                    <h3 className="fw-bold m-0">Filters</h3>
+                    <h3 className="fw-bold m-0">{t('merchant.common.filters')}</h3>
                 </div>
                 <div className="card-toolbar">
                     <button 
@@ -75,7 +77,7 @@ const DashboardFilters = ({
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Clear Filters
+                        {t('merchant.common.clearFilters')}
                     </button>
                 </div>
             </div>
@@ -85,7 +87,7 @@ const DashboardFilters = ({
                 <div className="row g-4">
                     {/* DateTime From */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">From Date Time</label>
+                        <label className="form-label fw-bold">{t('merchant.dashboard.fromDateTime')}</label>
                         <input 
                             ref={fromDateRef}
                             type="datetime-local" 
@@ -94,13 +96,13 @@ const DashboardFilters = ({
                             onChange={(e) => handleInputChange('datetime_from', e.target.value)}
                             onClick={() => handleDateInputClick(fromDateRef)}
                             onFocus={() => handleDateInputClick(fromDateRef)}
-                            placeholder="Select start date and time"
+                            placeholder={t('merchant.dashboard.placeholderFrom')}
                         />
                     </div>
                     
                     {/* DateTime To */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">To Date Time</label>
+                        <label className="form-label fw-bold">{t('merchant.dashboard.toDateTime')}</label>
                         <input 
                             ref={toDateRef}
                             type="datetime-local" 
@@ -109,13 +111,13 @@ const DashboardFilters = ({
                             onChange={(e) => handleInputChange('datetime_to', e.target.value)}
                             onClick={() => handleDateInputClick(toDateRef)}
                             onFocus={() => handleDateInputClick(toDateRef)}
-                            placeholder="Select end date and time"
+                            placeholder={t('merchant.dashboard.placeholderTo')}
                         />
                     </div>
                     
                     {/* Transaction Status */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Transaction Status</label>
+                        <label className="form-label fw-bold">{t('merchant.dashboard.transactionStatus')}</label>
                         <select 
                             className="form-select" 
                             value={filters.transaction_status}
@@ -143,7 +145,7 @@ const DashboardFilters = ({
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Apply Filters
+                                {t('merchant.common.applyFilters')}
                             </button>
                         </div>
                     </div>
@@ -154,4 +156,3 @@ const DashboardFilters = ({
 };
 
 export default DashboardFilters;
-

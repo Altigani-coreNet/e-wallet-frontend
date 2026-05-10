@@ -1,26 +1,28 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const SettlementStatistics = ({ statistics }) => {
+    const { t } = useTranslation();
     if (!statistics) return null;
 
     const stats = [
         {
-            label: 'Total Settlements',
+            label: t('merchant.settlements.statsTotal'),
             value: statistics.total || 0,
             bgClass: 'bg-light-dark'
         },
         {
-            label: 'Settled',
+            label: t('merchant.settlements.statsSettled'),
             value: statistics.settled || 0,
             bgClass: 'bg-light-success'
         },
         {
-            label: 'Pending',
+            label: t('merchant.settlements.statsPending'),
             value: statistics.pending || 0,
             bgClass: 'bg-light-warning'
         },
         {
-            label: 'Failed',
+            label: t('merchant.settlements.statsFailed'),
             value: statistics.failed || 0,
             bgClass: 'bg-light-danger'
         }
@@ -47,4 +49,3 @@ const SettlementStatistics = ({ statistics }) => {
 };
 
 export default SettlementStatistics;
-

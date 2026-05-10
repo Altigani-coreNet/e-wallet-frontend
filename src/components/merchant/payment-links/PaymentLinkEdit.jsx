@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { fetchPaymentLinkDetails, updatePaymentLink } from '../../../services/paymentLinksService';
 import PaymentLinkForm from './PaymentLinkForm';
@@ -6,6 +7,7 @@ import { useToolbar } from '../../../contexts/ToolbarContext';
 import Swal from 'sweetalert2';
 
 const PaymentLinkEdit = () => {
+    const { t, i18n } = useTranslation();
     const { id: paymentLinkId } = useParams();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -18,15 +20,15 @@ const PaymentLinkEdit = () => {
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
         if (paymentLink) {
-            setTitle(`Edit Payment Link - ${paymentLink.uuid || paymentLinkId}`);
+            setTitle(t('merchant.pages.editPaymentLinkTitle', { id: paymentLink.uuid || paymentLinkId }));
         } else {
-            setTitle('Edit Payment Link');
+            setTitle(t('merchant.breadcrumbs.editPaymentLink'));
         }
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Payment Links', path: '/merchant/payment-links' },
-            { label: paymentLink?.uuid || 'Edit Payment Link', path: `/merchant/payment-links/${paymentLinkId}/edit`, active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.paymentLinks'), path: '/merchant/payment-links' },
+            { label: paymentLink?.uuid || t('merchant.breadcrumbs.editPaymentLink'), path: `/merchant/payment-links/${paymentLinkId}/edit`, active: true }
         ]);
         
         setActions(
@@ -38,7 +40,7 @@ const PaymentLinkEdit = () => {
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back to Payment Links
+                {t('merchant.common.backToPaymentLinks')}
             </button>
         );
 
@@ -46,7 +48,7 @@ const PaymentLinkEdit = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions, navigate, paymentLink, paymentLinkId]);
+    }, [setTitle, setBreadcrumbs, setActions, navigate, paymentLink, paymentLinkId, t, i18n.language]);
 
     useEffect(() => {
         fetchPaymentLink();
@@ -58,8 +60,8 @@ const PaymentLinkEdit = () => {
             const data = await fetchPaymentLinkDetails(paymentLinkId);
             setPaymentLink(data);
         } catch (err) {
-            setError('An unexpected error occurred');
-            Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+            setError(t('merchant.paymentLinks.fetchUnexpected'));
+            Swal.fire(t('merchant.common.error'), t('merchant.paymentLinks.fetchUnexpected'), 'error');
         } finally {
             setLoadingData(false);
         }
@@ -75,25 +77,25 @@ const PaymentLinkEdit = () => {
             
             if (response.success) {
                 await Swal.fire({
-                    title: 'Success!',
-                    text: 'Payment link updated successfully.',
+                    title: t('merchant.paymentLinks.updateSuccessTitle'),
+                    text: t('merchant.paymentLinks.updateSuccessText'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
                 });
                 navigate('/merchant/payment-links');
             } else {
-                const message = response.error || response.message || 'Failed to update payment link';
+                const message = response.error || response.message || t('merchant.paymentLinks.updateFailed');
                 setError(message);
                 if (response.errors) setValidationErrors(response.errors);
-                Swal.fire('Error!', message, 'error');
+                Swal.fire(t('merchant.common.error'), message, 'error');
             }
         } catch (err) {
             const apiErrors = err?.response?.data?.errors || {};
-            const message = err?.response?.data?.message || 'An unexpected error occurred';
+            const message = err?.response?.data?.message || t('merchant.paymentLinks.unexpectedError');
             setValidationErrors(apiErrors);
             setError(message);
-            Swal.fire('Error!', message, 'error');
+            Swal.fire(t('merchant.common.error'), message, 'error');
         } finally {
             setLoading(false);
         }
@@ -103,7 +105,7 @@ const PaymentLinkEdit = () => {
         return (
             <div className="text-center py-5">
                 <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                    <span className="visually-hidden">{t('merchant.common.loading')}</span>
                 </div>
             </div>
         );

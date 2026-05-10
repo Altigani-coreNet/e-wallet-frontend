@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { createBranch } from '../../../services/branchesService';
 import BranchForm from './BranchForm';
@@ -7,6 +8,7 @@ import { useToolbar } from '../../../contexts/ToolbarContext';
 import Swal from 'sweetalert2';
 
 const BranchCreate = () => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [loading, setLoading] = useState(false);
@@ -14,12 +16,12 @@ const BranchCreate = () => {
     const [showPlanUpgradeModal, setShowPlanUpgradeModal] = useState(false);
 
     useEffect(() => {
-        setTitle('Create Branch');
+        setTitle(t('merchant.breadcrumbs.createBranch'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Branches', path: '/merchant/branches' },
-            { label: 'Create Branch', path: '/merchant/branches/create', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.branches'), path: '/merchant/branches' },
+            { label: t('merchant.breadcrumbs.createBranch'), path: '/merchant/branches/create', active: true }
         ]);
         
         setActions(
@@ -31,7 +33,7 @@ const BranchCreate = () => {
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back to Branches
+                {t('merchant.common.backToBranches')}
             </button>
         );
 
@@ -39,7 +41,7 @@ const BranchCreate = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions, navigate]);
+    }, [setTitle, setBreadcrumbs, setActions, navigate, t, i18n.language]);
 
     const handleSubmit = async (formData) => {
         setLoading(true);

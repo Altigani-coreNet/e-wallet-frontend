@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -14,6 +15,7 @@ import UserTableSkeleton from './UserTableSkeleton';
 import BulkActionBar from '../../common/BulkActionBar';
 
 const AdminUsersIndex = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const canCreateUser = useCan('pos.users.create_users');
     const [users, setUsers] = useState([]);
@@ -38,7 +40,7 @@ const AdminUsersIndex = () => {
     const [searchInput, setSearchInput] = useState('');
 
     useEffect(() => {
-        setTitle('Users Management');
+        setTitle(t('admin.pages.usersManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 {/* Toggle Filters Button */}
@@ -51,7 +53,7 @@ const AdminUsersIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Toggle Filters
+                    {t('admin.common.toggleFilters')}
                 </button>
 
                 {/* Import Button */}
@@ -64,7 +66,7 @@ const AdminUsersIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Import Users
+                    {t('admin.common.importUsers')}
                 </button>
 
                 {/* Export Button */}
@@ -77,7 +79,7 @@ const AdminUsersIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Export
+                    {t('admin.common.export')}
                 </button>
 
                 {/* Add User Button */}
@@ -87,13 +89,13 @@ const AdminUsersIndex = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Add User
+                        {t('admin.common.addUser')}
                     </Link>
                 )}
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters]);
+    }, [setTitle, setActions, showFilters, t, i18n.language]);
 
     // Debounced search effect - updates filters
     useEffect(() => {
@@ -138,7 +140,7 @@ const AdminUsersIndex = () => {
                 });
             }
         } catch (error) {
-            toast.error('Failed to load users');
+                toast.error(t('admin.usersIndex.fetchFailed'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -158,7 +160,7 @@ const AdminUsersIndex = () => {
                 const { data, filename } = response.data.data;
                 
                 if (!data || data.length === 0) {
-                    toast.error('No data to export');
+                    toast.error(t('admin.usersIndex.exportNoData'));
                     return;
                 }
 
@@ -189,12 +191,12 @@ const AdminUsersIndex = () => {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(link.href);
                 
-                toast.success('Export successful!');
+                toast.success(t('admin.usersIndex.exportSuccess'));
             } else {
-                toast.error('No data to export');
+                toast.error(t('admin.usersIndex.exportNoData'));
             }
         } catch (error) {
-            toast.error('Export failed');
+            toast.error(t('admin.usersIndex.exportFailed'));
             console.error(error);
         }
     };
@@ -240,7 +242,7 @@ const AdminUsersIndex = () => {
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) return;
 
-        if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} user(s)?`)) {
+        if (!window.confirm(t('admin.usersIndex.bulkDeleteConfirm', { count: selectedIds.length }))) {
             return;
         }
 
@@ -254,18 +256,18 @@ const AdminUsersIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success(`${selectedIds.length} user(s) deleted successfully`);
+                toast.success(t('admin.usersIndex.bulkDeleted', { count: selectedIds.length }));
                 setSelectedIds([]);
                 fetchUsers();
             }
         } catch (error) {
-            toast.error('Failed to delete users');
+            toast.error(t('admin.usersIndex.deleteFailed'));
             console.error(error);
         }
     };
 
     const handleActivate = async (id) => {
-        if (!window.confirm('Are you sure you want to activate this user?')) {
+        if (!window.confirm(t('admin.usersIndex.activateConfirm'))) {
             return;
         }
 
@@ -283,16 +285,16 @@ const AdminUsersIndex = () => {
                 setUsers(users.map(user => 
                     user.id === id ? { ...user, status: 1, is_active: true } : user
                 ));
-                toast.success('User activated successfully');
+                toast.success(t('admin.usersIndex.activated'));
             }
         } catch (error) {
-            toast.error('Failed to activate user');
+            toast.error(t('admin.usersIndex.activateFailed'));
             console.error(error);
         }
     };
 
     const handleDeactivate = async (id) => {
-        if (!window.confirm('Are you sure you want to deactivate this user?')) {
+        if (!window.confirm(t('admin.usersIndex.deactivateConfirm'))) {
             return;
         }
 
@@ -310,16 +312,16 @@ const AdminUsersIndex = () => {
                 setUsers(users.map(user => 
                     user.id === id ? { ...user, status: 0, is_active: false } : user
                 ));
-                toast.success('User deactivated successfully');
+                toast.success(t('admin.usersIndex.deactivated'));
             }
         } catch (error) {
-            toast.error('Failed to deactivate user');
+            toast.error(t('admin.usersIndex.deactivateFailed'));
             console.error(error);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this user?')) {
+        if (!window.confirm(t('admin.usersIndex.deleteOneConfirm'))) {
             return;
         }
 
@@ -338,22 +340,22 @@ const AdminUsersIndex = () => {
                     ...prev,
                     total: prev.total - 1
                 }));
-                toast.success('User deleted successfully');
+                toast.success(t('admin.usersIndex.deleted'));
             }
         } catch (error) {
-            toast.error('Failed to delete user');
+            toast.error(t('admin.usersIndex.deleteFailed'));
             console.error(error);
         }
     };
 
     const handleSendResetPassword = async (id) => {
         const result = await Swal.fire({
-            title: 'Send reset password email?',
-            text: 'A secure reset link will be sent to this user.',
+            title: t('admin.usersIndex.sendResetPasswordTitle'),
+            text: t('admin.usersIndex.sendResetPasswordText'),
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Yes, send it',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.usersIndex.sendResetPasswordConfirm'),
+            cancelButtonText: t('admin.common.cancel'),
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
         });
@@ -372,12 +374,12 @@ const AdminUsersIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success(response.data.data?.message || response.data.message || 'Reset password email sent.');
+                toast.success(response.data.data?.message || response.data.message || t('admin.usersIndex.sendResetPasswordSuccess'));
             } else {
-                toast.error(response.data.message || 'Failed to send reset password email.');
+                toast.error(response.data.message || t('admin.usersIndex.sendResetPasswordFailed'));
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to send reset password email');
+            toast.error(error.response?.data?.message || t('admin.usersIndex.sendResetPasswordFailed'));
             console.error(error);
         }
     };
@@ -409,7 +411,7 @@ const AdminUsersIndex = () => {
                                     <input
                                         type="text"
                                         className="form-control form-control-solid ps-13"
-                                        placeholder="Quick search users..."
+                                        placeholder={t('admin.usersIndex.searchPlaceholder')}
                                         value={searchInput}
                                         onChange={(e) => setSearchInput(e.target.value)}
                                         style={{ paddingLeft: '3rem', fontSize: '1rem', paddingTop: '0.75rem', paddingBottom: '0.75rem' }}
@@ -462,15 +464,15 @@ const AdminUsersIndex = () => {
                                                         />
                                                     </div>
                                                 </th>
-                                                <th className="text-dark">ID</th>
-                                                <th className="min-w-200px text-dark">User Info</th>
-                                                <th className="min-w-150px text-dark">Merchant</th>
-                                                <th className="text-dark">Branch</th>
-                                                <th className="text-dark">Country</th>
-                                                <th className="text-dark">Status</th>
-                                                <th className="text-dark">Is Admin</th>
-                                                <th className="text-dark">Created At</th>
-                                                <th className="text-end text-dark">Actions</th>
+                                                <th className="text-dark">{t('admin.usersIndex.colId')}</th>
+                                                <th className="min-w-200px text-dark">{t('admin.usersIndex.colUserInfo')}</th>
+                                                <th className="min-w-150px text-dark">{t('admin.usersIndex.colMerchant')}</th>
+                                                <th className="text-dark">{t('admin.usersIndex.colBranch')}</th>
+                                                <th className="text-dark">{t('admin.usersIndex.colCountry')}</th>
+                                                <th className="text-dark">{t('admin.usersIndex.colStatus')}</th>
+                                                <th className="text-dark">{t('admin.usersIndex.colIsAdmin')}</th>
+                                                <th className="text-dark">{t('admin.usersIndex.colCreatedAt')}</th>
+                                                <th className="text-end text-dark">{t('admin.usersIndex.colActions')}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="text-gray-600 fw-semibold">
@@ -496,7 +498,11 @@ const AdminUsersIndex = () => {
                             {!loading && users.length > 0 && (
                                 <div className="d-flex flex-stack flex-wrap pt-10">
                                     <div className="fs-6 fw-semibold text-gray-700">
-                                        Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} entries
+                                        {t('admin.common.showingEntries', {
+                                            from: ((pagination.current_page - 1) * pagination.per_page) + 1,
+                                            to: Math.min(pagination.current_page * pagination.per_page, pagination.total),
+                                            total: pagination.total
+                                        })}
                                     </div>
                                     <ul className="pagination">
                                         <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}>
@@ -505,7 +511,7 @@ const AdminUsersIndex = () => {
                                                 onClick={() => setPagination({ ...pagination, current_page: pagination.current_page - 1 })}
                                                 disabled={pagination.current_page === 1}
                                             >
-                                                Previous
+                                                {t('admin.common.previous')}
                                             </button>
                                         </li>
                                         {[...Array(pagination.last_page)].map((_, idx) => {
@@ -539,7 +545,7 @@ const AdminUsersIndex = () => {
                                                 onClick={() => setPagination({ ...pagination, current_page: pagination.current_page + 1 })}
                                                 disabled={pagination.current_page === pagination.last_page}
                                             >
-                                                Next
+                                                {t('admin.common.next')}
                                             </button>
                                         </li>
                                     </ul>
@@ -549,7 +555,7 @@ const AdminUsersIndex = () => {
                             {/* No Results */}
                             {!loading && users.length === 0 && (
                                 <div className="text-center py-10">
-                                    <p className="text-gray-600 fs-4">No users found</p>
+                                    <p className="text-gray-600 fs-4">{t('admin.usersIndex.noUsersFound')}</p>
                                 </div>
                             )}
                         </div>

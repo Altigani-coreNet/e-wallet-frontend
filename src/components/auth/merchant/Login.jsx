@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../stores/authStore';
+import { buildPrefixedPath, getStoredOrDefaultLocale } from '../../../i18n/localePaths';
 
 const Login = () => {
     const navigate = useNavigate();
@@ -34,7 +35,11 @@ const Login = () => {
         // Only redirect if truly authenticated with valid token
         if (isAuthenticated && token) {
             const status = merchant?.status ? String(merchant.status).toLowerCase() : null;
-            const targetRoute = status === 'approved' ? '/merchant/dashboard' : '/merchant/profile';
+            const lng = getStoredOrDefaultLocale();
+            const targetRoute =
+                status === 'approved'
+                    ? buildPrefixedPath('/merchant/dashboard', lng)
+                    : buildPrefixedPath('/merchant/profile', lng);
             navigate(targetRoute, { replace: true });
         }
     }, [isAuthenticated, merchant, navigate]);
@@ -92,10 +97,11 @@ const Login = () => {
             });
             
             toast.success('Login successful!');
-            
+
+            const lng = getStoredOrDefaultLocale();
+
             // Check if user needs to complete merchant registration
             if (result?.needsMerchantRegistration) {
-                // Redirect to registration page at step 3 (Merchant Profile)
                 navigate('/merchant/register?step=2', { replace: true });
                 return;
             }
@@ -105,7 +111,7 @@ const Login = () => {
 
             // If merchant is not approved, always go to profile
             if (status !== 'approved') {
-                navigate('/merchant/profile', { replace: true });
+                navigate(buildPrefixedPath('/merchant/profile', lng), { replace: true });
                 return;
             }
 
@@ -138,12 +144,11 @@ const Login = () => {
                     : salesScopes.length > 0 && salesScopes.some((scope) => scope.is_enabled === true);
 
             if (hasAnyPosScopesEnabled) {
-                navigate('/merchant/dashboard', { replace: true });
+                navigate(buildPrefixedPath('/merchant/dashboard', lng), { replace: true });
             } else if (hasAnySalesScopesEnabled) {
-                navigate('/sales/dashboard', { replace: true });
+                navigate(buildPrefixedPath('/sales/dashboard', lng), { replace: true });
             } else {
-                // Fallback if no scopes: go to merchant profile
-                navigate('/merchant/profile', { replace: true });
+                navigate(buildPrefixedPath('/merchant/profile', lng), { replace: true });
             }
         } catch (err) {
             const errorMessage = err.response?.data?.message || error || 'Login failed';

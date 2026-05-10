@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,6 +14,7 @@ import { toast } from 'react-toastify';
 import { useCan, canExport } from '../../../utils/permissions';
 
 const BranchesIndex = ({ merchantId: propMerchantId }) => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { user, merchant } = useAuthStore();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -67,8 +69,8 @@ const BranchesIndex = ({ merchantId: propMerchantId }) => {
     const handleRefresh = useCallback(async () => {
         queryClient.invalidateQueries({ queryKey: ['branches'] });
         await refetchBranches();
-        toast.success('Data refreshed successfully');
-    }, [queryClient, refetchBranches]);
+        toast.success(t('merchant.transactions.refreshSuccess'));
+    }, [queryClient, refetchBranches, t]);
 
     // Handle export
     const handleExport = useCallback(async () => {
@@ -86,28 +88,28 @@ const BranchesIndex = ({ merchantId: propMerchantId }) => {
             link.remove();
             window.URL.revokeObjectURL(url);
             
-            toast.success('Export completed successfully');
+            toast.success(t('merchant.transactions.exportSuccess'));
         } catch (error) {
             console.error('Export error:', error);
-            toast.error('Failed to export branches');
+            toast.error(t('merchant.branches.exportFailed'));
         } finally {
             setExportLoading(false);
         }
-    }, [merchantId, filters]);
+    }, [merchantId, filters, t]);
 
     // Handle bulk delete
     const handleBulkDelete = useCallback(async () => {
         if (selectedIds.length === 0) return;
 
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete ${selectedIds.length} branch(es). This action cannot be undone!`,
+            title: t('merchant.common.areYouSure'),
+            text: t('merchant.branches.bulkDeleteText', { count: selectedIds.length }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete them!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('merchant.common.yesDeleteThem'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -116,8 +118,8 @@ const BranchesIndex = ({ merchantId: propMerchantId }) => {
             const response = await bulkDeleteBranches(selectedIds);
             if (response.success) {
                 Swal.fire({
-                    title: 'Deleted!',
-                    text: 'Branches deleted successfully!',
+                    title: t('merchant.common.deleted'),
+                    text: t('merchant.branches.deletedSuccess'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
@@ -127,31 +129,31 @@ const BranchesIndex = ({ merchantId: propMerchantId }) => {
                 await refetchBranches();
             } else {
                 Swal.fire({
-                    title: 'Error!',
-                    text: response.error || 'Failed to delete branches',
+                    title: t('merchant.common.error'),
+                    text: response.error || t('merchant.branches.deleteFailed'),
                     icon: 'error',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: t('merchant.common.ok')
                 });
             }
         } catch (error) {
             console.error('Error deleting branches:', error);
             Swal.fire({
-                title: 'Error!',
-                text: 'An error occurred while deleting branches',
+                title: t('merchant.common.error'),
+                text: t('merchant.branches.deleteError'),
                 icon: 'error',
-                confirmButtonText: 'OK'
+                confirmButtonText: t('merchant.common.ok')
             });
         }
-    }, [selectedIds, queryClient, refetchBranches]);
+    }, [selectedIds, queryClient, refetchBranches, t]);
 
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
-        setTitle('Branches');
+        setTitle(t('merchant.breadcrumbs.branches'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Branches', path: '/merchant/branches' },
-            { label: 'Branches List', path: '/merchant/branches', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.branches'), path: '/merchant/branches' },
+            { label: t('merchant.breadcrumbs.branchesList'), path: '/merchant/branches', active: true }
         ]);
         
         setActions(
@@ -164,7 +166,7 @@ const BranchesIndex = ({ merchantId: propMerchantId }) => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Filter
+                    {t('merchant.common.filter')}
                 </button>
 
                 <button
@@ -176,7 +178,7 @@ const BranchesIndex = ({ merchantId: propMerchantId }) => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Refresh
+                    {t('merchant.common.refresh')}
                 </button>
 
                 {selectedIds.length > 0 && canDelete && (
@@ -191,7 +193,7 @@ const BranchesIndex = ({ merchantId: propMerchantId }) => {
                             <span className="path4"></span>
                             <span className="path5"></span>
                         </i>
-                        Delete Selected ({selectedIds.length})
+                        {t('merchant.branches.deleteSelected', { count: selectedIds.length })}
                     </button>
                 )}
 
@@ -205,7 +207,7 @@ const BranchesIndex = ({ merchantId: propMerchantId }) => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Export
+                        {t('merchant.transactions.export')}
                     </button>
                 )}
 
@@ -217,7 +219,7 @@ const BranchesIndex = ({ merchantId: propMerchantId }) => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Import
+                    {t('merchant.branches.import')}
                 </button>
 
                 {canCreate && (
@@ -229,7 +231,7 @@ const BranchesIndex = ({ merchantId: propMerchantId }) => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Request New Branch
+                        {t('merchant.branches.requestNew')}
                     </Link>
                 )}
             </>
@@ -239,7 +241,7 @@ const BranchesIndex = ({ merchantId: propMerchantId }) => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [showFilters, branchesLoading, exportLoading, selectedIds.length, handleRefresh, handleExport, handleBulkDelete, setTitle, setBreadcrumbs, setActions]);
+    }, [showFilters, branchesLoading, exportLoading, selectedIds.length, handleRefresh, handleExport, handleBulkDelete, setTitle, setBreadcrumbs, setActions, t, i18n.language, canCreate, canDelete]);
 
     // Handle page change
     const handlePageChange = (page) => {

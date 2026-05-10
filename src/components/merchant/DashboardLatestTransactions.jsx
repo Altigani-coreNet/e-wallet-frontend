@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { getTransactionStatusLabel } from '../../utils/transactionStatusHelpers';
 
 const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loading }) => {
+    const { t, i18n } = useTranslation();
     const [showLimitMenu, setShowLimitMenu] = useState(false);
     const limitOptions = [10, 20, 50, 100];
 
     const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
+        if (!dateString) return t('merchant.common.na');
         const date = new Date(dateString);
-        return date.toLocaleString('en-US', {
+        const locale = i18n.language?.startsWith('ar') ? 'ar' : 'en';
+        return date.toLocaleString(locale === 'ar' ? 'ar-SA' : 'en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -17,7 +21,7 @@ const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loadi
     };
 
     const formatAmount = (amount) => {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat(i18n.language?.startsWith('ar') ? 'ar-SA' : 'en-US', {
             style: 'currency',
             currency: 'USD'
         }).format(amount || 0);
@@ -50,8 +54,8 @@ const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loadi
             <div className="card card-flush h-xl-100">
                 <div className="card-header pt-7">
                     <h3 className="card-title align-items-start flex-column">
-                        <span className="card-label fw-bold text-gray-800">Latest Transactions</span>
-                        <span className="text-gray-500 mt-1 fw-semibold fs-6">Recent activity</span>
+                        <span className="card-label fw-bold text-gray-800">{t('merchant.dashboard.latestTitle')}</span>
+                        <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('merchant.dashboard.latestSubtitle')}</span>
                     </h3>
                     <div className="card-toolbar">
                         <div style={{ minWidth: '100px' }} className="position-relative">
@@ -60,7 +64,7 @@ const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loadi
                                 className="btn btn-sm btn-light btn-active-light-primary"
                                 onClick={() => setShowLimitMenu(!showLimitMenu)}
                             >
-                                Show <span className="fw-bold ms-1">{limit}</span>
+                                {t('merchant.common.show')} <span className="fw-bold ms-1">{limit}</span>
                                 <i className="ki-duotone ki-down fs-5 ms-1"></i>
                             </button>
                             
@@ -100,11 +104,11 @@ const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loadi
                         <table className="table table-row-dashed align-middle gs-0 gy-4 my-0">
                             <thead>
                                 <tr className="fs-7 fw-bold text-gray-500 border-bottom-0">
-                                    <th className="p-0 min-w-150px">Terminal</th>
-                                    <th className="p-0 min-w-100px">Amount</th>
-                                    <th className="p-0 min-w-100px">Status</th>
-                                    <th className="p-0 min-w-150px">Date</th>
-                                    <th className="p-0 w-50px">Action</th>
+                                    <th className="p-0 min-w-150px">{t('merchant.dashboard.colTerminal')}</th>
+                                    <th className="p-0 min-w-100px">{t('merchant.dashboard.colAmount')}</th>
+                                    <th className="p-0 min-w-100px">{t('merchant.dashboard.colStatus')}</th>
+                                    <th className="p-0 min-w-150px">{t('merchant.dashboard.colDate')}</th>
+                                    <th className="p-0 w-50px">{t('merchant.dashboard.colAction')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -147,10 +151,10 @@ const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loadi
                                                 <div className="d-flex align-items-center">
                                                     <div className="d-flex justify-content-start flex-column">
                                                         <span className="text-gray-900 fw-bold text-hover-primary mb-1 fs-6">
-                                                            {transaction.terminal?.serial_number || 'N/A'}
+                                                            {transaction.terminal?.serial_number || t('merchant.common.na')}
                                                         </span>
                                                         <span className="text-gray-500 fw-semibold d-block fs-7">
-                                                            {transaction?.terminal_name || transaction?.terminal?.name || 'Terminal'}
+                                                            {transaction?.terminal_name || transaction?.terminal?.name || t('merchant.common.terminal')}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -162,7 +166,8 @@ const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loadi
                                             </td>
                                             <td>
                                                 <span className={`badge ${getStatusBadgeClass(transaction.status)}`}>
-                                                    {transaction.status || 'Unknown'}
+                                                    {getTransactionStatusLabel(transaction.status, t) ||
+                                                        t('merchant.common.unknown')}
                                                 </span>
                                             </td>
                                             <td>
@@ -174,7 +179,7 @@ const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loadi
                                                 <a 
                                                     href={`/merchant/transactions/${transaction.id}`}
                                                     className="btn btn-sm btn-icon btn-bg-light btn-active-color-primary"
-                                                    title="View Details"
+                                                    title={t('merchant.common.viewDetails')}
                                                 >
                                                     <i className="ki-duotone ki-arrow-right fs-2">
                                                         <span className="path1"></span>
@@ -187,7 +192,7 @@ const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loadi
                                 ) : (
                                     <tr>
                                         <td colSpan="5" className="text-center py-5">
-                                            <div className="text-gray-600 fs-6">No transactions found</div>
+                                            <div className="text-gray-600 fs-6">{t('merchant.dashboard.noTransactions')}</div>
                                         </td>
                                     </tr>
                                 )}
@@ -201,4 +206,3 @@ const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loadi
 };
 
 export default DashboardLatestTransactions;
-

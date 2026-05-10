@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { PUBLIC_ENDPOINTS, AUTH_ENDPOINTS } from '../../utils/constants';
 import useAuthStore from '../../stores/authStore';
 import { toast } from 'react-toastify';
 
 const MerchantPlans = () => {
+  const { t } = useTranslation();
   const { merchant, fetchProfile } = useAuthStore.getState();
   const currentPlanId = merchant?.plan?.id || merchant?.plan_id || null;
   const [plans, setPlans] = useState([]);
@@ -19,13 +21,13 @@ const MerchantPlans = () => {
         setPlans(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Failed to load plans:', error);
-        toast.error('Failed to load plans');
+        toast.error(t('merchant.plans.loadFailed'));
       } finally {
         setLoading(false);
       }
     };
     loadPlans();
-  }, []);
+  }, [t]);
 
   const handleUpgrade = async (planId) => {
     if (!planId) return;
@@ -36,11 +38,11 @@ const MerchantPlans = () => {
         { plan_id: planId },
         { headers: { Authorization: `Bearer ${useAuthStore.getState().token}` } }
       );
-      toast.success('Plan upgraded successfully');
+      toast.success(t('merchant.plans.upgradeSuccess'));
       await useAuthStore.getState().fetchProfile?.();
     } catch (error) {
       console.error('Upgrade failed:', error);
-      const message = error.response?.data?.message || 'Upgrade failed';
+      const message = error.response?.data?.message || t('merchant.plans.upgradeFailed');
       toast.error(message);
     } finally {
       setUpgrading(false);
@@ -52,7 +54,7 @@ const MerchantPlans = () => {
     const typeValue = typeof plan.plan_type === 'object' && plan.plan_type !== null
       ? plan.plan_type.value
       : plan.plan_type;
-    if (!typeValue) return 'Monthly';
+    if (!typeValue) return t('merchant.common.monthly');
     const normalized = String(typeValue);
     return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase();
   };
@@ -68,9 +70,9 @@ const MerchantPlans = () => {
   return (
     <div className="container py-8">
       <div className="text-center mb-10">
-        <h3 className="fs-2hx text-dark fw-bold mb-5">Choose the Plan That Fits You</h3>
+        <h3 className="fs-2hx text-dark fw-bold mb-5">{t('merchant.plans.heading')}</h3>
         <div className="fs-5 text-muted fw-semibold">
-          Select a plan or upgrade your current one.
+          {t('merchant.plans.subheading')}
         </div>
       </div>
 
@@ -115,7 +117,7 @@ const MerchantPlans = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="text-muted">No features listed yet.</div>
+                    <div className="text-muted">{t('merchant.plans.noFeatures')}</div>
                   )}
                 </div>
 
@@ -125,7 +127,7 @@ const MerchantPlans = () => {
                   disabled={isCurrent || upgrading}
                   onClick={() => handleUpgrade(plan.id)}
                 >
-                  {isCurrent ? 'Current Plan' : (upgrading ? 'Upgrading...' : 'Upgrade')}
+                  {isCurrent ? t('merchant.plans.currentPlan') : (upgrading ? t('merchant.plans.upgrading') : t('merchant.plans.upgrade'))}
                 </button>
               </div>
             </div>
@@ -137,5 +139,3 @@ const MerchantPlans = () => {
 };
 
 export default MerchantPlans;
-
-

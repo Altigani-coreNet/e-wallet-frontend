@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getServiceFees, getServiceFeeTypes } from '../../../services/serviceFeesService';
 import ServiceFeesTable from './ServiceFeesTable';
 import ServiceFeesFilters from './ServiceFeesFilters';
@@ -6,6 +7,7 @@ import LoadingSpinner from '../../common/LoadingSpinner';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 
 const ServiceFeesIndex = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [serviceFees, setServiceFees] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -26,30 +28,34 @@ const ServiceFeesIndex = () => {
 
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
-        setTitle('Service Fees');
-        
+        setTitle(t('merchant.serviceFees.title'));
+
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Service Fees', path: '/merchant/service-fees' },
-            { label: 'Service Fees List', path: '/merchant/service-fees', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.serviceFees'), path: '/merchant/service-fees' },
+            {
+                label: t('merchant.breadcrumbs.serviceFeesList'),
+                path: '/merchant/service-fees',
+                active: true,
+            },
         ]);
-        
+
         setActions(
-            <button 
+            <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="btn btn-sm btn-flex btn-secondary fw-bold"
-                aria-label={showFilters ? 'Hide filters' : 'Show filters'}
+                aria-label={showFilters ? t('merchant.common.hideFilters') : t('merchant.common.showFilters')}
             >
                 <i className="ki-duotone ki-filter fs-3 me-0 me-lg-1">
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
                 <span className="d-none d-lg-inline ms-lg-1">
-                    {showFilters ? 'Hide' : 'Show'} Filters
+                    {showFilters ? t('merchant.common.hideFilters') : t('merchant.common.showFilters')}
                 </span>
             </button>
         );
-    }, [setTitle, setBreadcrumbs, setActions, showFilters]);
+    }, [setTitle, setBreadcrumbs, setActions, showFilters, t, i18n.language]);
 
     const fetchServiceFees = useCallback(async () => {
         setLoading(true);
@@ -129,7 +135,7 @@ const ServiceFeesIndex = () => {
                     types={types}
                     onFilterChange={(updater) => {
                         setFilters(updater);
-                        setPagination(prev => ({ ...prev, current_page: 1 }));
+                        setPagination((prev) => ({ ...prev, current_page: 1 }));
                     }}
                     onClear={handleClearFilters}
                 />
@@ -139,7 +145,7 @@ const ServiceFeesIndex = () => {
             <div className="card">
                         <div className="card-header border-0 pt-6">
                             <div className="card-title">
-                                <h3>Service Fees</h3>
+                                <h3>{t('merchant.serviceFees.cardTitle')}</h3>
                             </div>
                         </div>
 

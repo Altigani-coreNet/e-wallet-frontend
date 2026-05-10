@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCan } from '../../../utils/permissions';
 
 const BranchTableRow = ({
@@ -13,6 +14,7 @@ const BranchTableRow = ({
     onUnsuspend,
     onDelete
 }) => {
+    const { t, i18n } = useTranslation();
     const canEditBranch = useCan('pos.branches.edit_branches');
     const canDeleteBranch = useCan('pos.branches.delete_branches');
     const [showActions, setShowActions] = useState(false);
@@ -47,8 +49,12 @@ const BranchTableRow = ({
     };
 
     const getCountryName = (country) => {
-        if (!country) return 'N/A';
-        return country.name?.en || country.name || country.text || 'N/A';
+        if (!country) return t('admin.common.na');
+        let name = country.name;
+        if (typeof name === 'object' && name !== null) {
+            name = name[i18n.language] || name.en || name.ar || '';
+        }
+        return name || country.text || t('admin.common.na');
     };
 
     return (
@@ -83,14 +89,14 @@ const BranchTableRow = ({
                         {branch.merchant.business_name || branch.merchant.name}
                     </Link>
                 ) : (
-                    <span className="text-muted">N/A</span>
+                    <span className="text-muted">{t('admin.common.na')}</span>
                 )}
             </td>
 
             {/* Address */}
             <td>
                 <span className="text-gray-600">
-                    {branch.address || 'N/A'}
+                    {branch.address || t('admin.common.na')}
                 </span>
             </td>
 
@@ -104,23 +110,23 @@ const BranchTableRow = ({
             {/* Status */}
             <td>
                 <span className={`badge ${getStatusBadgeClass(branch.status)}`}>
-                    {branch.status ? branch.status.charAt(0).toUpperCase() + branch.status.slice(1) : 'N/A'}
+                    {branch.status ? t(`admin.common.${branch.status.toLowerCase()}`) : t('admin.common.na')}
                 </span>
             </td>
 
             {/* Is Active */}
             <td>
                 {branch.is_active ? (
-                    <span className="badge badge-light-success">Active</span>
+                    <span className="badge badge-light-success">{t('admin.common.active')}</span>
                 ) : (
-                    <span className="badge badge-light-danger">Inactive</span>
+                    <span className="badge badge-light-danger">{t('admin.common.inactive')}</span>
                 )}
             </td>
 
             {/* Created At */}
             <td>
                 <span className="text-gray-600">
-                    {new Date(branch.created_at).toLocaleDateString()}
+                    {new Date(branch.created_at).toLocaleDateString(i18n.language)}
                 </span>
             </td>
 
@@ -134,7 +140,7 @@ const BranchTableRow = ({
                         onClick={() => setShowActions(!showActions)}
                         onBlur={() => setTimeout(() => setShowActions(false), 200)}
                     >
-                        Actions
+                        {t('admin.common.actions')}
                         <i className="ki-duotone ki-down fs-5 ms-1"></i>
                     </button>
                     {showActions && (
@@ -158,7 +164,7 @@ const BranchTableRow = ({
                                     <span className="path2"></span>
                                     <span className="path3"></span>
                                 </i>
-                                View
+                                {t('admin.common.view')}
                             </Link>
 
                             {canEditBranch && (
@@ -171,7 +177,7 @@ const BranchTableRow = ({
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Edit
+                                    {t('admin.common.edit')}
                                 </Link>
                             )}
                             
@@ -184,7 +190,7 @@ const BranchTableRow = ({
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Approve
+                                    {t('admin.common.approve')}
                                 </button>
                             )}
                             
@@ -197,7 +203,7 @@ const BranchTableRow = ({
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Reject
+                                    {t('admin.common.reject')}
                                 </button>
                             )}
                             
@@ -210,7 +216,7 @@ const BranchTableRow = ({
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Suspend
+                                    {t('admin.common.suspend')}
                                 </button>
                             )}
                             
@@ -223,7 +229,7 @@ const BranchTableRow = ({
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Unsuspend
+                                    {t('admin.common.unsuspend')}
                                 </button>
                             )}
                             
@@ -241,7 +247,7 @@ const BranchTableRow = ({
                                         <span className="path4"></span>
                                         <span className="path5"></span>
                                     </i>
-                                    Delete
+                                    {t('admin.common.delete')}
                                 </button>
                             )}
                         </div>

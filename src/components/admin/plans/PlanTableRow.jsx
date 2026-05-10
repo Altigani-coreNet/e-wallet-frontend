@@ -1,7 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const PlanTableRow = ({ plan, isSelected, onSelect, onDelete, onStatusChange }) => {
+    const { t } = useTranslation();
     return (
         <tr>
             <td>
@@ -25,16 +27,16 @@ const PlanTableRow = ({ plan, isSelected, onSelect, onDelete, onStatusChange }) 
             <td>{plan.current_price ? parseFloat(plan.current_price).toFixed(2) : '-'}</td>
             <td>
                 {plan.has_discount ? (
-                    <span className="badge badge-success">Yes</span>
+                    <span className="badge badge-success">{t('admin.plansIndex.yes')}</span>
                 ) : (
-                    <span className="badge badge-secondary">No</span>
+                    <span className="badge badge-secondary">{t('admin.plansIndex.no')}</span>
                 )}
             </td>
             <td>
                 {plan.status ? (
-                    <span className="badge badge-success">Active</span>
+                    <span className="badge badge-success">{t('admin.plansIndex.active')}</span>
                 ) : (
-                    <span className="badge badge-danger">Inactive</span>
+                    <span className="badge badge-danger">{t('admin.plansIndex.inactive')}</span>
                 )}
             </td>
             <td>
@@ -42,7 +44,7 @@ const PlanTableRow = ({ plan, isSelected, onSelect, onDelete, onStatusChange }) 
                     <Link
                         to={`/admin/plans/${plan.id}`}
                         className="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1"
-                        title="View"
+                        title={t('admin.plansIndex.view')}
                     >
                         <i className="ki-duotone ki-eye fs-2">
                             <span className="path1"></span>
@@ -53,7 +55,7 @@ const PlanTableRow = ({ plan, isSelected, onSelect, onDelete, onStatusChange }) 
                     <Link
                         to={`/admin/plans/${plan.id}/edit`}
                         className="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1"
-                        title="Edit"
+                        title={t('admin.plansIndex.edit')}
                     >
                         <i className="ki-duotone ki-pencil fs-2">
                             <span className="path1"></span>
@@ -63,7 +65,7 @@ const PlanTableRow = ({ plan, isSelected, onSelect, onDelete, onStatusChange }) 
                     <button
                         className="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1"
                         onClick={() => onStatusChange(plan.id)}
-                        title={plan.status ? 'Deactivate' : 'Activate'}
+                        title={plan.status ? t('admin.plansIndex.deactivate') : t('admin.plansIndex.activate')}
                     >
                         <i className={`ki-duotone ${plan.status ? 'ki-toggle-on' : 'ki-toggle-off'} fs-2`}>
                             <span className="path1"></span>
@@ -73,7 +75,7 @@ const PlanTableRow = ({ plan, isSelected, onSelect, onDelete, onStatusChange }) 
                     <button
                         className="btn btn-icon btn-bg-light btn-active-color-danger btn-sm"
                         onClick={() => onDelete(plan.id)}
-                        title="Delete"
+                        title={t('admin.plansIndex.delete')}
                     >
                         <i className="ki-duotone ki-trash fs-2">
                             <span className="path1"></span>

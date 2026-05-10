@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { createPaymentGateway } from '../../../services/adminPaymentGatewaysService';
 
 const AdminPaymentGatewayCreate = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -21,10 +23,10 @@ const AdminPaymentGatewayCreate = () => {
     const [errors, setErrors] = useState({});
 
     React.useEffect(() => {
-        setTitle('Add Payment Provider');
+        setTitle(t('admin.paymentGatewayCreate.addPaymentProvider'));
         setActions(null);
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t]);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -38,11 +40,11 @@ const AdminPaymentGatewayCreate = () => {
         const file = e.target.files[0];
         if (file) {
             if (file.size > 2048 * 1024) {
-                toast.error('Logo file size must be less than 2MB');
+                toast.error(t('admin.paymentGatewayCreate.logoSizeError'));
                 return;
             }
             if (!['image/jpeg', 'image/jpg', 'image/png', 'image/gif'].includes(file.type)) {
-                toast.error('Logo must be an image file (jpeg, jpg, png, gif)');
+                toast.error(t('admin.paymentGatewayCreate.logoTypeError'));
                 return;
             }
             setLogoFile(file);
@@ -108,17 +110,17 @@ const AdminPaymentGatewayCreate = () => {
 
             const response = await createPaymentGateway(submitData);
             if (response.success) {
-                toast.success('Payment gateway created successfully');
+                toast.success(t('admin.paymentGatewayCreate.createSuccess'));
                 navigate('/admin/payment-gateways');
             } else {
                 if (response.errors) {
                     setErrors(response.errors);
                 }
-                toast.error(response.error || 'Failed to create payment gateway');
+                toast.error(response.error || t('admin.paymentGatewayCreate.createFailed'));
             }
         } catch (error) {
             console.error('Error creating payment gateway:', error);
-            toast.error('Failed to create payment gateway');
+            toast.error(t('admin.paymentGatewayCreate.createFailed'));
         } finally {
             setLoading(false);
         }
@@ -127,14 +129,14 @@ const AdminPaymentGatewayCreate = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Add Payment Provider</h3>
+                <h3 className="card-title">{t('admin.paymentGatewayCreate.addPaymentProvider')}</h3>
             </div>
 
             <form onSubmit={handleSubmit}>
                 <div className="card-body">
                     {/* Logo Section */}
                     <div className="mb-8">
-                        <label className="form-label">Logo</label>
+                        <label className="form-label">{t('admin.paymentGatewayCreate.logo')}</label>
                         <div className="d-flex justify-content-center">
                             <div className="image-input image-input-outline" style={{ position: 'relative' }}>
                                 <div 
@@ -179,21 +181,21 @@ const AdminPaymentGatewayCreate = () => {
                                 )}
                             </div>
                         </div>
-                        <div className="form-text">Allowed file types: png, jpg, jpeg, gif. Max size: 2MB</div>
+                        <div className="form-text">{t('admin.paymentGatewayCreate.allowedFileTypes')}</div>
                         {errors.logo && <div className="text-danger mt-1">{errors.logo[0]}</div>}
                     </div>
 
                     <div className="row">
                         <div className="col-md-6">
                             <div className="mb-5">
-                                <label className="form-label required">Name</label>
+                                <label className="form-label required">{t('admin.paymentGatewayCreate.name')}</label>
                                 <input
                                     type="text"
                                     name="name"
                                     className={`form-control form-control-solid ${errors.name ? 'is-invalid' : ''}`}
                                     value={formData.name}
                                     onChange={handleInputChange}
-                                    placeholder="Enter name"
+                                    placeholder={t('admin.paymentGatewayCreate.namePlaceholder')}
                                     required
                                 />
                                 {errors.name && <div className="invalid-feedback">{errors.name[0]}</div>}
@@ -201,14 +203,14 @@ const AdminPaymentGatewayCreate = () => {
                         </div>
                         <div className="col-md-6">
                             <div className="mb-5">
-                                <label className="form-label required">Title</label>
+                                <label className="form-label required">{t('admin.paymentGatewayCreate.title')}</label>
                                 <input
                                     type="text"
                                     name="title"
                                     className={`form-control form-control-solid ${errors.title ? 'is-invalid' : ''}`}
                                     value={formData.title}
                                     onChange={handleInputChange}
-                                    placeholder="Enter title"
+                                    placeholder={t('admin.paymentGatewayCreate.titlePlaceholder')}
                                     required
                                 />
                                 {errors.title && <div className="invalid-feedback">{errors.title[0]}</div>}
@@ -219,21 +221,21 @@ const AdminPaymentGatewayCreate = () => {
                     <div className="row">
                         <div className="col-md-6">
                             <div className="mb-5">
-                                <label className="form-label">Alias</label>
+                                <label className="form-label">{t('admin.paymentGatewayCreate.alias')}</label>
                                 <input
                                     type="text"
                                     name="alias"
                                     className={`form-control form-control-solid ${errors.alias ? 'is-invalid' : ''}`}
                                     value={formData.alias}
                                     onChange={handleInputChange}
-                                    placeholder="Enter alias (optional)"
+                                    placeholder={t('admin.paymentGatewayCreate.aliasPlaceholder')}
                                 />
                                 {errors.alias && <div className="invalid-feedback">{errors.alias[0]}</div>}
                             </div>
                         </div>
                         <div className="col-md-6">
                             <div className="mb-5">
-                                <label className="form-label required">Mode</label>
+                                <label className="form-label required">{t('admin.paymentGatewayCreate.mode')}</label>
                                 <select
                                     name="mode"
                                     className={`form-select form-select-solid ${errors.mode ? 'is-invalid' : ''}`}
@@ -241,8 +243,8 @@ const AdminPaymentGatewayCreate = () => {
                                     onChange={handleInputChange}
                                     required
                                 >
-                                    <option value="test">Test</option>
-                                    <option value="live">Live</option>
+                                    <option value="test">{t('admin.paymentGatewayCreate.test')}</option>
+                                    <option value="live">{t('admin.paymentGatewayCreate.live')}</option>
                                 </select>
                                 {errors.mode && <div className="invalid-feedback">{errors.mode[0]}</div>}
                             </div>
@@ -252,28 +254,28 @@ const AdminPaymentGatewayCreate = () => {
                     {/* Configuration Section */}
                     <div className="row mb-6">
                         <div className="col-12">
-                            <h3 className="fs-6 fw-bold mb-4">Configuration</h3>
+                            <h3 className="fs-6 fw-bold mb-4">{t('admin.paymentGatewayCreate.configuration')}</h3>
                             {formData.config.map((item, index) => (
                                 <div key={index} className="config-item mb-4 p-4 border rounded">
                                     <div className="row align-items-center">
                                         <div className="col-md-5">
-                                            <label className="form-label fw-semibold fs-6">Config Key</label>
+                                            <label className="form-label fw-semibold fs-6">{t('admin.paymentGatewayCreate.configKey')}</label>
                                             <input
                                                 type="text"
                                                 className="form-control form-control-solid"
                                                 value={item.key}
                                                 onChange={(e) => handleConfigChange(index, 'key', e.target.value)}
-                                                placeholder="Enter config key"
+                                                placeholder={t('admin.paymentGatewayCreate.configKeyPlaceholder')}
                                             />
                                         </div>
                                         <div className="col-md-5">
-                                            <label className="form-label fw-semibold fs-6">Config Value</label>
+                                            <label className="form-label fw-semibold fs-6">{t('admin.paymentGatewayCreate.configValue')}</label>
                                             <input
                                                 type="text"
                                                 className="form-control form-control-solid"
                                                 value={item.value}
                                                 onChange={(e) => handleConfigChange(index, 'value', e.target.value)}
-                                                placeholder="Enter config value"
+                                                placeholder={t('admin.paymentGatewayCreate.configValuePlaceholder')}
                                             />
                                         </div>
                                         <div className="col-md-2">
@@ -290,7 +292,7 @@ const AdminPaymentGatewayCreate = () => {
                                                     <span className="path4"></span>
                                                     <span className="path5"></span>
                                                 </i>
-                                                Remove
+                                                {t('admin.paymentGatewayCreate.remove')}
                                             </button>
                                         </div>
                                     </div>
@@ -305,7 +307,7 @@ const AdminPaymentGatewayCreate = () => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Add Config
+                                {t('admin.paymentGatewayCreate.addConfig')}
                             </button>
                         </div>
                     </div>
@@ -321,7 +323,7 @@ const AdminPaymentGatewayCreate = () => {
                                 onChange={handleInputChange}
                             />
                             <label className="form-check-label" htmlFor="is_active">
-                                Is Active
+                                {t('admin.paymentGatewayCreate.isActive')}
                             </label>
                         </div>
                     </div>
@@ -333,7 +335,7 @@ const AdminPaymentGatewayCreate = () => {
                             onClick={() => navigate('/admin/payment-gateways')}
                             disabled={loading}
                         >
-                            Cancel
+                            {t('admin.paymentGatewayCreate.cancel')}
                         </button>
                         <button
                             type="submit"
@@ -343,7 +345,7 @@ const AdminPaymentGatewayCreate = () => {
                             {loading ? (
                                 <>
                                     <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    Saving...
+                                    {t('admin.paymentGatewayCreate.saving')}
                                 </>
                             ) : (
                                 <>
@@ -351,7 +353,7 @@ const AdminPaymentGatewayCreate = () => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Save
+                                    {t('admin.paymentGatewayCreate.save')}
                                 </>
                             )}
                         </button>

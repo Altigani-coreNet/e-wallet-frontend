@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
@@ -13,6 +14,9 @@ const defaultBranding = {
 };
 
 const AdminSidebar = () => {
+    const { t, i18n } = useTranslation();
+    const isRtl = (i18n.language || 'en').toLowerCase().startsWith('ar');
+    const drawerDirection = isRtl ? 'end' : 'start';
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const currentTransactionType = (searchParams.get('type') || '').toLowerCase();
@@ -146,6 +150,12 @@ const AdminSidebar = () => {
         }
     }, [location.pathname]);
 
+    useEffect(() => {
+        if (window.KTMenu) {
+            window.KTMenu.createInstances();
+        }
+    }, [location.pathname, i18n.language]);
+
     const isServiceRoute =
         location.pathname === '/admin/services' ||
         location.pathname.startsWith('/admin/services/') ||
@@ -202,18 +212,18 @@ const AdminSidebar = () => {
             data-kt-drawer-activate="{default: true, lg: false}"
             data-kt-drawer-overlay="true"
             data-kt-drawer-width="225px"
-            data-kt-drawer-direction="start"
+            data-kt-drawer-direction={drawerDirection}
             data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle"
         >
             <div className="app-sidebar-logo px-6" id="kt_app_sidebar_logo">
                 <NavLink to="/admin/dashboard">
                     <img
-                        alt={defaultBranding.title || 'Logo'}
+                        alt={t('admin.sidebar.fastpay') || t('admin.header.logoAlt')}
                         src={defaultBranding.logo}
                         className="h-35px app-sidebar-logo-default"
                     />
                     <img
-                        alt={defaultBranding.title || 'Logo'}
+                        alt={t('admin.sidebar.fastpay') || t('admin.header.logoAlt')}
                         src={defaultBranding.smallLogo}
                         className="h-30px app-sidebar-logo-minimize"
                     />
@@ -254,7 +264,7 @@ const AdminSidebar = () => {
                         >
                             <div className="menu-item pt-5">
                                 <div className="menu-content">
-                                    <span className="menu-heading fw-bold text-uppercase fs-7">Main Menu</span>
+                                    <span className="menu-heading fw-bold text-uppercase fs-7">{t('admin.sidebar.mainMenuHeading')}</span>
                                 </div>
                             </div>
 
@@ -272,14 +282,14 @@ const AdminSidebar = () => {
                                                 <span className="path4"></span>
                                             </i>
                                         </span>
-                                        <span className="menu-title">Dashboard</span>
+                                        <span className="menu-title">{t('admin.sidebar.dashboard')}</span>
                                     </NavLink>
                                 </div>
                             )}
 
 <div className="menu-item pt-1">
                                 <div className="menu-content">
-                                    <span className="menu-heading fw-bold text-uppercase fs-7">Merchant & Partner </span>
+                                    <span className="menu-heading fw-bold text-uppercase fs-7">{t('admin.sidebar.merchantPartnerHeading')}</span>
                                 </div>
                             </div>
  {/* Merchant Management */}
@@ -291,7 +301,7 @@ const AdminSidebar = () => {
                                             <span className="path2"></span>
                                         </i>
                                     </span>
-                                    <span className="menu-title">Merchant Management</span>
+                                    <span className="menu-title">{t('admin.sidebar.merchantManagement')}</span>
                                     <span className="menu-arrow"></span>
                                 </span>
 
@@ -305,7 +315,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Merchants</span>
+                                            <span className="menu-title">{t('admin.sidebar.merchants')}</span>
                                             {pendingCounts.merchant > 0 && (
                                                 <span className="badge badge-light-warning ms-2">{pendingCounts.merchant}</span>
                                             )}
@@ -321,7 +331,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Merchant List</span>
+                                                    <span className="menu-title">{t('admin.sidebar.merchantList')}</span>
                                                 </NavLink>
                                             </div>
                                            
@@ -333,7 +343,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Change Request History</span>
+                                                    <span className="menu-title">{t('admin.sidebar.changeRequestHistory')}</span>
                                                     {totalPending > 0 && (
                                                         <span className="badge badge-light-warning ms-2">{totalPending}</span>
                                                     )}
@@ -344,7 +354,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Add Merchant</span>
+                                                    <span className="menu-title">{t('admin.sidebar.addMerchant')}</span>
                                                 </NavLink>
                                             </div>)}
                                         </div>
@@ -356,7 +366,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Branches</span>
+                                            <span className="menu-title">{t('admin.sidebar.branches')}</span>
                                             {pendingCounts.branch > 0 && (
                                                 <span className="badge badge-light-warning ms-2">{pendingCounts.branch}</span>
                                             )}
@@ -372,7 +382,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Branch List</span>
+                                                    <span className="menu-title">{t('admin.sidebar.branchList')}</span>
                                                 </NavLink>
                                             </div>
                                             {canCreateBranch && (<div className="menu-item">
@@ -380,7 +390,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Add Branch</span>
+                                                    <span className="menu-title">{t('admin.sidebar.addBranch')}</span>
                                                 </NavLink>
                                             </div>)}
                                         </div>
@@ -392,7 +402,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Merchant Users</span>
+                                            <span className="menu-title">{t('admin.sidebar.merchantUsers')}</span>
                                             <span className="menu-arrow"></span>
                                         </span>
                                         <div className={`menu-sub menu-sub-accordion ${isActive('/admin/users') || isActive('/admin/user-groups') ? 'show' : ''}`}>
@@ -405,7 +415,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">User List</span>
+                                                    <span className="menu-title">{t('admin.sidebar.userList')}</span>
                                                 </NavLink>
                                             </div>)}
                                             {canCreateUser && (<div className="menu-item">
@@ -416,7 +426,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Add User</span>
+                                                    <span className="menu-title">{t('admin.sidebar.addUser')}</span>
                                                 </NavLink>
                                             </div>)}
                                             {canViewUserGroups && (<div className="menu-item">
@@ -428,7 +438,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">User Groups</span>
+                                                    <span className="menu-title">{t('admin.sidebar.userGroups')}</span>
                                                 </NavLink>
                                             </div>)}
                                             {canCreateUserGroup && (<div className="menu-item">
@@ -439,7 +449,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Add User Group</span>
+                                                    <span className="menu-title">{t('admin.sidebar.addUserGroup')}</span>
                                                 </NavLink>
                                             </div>)}
                                         </div>
@@ -459,7 +469,7 @@ const AdminSidebar = () => {
                                             <span className="path2"></span>
                                         </i>
                                     </span>
-                                    <span className="menu-title">Terminal Management</span>
+                                    <span className="menu-title">{t('admin.sidebar.terminalManagement')}</span>
                                     <span className="menu-arrow"></span>
                                 </span>
 
@@ -470,7 +480,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Terminals</span>
+                                            <span className="menu-title">{t('admin.sidebar.terminals')}</span>
                                             <span className="menu-arrow"></span>
                                         </span>
                                         <div className={`menu-sub menu-sub-accordion ${isActive('/admin/terminals') && !isActive('/admin/terminal-groups') ? 'show' : ''}`}>
@@ -479,7 +489,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Terminal List</span>
+                                                    <span className="menu-title">{t('admin.sidebar.terminalList')}</span>
                                                 </NavLink>
                                             </div>
                                             {canCreateTerminal && (<div className="menu-item">
@@ -487,7 +497,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Add Terminal</span>
+                                                    <span className="menu-title">{t('admin.sidebar.addTerminal')}</span>
                                                 </NavLink>
                                             </div>)}
                                         </div>
@@ -499,7 +509,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Terminal Groups</span>
+                                            <span className="menu-title">{t('admin.sidebar.terminalGroups')}</span>
                                             <span className="menu-arrow"></span>
                                         </span>
                                         <div className={`menu-sub menu-sub-accordion ${isActive('/admin/terminal-groups') ? 'show' : ''}`}>
@@ -508,7 +518,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Group List</span>
+                                                    <span className="menu-title">{t('admin.sidebar.terminalGroupList')}</span>
                                                 </NavLink>
                                             </div>
                                             {canCreateTerminalGroup && (<div className="menu-item">
@@ -516,7 +526,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Add Terminal Group</span>
+                                                    <span className="menu-title">{t('admin.sidebar.addTerminalGroup')}</span>
                                                 </NavLink>
                                             </div>)}
                                         </div>
@@ -535,7 +545,7 @@ const AdminSidebar = () => {
                                             <span className="path2"></span>
                                         </i>
                                     </span>
-                                    <span className="menu-title">Partner Management</span>
+                                    <span className="menu-title">{t('admin.sidebar.partnerManagement')}</span>
                                     <span className="menu-arrow"></span>
                                 </span>
 
@@ -549,7 +559,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Partner Management</span>
+                                            <span className="menu-title">{t('admin.sidebar.partnerManagement')}</span>
                                         </NavLink>
                                     </div>
                                     <div className="menu-item">
@@ -560,7 +570,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Add Partner</span>
+                                            <span className="menu-title">{t('admin.sidebar.addPartner')}</span>
                                         </NavLink>
                                     </div>
                                     
@@ -572,7 +582,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Sub Partner Management</span>
+                                            <span className="menu-title">{t('admin.sidebar.subPartnerManagement')}</span>
                                         </NavLink>
                                     </div>
                                     <div className="menu-item">
@@ -583,7 +593,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Partner Configuration</span>
+                                            <span className="menu-title">{t('admin.sidebar.partnerConfiguration')}</span>
                                         </NavLink>
                                     </div>
                                 </div>
@@ -591,7 +601,7 @@ const AdminSidebar = () => {
 
                             <div className="menu-item pt-5">
                                 <div className="menu-content">
-                                    <span className="menu-heading fw-bold text-uppercase fs-7">Service</span>
+                                    <span className="menu-heading fw-bold text-uppercase fs-7">{t('admin.sidebar.serviceHeading')}</span>
                                 </div>
                             </div>
 
@@ -609,7 +619,7 @@ const AdminSidebar = () => {
                                             <span className="path5"></span>
                                         </i>
                                     </span>
-                                    <span className="menu-title">Service Management</span>
+                                    <span className="menu-title">{t('admin.sidebar.serviceManagement')}</span>
                                     <span className="menu-arrow"></span>
                                 </span>
 
@@ -622,7 +632,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Services</span>
+                                            <span className="menu-title">{t('admin.sidebar.services')}</span>
                                         </NavLink>
                                     </div>
                                     <div className="menu-item">
@@ -633,7 +643,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Home Services Config</span>
+                                            <span className="menu-title">{t('admin.sidebar.homeServicesConfig')}</span>
                                         </NavLink>
                                     </div>
                                     <div className="menu-item">
@@ -644,7 +654,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Service Products</span>
+                                            <span className="menu-title">{t('admin.sidebar.serviceProducts')}</span>
                                         </NavLink>
                                     </div>
                                     <div className="menu-item">
@@ -655,7 +665,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Service History</span>
+                                            <span className="menu-title">{t('admin.sidebar.serviceHistory')}</span>
                                         </NavLink>
                                     </div>
                                 </div>
@@ -675,7 +685,7 @@ const AdminSidebar = () => {
                                                 <span className="path4"></span>
                                             </i>
                                         </span>
-                                        <span className="menu-title">Payment Transactions</span>
+                                        <span className="menu-title">{t('admin.sidebar.paymentTransactions')}</span>
                                         <span className="menu-arrow"></span>
                                     </span>
 
@@ -707,7 +717,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Payments</span>
+                                                    <span className="menu-title">{t('admin.sidebar.payments')}</span>
                                                     <span className="menu-arrow"></span>
                                                 </span>
                                                 <div
@@ -730,7 +740,7 @@ const AdminSidebar = () => {
                                                                 <span className="menu-bullet">
                                                                     <span className="bullet bullet-dot"></span>
                                                                 </span>
-                                                                <span className="menu-title">Transactions</span>
+                                                                <span className="menu-title">{t('admin.sidebar.transactions')}</span>
                                                             </NavLink>
                                                         </div>
                                                     )}
@@ -745,7 +755,7 @@ const AdminSidebar = () => {
                                                                 <span className="menu-bullet">
                                                                     <span className="bullet bullet-dot"></span>
                                                                 </span>
-                                                                <span className="menu-title">Refunded Transactions</span>
+                                                                <span className="menu-title">{t('admin.sidebar.refundedTransactions')}</span>
                                                             </NavLink>
                                                         </div>
                                                     )}
@@ -760,7 +770,7 @@ const AdminSidebar = () => {
                                                                 <span className="menu-bullet">
                                                                     <span className="bullet bullet-dot"></span>
                                                                 </span>
-                                                                <span className="menu-title">Voided Transactions</span>
+                                                                <span className="menu-title">{t('admin.sidebar.voidedTransactions')}</span>
                                                             </NavLink>
                                                         </div>
                                                     )}
@@ -773,7 +783,7 @@ const AdminSidebar = () => {
                                                                 <span className="menu-bullet">
                                                                     <span className="bullet bullet-dot"></span>
                                                                 </span>
-                                                                <span className="menu-title">Batches</span>
+                                                                <span className="menu-title">{t('admin.sidebar.batches')}</span>
                                                             </NavLink>
                                                         </div>
                                                     )}
@@ -786,7 +796,7 @@ const AdminSidebar = () => {
                                                                 <span className="menu-bullet">
                                                                     <span className="bullet bullet-dot"></span>
                                                                 </span>
-                                                                <span className="menu-title">Settlements</span>
+                                                                <span className="menu-title">{t('admin.sidebar.settlements')}</span>
                                                             </NavLink>
                                                         </div>
                                                     )}
@@ -803,7 +813,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Payment Links</span>
+                                                    <span className="menu-title">{t('admin.sidebar.paymentLinks')}</span>
                                                 </NavLink>
                                             </div>
                                         )}
@@ -822,7 +832,7 @@ const AdminSidebar = () => {
                                             <span className="path2"></span>
                                         </i>
                                     </span>
-                                    <span className="menu-title">Settings</span>
+                                    <span className="menu-title">{t('admin.sidebar.settings')}</span>
                                     <span className="menu-arrow"></span>
                                 </span>
 
@@ -835,7 +845,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Payment Gateway</span>
+                                            <span className="menu-title">{t('admin.sidebar.paymentGateway')}</span>
                                         </NavLink>
                                     </div>
 
@@ -847,7 +857,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Roles</span>
+                                            <span className="menu-title">{t('admin.sidebar.roles')}</span>
                                             <span className="menu-arrow"></span>
                                         </span>
                                         <div className={`menu-sub menu-sub-accordion ${isPathActive('/admin/system/roles') ? 'show' : ''}`}>
@@ -859,7 +869,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Role List</span>
+                                                    <span className="menu-title">{t('admin.sidebar.roleList')}</span>
                                                 </NavLink>
                                             </div>
                                             <div className="menu-item">
@@ -870,7 +880,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Add Role</span>
+                                                    <span className="menu-title">{t('admin.sidebar.addRole')}</span>
                                                 </NavLink>
                                             </div>
                                         </div>
@@ -884,7 +894,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Admins</span>
+                                            <span className="menu-title">{t('admin.sidebar.admins')}</span>
                                             <span className="menu-arrow"></span>
                                         </span>
                                         <div className={`menu-sub menu-sub-accordion ${isPathActive('/admin/system/admins') ? 'show' : ''}`}>
@@ -896,7 +906,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Admin List</span>
+                                                    <span className="menu-title">{t('admin.sidebar.adminList')}</span>
                                                 </NavLink>
                                             </div>
                                             <div className="menu-item">
@@ -907,7 +917,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Add Admin</span>
+                                                    <span className="menu-title">{t('admin.sidebar.addAdmin')}</span>
                                                 </NavLink>
                                             </div>
                                         </div>
@@ -921,7 +931,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">System Configuration</span>
+                                            <span className="menu-title">{t('admin.sidebar.systemConfiguration')}</span>
                                         </NavLink>
                                     </div>
 
@@ -933,7 +943,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Categories Management</span>
+                                            <span className="menu-title">{t('admin.sidebar.categoriesManagement')}</span>
                                             <span className="menu-arrow"></span>
                                         </span>
                                         <div className={`menu-sub menu-sub-accordion ${isCategoriesManagementRoute ? 'show' : ''}`}>
@@ -947,7 +957,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Service categories</span>
+                                                    <span className="menu-title">{t('admin.sidebar.serviceCategories')}</span>
                                                 </NavLink>
                                             </div>
                                             <div className="menu-item">
@@ -960,7 +970,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Partner categories</span>
+                                                    <span className="menu-title">{t('admin.sidebar.partnerCategories')}</span>
                                                 </NavLink>
                                             </div>
                                         </div>
@@ -974,7 +984,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Sub-Categories Management</span>
+                                            <span className="menu-title">{t('admin.sidebar.subCategoriesManagement')}</span>
                                         </NavLink>
                                     </div>
                                     
@@ -985,7 +995,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Advertisements</span>
+                                            <span className="menu-title">{t('admin.sidebar.advertisements')}</span>
                                             <span className="menu-arrow"></span>
                                         </span>
                                         <div className={`menu-sub menu-sub-accordion ${isActive('/admin/system/advertisements') ? 'show' : ''}`}>
@@ -994,7 +1004,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Advertisement List</span>
+                                                    <span className="menu-title">{t('admin.sidebar.advertisementList')}</span>
                                                 </NavLink>
                                             </div>
                                             {canCreateAdvertisement && (<div className="menu-item">
@@ -1002,7 +1012,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Add Advertisement</span>
+                                                    <span className="menu-title">{t('admin.sidebar.addAdvertisement')}</span>
                                                 </NavLink>
                                             </div>)}
                                         </div>
@@ -1014,7 +1024,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Notifications</span>
+                                            <span className="menu-title">{t('admin.sidebar.notifications')}</span>
                                             <span className="menu-arrow"></span>
                                         </span>
                                         <div className={`menu-sub menu-sub-accordion ${isActive('/admin/system/notifications') ? 'show' : ''}`}>
@@ -1023,7 +1033,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Notification List</span>
+                                                    <span className="menu-title">{t('admin.sidebar.notificationList')}</span>
                                                 </NavLink>
                                             </div>
                                             {canCreateAdvertisement && (<div className="menu-item">
@@ -1031,7 +1041,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Add Notification</span>
+                                                    <span className="menu-title">{t('admin.sidebar.addNotification')}</span>
                                                 </NavLink>
                                             </div>)}
                                         </div>
@@ -1046,7 +1056,7 @@ const AdminSidebar = () => {
                                                 <span className="menu-bullet">
                                                     <span className="bullet bullet-dot"></span>
                                                 </span>
-                                                <span className="menu-title">Configurations</span>
+                                                <span className="menu-title">{t('admin.sidebar.configurations')}</span>
                                                 <span className="menu-arrow"></span>
                                             </span>
                                             <div className={`menu-sub menu-sub-accordion ${isSettingsConfigurationRoute ? 'show' : ''}`}>
@@ -1057,7 +1067,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Countries</span>
+                                            <span className="menu-title">{t('admin.sidebar.countries')}</span>
                                             <span className="menu-arrow"></span>
                                         </span>
                                         <div className={`menu-sub menu-sub-accordion ${isActive('/admin/system/countries') ? 'show' : ''}`}>
@@ -1066,7 +1076,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Country List</span>
+                                                    <span className="menu-title">{t('admin.sidebar.countryList')}</span>
                                                 </NavLink>
                                             </div>
                                             {canCreateCountry && (<div className="menu-item">
@@ -1074,7 +1084,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Add Country</span>
+                                                    <span className="menu-title">{t('admin.sidebar.addCountry')}</span>
                                                 </NavLink>
                                             </div>)}
                                         </div>
@@ -1086,7 +1096,7 @@ const AdminSidebar = () => {
                                             <span className="menu-bullet">
                                                 <span className="bullet bullet-dot"></span>
                                             </span>
-                                            <span className="menu-title">Cities</span>
+                                            <span className="menu-title">{t('admin.sidebar.cities')}</span>
                                             <span className="menu-arrow"></span>
                                         </span>
                                         <div className={`menu-sub menu-sub-accordion ${isActive('/admin/system/cities') ? 'show' : ''}`}>
@@ -1095,7 +1105,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">City List</span>
+                                                    <span className="menu-title">{t('admin.sidebar.cityList')}</span>
                                                 </NavLink>
                                             </div>
                                             {canCreateCity && (<div className="menu-item">
@@ -1103,7 +1113,7 @@ const AdminSidebar = () => {
                                                     <span className="menu-bullet">
                                                         <span className="bullet bullet-dot"></span>
                                                     </span>
-                                                    <span className="menu-title">Add City</span>
+                                                    <span className="menu-title">{t('admin.sidebar.addCity')}</span>
                                                 </NavLink>
                                             </div>)}
                                         </div>
@@ -1119,7 +1129,7 @@ const AdminSidebar = () => {
                                                             <span className="menu-bullet">
                                                                 <span className="bullet bullet-dot"></span>
                                                             </span>
-                                                            <span className="menu-title">Currencies</span>
+                                                            <span className="menu-title">{t('admin.sidebar.currencies')}</span>
                                                         </NavLink>
                                                     </div>
                                                 )}
@@ -1133,7 +1143,7 @@ const AdminSidebar = () => {
                                                             <span className="menu-bullet">
                                                                 <span className="bullet bullet-dot"></span>
                                                             </span>
-                                                            <span className="menu-title">Service Fees</span>
+                                                            <span className="menu-title">{t('admin.sidebar.serviceFees')}</span>
                                                         </NavLink>
                                                     </div>
                                                 )}
@@ -1147,7 +1157,7 @@ const AdminSidebar = () => {
                                                             <span className="menu-bullet">
                                                                 <span className="bullet bullet-dot"></span>
                                                             </span>
-                                                            <span className="menu-title">Contract Terms</span>
+                                                            <span className="menu-title">{t('admin.sidebar.contractTerms')}</span>
                                                         </NavLink>
                                                     </div>
                                                 )}

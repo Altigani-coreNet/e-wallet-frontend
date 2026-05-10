@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import Swal from 'sweetalert2';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -10,17 +11,28 @@ import {
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { toast } from 'react-toastify';
 import useMerchantCountryInfo from '../../../hooks/useMerchantCountryInfo';
+import { getTransactionStatusLabel } from '../../../utils/transactionStatusHelpers';
+import {
+    getPaymentCardBrandOrMethodLabel,
+    getPaymentChannelLabel,
+    getEntryModeLabel,
+    getTransactionPaymentTypeFieldLabel,
+} from '../../../utils/transactionPaymentHelpers';
 
 /** Matches API CountryResource: `name` may be a string or { en, ar }. */
-function formatCountryNameLabel(country) {
+function formatCountryNameLabel(country, lang) {
     if (!country?.name && country?.name !== '') return '';
     const n = country.name;
     if (typeof n === 'string') return n;
-    if (n && typeof n === 'object') return n.en || n.ar || '';
+    if (n && typeof n === 'object') {
+        if (lang === 'ar') return n.ar || n.en || '';
+        return n.en || n.ar || '';
+    }
     return '';
 }
 
 const TransactionDetail = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
@@ -46,31 +58,35 @@ const TransactionDetail = () => {
     } = useMerchantCountryInfo(transactionMerchantId ? [transactionMerchantId] : []);
 
     const getMerchantInfo = useCallback(() => {
+        const na = t('merchant.common.na');
         const m = transaction?.merchant;
         if (m?.business_name || m?.name) {
             return {
-                merchantName: m.business_name || m.name || 'N/A',
-                countryName: formatCountryNameLabel(m.country) || 'N/A',
+                merchantName: m.business_name || m.name || na,
+                countryName: formatCountryNameLabel(m.country, i18n.language) || na,
             };
         }
         if (!transactionMerchantId) {
             return {
-                merchantName: 'N/A',
-                countryName: formatCountryNameLabel(transaction?.country) || 'N/A',
+                merchantName: na,
+                countryName: formatCountryNameLabel(transaction?.country, i18n.language) || na,
             };
         }
         const record = getMerchantInfoById(transactionMerchantId);
         if (record) {
             return {
-                merchantName: record.name || 'N/A',
-                countryName: record.countryName || formatCountryNameLabel(transaction?.country) || 'N/A',
+                merchantName: record.name || na,
+                countryName:
+                    record.countryName ||
+                    formatCountryNameLabel(transaction?.country, i18n.language) ||
+                    na,
             };
         }
         return {
-            merchantName: 'N/A',
-            countryName: formatCountryNameLabel(transaction?.country) || 'N/A',
+            merchantName: na,
+            countryName: formatCountryNameLabel(transaction?.country, i18n.language) || na,
         };
-    }, [transaction, transactionMerchantId, getMerchantInfoById]);
+    }, [transaction, transactionMerchantId, getMerchantInfoById, t, i18n.language]);
 
     // Fetch transaction details
     useEffect(() => {
@@ -83,14 +99,14 @@ const TransactionDetail = () => {
                 setTransaction(data);
             } catch (error) {
                 console.error('Error fetching transaction details:', error);
-                toast.error('Failed to load transaction details');
+                toast.error(t('merchant.transactionDetail.loadFailed'));
             } finally {
                 setLoading(false);
             }
         };
 
         loadTransaction();
-    }, [id]);
+    }, [id, t]);
 
     useEffect(() => {
         if (!transaction?.currency_object) {
@@ -125,18 +141,18 @@ const TransactionDetail = () => {
         if (!transaction) return;
         
         const { value: reason } = await Swal.fire({
-            title: 'Void Transaction',
+            title: t('merchant.transactionDetail.voidTitle'),
             input: 'textarea',
-            inputLabel: 'Reason for void',
-            inputPlaceholder: 'Enter reason...',
+            inputLabel: t('merchant.transactionDetail.voidReasonLabel'),
+            inputPlaceholder: t('merchant.transactionDetail.voidPlaceholder'),
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Void',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('merchant.transactionDetail.voidConfirm'),
+            cancelButtonText: t('merchant.common.cancel'),
             inputValidator: (value) => {
                 if (!value) {
-                    return 'You need to provide a reason!';
+                    return t('merchant.transactionDetail.voidReasonRequired');
                 }
             }
         });
@@ -148,48 +164,48 @@ const TransactionDetail = () => {
                     transactionId: transaction.id, 
                     reason 
                 });
-                toast.success('Transaction voided successfully');
+                toast.success(t('merchant.transactionDetail.voidSuccess'));
                 await refetch(); // Refetch transaction details after void
             } catch (error) {
                 console.error('Void error:', error);
-                toast.error('Failed to void transaction');
+                toast.error(t('merchant.transactionDetail.voidFailed'));
             } finally {
                 setVoidLoading(false);
             }
         }
-    }, [transaction, refetch]);
+    }, [transaction, refetch, t]);
 
     // Handle refund transaction
     const handleRefund = useCallback(async () => {
         if (!transaction) return;
         
         const { value: formValues } = await Swal.fire({
-            title: 'Refund Transaction',
+            title: t('merchant.transactionDetail.refundTitle'),
             html:
-                `<input id="swal-input1" class="swal2-input" type="number" placeholder="Amount" max="${transaction.refundable_amount || transaction.amount}" step="0.01">` +
-                '<textarea id="swal-input2" class="swal2-textarea" placeholder="Reason for refund"></textarea>',
+                `<input id="swal-input1" class="swal2-input" type="number" placeholder="${t('merchant.transactionDetail.refundAmountPlaceholder')}" max="${transaction.refundable_amount || transaction.amount}" step="0.01">` +
+                `<textarea id="swal-input2" class="swal2-textarea" placeholder="${t('merchant.transactionDetail.refundReasonPlaceholder')}"></textarea>`,
             focusConfirm: false,
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Refund',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('merchant.transactionDetail.refundConfirm'),
+            cancelButtonText: t('merchant.common.cancel'),
             preConfirm: () => {
                 const amount = document.getElementById('swal-input1').value;
                 const reason = document.getElementById('swal-input2').value;
                 
                 if (!amount || amount <= 0) {
-                    Swal.showValidationMessage('Please enter a valid amount');
+                    Swal.showValidationMessage(t('merchant.transactionDetail.refundAmountInvalid'));
                     return false;
                 }
                 
                 if (!reason) {
-                    Swal.showValidationMessage('Please enter a reason');
+                    Swal.showValidationMessage(t('merchant.transactionDetail.refundReasonRequired'));
                     return false;
                 }
                 
                 if (parseFloat(amount) > (transaction.refundable_amount || transaction.amount)) {
-                    Swal.showValidationMessage('Amount exceeds refundable amount');
+                    Swal.showValidationMessage(t('merchant.transactionDetail.refundExceeds'));
                     return false;
                 }
                 
@@ -205,43 +221,43 @@ const TransactionDetail = () => {
                     amount: formValues.amount,
                     reason: formValues.reason
                 });
-                toast.success('Refund initiated successfully');
+                toast.success(t('merchant.transactionDetail.refundSuccess'));
                 await refetch(); // Refetch transaction details after refund
             } catch (error) {
                 console.error('Refund error:', error);
-                toast.error('Failed to process refund');
+                toast.error(t('merchant.transactionDetail.refundFailed'));
             } finally {
                 setRefundLoading(false);
             }
         }
-    }, [transaction, refetch]);
+    }, [transaction, refetch, t]);
 
     // Handle send receipt
     const handleSendReceipt = useCallback(async () => {
         if (!transaction) return;
         
         const { value: formValues } = await Swal.fire({
-            title: 'Send Receipt',
+            title: t('merchant.transactionDetail.sendReceiptTitle'),
             html:
-                '<input id="swal-email" class="swal2-input" type="email" placeholder="Email address">' +
-                '<textarea id="swal-message" class="swal2-textarea" placeholder="Optional message"></textarea>',
+                `<input id="swal-email" class="swal2-input" type="email" placeholder="${t('merchant.transactionDetail.emailPlaceholder')}">` +
+                `<textarea id="swal-message" class="swal2-textarea" placeholder="${t('merchant.transactionDetail.messagePlaceholder')}"></textarea>`,
             focusConfirm: false,
             showCancelButton: true,
             confirmButtonColor: '#28a745',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Send',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('merchant.transactionDetail.sendConfirm'),
+            cancelButtonText: t('merchant.common.cancel'),
             preConfirm: () => {
                 const email = document.getElementById('swal-email').value;
                 const message = document.getElementById('swal-message').value;
                 
                 if (!email) {
-                    Swal.showValidationMessage('Please enter an email address');
+                    Swal.showValidationMessage(t('merchant.transactionDetail.emailRequired'));
                     return false;
                 }
                 
                 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                    Swal.showValidationMessage('Please enter a valid email address');
+                    Swal.showValidationMessage(t('merchant.transactionDetail.emailInvalid'));
                     return false;
                 }
                 
@@ -257,15 +273,15 @@ const TransactionDetail = () => {
                     email: formValues.email,
                     message: formValues.message
                 });
-                toast.success('Receipt sent successfully');
+                toast.success(t('merchant.transactionDetail.receiptSentSuccess'));
             } catch (error) {
                 console.error('Send receipt error:', error);
-                toast.error('Failed to send receipt');
+                toast.error(t('merchant.transactionDetail.receiptSentFailed'));
             } finally {
                 setSendReceiptLoading(false);
             }
         }
-    }, [transaction]);
+    }, [transaction, t]);
 
     // Handle view receipt - open POS invoice print page using encrypted id
     const handleViewReceipt = useCallback(() => {
@@ -287,7 +303,7 @@ const TransactionDetail = () => {
     // Set toolbar title and actions
     useEffect(() => {
         if (transaction) {
-            setTitle(`Transaction Details - ${transaction.transaction_id || id}`);
+            setTitle(t('merchant.transactionDetail.title', { id: transaction.transaction_id || id }));
             
             setActions(
                 <>
@@ -300,7 +316,7 @@ const TransactionDetail = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        {sendReceiptLoading ? 'Sending...' : 'Send Receipt'}
+                        {sendReceiptLoading ? t('merchant.transactionDetail.sendingReceipt') : t('merchant.transactionDetail.sendReceipt')}
                     </button>
 
                     <button 
@@ -312,7 +328,7 @@ const TransactionDetail = () => {
                             <span className="path2"></span>
                             <span className="path3"></span>
                         </i>
-                        View Receipt
+                        {t('merchant.transactionDetail.viewReceipt')}
                     </button>
 
                     {/* Refund Button - Always visible, enabled only for APPROVED */}
@@ -326,7 +342,7 @@ const TransactionDetail = () => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            {refundLoading ? 'Processing...' : 'Refund'}
+                            {refundLoading ? t('merchant.transactionDetail.processing') : t('merchant.transactionDetail.refund')}
                         </button>
                     )}
 
@@ -341,7 +357,7 @@ const TransactionDetail = () => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            {voidLoading ? 'Processing...' : 'Void'}
+                            {voidLoading ? t('merchant.transactionDetail.processing') : t('merchant.transactionDetail.void')}
                         </button>
                     )}
                 </>
@@ -351,7 +367,7 @@ const TransactionDetail = () => {
                 setActions(null);
             };
         }
-    }, [transaction, id, voidLoading, refundLoading, sendReceiptLoading, handleSendReceipt, handleViewReceipt, handleRefund, handleVoid, setTitle, setActions]);
+    }, [transaction, id, voidLoading, refundLoading, sendReceiptLoading, handleSendReceipt, handleViewReceipt, handleRefund, handleVoid, setTitle, setActions, t, i18n.language]);
 
     /** Status strip styling — aligned with admin transaction detail */
     const getStatusClass = (status) => {
@@ -363,8 +379,9 @@ const TransactionDetail = () => {
     };
 
     const formatDate = (date) => {
-        if (!date) return 'N/A';
-        return new Date(date).toLocaleString('en-US', {
+        if (!date) return t('merchant.common.na');
+        const loc = i18n.language === 'ar' ? 'ar' : 'en-US';
+        return new Date(date).toLocaleString(loc, {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -447,14 +464,14 @@ const TransactionDetail = () => {
                                 <span className="path2"></span>
                                 <span className="path3"></span>
                             </i>
-                            <h3 className="text-gray-800 mb-2">Transaction Not Found</h3>
-                            <p className="text-gray-600 mb-5">The transaction you're looking for doesn't exist or you don't have access to it.</p>
+                            <h3 className="text-gray-800 mb-2">{t('merchant.transactionDetail.notFoundTitle')}</h3>
+                            <p className="text-gray-600 mb-5">{t('merchant.transactionDetail.notFoundDescription')}</p>
                             <button className="btn btn-primary" onClick={() => navigate('/merchant/transactions')}>
                                 <i className="ki-duotone ki-arrow-left fs-3">
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Back to Transactions
+                                {t('merchant.transactionDetail.backToTransactions')}
                             </button>
                         </div>
                     </div>
@@ -474,7 +491,7 @@ const TransactionDetail = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back
+                    {t('merchant.transactionDetail.back')}
                 </button>
             </div>
 
@@ -486,16 +503,20 @@ const TransactionDetail = () => {
                             <div className="d-flex align-items-center">
                                 <div className="flex-grow-1">
                                     <div className="text-black fw-bolder fs-2 mb-2">
-                                        {transaction.status}
+                                        {getTransactionStatusLabel(transaction.status, t)}
                                         {(transaction.status === 'approved' || transaction.status === 'APPROVED') && (
-                                            <span className="badge badge-light-success fs-6 ms-2">Badge Number</span>
+                                            <span className="badge badge-light-success fs-6 ms-2">
+                                                {t('merchant.transactionDetail.badgeNumber')}
+                                            </span>
                                         )}
                                     </div>
                                     <div className="fw-bold text-black">
                                         {transaction.transaction_type} - {transaction.transaction_id}
                                     </div>
                                     <div className="text-muted fs-6">
-                                        {transaction.created_at ? new Date(transaction.created_at).toLocaleString() : 'N/A'} (GMT+4)
+                                        {transaction.created_at
+                                            ? `${formatDate(transaction.created_at)} ${t('merchant.transactionDetail.gmtSuffix')}`
+                                            : t('merchant.common.na')}
                                     </div>
                                 </div>
                                 <div className="text-end">
@@ -517,9 +538,11 @@ const TransactionDetail = () => {
                     <div className="card card-dashed h-xl-100 flex-row flex-stack flex-wrap p-6">
                         <div className="d-flex flex-column py-2">
                             <div className="d-flex align-items-center fs-4 fw-bolder mb-5">
-                                {transaction.paymentMethod?.cardholder_name || transaction.payment_method?.cardholder_name || 'Card Information'}
+                                {transaction.paymentMethod?.cardholder_name ||
+                                    transaction.payment_method?.cardholder_name ||
+                                    t('merchant.transactionDetail.cardInformation')}
                                 <span className="badge badge-light-primary fs-7 ms-2">
-                                    {transaction.transaction_type || 'N/A'}
+                                    {transaction.transaction_type || t('merchant.common.na')}
                                 </span>
                             </div>
 
@@ -530,44 +553,59 @@ const TransactionDetail = () => {
 
                                 <div>
                                     <div className="fs-4 fw-bolder">
-                                        {(
+                                        {getPaymentCardBrandOrMethodLabel(
                                             transaction.method ||
-                                            transaction.payment_method?.card_type ||
-                                            transaction.paymentMethod?.card_type ||
-                                            'Card'
-                                        )
-                                            .toString()
-                                            .toUpperCase()}
+                                                transaction.payment_method?.card_type ||
+                                                transaction.paymentMethod?.card_type,
+                                            t
+                                        ) || t('merchant.transactionDetail.methodCard')}
                                         {transaction.card_number && ` **** ${transaction.card_number.slice(-4)}`}
                                     </div>
                                     <div className="fs-6 fw-bold text-gray-400">
                                         {transaction.expiry
-                                            ? `Card expires at ${transaction.expiry}`
-                                            : 'Expiry information not available'}
+                                            ? t('merchant.transactionDetail.cardExpiresAt', {
+                                                  expiry: transaction.expiry,
+                                              })
+                                            : t('merchant.transactionDetail.cardExpiryNotAvailable')}
                                     </div>
                                     <div className="mt-3">
                                         <div className="fs-7 text-muted">
-                                            Payment Type:{' '}
-                                            {transaction.payment_type || transaction.transaction_type || 'N/A'}
+                                            {t('merchant.transactionDetail.paymentTypeInline')}:{' '}
+                                            {getTransactionPaymentTypeFieldLabel(transaction.payment_type, t) ||
+                                                getTransactionPaymentTypeFieldLabel(
+                                                    transaction.transaction_type,
+                                                    t
+                                                ) ||
+                                                t('merchant.common.na')}
                                         </div>
                                         <div className="fs-7 text-muted">
-                                            Payment Method:{' '}
-                                            {transaction.method ||
-                                                transaction.payment_method?.card_type ||
-                                                transaction.paymentMethod?.card_type ||
-                                                'N/A'}
+                                            {t('merchant.transactionDetail.paymentMethodInline')}:{' '}
+                                            {getPaymentCardBrandOrMethodLabel(
+                                                transaction.method ||
+                                                    transaction.payment_method?.card_type ||
+                                                    transaction.paymentMethod?.card_type,
+                                                t
+                                            ) || t('merchant.common.na')}
                                         </div>
                                         <div className="fs-7 text-muted">
-                                            Payment Channel:{' '}
-                                            {transaction.paymentMethod?.payment_channel ||
-                                                transaction.payment_method?.payment_channel ||
-                                                'N/A'}
+                                            {t('merchant.transactionDetail.paymentChannelInline')}:{' '}
+                                            {(() => {
+                                                const ch =
+                                                    transaction.paymentMethod?.payment_channel ||
+                                                    transaction.payment_method?.payment_channel;
+                                                return (
+                                                    getPaymentChannelLabel(ch, t) || t('merchant.common.na')
+                                                );
+                                            })()}
                                         </div>
                                         <div className="fs-7 text-muted">
-                                            Entry mode:{' '}
-                                            {transaction.paymentMethod?.entry_mode ||
-                                                transaction.payment_method?.entry_mode ||
-                                                'N/A'}
+                                            {t('merchant.transactionDetail.entryModeInline')}:{' '}
+                                            {(() => {
+                                                const em =
+                                                    transaction.paymentMethod?.entry_mode ||
+                                                    transaction.payment_method?.entry_mode;
+                                                return getEntryModeLabel(em, t) || t('merchant.common.na');
+                                            })()}
                                         </div>
                                     </div>
                                 </div>
@@ -579,35 +617,49 @@ const TransactionDetail = () => {
                 <div className="col-xl-6">
                     <div className="card card-dashed h-xl-100 flex-row flex-stack flex-wrap p-6">
                         <div className="d-flex flex-column py-2 w-100">
-                            <div className="fs-4 fw-bolder mb-5">Transaction Details</div>
+                            <div className="fs-4 fw-bolder mb-5">
+                                {t('merchant.transactionDetail.sectionTransactionDetails')}
+                            </div>
 
                             <div className="row g-3">
                                 <div className="col-6">
-                                    <div className="fs-7 text-muted">RRN ID</div>
-                                    <div className="fs-6 fw-bold">{transaction.rrn || 'Not available'}</div>
-                                </div>
-                                <div className="col-6">
-                                    <div className="fs-7 text-muted">Batch No</div>
-                                    <div className="fs-6 fw-bold">{transaction.batch_no || 'Not available'}</div>
-                                </div>
-                                <div className="col-6">
-                                    <div className="fs-7 text-muted">Trace</div>
-                                    <div className="fs-6 fw-bold">{transaction.trace_no || 'Not available'}</div>
-                                </div>
-                                <div className="col-6">
-                                    <div className="fs-7 text-muted">Approval Code</div>
-                                    <div className="fs-6 fw-bold">{transaction.auth_code || 'Not available'}</div>
-                                </div>
-                                <div className="col-6">
-                                    <div className="fs-7 text-muted">Device Alias</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.rrnId')}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.terminal_id || transaction.terminal?.name || 'Not available'}
+                                        {transaction.rrn || t('merchant.transactionDetail.notAvailable')}
                                     </div>
                                 </div>
                                 <div className="col-6">
-                                    <div className="fs-7 text-muted">SDK ID</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.batchNo')}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.sdk || transaction.sdk_id || 'Not available'}
+                                        {transaction.batch_no || t('merchant.transactionDetail.notAvailable')}
+                                    </div>
+                                </div>
+                                <div className="col-6">
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.trace')}</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.trace_no || t('merchant.transactionDetail.notAvailable')}
+                                    </div>
+                                </div>
+                                <div className="col-6">
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.approvalCode')}</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.auth_code || t('merchant.transactionDetail.notAvailable')}
+                                    </div>
+                                </div>
+                                <div className="col-6">
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.deviceAlias')}</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.terminal_id ||
+                                            transaction.terminal?.name ||
+                                            t('merchant.transactionDetail.notAvailable')}
+                                    </div>
+                                </div>
+                                <div className="col-6">
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.sdkId')}</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.sdk ||
+                                            transaction.sdk_id ||
+                                            t('merchant.transactionDetail.notAvailable')}
                                     </div>
                                 </div>
                             </div>
@@ -620,11 +672,13 @@ const TransactionDetail = () => {
                 <div className="col-xl-12">
                     <div className="card card-dashed h-xl-100 flex-row flex-stack flex-wrap p-6">
                         <div className="d-flex flex-column py-2 w-100">
-                            <div className="fs-4 fw-bolder mb-5">Additional Information</div>
+                            <div className="fs-4 fw-bolder mb-5">
+                                {t('merchant.transactionDetail.sectionAdditionalInformation')}
+                            </div>
 
                             <div className="row g-4">
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Merchant</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.merchant')}</div>
                                     <div className="fs-6 fw-bold">
                                         {(() => {
                                             const merchantLoading =
@@ -632,14 +686,18 @@ const TransactionDetail = () => {
                                                 (merchantInfoLoading || hasPendingRequest(transactionMerchantId));
                                             const info = getMerchantInfo();
                                             if (merchantLoading && !info.merchantName) {
-                                                return <span className="text-muted">Loading...</span>;
+                                                return (
+                                                    <span className="text-muted">{t('merchant.common.loading')}</span>
+                                                );
                                             }
                                             return info.merchantName;
                                         })()}
                                     </div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Merchant country</div>
+                                    <div className="fs-7 text-muted">
+                                        {t('merchant.transactionDetail.merchantCountry')}
+                                    </div>
                                     <div className="fs-6 fw-bold">
                                         {(() => {
                                             const merchantLoading =
@@ -647,52 +705,75 @@ const TransactionDetail = () => {
                                                 (merchantInfoLoading || hasPendingRequest(transactionMerchantId));
                                             const info = getMerchantInfo();
                                             if (merchantLoading && !info.countryName) {
-                                                return <span className="text-muted">Loading...</span>;
+                                                return (
+                                                    <span className="text-muted">{t('merchant.common.loading')}</span>
+                                                );
                                             }
                                             return info.countryName;
                                         })()}
                                     </div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Terminal</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.terminal')}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.terminal_id || transaction.terminal?.name || 'Not available'}
+                                        {transaction.terminal_id ||
+                                            transaction.terminal?.name ||
+                                            t('merchant.transactionDetail.notAvailable')}
                                     </div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Invoice No</div>
-                                    <div className="fs-6 fw-bold">{transaction.invoice_no || 'Not available'}</div>
-                                </div>
-                                <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Linked Trans</div>
-                                    <div className="fs-6 fw-bold">No linked transaction</div>
-                                </div>
-                                <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Geo Fence Result</div>
-                                    <div className="fs-6 fw-bold">Not available</div>
-                                </div>
-                                <div className="col-md-3">
-                                    <div className="fs-7 text-muted">MID</div>
-                                    <div className="fs-6 fw-bold">{transaction.mid || 'Not available'}</div>
-                                </div>
-                                <div className="col-md-3">
-                                    <div className="fs-7 text-muted">TID</div>
-                                    <div className="fs-6 fw-bold">{transaction.tid || 'Not available'}</div>
-                                </div>
-                                <div className="col-md-3">
-                                    <div className="fs-7 text-muted">ATC</div>
-                                    <div className="fs-6 fw-bold">{transaction.atc || 'Not available'}</div>
-                                </div>
-                                <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Created By</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.invoiceNo')}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.user_name || transaction.user?.name || 'Not available'}
+                                        {transaction.invoice_no || t('merchant.transactionDetail.notAvailable')}
                                     </div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Transaction country</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.linkedTrans')}</div>
                                     <div className="fs-6 fw-bold">
-                                        {formatCountryNameLabel(transaction.country) || 'N/A'}
+                                        {t('merchant.transactionDetail.noLinkedTransaction')}
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="fs-7 text-muted">
+                                        {t('merchant.transactionDetail.geoFenceResult')}
+                                    </div>
+                                    <div className="fs-6 fw-bold">
+                                        {t('merchant.transactionDetail.notAvailable')}
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.mid')}</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.mid || t('merchant.transactionDetail.notAvailable')}
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.tid')}</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.tid || t('merchant.transactionDetail.notAvailable')}
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.atc')}</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.atc || t('merchant.transactionDetail.notAvailable')}
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.createdBy')}</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.user_name ||
+                                            transaction.user?.name ||
+                                            t('merchant.transactionDetail.notAvailable')}
+                                    </div>
+                                </div>
+                                <div className="col-md-3">
+                                    <div className="fs-7 text-muted">
+                                        {t('merchant.transactionDetail.transactionCountry')}
+                                    </div>
+                                    <div className="fs-6 fw-bold">
+                                        {formatCountryNameLabel(transaction.country, i18n.language) ||
+                                            t('merchant.common.na')}
                                     </div>
                                 </div>
                             </div>
@@ -710,85 +791,112 @@ const TransactionDetail = () => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Payment Request
+                                {t('merchant.transactionDetail.sectionPaymentRequest')}
                             </div>
 
                             <div className="row g-4">
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Transaction ID</div>
-                                    <div className="fs-6 fw-bold">{transaction.transaction_id || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.transactionId')}</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.transaction_id || t('merchant.common.na')}
+                                    </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Amount</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.amount')}</div>
                                     <div className="fs-6 fw-bold">
                                         {transaction.currency_symbol || '$'}{' '}
                                         {parseFloat(transaction.original_amount || transaction.amount || 0).toFixed(2)}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Currency</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.currency')}</div>
                                     <div className="fs-6 fw-bold">
                                         {transaction.currency_symbol || '$'} (
                                         {currency?.currency_code || transaction.currency?.currency_code || 'USD'})
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Request Timestamp</div>
+                                    <div className="fs-7 text-muted">
+                                        {t('merchant.transactionDetail.requestTimestamp')}
+                                    </div>
                                     <div className="fs-6 fw-bold">
                                         {transaction.timestamp || transaction.created_at
-                                            ? new Date(transaction.timestamp || transaction.created_at).toLocaleString()
-                                            : 'N/A'}
+                                            ? formatDate(transaction.timestamp || transaction.created_at)
+                                            : t('merchant.common.na')}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Merchant ID (MID)</div>
-                                    <div className="fs-6 fw-bold">{transaction.mid || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">
+                                        {t('merchant.transactionDetail.merchantIdMid')}
+                                    </div>
+                                    <div className="fs-6 fw-bold">{transaction.mid || t('merchant.common.na')}</div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Terminal ID (TID)</div>
+                                    <div className="fs-7 text-muted">
+                                        {t('merchant.transactionDetail.terminalIdTid')}
+                                    </div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.tid || transaction.terminal_id || 'N/A'}
+                                        {transaction.tid || transaction.terminal_id || t('merchant.common.na')}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Payment Type</div>
+                                    <div className="fs-7 text-muted">
+                                        {t('merchant.transactionDetail.paymentTypeInline')}
+                                    </div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.payment_type || transaction.transaction_type || 'N/A'}
+                                        {getTransactionPaymentTypeFieldLabel(transaction.payment_type, t) ||
+                                            getTransactionPaymentTypeFieldLabel(
+                                                transaction.transaction_type,
+                                                t
+                                            ) ||
+                                            t('merchant.common.na')}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Payment Method</div>
+                                    <div className="fs-7 text-muted">
+                                        {t('merchant.transactionDetail.paymentMethodInline')}
+                                    </div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.method ||
-                                            transaction.payment_method?.card_type ||
-                                            transaction.paymentMethod?.card_type ||
-                                            'N/A'}
+                                        {getPaymentCardBrandOrMethodLabel(
+                                            transaction.method ||
+                                                transaction.payment_method?.card_type ||
+                                                transaction.paymentMethod?.card_type,
+                                            t
+                                        ) || t('merchant.common.na')}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Payment Channel</div>
+                                    <div className="fs-7 text-muted">
+                                        {t('merchant.transactionDetail.paymentChannelInline')}
+                                    </div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.paymentMethod?.payment_channel ||
-                                            transaction.payment_method?.payment_channel ||
-                                            'N/A'}
+                                        {getPaymentChannelLabel(
+                                            transaction.paymentMethod?.payment_channel ||
+                                                transaction.payment_method?.payment_channel,
+                                            t
+                                        ) || t('merchant.common.na')}
                                     </div>
                                 </div>
                                 {(transaction.paymentMethod || transaction.payment_method) && (
                                     <>
                                         <div className="col-md-4">
-                                            <div className="fs-7 text-muted">Cardholder Name</div>
+                                            <div className="fs-7 text-muted">
+                                                {t('merchant.transactionDetail.cardholderName')}
+                                            </div>
                                             <div className="fs-6 fw-bold">
                                                 {transaction.paymentMethod?.cardholder_name ||
                                                     transaction.payment_method?.cardholder_name ||
-                                                    'N/A'}
+                                                    t('merchant.common.na')}
                                             </div>
                                         </div>
                                         <div className="col-md-4">
-                                            <div className="fs-7 text-muted">Entry Mode</div>
+                                            <div className="fs-7 text-muted">{t('merchant.transactionDetail.entryMode')}</div>
                                             <div className="fs-6 fw-bold">
-                                                {transaction.paymentMethod?.entry_mode ||
-                                                    transaction.payment_method?.entry_mode ||
-                                                    'N/A'}
+                                                {getEntryModeLabel(
+                                                    transaction.paymentMethod?.entry_mode ||
+                                                        transaction.payment_method?.entry_mode,
+                                                    t
+                                                ) || t('merchant.common.na')}
                                             </div>
                                         </div>
                                     </>
@@ -808,43 +916,52 @@ const TransactionDetail = () => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Payment Response
+                                {t('merchant.transactionDetail.sectionPaymentResponse')}
                             </div>
 
                             <div className="row g-4">
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">SDK Status</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.sdkStatus')}</div>
                                     <div className="fs-6 fw-bold">
                                         <span className={`badge badge-light-${getStatusClass(transaction.state || transaction.status)}`}>
-                                            {transaction.state || transaction.status || 'N/A'}
+                                            {transaction.state || transaction.status
+                                                ? getTransactionStatusLabel(
+                                                      transaction.state || transaction.status,
+                                                      t
+                                                  )
+                                                : t('merchant.common.na')}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">RRN ID</div>
-                                    <div className="fs-6 fw-bold">{transaction.rrn || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.rrnId')}</div>
+                                    <div className="fs-6 fw-bold">{transaction.rrn || t('merchant.common.na')}</div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Approval Code</div>
-                                    <div className="fs-6 fw-bold">{transaction.auth_code || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.approvalCode')}</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.auth_code || t('merchant.common.na')}
+                                    </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Merchant ID (MID)</div>
-                                    <div className="fs-6 fw-bold">{transaction.mid || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.merchantIdMid')}</div>
+                                    <div className="fs-6 fw-bold">{transaction.mid || t('merchant.common.na')}</div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Terminal ID (TID)</div>
-                                    <div className="fs-6 fw-bold">{transaction.tid || transaction.terminal_id || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.terminalIdTid')}</div>
+                                    <div className="fs-6 fw-bold">
+                                        {transaction.tid || transaction.terminal_id || t('merchant.common.na')}
+                                    </div>
                                 </div>
                                 {(transaction.sdk || transaction.sdk_id) && (
                                     <div className="col-md-4">
-                                        <div className="fs-7 text-muted">SDK ID</div>
+                                        <div className="fs-7 text-muted">{t('merchant.transactionDetail.sdkId')}</div>
                                         <div className="fs-6 fw-bold">{transaction.sdk || transaction.sdk_id}</div>
                                     </div>
                                 )}
                                 {transaction.atc && (
                                     <div className="col-md-4">
-                                        <div className="fs-7 text-muted">ATC</div>
+                                        <div className="fs-7 text-muted">{t('merchant.transactionDetail.atc')}</div>
                                         <div className="fs-6 fw-bold">{transaction.atc}</div>
                                     </div>
                                 )}
@@ -862,44 +979,65 @@ const TransactionDetail = () => {
                                 )}
                                 {transaction.app_name && (
                                     <div className="col-md-4">
-                                        <div className="fs-7 text-muted">Application Name</div>
+                                        <div className="fs-7 text-muted">
+                                            {t('merchant.transactionDetail.applicationName')}
+                                        </div>
                                         <div className="fs-6 fw-bold">{transaction.app_name}</div>
                                     </div>
                                 )}
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Payment Type</div>
+                                    <div className="fs-7 text-muted">
+                                        {t('merchant.transactionDetail.paymentTypeInline')}
+                                    </div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.payment_type || transaction.transaction_type || 'N/A'}
+                                        {getTransactionPaymentTypeFieldLabel(transaction.payment_type, t) ||
+                                            getTransactionPaymentTypeFieldLabel(
+                                                transaction.transaction_type,
+                                                t
+                                            ) ||
+                                            t('merchant.common.na')}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Payment Method</div>
+                                    <div className="fs-7 text-muted">
+                                        {t('merchant.transactionDetail.paymentMethodInline')}
+                                    </div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.method ||
-                                            transaction.payment_method?.card_type ||
-                                            transaction.paymentMethod?.card_type ||
-                                            'N/A'}
+                                        {getPaymentCardBrandOrMethodLabel(
+                                            transaction.method ||
+                                                transaction.payment_method?.card_type ||
+                                                transaction.paymentMethod?.card_type,
+                                            t
+                                        ) || t('merchant.common.na')}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Payment Channel</div>
+                                    <div className="fs-7 text-muted">
+                                        {t('merchant.transactionDetail.paymentChannelInline')}
+                                    </div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.paymentMethod?.payment_channel ||
-                                            transaction.payment_method?.payment_channel ||
-                                            'N/A'}
+                                        {getPaymentChannelLabel(
+                                            transaction.paymentMethod?.payment_channel ||
+                                                transaction.payment_method?.payment_channel,
+                                            t
+                                        ) || t('merchant.common.na')}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Entry Mode</div>
+                                    <div className="fs-7 text-muted">{t('merchant.transactionDetail.entryMode')}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.paymentMethod?.entry_mode ||
-                                            transaction.payment_method?.entry_mode ||
-                                            'N/A'}
+                                        {getEntryModeLabel(
+                                            transaction.paymentMethod?.entry_mode ||
+                                                transaction.payment_method?.entry_mode,
+                                            t
+                                        ) || t('merchant.common.na')}
                                     </div>
                                 </div>
                                 {(transaction.decline_reason || transaction.error_message) && (
                                     <div className="col-md-8">
-                                        <div className="fs-7 text-muted">Gateway Response</div>
+                                        <div className="fs-7 text-muted">
+                                            {t('merchant.transactionDetail.gatewayResponse')}
+                                        </div>
                                         <div className="fs-6 fw-bold text-wrap">
                                             {transaction.decline_reason || transaction.error_message}
                                         </div>

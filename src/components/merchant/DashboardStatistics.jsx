@@ -1,11 +1,14 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const DashboardStatistics = ({ data, loading }) => {
+    const { t } = useTranslation();
+
     const formatNumber = (num) => {
-        return new Intl.NumberFormat('en-US').format(num || 0);
+        return new Intl.NumberFormat(undefined).format(num || 0);
     };
 
-    const StatCard = ({ title, subtitle, value, bgColor, loading }) => (
+    const StatCard = ({ title, subtitle, value, valueFootnoteKey, bgColor, loading: cardLoading }) => (
         <div className="col-xl-4 mb-xl-10">
             <div className={`card card-flush h-xl-100 ${bgColor}`}>
                 <div className="card-header pt-5">
@@ -16,7 +19,7 @@ const DashboardStatistics = ({ data, loading }) => {
                 </div>
                 <div className="card-body pt-2">
                     <div className="mb-2">
-                        {loading ? (
+                        {cardLoading ? (
                             <div className="placeholder-glow">
                                 <span className="placeholder bg-gray-300 col-8 mb-3" style={{ height: '38px', display: 'block' }}></span>
                                 <span className="placeholder bg-gray-200 col-4" style={{ height: '18px', display: 'block' }}></span>
@@ -27,7 +30,9 @@ const DashboardStatistics = ({ data, loading }) => {
                                     {formatNumber(value)}
                                 </span>
                                 <span className="fs-6 fw-semibold text-gray-500">
-                                    {title.includes('Sale') ? 'Sales' : title.includes('Failed') ? 'Failed' : 'Transactions'}
+                                    {valueFootnoteKey === 'sales' && t('merchant.dashboard.footnoteSales')}
+                                    {valueFootnoteKey === 'failed' && t('merchant.dashboard.footnoteFailed')}
+                                    {valueFootnoteKey === 'transactions' && t('merchant.dashboard.footnoteTransactions')}
                                 </span>
                             </>
                         )}
@@ -40,25 +45,28 @@ const DashboardStatistics = ({ data, loading }) => {
     return (
         <div className="row gy-5 g-xl-10 mb-5">
             <StatCard 
-                title="All Transactions"
-                subtitle="All time transactions"
+                title={t('merchant.dashboard.statsAllTx')}
+                subtitle={t('merchant.dashboard.statsAllTxSub')}
                 value={data?.totalTransactions}
+                valueFootnoteKey="transactions"
                 bgColor="bg-light-primary"
                 loading={loading}
             />
             
             <StatCard 
-                title="Sale Transactions"
-                subtitle="Successful sales"
+                title={t('merchant.dashboard.statsSaleTx')}
+                subtitle={t('merchant.dashboard.statsSaleTxSub')}
                 value={data?.totalSaleTransactions}
+                valueFootnoteKey="sales"
                 bgColor="bg-light-success"
                 loading={loading}
             />
             
             <StatCard 
-                title="Failed Transactions"
-                subtitle="All time failed"
+                title={t('merchant.dashboard.statsFailedTx')}
+                subtitle={t('merchant.dashboard.statsFailedTxSub')}
                 value={data?.totalFailedTransactions}
+                valueFootnoteKey="failed"
                 bgColor="bg-light-danger"
                 loading={loading}
             />
@@ -67,4 +75,3 @@ const DashboardStatistics = ({ data, loading }) => {
 };
 
 export default DashboardStatistics;
-

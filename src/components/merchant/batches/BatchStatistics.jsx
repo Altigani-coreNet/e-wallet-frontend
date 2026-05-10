@@ -1,26 +1,28 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const BatchStatistics = ({ statistics }) => {
+    const { t } = useTranslation();
     if (!statistics) return null;
 
     const stats = [
         {
-            label: 'Total Batches',
+            label: t('merchant.batches.statsTotal'),
             value: statistics.total || 0,
             bgClass: 'bg-light-dark'
         },
         {
-            label: 'Settled',
+            label: t('merchant.batches.statsSettled'),
             value: statistics.settled || 0,
             bgClass: 'bg-light-success'
         },
         {
-            label: 'Pending',
+            label: t('merchant.batches.statsPending'),
             value: statistics.pending || 0,
             bgClass: 'bg-light-warning'
         },
         {
-            label: 'Failed',
+            label: t('merchant.batches.statsFailed'),
             value: statistics.failed || 0,
             bgClass: 'bg-light-danger'
         }
@@ -47,4 +49,3 @@ const BatchStatistics = ({ statistics }) => {
 };
 
 export default BatchStatistics;
-

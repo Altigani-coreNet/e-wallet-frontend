@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { getPaymentGateway } from '../../../services/paymentGatewaysService';
 
 const PaymentGatewayView = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const navigate = useNavigate();
     const { name } = useParams();
@@ -12,11 +14,11 @@ const PaymentGatewayView = () => {
     const [paymentGateway, setPaymentGateway] = useState(null);
 
     React.useEffect(() => {
-        setTitle('Payment Gateway Details');
+        setTitle(t('merchant.breadcrumbs.gatewayDetails'));
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Payment Gateways', path: '/merchant/payment-gateways' },
-            { label: name || 'Details', path: `/merchant/payment-gateways/${name}`, active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.paymentGateways'), path: '/merchant/payment-gateways' },
+            { label: name || t('merchant.common.details'), path: `/merchant/payment-gateways/${name}`, active: true }
         ]);
         setActions(
             <div className="d-flex align-items-center gap-2">
@@ -25,14 +27,14 @@ const PaymentGatewayView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back
+                    {t('merchant.common.back')}
                 </Link>
                 <Link to={`/merchant/payment-gateways/${name}/edit`} className="btn btn-sm btn-primary">
                     <i className="ki-duotone ki-pencil fs-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Configure
+                    {t('merchant.common.configure')}
                 </Link>
             </div>
         );
@@ -40,7 +42,7 @@ const PaymentGatewayView = () => {
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [setTitle, setBreadcrumbs, setActions, name]);
+    }, [setTitle, setBreadcrumbs, setActions, name, t, i18n.language]);
 
     useEffect(() => {
         fetchPaymentGateway();

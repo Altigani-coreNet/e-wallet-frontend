@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getUserInfo, updateProfile, changePassword, uploadProfileImage } from '../../services/profileService';
 import { toast } from 'react-toastify';
 
 const ProfileInfo = () => {
+    const { t } = useTranslation();
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -52,8 +54,9 @@ const ProfileInfo = () => {
             }
         } catch (err) {
             console.error('Error fetching user info:', err);
-            setError(err.response?.data?.message || err.message || 'Failed to load user information');
-            toast.error(err.response?.data?.message || 'Failed to load user information');
+            const fallback = t('merchant.profile.toastLoadUserFailed');
+            setError(err.response?.data?.message || err.message || fallback);
+            toast.error(err.response?.data?.message || fallback);
         } finally {
             setLoading(false);
         }
@@ -121,8 +124,9 @@ const ProfileInfo = () => {
             const response = await updateProfile(formData);
             
             if (response.status) {
-                setSuccess('Profile updated successfully!');
-                toast.success('Profile updated successfully!');
+                const msg = t('merchant.profile.toastUpdateSuccess');
+                setSuccess(msg);
+                toast.success(msg);
                 await fetchUserInfo();
                 
                 // Clear success message after 3 seconds
@@ -130,7 +134,7 @@ const ProfileInfo = () => {
             }
         } catch (err) {
             console.error('Error updating profile:', err);
-            const errorMsg = err.response?.data?.message || err.message || 'Failed to update profile';
+            const errorMsg = err.response?.data?.message || err.message || t('merchant.profile.toastUpdateFailed');
             setError(errorMsg);
             toast.error(errorMsg);
         } finally {
@@ -156,8 +160,9 @@ const ProfileInfo = () => {
             const response = await changePassword(passwordForm);
             
             if (response.status) {
-                setSuccess('Password changed successfully!');
-                toast.success('Password changed successfully!');
+                const msg = t('merchant.profile.toastPasswordSuccess');
+                setSuccess(msg);
+                toast.success(msg);
                 setPasswordForm({
                     current_password: '',
                     password: '',
@@ -169,7 +174,7 @@ const ProfileInfo = () => {
             }
         } catch (err) {
             console.error('Error changing password:', err);
-            const errorMsg = err.response?.data?.message || err.message || 'Failed to change password';
+            const errorMsg = err.response?.data?.message || err.message || t('merchant.profile.toastPasswordFailed');
             setError(errorMsg);
             toast.error(errorMsg);
         } finally {
@@ -181,7 +186,7 @@ const ProfileInfo = () => {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
                 <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                    <span className="visually-hidden">{t('merchant.profile.loading')}</span>
                 </div>
             </div>
         );
@@ -190,7 +195,7 @@ const ProfileInfo = () => {
     if (!user) {
         return (
             <div className="alert alert-warning">
-                No user data available.
+                {t('merchant.profile.noUserDataAvailable')}
             </div>
         );
     }
@@ -204,7 +209,7 @@ const ProfileInfo = () => {
                     <div className="card card-flush h-md-100">
                         <div className="card-header">
                             <div className="card-title">
-                                <h2>Profile Picture</h2>
+                                <h2>{t('merchant.profile.profilePicture')}</h2>
                             </div>
                         </div>
                         <div className="card-body text-center pt-0">
@@ -222,7 +227,7 @@ const ProfileInfo = () => {
                                         className="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-35px h-35px bg-body shadow" 
                                         data-kt-image-input-action="change" 
                                         data-bs-toggle="tooltip" 
-                                        title="Change avatar"
+                                        title={t('merchant.profile.tooltipChangeAvatar')}
                                     >
                                         <i className="bi bi-pencil-fill fs-7"></i>
                                         <input 
@@ -236,7 +241,7 @@ const ProfileInfo = () => {
                                             className="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-35px h-35px bg-body shadow" 
                                             data-kt-image-input-action="cancel" 
                                             data-bs-toggle="tooltip" 
-                                            title="Cancel avatar"
+                                            title={t('merchant.profile.tooltipCancelAvatar')}
                                             onClick={handleCancelImage}
                                             style={{ cursor: 'pointer' }}
                                         >
@@ -247,7 +252,7 @@ const ProfileInfo = () => {
                                         className="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-35px h-35px bg-body shadow" 
                                         data-kt-image-input-action="remove" 
                                         data-bs-toggle="tooltip" 
-                                        title="Remove avatar"
+                                        title={t('merchant.profile.tooltipRemoveAvatar')}
                                         onClick={handleRemoveImage}
                                         style={{ cursor: 'pointer' }}
                                     >
@@ -259,10 +264,10 @@ const ProfileInfo = () => {
                                 <div className="d-flex align-items-center justify-content-center">
                                     <div className="d-flex flex-column">    
                                         <a href="#" className="fs-4 fw-bold text-gray-900 text-hover-primary mb-1">
-                                            {user.name || 'N/A'}
+                                            {user.name || t('merchant.profile.na')}
                                         </a>
                                         <div className="fs-7 text-gray-500 mb-1">
-                                            Username: {user.user_name || 'N/A'}
+                                            {t('merchant.profile.usernameWithValue', { name: user.user_name || t('merchant.profile.na') })}
                                         </div>
                                         <div className="fs-6 fw-semibold text-gray-400">
                                             {user.email}
@@ -283,7 +288,7 @@ const ProfileInfo = () => {
                                 type="button" 
                                 className="btn-close" 
                                 onClick={() => setSuccess(null)}
-                                aria-label="Close"
+                                aria-label={t('merchant.profile.closeAria')}
                             ></button>
                         </div>
                     )}
@@ -295,7 +300,7 @@ const ProfileInfo = () => {
                                 type="button" 
                                 className="btn-close" 
                                 onClick={() => setError(null)}
-                                aria-label="Close"
+                                aria-label={t('merchant.profile.closeAria')}
                             ></button>
                         </div>
                     )}
@@ -303,21 +308,21 @@ const ProfileInfo = () => {
                     <div className="card">
                         <div className="card-header">
                             <div className="card-title">
-                                <h2>Profile Information</h2>
+                                <h2>{t('merchant.profile.profileInformation')}</h2>
                             </div>
                         </div>
                         <div className="card-body">
                             <form onSubmit={handleProfileSubmit}>
                                 <div className="row mb-6">
                                     <label className="col-lg-4 col-form-label required fw-semibold fs-6">
-                                        Full Name
+                                        {t('merchant.profile.fullName')}
                                     </label>
                                     <div className="col-lg-8">
                                         <input 
                                             type="text" 
                                             name="name" 
                                             className="form-control form-control-solid" 
-                                            placeholder="Enter full name" 
+                                            placeholder={t('merchant.profile.enterFullName')} 
                                             value={profileForm.name}
                                             onChange={handleProfileInputChange}
                                             required 
@@ -327,14 +332,14 @@ const ProfileInfo = () => {
                                 
                                 <div className="row mb-6">
                                     <label className="col-lg-4 col-form-label required fw-semibold fs-6">
-                                        Email Address
+                                        {t('merchant.profile.emailAddress')}
                                     </label>
                                     <div className="col-lg-8">
                                         <input 
                                             type="email" 
                                             name="email" 
                                             className="form-control form-control-solid" 
-                                            placeholder="Enter email address" 
+                                            placeholder={t('merchant.profile.enterEmailAddress')} 
                                             value={profileForm.email}
                                             onChange={handleProfileInputChange}
                                             required 
@@ -344,14 +349,14 @@ const ProfileInfo = () => {
                                 
                                 <div className="row mb-6">
                                     <label className="col-lg-4 col-form-label fw-semibold fs-6">
-                                        Phone Number
+                                        {t('merchant.profile.phoneNumber')}
                                     </label>
                                     <div className="col-lg-8">
                                         <input 
                                             type="text" 
                                             name="phone" 
                                             className="form-control form-control-solid" 
-                                            placeholder="Enter phone number" 
+                                            placeholder={t('merchant.profile.phonePlaceholder')} 
                                             value={profileForm.phone}
                                             onChange={handleProfileInputChange}
                                         />
@@ -363,10 +368,10 @@ const ProfileInfo = () => {
                                         {updating ? (
                                             <>
                                                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                Updating...
+                                                {t('merchant.profile.updating')}
                                             </>
                                         ) : (
-                                            'Update Profile'
+                                            t('merchant.profile.updateProfile')
                                         )}
                                     </button>
                                 </div>
@@ -383,21 +388,21 @@ const ProfileInfo = () => {
                     <div className="card">
                         <div className="card-header">
                             <div className="card-title">
-                                <h2>Change Password</h2>
+                                <h2>{t('merchant.profile.changePassword')}</h2>
                             </div>
                         </div>
                         <div className="card-body">
                             <form onSubmit={handlePasswordSubmit}>
                                 <div className="row mb-6">
                                     <label className="col-lg-4 col-form-label required fw-semibold fs-6">
-                                        Current Password
+                                        {t('merchant.profile.currentPassword')}
                                     </label>
                                     <div className="col-lg-8">
                                         <input 
                                             type="password" 
                                             name="current_password" 
                                             className="form-control form-control-solid" 
-                                            placeholder="Enter current password" 
+                                            placeholder={t('merchant.profile.currentPasswordPlaceholder')} 
                                             value={passwordForm.current_password}
                                             onChange={handlePasswordInputChange}
                                             required 
@@ -407,14 +412,14 @@ const ProfileInfo = () => {
                                 
                                 <div className="row mb-6">
                                     <label className="col-lg-4 col-form-label required fw-semibold fs-6">
-                                        New Password
+                                        {t('merchant.profile.newPassword')}
                                     </label>
                                     <div className="col-lg-8">
                                         <input 
                                             type="password" 
                                             name="password" 
                                             className="form-control form-control-solid" 
-                                            placeholder="Enter new password" 
+                                            placeholder={t('merchant.profile.newPasswordPlaceholder')} 
                                             value={passwordForm.password}
                                             onChange={handlePasswordInputChange}
                                             required 
@@ -424,14 +429,14 @@ const ProfileInfo = () => {
                                 
                                 <div className="row mb-6">
                                     <label className="col-lg-4 col-form-label required fw-semibold fs-6">
-                                        Confirm New Password
+                                        {t('merchant.profile.confirmPassword')}
                                     </label>
                                     <div className="col-lg-8">
                                         <input 
                                             type="password" 
                                             name="password_confirmation" 
                                             className="form-control form-control-solid" 
-                                            placeholder="Confirm new password" 
+                                            placeholder={t('merchant.profile.confirmPasswordPlaceholder')} 
                                             value={passwordForm.password_confirmation}
                                             onChange={handlePasswordInputChange}
                                             required 
@@ -444,10 +449,10 @@ const ProfileInfo = () => {
                                         {changingPassword ? (
                                             <>
                                                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                Changing Password...
+                                                {t('merchant.profile.changingPassword')}
                                             </>
                                         ) : (
-                                            'Change Password'
+                                            t('merchant.profile.changePassword')
                                         )}
                                     </button>
                                 </div>

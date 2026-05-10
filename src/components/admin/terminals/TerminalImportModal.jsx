@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { previewAdminTerminalImport, importAdminTerminals, downloadAdminTerminalTemplate } from '../../../services/adminTerminalsService';
 
 const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
+    const { t } = useTranslation();
     const [merchants, setMerchants] = useState([]);
     const [selectedMerchant, setSelectedMerchant] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
@@ -35,7 +37,7 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
             }
         } catch (error) {
             console.error('Failed to fetch merchants:', error);
-            toast.error('Failed to load merchants');
+            toast.error(t('admin.terminalImport.loadMerchantsFailed'));
         } finally {
             setLoadingMerchants(false);
         }
@@ -53,13 +55,13 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
         ];
         
         if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/)) {
-            toast.error('Please select a valid Excel or CSV file');
+            toast.error(t('admin.terminalImport.invalidFileType'));
             return;
         }
 
         // Validate file size (10MB max)
         if (file.size > 10 * 1024 * 1024) {
-            toast.error('File size must be less than 10MB');
+            toast.error(t('admin.terminalImport.fileTooLarge'));
             return;
         }
 
@@ -71,12 +73,12 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
         e.preventDefault();
         
         if (!selectedMerchant) {
-            toast.error('Please select a merchant');
+            toast.error(t('admin.terminalImport.chooseMerchant'));
             return;
         }
 
         if (!selectedFile) {
-            toast.error('Please select a file');
+            toast.error(t('admin.terminalImport.selectFile'));
             return;
         }
 
@@ -86,13 +88,13 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 
             if (response.success) {
                 setPreviewData(response.data);
-                toast.success(`Preview loaded: ${response.data.total} terminals found`);
+                toast.success(t('admin.terminalImport.previewLoaded', { count: response.data.total }));
             } else {
-                toast.error(response.error || 'Failed to preview import');
+                toast.error(response.error || t('admin.terminalImport.previewFailed'));
             }
         } catch (error) {
             console.error('Preview error:', error);
-            toast.error('Failed to preview import');
+            toast.error(t('admin.terminalImport.previewFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -100,12 +102,12 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 
     const handleImport = async () => {
         if (!selectedMerchant) {
-            toast.error('Please select a merchant');
+            toast.error(t('admin.terminalImport.chooseMerchant'));
             return;
         }
 
         if (!selectedFile) {
-            toast.error('Please select a file');
+            toast.error(t('admin.terminalImport.selectFile'));
             return;
         }
 
@@ -114,19 +116,19 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
             const response = await importAdminTerminals(selectedFile, selectedMerchant);
 
             if (response.success) {
-                toast.success(response.message);
+                toast.success(t('admin.terminalImport.importSuccess'));
                 if (response.errors && response.errors.length > 0) {
                     console.warn('Import errors:', response.errors);
-                    toast.warning(`Imported with ${response.errors.length} errors. Check console for details.`);
+                    toast.warning(t('admin.terminalImport.importWithErrors', { count: response.errors.length }));
                 }
                 resetForm();
                 onImportSuccess();
             } else {
-                toast.error(response.error || 'Failed to import terminals');
+                toast.error(response.error || t('admin.terminalImport.importFailed'));
             }
         } catch (error) {
             console.error('Import error:', error);
-            toast.error('Failed to import terminals');
+            toast.error(t('admin.terminalImport.importFailed'));
         } finally {
             setImporting(false);
         }
@@ -164,21 +166,21 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Import Terminals
+                            {t('admin.terminalImport.title')}
                         </h5>
                         <button type="button" className="btn-close" onClick={handleClose}></button>
                     </div>
                     <div className="modal-body">
                         {/* Merchant Selection */}
                         <div className="mb-5">
-                            <label className="form-label fw-bold required">Select Merchant</label>
+                            <label className="form-label fw-bold required">{t('admin.terminalImport.selectMerchant')}</label>
                             <select
                                 className="form-select"
                                 value={selectedMerchant}
                                 onChange={(e) => setSelectedMerchant(e.target.value)}
                                 disabled={loadingMerchants}
                             >
-                                <option value="">Choose merchant...</option>
+                                <option value="">{t('admin.terminalImport.chooseMerchant')}</option>
                                 {merchants.map((merchant) => (
                                     <option key={merchant.id} value={merchant.id}>
                                         {merchant.business_name || merchant.name}
@@ -189,7 +191,7 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 
                         {/* File Selection */}
                         <div className="mb-5">
-                            <label className="form-label fw-bold required">Select File</label>
+                            <label className="form-label fw-bold required">{t('admin.terminalImport.selectFile')}</label>
                             <input
                                 type="file"
                                 className="form-control"
@@ -197,7 +199,7 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                 accept=".xlsx,.xls,.csv"
                                 onChange={handleFileSelect}
                             />
-                            <div className="form-text">Supported formats: .xlsx, .xls, .csv (Max 10MB)</div>
+                            <div className="form-text">{t('admin.terminalImport.fileFormatsHint')}</div>
                         </div>
 
                         {/* Download Template Button */}
@@ -211,7 +213,7 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Download Import Template
+                                {t('admin.terminalImport.downloadTemplate')}
                             </button>
                         </div>
 
@@ -227,7 +229,7 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     {isLoading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Loading Preview...
+                                            {t('admin.terminalImport.loadingPreview')}
                                         </>
                                     ) : (
                                         <>
@@ -236,7 +238,7 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                 <span className="path2"></span>
                                                 <span className="path3"></span>
                                             </i>
-                                            Preview Import
+                                            {t('admin.terminalImport.previewImport')}
                                         </>
                                     )}
                                 </button>
@@ -246,35 +248,35 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                         {/* Preview Data */}
                         {previewData && (
                             <div className="alert alert-info">
-                                <h6 className="mb-3">Preview Results:</h6>
+                                <h6 className="mb-3">{t('admin.terminalImport.previewResults')}</h6>
                                 <div className="d-flex justify-content-between mb-2">
-                                    <span>Total Terminals:</span>
+                                    <span>{t('admin.terminalImport.totalTerminals')}</span>
                                     <strong>{previewData.total}</strong>
                                 </div>
                                 <div className="d-flex justify-content-between mb-2">
-                                    <span className="text-success">Valid:</span>
+                                    <span className="text-success">{t('admin.terminalImport.valid')}</span>
                                     <strong className="text-success">{previewData.valid}</strong>
                                 </div>
                                 <div className="d-flex justify-content-between">
-                                    <span className="text-danger">Invalid:</span>
+                                    <span className="text-danger">{t('admin.terminalImport.invalid')}</span>
                                     <strong className="text-danger">{previewData.invalid}</strong>
                                 </div>
                                 
                                 {previewData.invalid > 0 && (
                                     <div className="mt-3">
-                                        <p className="text-danger fw-bold mb-2">Issues found:</p>
+                                        <p className="text-danger fw-bold mb-2">{t('admin.terminalImport.issuesFound')}</p>
                                         <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
                                             {previewData.rows
                                                 .filter(row => row.flags.error)
                                                 .slice(0, 10)
                                                 .map((row, idx) => (
                                                     <div key={idx} className="text-danger small">
-                                                        Row {idx + 2}: {row.flags.error}
+                                                        {t('admin.terminalImport.rowError', { row: idx + 2, error: row.flags.error })}
                                                     </div>
                                                 ))}
                                             {previewData.rows.filter(row => row.flags.error).length > 10 && (
                                                 <div className="text-muted small mt-2">
-                                                    ... and {previewData.rows.filter(row => row.flags.error).length - 10} more errors
+                                                    {t('admin.terminalImport.moreErrors', { count: previewData.rows.filter(row => row.flags.error).length - 10 })}
                                                 </div>
                                             )}
                                         </div>
@@ -292,13 +294,13 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     <span className="path3"></span>
                                 </i>
                                 <div className="d-flex flex-column">
-                                    <h5 className="mb-1">Import Instructions</h5>
+                                    <h5 className="mb-1">{t('admin.terminalImport.importInstructions')}</h5>
                                     <ul className="mb-0">
-                                        <li>Download the template to see the required format</li>
-                                        <li>Terminal Name is required</li>
-                                        <li>Terminal ID will be auto-generated if not provided</li>
-                                        <li>Merchant ID will be auto-assigned based on selection</li>
-                                        <li>Preview your file before importing to check for errors</li>
+                                        <li>{t('admin.terminalImport.instruction1')}</li>
+                                        <li>{t('admin.terminalImport.instruction2')}</li>
+                                        <li>{t('admin.terminalImport.instruction3')}</li>
+                                        <li>{t('admin.terminalImport.instruction4')}</li>
+                                        <li>{t('admin.terminalImport.instruction5')}</li>
                                     </ul>
                                 </div>
                             </div>
@@ -306,7 +308,7 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                     </div>
                     <div className="modal-footer">
                         <button type="button" className="btn btn-light" onClick={handleClose}>
-                            Cancel
+                            {t('admin.terminalImport.cancel')}
                         </button>
                         <button
                             type="button"
@@ -317,7 +319,7 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                             {importing ? (
                                 <>
                                     <span className="spinner-border spinner-border-sm me-2"></span>
-                                    Importing...
+                                    {t('admin.terminalImport.importing')}
                                 </>
                             ) : (
                                 <>
@@ -325,7 +327,7 @@ const TerminalImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Import Terminals
+                                    {t('admin.terminalImport.importTerminals')}
                                 </>
                             )}
                         </button>

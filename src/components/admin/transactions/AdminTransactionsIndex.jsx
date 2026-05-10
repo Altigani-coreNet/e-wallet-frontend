@@ -7,10 +7,12 @@ import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { exportTransactions } from '../../../utils/transactionExport';
+import { useTranslation } from 'react-i18next';
 
 const AdminTransactionsIndex = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     
     const [transactions, setTransactions] = useState([]);
@@ -76,8 +78,8 @@ const AdminTransactionsIndex = () => {
     }, [searchParams]);
 
     useEffect(() => {
-        const typeLabel = urlType ? ` - ${urlType.charAt(0).toUpperCase() + urlType.slice(1)}` : '';
-        setTitle(`Transactions Management${typeLabel}`);
+        const typeLabel = urlType ? ` - ${t(`admin.transactionUrlTypes.${urlType}`)}` : '';
+        setTitle(t('admin.pages.transactionsManagement') + typeLabel);
         
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
@@ -85,53 +87,53 @@ const AdminTransactionsIndex = () => {
                 <button
                     className="btn btn-sm btn-flex btn-secondary fw-bold"
                     onClick={() => setShowFilters(!showFilters)}
-                    aria-label="Toggle filters"
+                    aria-label={t('admin.common.ariaToggleFilters')}
                 >
                     <i className="ki-duotone ki-filter fs-3 me-0 me-lg-1">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-lg-inline ms-lg-1">Filter</span>
+                    <span className="d-none d-lg-inline ms-lg-1">{t('admin.common.filter')}</span>
                 </button>
 
                 <button
                     className="btn btn-sm btn-flex btn-light-danger fw-bold"
                     onClick={clearFilters}
-                    aria-label="Clear filters"
+                    aria-label={t('admin.common.ariaClearFilters')}
                 >
                     <i className="ki-duotone ki-filter-remove fs-3 me-0 me-lg-1">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-lg-inline ms-lg-1">Clear Filters</span>
+                    <span className="d-none d-lg-inline ms-lg-1">{t('admin.common.clearFilters')}</span>
                 </button>
 
                 {/* Export – icon only on small screens, icon + text on large */}
                 <button
                     className="btn btn-sm btn-flex btn-success fw-bold"
                     onClick={handleExport}
-                    aria-label="Export transactions"
+                    aria-label={t('admin.common.ariaExportTransactions')}
                 >
                     <i className="ki-duotone ki-file-down fs-3 me-0 me-lg-1">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-lg-inline ms-lg-1">Export</span>
+                    <span className="d-none d-lg-inline ms-lg-1">{t('admin.common.export')}</span>
                 </button>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters, urlType]);
+    }, [setTitle, setActions, showFilters, urlType, i18n.language]);
 
     useEffect(() => {
         fetchTransactions();
-    }, [pagination.current_page, pagination.per_page, filters]);
+    }, [pagination.current_page, pagination.per_page, filters, urlType, i18n.language]);
 
     useEffect(() => {
         if (!urlType) {
             fetchStatistics();
         }
-    }, [urlType, filters]);
+    }, [urlType, filters, i18n.language]);
 
     // Fetch filter dropdowns only when filters are shown
     useEffect(() => {
@@ -207,7 +209,7 @@ const AdminTransactionsIndex = () => {
             }
         } catch (error) {
             console.error('Error fetching transactions:', error);
-            toast.error('Failed to load transactions');
+            toast.error(t('admin.transactionsIndex.fetchFailed'));
         } finally {
             setLoading(false);
         }
@@ -281,7 +283,7 @@ const AdminTransactionsIndex = () => {
             setDropdownsLoaded(true);
         } catch (error) {
             console.error('Error fetching filter dropdowns:', error);
-            toast.error('Failed to load filter options');
+            toast.error(t('admin.transactionsIndex.filterDropdownsFailed'));
         } finally {
             setDropdownsLoading(false);
         }
@@ -365,26 +367,26 @@ const AdminTransactionsIndex = () => {
     };
 
     const handleExport = async () => {
-        const filterInfo = Object.values(filters).some(v => v) ? ' with current filters' : '';
-        const exportMessage = `Export transactions${filterInfo}? Maximum 1000 transactions will be exported.`;
+        const filterInfo = Object.values(filters).some(v => v) ? ` ${t('admin.transactionsIndex.withCurrentFilters')}` : '';
+        const exportMessage = `${t('admin.transactionsIndex.exportText')} ${filterInfo}? ${t('admin.transactionsIndex.exportMaxLimit')}`;
         
         const result = await Swal.fire({
-            title: 'Export Transactions',
+            title: t('admin.transactionsIndex.exportTitle'),
             text: exportMessage,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#28a745',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Export',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('admin.transactionsIndex.exportConfirm'),
+            cancelButtonText: t('admin.transactionsIndex.exportCancel')
         });
 
         if (result.isConfirmed) {
             try {
                 // Show loading state with progress
                 Swal.fire({
-                    title: 'Exporting Transactions...',
-                    html: '<div id="export-progress">Fetching transactions...</div>',
+                    title: t('admin.common.exporting'),
+                    html: `<div id="export-progress">${t('admin.transactionsIndex.fetchingTransactions')}</div>`,
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     didOpen: () => {
@@ -405,30 +407,30 @@ const AdminTransactionsIndex = () => {
 
                 // Close loading and show success
                 Swal.close();
-                toast.success(`Successfully exported ${result.count} transactions to Excel!`);
+                toast.success(t('admin.transactionsIndex.exported', { count: result.count }));
             } catch (error) {
                 console.error('Export error:', error);
                 Swal.close();
-                toast.error(error.message || 'Failed to export transactions. Please try again.');
+                toast.error(error.message || t('admin.transactionsIndex.exportFailed'));
             }
         }
     };
 
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) {
-            toast.warning('Please select records to delete');
+            toast.warning(t('admin.common.pleaseSelectToDelete'));
             return;
         }
 
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
+            title: t('admin.common.confirmDelete', { count: selectedIds.length }),
+            text: t('merchant.row.deleteConfirmText'), // Reusing from merchant, consider creating admin-specific key
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('admin.common.yesDeleteThem'), // Reusing, consider specific
+            cancelButtonText: t('admin.common.cancel')
         });
 
         if (result.isConfirmed) {
@@ -443,12 +445,12 @@ const AdminTransactionsIndex = () => {
                     }
                 });
                 
-                toast.success(`Successfully deleted ${selectedIds.length} transaction(s)`);
+                toast.success(t('admin.transactionsIndex.deleted', { count: selectedIds.length }));
                 setSelectedIds([]);
                 fetchTransactions();
             } catch (error) {
                 console.error('Bulk delete error:', error);
-                toast.error('Failed to delete transactions');
+                toast.error(t('admin.transactionsIndex.deleteFailed'));
             }
         }
     };
@@ -608,8 +610,8 @@ const AdminTransactionsIndex = () => {
                                 <span className="path3"></span>
                             </i>
                             <div className="d-flex flex-column">
-                                <h4 className="mb-1">{urlType.charAt(0).toUpperCase() + urlType.slice(1)} Transactions</h4>
-                                <span>Showing transactions for type: {urlType}</span>
+                                <h4 className="mb-1">{t(`admin.transactionUrlTypes.${urlType}`)} {t('admin.transactionsIndex.transactions')}</h4>
+                                <span>{t('admin.transactionsIndex.showingTransactionsForType', { type: t(`admin.transactionUrlTypes.${urlType}`) })}</span>
                             </div>
                         </div>
                     </div>
@@ -624,22 +626,22 @@ const AdminTransactionsIndex = () => {
                         <div className="card card-flush h-xl-100 bg-light-success">
                             <div className="card-header pt-5">
                                 <h3 className="card-title align-items-start flex-column">
-                                    <span className="card-label fw-bold text-gray-800">Sale Transactions</span>
-                                    <span className="text-gray-500 mt-1 fw-semibold fs-6">Approved, Pending, Capture</span>
+                                    <span className="card-label fw-bold text-gray-800">{t('admin.transactionsIndex.saleTransactions')}</span>
+                                    <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('admin.transactionsIndex.saleTransactionsSubtitle')}</span>
                                 </h3>
                             </div>
                             <div className="card-body pt-2 row">
                                 <div className="mb-2 col-6">
                                     <span className="fs-2hx fw-bold d-block text-gray-800 me-2 mb-1 lh-1 ls-n2">
-                                        {statisticsLoading ? '...' : formatCount(statistics?.sale?.count)}
+                                        {statisticsLoading ? t('admin.common.loading') : formatCount(statistics?.sale?.count)}
                                     </span>
-                                    <span className="text-gray-500 fs-7 fw-semibold">Count</span>
+                                    <span className="text-gray-500 fs-7 fw-semibold">{t('admin.transactionsIndex.count')}</span>
                                 </div>
                                 <div className="mb-2 col-6 d-flex flex-column justify-content-center align-items-center">
                                     <span className="fs-2x fw-semibold text-success mb-1">
-                                        ${statisticsLoading ? '...' : formatAmount(statistics?.sale?.amount)}
+                                        ${statisticsLoading ? t('admin.common.loading') : formatAmount(statistics?.sale?.amount)}
                                     </span>
-                                    <span className="text-gray-500 fs-7 fw-semibold">Amount</span>
+                                    <span className="text-gray-500 fs-7 fw-semibold">{t('admin.transactionsIndex.amount')}</span>
                                 </div>
                             </div>
                         </div>
@@ -650,22 +652,22 @@ const AdminTransactionsIndex = () => {
                         <div className="card card-flush h-xl-100 bg-light-danger">
                             <div className="card-header pt-5">
                                 <h3 className="card-title align-items-start flex-column">
-                                    <span className="card-label fw-bold text-gray-800">Refund Transactions</span>
-                                    <span className="text-gray-500 mt-1 fw-semibold fs-6">Refunded transactions</span>
+                                    <span className="card-label fw-bold text-gray-800">{t('admin.transactionsIndex.refundTransactions')}</span>
+                                    <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('admin.transactionsIndex.refundTransactionsSubtitle')}</span>
                                 </h3>
                             </div>
                             <div className="card-body pt-2 row">
                                 <div className="mb-2 col-6">
                                     <span className="fs-2hx fw-bold d-block text-gray-800 me-2 mb-1 lh-1 ls-n2">
-                                        {statisticsLoading ? '...' : formatCount(statistics?.refund?.count)}
+                                        {statisticsLoading ? t('admin.common.loading') : formatCount(statistics?.refund?.count)}
                                     </span>
-                                    <span className="text-gray-500 fs-7 fw-semibold">Count</span>
+                                    <span className="text-gray-500 fs-7 fw-semibold">{t('admin.transactionsIndex.count')}</span>
                                 </div>
                                 <div className="mb-2 col-6 d-flex flex-column justify-content-center align-items-center">
                                     <span className="fs-2x fw-semibold text-danger mb-1">
-                                        {statisticsLoading ? '...' : formatAmount(statistics?.refund?.amount)}
+                                        {statisticsLoading ? t('admin.common.loading') : formatAmount(statistics?.refund?.amount)}
                                     </span>
-                                    <span className="text-gray-500 fs-7 fw-semibold">Amount</span>
+                                    <span className="text-gray-500 fs-7 fw-semibold">{t('admin.transactionsIndex.amount')}</span>
                                 </div>
                             </div>
                         </div>
@@ -676,22 +678,22 @@ const AdminTransactionsIndex = () => {
                         <div className="card card-flush h-xl-100 bg-light-dark">
                             <div className="card-header pt-5">
                                 <h3 className="card-title align-items-start flex-column">
-                                    <span className="card-label fw-bold text-gray-800">Void Transactions</span>
-                                    <span className="text-gray-500 mt-1 fw-semibold fs-6">Voided transactions</span>
+                                    <span className="card-label fw-bold text-gray-800">{t('admin.transactionsIndex.voidTransactions')}</span>
+                                    <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('admin.transactionsIndex.voidTransactionsSubtitle')}</span>
                                 </h3>
                             </div>
                             <div className="card-body pt-2 row">
                                 <div className="mb-2 col-6">
                                     <span className="fs-2hx fw-bold d-block text-gray-800 me-2 mb-1 lh-1 ls-n2">
-                                        {statisticsLoading ? '...' : formatCount(statistics?.void?.count)}
+                                        {statisticsLoading ? t('admin.common.loading') : formatCount(statistics?.void?.count)}
                                     </span>
-                                    <span className="text-gray-500 fs-7 fw-semibold">Count</span>
+                                    <span className="text-gray-500 fs-7 fw-semibold">{t('admin.transactionsIndex.count')}</span>
                                 </div>
                                 <div className="mb-2 col-6 d-flex flex-column justify-content-center align-items-center">
                                     <span className="fs-2x fw-semibold text-dark mb-1">
-                                        {statisticsLoading ? '...' : formatAmount(statistics?.void?.amount)}
+                                        {statisticsLoading ? t('admin.common.loading') : formatAmount(statistics?.void?.amount)}
                                     </span>
-                                    <span className="text-gray-500 fs-7 fw-semibold">Amount</span>
+                                    <span className="text-gray-500 fs-7 fw-semibold">{t('admin.transactionsIndex.amount')}</span>
                                 </div>
                             </div>
                         </div>
@@ -705,38 +707,38 @@ const AdminTransactionsIndex = () => {
                     <div className="card-body">
                         <div className="row">
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Search</label>
+                                <label className="form-label">{t('admin.common.search')}</label>
                                 <input
                                     type="text"
                                     className="form-control"
-                                    placeholder="Transaction ID, RRN, Auth Code"
+                                    placeholder={t('admin.transactionsIndex.searchPlaceholder')}
                                     value={filters.search}
                                     onChange={(e) => handleFilterChange('search', e.target.value)}
                                 />
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Status</label>
+                                <label className="form-label">{t('admin.common.status')}</label>
                                 <select
                                     className="form-select"
                                     value={filters.status}
                                     onChange={(e) => handleFilterChange('status', e.target.value)}
                                 >
-                                    <option value="">All</option>
-                                    <option value="APPROVED">APPROVED</option>
-                                    <option value="DECLINED">DECLINED</option>
-                                    <option value="PENDING">PENDING</option>
-                                    <option value="FAILED">FAILED</option>
-                                    <option value="PROCESSED">PROCESSED</option>
-                                    <option value="REFUNDED">REFUNDED</option>
-                                    <option value="CAPTURED">CAPTURED</option>
-                                    <option value="VOIDED">VOIDED</option>
-                                    <option value="CANCELLED">CANCELLED</option>
-                                    <option value="EXPIRED">EXPIRED</option>
-                                    <option value="REVERSED">REVERSED</option>
+                                    <option value="">{t('admin.transactionsIndex.statusAll')}</option>
+                                    <option value="APPROVED">{t('merchant.filters.statusApproved')}</option>
+                                    <option value="DECLINED">{t('merchant.filters.statusDeclined')}</option>
+                                    <option value="PENDING">{t('merchant.filters.statusPending')}</option>
+                                    <option value="FAILED">{t('merchant.filters.statusFailed')}</option>
+                                    <option value="PROCESSED">{t('merchant.filters.statusProcessed')}</option>
+                                    <option value="REFUNDED">{t('merchant.filters.statusRefunded')}</option>
+                                    <option value="CAPTURED">{t('merchant.filters.statusCaptured')}</option>
+                                    <option value="VOIDED">{t('merchant.filters.statusVoided')}</option>
+                                    <option value="CANCELLED">{t('merchant.filters.statusCancelled')}</option>
+                                    <option value="EXPIRED">{t('merchant.filters.statusExpired')}</option>
+                                    <option value="REVERSED">{t('merchant.filters.statusReversed')}</option>
                                 </select>
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Merchant</label>
+                                <label className="form-label">{t('admin.transactionsIndex.merchantLabel')}</label>
                                 <div className="position-relative" ref={merchantDropdownRef}>
                                     <div 
                                         className="form-control h-50px d-flex align-items-center justify-content-between"
@@ -752,7 +754,7 @@ const AdminTransactionsIndex = () => {
                                             {selectedMerchant ? (
                                                 <span className="text-gray-800">{selectedMerchant.business_name || selectedMerchant.name}</span>
                                             ) : (
-                                                <span className="text-muted">All Merchants</span>
+                                                <span className="text-muted">{t('admin.transactionsIndex.allMerchants')}</span>
                                             )}
                                         </div>
                                         <div className="d-flex align-items-center">
@@ -781,7 +783,7 @@ const AdminTransactionsIndex = () => {
                                                 <input 
                                                     type="text" 
                                                     className="form-control form-control-sm mb-2" 
-                                                    placeholder="Search merchants..."
+                                                    placeholder={t('admin.transactionsIndex.searchMerchants')}
                                                     value={merchantSearchTerm}
                                                     onChange={(e) => handleMerchantSearch(e.target.value)}
                                                     onClick={(e) => e.stopPropagation()}
@@ -801,7 +803,7 @@ const AdminTransactionsIndex = () => {
                                                 ))
                                             ) : (
                                                 <div className="p-3 text-muted text-center">
-                                                    {dropdownsLoading ? 'Loading...' : 'No merchants found'}
+                                                    {dropdownsLoading ? t('admin.common.loading') : t('admin.transactionsIndex.noMerchantsFound')}
                                                 </div>
                                             )}
                                         </div>
@@ -809,13 +811,13 @@ const AdminTransactionsIndex = () => {
                                 </div>
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Partner</label>
+                                <label className="form-label">{t('admin.transactionsIndex.partnerLabel')}</label>
                                 <select
                                     className="form-select"
                                     value={filters.partner_id}
                                     onChange={(e) => handleFilterChange('partner_id', e.target.value)}
                                 >
-                                    <option value="">All Partners</option>
+                                    <option value="">{t('admin.transactionsIndex.allPartners')}</option>
                                     {partnersList.map((partner) => (
                                         <option key={partner.id} value={partner.id}>
                                             {partner.business_name || partner.name}
@@ -826,7 +828,7 @@ const AdminTransactionsIndex = () => {
                         </div>
                         <div className="row mt-3">
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Country</label>
+                                <label className="form-label">{t('admin.transactionsIndex.countryLabel')}</label>
                                 <div className="position-relative" ref={countryDropdownRef}>
                                     <div 
                                         className="form-control h-50px d-flex align-items-center justify-content-between"
@@ -846,7 +848,7 @@ const AdminTransactionsIndex = () => {
                                                         : (selectedCountry.name || selectedCountry.text)}
                                                 </span>
                                             ) : (
-                                                <span className="text-muted">All Countries</span>
+                                                <span className="text-muted">{t('admin.transactionsIndex.allCountries')}</span>
                                             )}
                                         </div>
                                         <div className="d-flex align-items-center">
@@ -875,7 +877,7 @@ const AdminTransactionsIndex = () => {
                                                 <input 
                                                     type="text" 
                                                     className="form-control form-control-sm mb-2" 
-                                                    placeholder="Search countries..."
+                                                    placeholder={t('admin.transactionsIndex.searchCountries')}
                                                     value={countrySearchTerm}
                                                     onChange={(e) => handleCountrySearch(e.target.value)}
                                                     onClick={(e) => e.stopPropagation()}
@@ -899,7 +901,7 @@ const AdminTransactionsIndex = () => {
                                                 ))
                                             ) : (
                                                 <div className="p-3 text-muted text-center">
-                                                    {dropdownsLoading ? 'Loading...' : 'No countries found'}
+                                                    {dropdownsLoading ? t('admin.common.loading') : t('admin.transactionsIndex.noCountriesFound')}
                                                 </div>
                                             )}
                                         </div>
@@ -907,22 +909,22 @@ const AdminTransactionsIndex = () => {
                                 </div>
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Service Category</label>
+                                <label className="form-label">{t('admin.transactionsIndex.serviceCategoryLabel')}</label>
                                 <select
                                     className="form-select"
                                     value={filters.service_category_id}
                                     onChange={(e) => handleFilterChange('service_category_id', e.target.value)}
                                 >
-                                    <option value="">All Service Categories</option>
+                                    <option value="">{t('admin.transactionsIndex.allServiceCategories')}</option>
                                     {serviceCategoriesList.map((category) => (
                                         <option key={category.id} value={category.id}>
-                                            {category.name_en || category.name?.en || category.name || 'Unnamed Category'}
+                                            {category.name_en || category.name?.en || category.name || t('admin.transactionsIndex.unnamedCategory')}
                                         </option>
                                     ))}
                                 </select>
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">From Date</label>
+                                <label className="form-label">{t('admin.transactionsIndex.fromDateLabel')}</label>
                                 <input
                                     ref={startDateRef}
                                     type="date"
@@ -934,7 +936,7 @@ const AdminTransactionsIndex = () => {
                                 />
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">To Date</label>
+                                <label className="form-label">{t('admin.transactionsIndex.toDateLabel')}</label>
                                 <input
                                     ref={endDateRef}
                                     type="date"
@@ -954,7 +956,7 @@ const AdminTransactionsIndex = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        <span>{getActiveFiltersCount()} active filter(s)</span>
+                                        <span>{t('admin.transactionsIndex.activeFiltersCount', { count: getActiveFiltersCount() })}</span>
                                     </div>
                                 </div>
                             </div>
@@ -975,7 +977,7 @@ const AdminTransactionsIndex = () => {
                             <input
                                 type="text"
                                 className="form-control form-control-solid w-250px ps-12"
-                                placeholder="Quick search: Transaction ID, RRN, Auth Code..."
+                                placeholder={t('admin.transactionsIndex.quickSearchPlaceholder')}
                                 value={filters.search}
                                 onChange={(e) => handleFilterChange('search', e.target.value)}
                             />
@@ -985,14 +987,14 @@ const AdminTransactionsIndex = () => {
                         {selectedIds.length > 0 && (
                             <div className="d-flex justify-content-end align-items-center">
                                 <div className="fw-bolder me-5">
-                                    <span className="me-2">{selectedIds.length}</span>Selected
+                                    <span className="me-2">{selectedIds.length}</span>{t('admin.transactionsIndex.selected')}
                                 </div>
                                 <button
                                     type="button"
                                     className="btn btn-danger btn-sm"
                                     onClick={handleBulkDelete}
                                 >
-                                    Delete Selected
+                                    {t('admin.transactionsIndex.deleteSelected')}
                                 </button>
                             </div>
                         )}
@@ -1014,16 +1016,16 @@ const AdminTransactionsIndex = () => {
                                             />
                                         </div>
                                     </th>
-                                    <th className="text-dark">Country</th>
-                                    <th className="text-dark">Partner</th>
-                                    <th className="text-dark">Merchant</th>
-                                    <th className="text-dark">Service Category</th>
-                                    <th className="text-dark">Payment Method</th>
-                                    <th className="text-dark">Transaction ID</th>
-                                    <th className="text-dark">Date and Time</th>
-                                    <th className="text-dark">Amount</th>
-                                    <th className="text-dark">Status</th>
-                                    <th className="text-end text-dark">Action</th>
+                                    <th className="text-dark">{t('admin.transactionsIndex.colCountry')}</th>
+                                    <th className="text-dark">{t('admin.transactionsIndex.colPartner')}</th>
+                                    <th className="text-dark">{t('admin.transactionsIndex.colMerchant')}</th>
+                                    <th className="text-dark">{t('admin.transactionsIndex.colServiceCategory')}</th>
+                                    <th className="text-dark">{t('admin.transactionsIndex.colPaymentMethod')}</th>
+                                    <th className="text-dark">{t('admin.transactionsIndex.colTransactionId')}</th>
+                                    <th className="text-dark">{t('admin.transactionsIndex.colDateTime')}</th>
+                                    <th className="text-dark">{t('admin.transactionsIndex.colAmount')}</th>
+                                    <th className="text-dark">{t('admin.transactionsIndex.colStatus')}</th>
+                                    <th className="text-end text-dark">{t('admin.transactionsIndex.colAction')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1050,7 +1052,7 @@ const AdminTransactionsIndex = () => {
                                                     <span className="path1"></span>
                                                     <span className="path2"></span>
                                                 </i>
-                                                <p className="fw-bold">No transactions found</p>
+                                                <p className="fw-bold">{t('admin.transactionsIndex.noTransactionsFound')}</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -1067,17 +1069,17 @@ const AdminTransactionsIndex = () => {
                                                     />
                                                 </div>
                                             </td>
-                                            <td>{transaction.country_name || transaction.country?.name || 'N/A'}</td>
-                                            <td>{transaction.partner?.name || transaction.partner?.business_name || transaction.partner_name || 'N/A'}</td>
-                                            <td>{transaction.merchant_name || transaction.merchant?.business_name || transaction.merchant?.name || 'N/A'}</td>
-                                            <td>{transaction.service_category?.name_en || transaction.service_category_name || 'N/A'}</td>
-                                            <td>{transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || transaction.payment_type || 'N/A'}</td>
-                                            <td>{transaction.transaction_id || transaction.id || 'N/A'}</td>
-                                            <td>{transaction.created_at ? new Date(transaction.created_at).toLocaleString() : 'N/A'}</td>
+                                            <td>{transaction.country_name || transaction.country?.name || t('admin.common.na')}</td>
+                                            <td>{transaction.partner?.name || transaction.partner?.business_name || transaction.partner_name || t('admin.common.na')}</td>
+                                            <td>{transaction.merchant_name || transaction.merchant?.business_name || transaction.merchant?.name || t('admin.common.na')}</td>
+                                            <td>{transaction.service_category?.name_en || transaction.service_category_name || t('admin.common.na')}</td>
+                                            <td>{transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || transaction.payment_type || t('admin.common.na')}</td>
+                                            <td>{transaction.transaction_id || transaction.id || t('admin.common.na')}</td>
+                                            <td>{transaction.created_at ? new Date(transaction.created_at).toLocaleString() : t('admin.common.na')}</td>
                                             <td>{transaction.currency_symbol || '$'}{parseFloat(transaction.amount || 0).toFixed(2)}</td>
                                             <td>
                                                 <span className={`badge ${getStatusBadgeClass(transaction.status)}`}>
-                                                    {transaction.status || 'N/A'}
+                                                    {transaction.status || t('admin.common.na')}
                                                 </span>
                                             </td>
                                             <td className="text-end">
@@ -1085,7 +1087,7 @@ const AdminTransactionsIndex = () => {
                                                     className="btn btn-sm btn-light btn-active-light-primary"
                                                     onClick={() => navigate(`/admin/transactions/${transaction.id}`)}
                                                 >
-                                                    Transaction Details
+                                                    {t('admin.transactionsIndex.transactionDetails')}
                                                 </button>
                                             </td>
                                         </tr>
@@ -1101,7 +1103,7 @@ const AdminTransactionsIndex = () => {
                             <div className="col-sm-12 col-md-5 d-flex align-items-center">
                                 <div className="dataTables_length">
                                     <label className="d-flex align-items-center">
-                                        <span className="me-2">Show</span>
+                                        <span className="me-2">{t('admin.common.show')}</span>
                                         <select 
                                             className="form-select form-select-sm" 
                                             value={pagination.per_page}
@@ -1113,12 +1115,16 @@ const AdminTransactionsIndex = () => {
                                             <option value="50">50</option>
                                             <option value="100">100</option>
                                         </select>
-                                        <span className="ms-2">entries</span>
+                                        <span className="ms-2">{t('admin.common.entries')}</span>
                                     </label>
                                 </div>
                                 <div className="ms-5">
                                     <span className="text-muted">
-                                        Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} entries
+                                        {t('admin.common.showingEntries', {
+                                            from: ((pagination.current_page - 1) * pagination.per_page) + 1,
+                                            to: Math.min(pagination.current_page * pagination.per_page, pagination.total),
+                                            total: pagination.total
+                                        })}
                                     </span>
                                 </div>
                             </div>
@@ -1131,7 +1137,7 @@ const AdminTransactionsIndex = () => {
                                                 onClick={() => handlePageChange(pagination.current_page - 1)}
                                                 disabled={pagination.current_page === 1}
                                             >
-                                                Previous
+                                                {t('admin.common.previous')}
                                             </button>
                                         </li>
                                         {[...Array(Math.min(pagination.last_page, 5))].map((_, i) => {
@@ -1153,7 +1159,7 @@ const AdminTransactionsIndex = () => {
                                                 onClick={() => handlePageChange(pagination.current_page + 1)}
                                                 disabled={pagination.current_page === pagination.last_page}
                                             >
-                                                Next
+                                                {t('admin.common.next')}
                                             </button>
                                         </li>
                                     </ul>

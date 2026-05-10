@@ -1,12 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import Chart from 'react-apexcharts';
 
 const EXPECTED_SERIES = ['Approved', 'Voided', 'Refunded'];
 
-const createEmptyChart = (period) => {
+const createEmptyChart = (period, t) => {
     if (period === 'weekly') {
         const labels = Array.from({ length: 7 }, (_, idx) =>
-            `Day ${idx + 1}`
+            t('merchant.dashboard.chartDay', { n: idx + 1 })
         );
         return {
             labels,
@@ -19,7 +20,7 @@ const createEmptyChart = (period) => {
 
     if (period === 'monthly') {
         const labels = Array.from({ length: 12 }, (_, idx) =>
-            `Month ${idx + 1}`
+            t('merchant.dashboard.chartMonth', { n: idx + 1 })
         );
         return {
             labels,
@@ -32,7 +33,7 @@ const createEmptyChart = (period) => {
 
     if (period === 'daily') {
         const labels = Array.from({ length: 30 }, (_, idx) =>
-            `Day ${idx + 1}`
+            t('merchant.dashboard.chartDay', { n: idx + 1 })
         );
         return {
             labels,
@@ -43,7 +44,6 @@ const createEmptyChart = (period) => {
         };
     }
 
-    // Default: hourly (24 hours)
     const labels = Array.from({ length: 24 }, (_, idx) =>
         `${idx.toString().padStart(2, '0')}:00`
     );
@@ -58,6 +58,16 @@ const createEmptyChart = (period) => {
 };
 
 const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, onPeriodChange }) => {
+    const { t, i18n } = useTranslation();
+
+    const translateSeriesName = useCallback((name) => {
+        const n = String(name || '').toLowerCase();
+        if (n === 'approved') return t('merchant.dashboard.seriesApproved');
+        if (n === 'voided') return t('merchant.dashboard.seriesVoided');
+        if (n === 'refunded') return t('merchant.dashboard.seriesRefunded');
+        return name;
+    }, [t]);
+
     const normalizedChart = useMemo(() => {
         const baseChart =
             data && Array.isArray(data.labels) && data.labels.length > 0
@@ -65,7 +75,7 @@ const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, on
                     labels: data.labels,
                     series: Array.isArray(data.series) ? data.series : [],
                 }
-                : createEmptyChart(activePeriod);
+                : createEmptyChart(activePeriod, t);
 
         const labelCount = baseChart.labels.length;
         const seriesAccumulator = EXPECTED_SERIES.reduce((acc, seriesName) => {
@@ -103,15 +113,20 @@ const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, on
                 data: seriesAccumulator[name],
             })),
         };
-    }, [data, activePeriod]);
+    }, [data, activePeriod, t, i18n.language]);
 
     const chartOptions = useMemo(() => {
         if (!normalizedChart || !normalizedChart.labels.length) {
             return null;
         }
 
+        const displaySeries = normalizedChart.series.map((serie) => ({
+            ...serie,
+            name: translateSeriesName(serie.name),
+        }));
+
         return {
-            series: normalizedChart.series,
+            series: displaySeries,
             chart: {
                 fontFamily: 'inherit',
                 type: 'line',
@@ -196,7 +211,7 @@ const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, on
                 },
             },
         };
-    }, [normalizedChart]);
+    }, [normalizedChart, translateSeriesName]);
 
     const isEmptyDataset = useMemo(() => {
         return normalizedChart.series.every((serie) =>
@@ -209,6 +224,15 @@ const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, on
             onPeriodChange(period);
         }
     };
+
+    const todayLine = useMemo(() => {
+        if (!todayStats) {
+            return t('merchant.dashboard.chartsLoading');
+        }
+        const count = new Intl.NumberFormat(i18n.language?.startsWith('ar') ? 'ar-SA' : 'en-US').format(todayStats.count || 0);
+        const amount = new Intl.NumberFormat(i18n.language?.startsWith('ar') ? 'ar-SA' : 'en-US').format(todayStats.amount || 0);
+        return t('merchant.dashboard.chartsToday', { count, amount });
+    }, [todayStats, t, i18n.language]);
 
     if (loading) {
         return (
@@ -249,23 +273,19 @@ const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, on
 
     return (
         <div className="card card-flush h-xl-100">
-            {/* Header */}
             <div className="card-header pt-5">
                 <h3 className="card-title align-items-start flex-column">
                     <span className="card-label fw-bold text-gray-900">
-                        Transaction Analytics
+                        {t('merchant.dashboard.chartsTitle')}
                     </span>
                     <span className="text-gray-500 mt-1 fw-semibold fs-6">
-                        {todayStats
-                            ? `${new Intl.NumberFormat('en-US').format(todayStats.count || 0)} transactions & $${new Intl.NumberFormat('en-US').format(todayStats.amount || 0)} today`
-                            : 'Loading...'}
+                        {todayLine}
                     </span>
                 </h3>
                 
-                {/* Toolbar */}
                 <div className="card-toolbar">
                     {hasRange ? (
-                        <span className="badge badge-light-primary">Custom range</span>
+                        <span className="badge badge-light-primary">{t('merchant.dashboard.customRange')}</span>
                     ) : (
                         <ul className="nav" role="tablist">
                             <li className="nav-item" role="presentation">
@@ -274,7 +294,7 @@ const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, on
                                     onClick={() => handlePeriodChange('hourly')}
                                     type="button"
                                 >
-                                    Hourly
+                                    {t('merchant.dashboard.hourly')}
                                 </button>
                             </li>
                             <li className="nav-item" role="presentation">
@@ -283,7 +303,7 @@ const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, on
                                     onClick={() => handlePeriodChange('daily')}
                                     type="button"
                                 >
-                                    Daily
+                                    {t('merchant.dashboard.daily')}
                                 </button>
                             </li>
                             <li className="nav-item" role="presentation">
@@ -292,7 +312,7 @@ const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, on
                                     onClick={() => handlePeriodChange('weekly')}
                                     type="button"
                                 >
-                                    Weekly
+                                    {t('merchant.dashboard.weekly')}
                                 </button>
                             </li>
                             <li className="nav-item" role="presentation">
@@ -301,7 +321,7 @@ const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, on
                                     onClick={() => handlePeriodChange('monthly')}
                                     type="button"
                                 >
-                                    Monthly
+                                    {t('merchant.dashboard.monthly')}
                                 </button>
                             </li>
                         </ul>
@@ -309,7 +329,6 @@ const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, on
                 </div>
             </div>
             
-            {/* Body */}
             <div className="card-body pb-0 pt-4">
                 <div className="ms-n5 me-n3 min-h-auto w-100" style={{ height: '300px' }}>
                     {chartOptions ? (
@@ -321,13 +340,13 @@ const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, on
                         />
                     ) : (
                         <div className="d-flex align-items-center justify-content-center" style={{ height: '300px' }}>
-                            <p className="text-muted mb-0">Unable to render chart</p>
+                            <p className="text-muted mb-0">{t('merchant.dashboard.chartRenderError')}</p>
                         </div>
                     )}
                 </div>
                 {isEmptyDataset && (
                     <div className="text-center mt-2">
-                        <small className="text-muted">No transaction data available</small>
+                        <small className="text-muted">{t('merchant.dashboard.noChartData')}</small>
                     </div>
                 )}
             </div>
@@ -336,4 +355,3 @@ const DashboardCharts = ({ data, todayStats, hasRange, loading, activePeriod, on
 };
 
 export default DashboardCharts;
-

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { ADMIN_ENDPOINTS, APP_CONFIG } from '../../../utils/constants';
@@ -8,6 +9,7 @@ import useAuthStore from '../../../stores/authStore';
 
 const AdminLogin = () => {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     
     const [formData, setFormData] = useState({
         email: '',
@@ -50,13 +52,13 @@ const AdminLogin = () => {
         const errors = {};
         
         if (!formData.email) {
-            errors.email = 'Email is required';
+            errors.email = t('admin.login.emailRequired');
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            errors.email = 'Email is invalid';
+            errors.email = t('admin.login.emailInvalid');
         }
         
         if (!formData.password) {
-            errors.password = 'Password is required';
+            errors.password = t('admin.login.passwordRequired');
         }
         
         return errors;
@@ -127,14 +129,14 @@ const AdminLogin = () => {
                 
                 console.log('Admin login successful:', { admin: mergedUser, hasToken: !!authToken });
                 
-                toast.success('Admin login successful!');
+                toast.success(t('admin.login.loginSuccessful'));
                 navigate('/admin/dashboard');
             } else {
-                throw new Error(response.data.message || 'Login failed');
+                throw new Error(response.data.message || t('admin.login.loginFailed'));
             }
         } catch (err) {
             console.error('Admin login error:', err);
-            const errorMessage = err.response?.data?.message || err.message || 'Login failed';
+            const errorMessage = err.response?.data?.message || err.message || t('admin.login.loginFailed');
             toast.error(errorMessage);
             setFormErrors({ submit: errorMessage });
         } finally {
@@ -209,8 +211,8 @@ const AdminLogin = () => {
                                     
                                     <form className="form w-100" onSubmit={handleSubmit}>
                                         <div className="text-center mb-13">
-                                            <h1 className="text-dark fw-bolder mb-3">Admin Sign In</h1>
-                                            <div className="text-gray-500 fw-semibold fs-6">Enter your admin credentials</div>
+                                            <h1 className="text-dark fw-bolder mb-3">{t('admin.login.signIn')}</h1>
+                                            <div className="text-gray-500 fw-semibold fs-6">{t('admin.login.enterCredentials')}</div>
                                         </div>
 
                                         {/* Error Messages */}
@@ -223,7 +225,7 @@ const AdminLogin = () => {
                                                         <span className="path3"></span>
                                                     </i>
                                                     <div className="d-flex flex-column">
-                                                        <h4 className="mb-1 text-dark">Access Denied</h4>
+                                                        <h4 className="mb-1 text-dark">{t('admin.login.accessDenied')}</h4>
                                                         <span>{formErrors.submit}</span>
                                                     </div>
                                                 </div>
@@ -235,7 +237,7 @@ const AdminLogin = () => {
                                             <input
                                                 type="text"
                                                 name="email"
-                                                placeholder="Email Address"
+                                                placeholder={t('admin.login.emailAddress')}
                                                 autoComplete="off"
                                                 className={`form-control bg-transparent ${formErrors.email ? 'is-invalid' : ''}`}
                                                 value={formData.email}
@@ -251,7 +253,7 @@ const AdminLogin = () => {
                                             <input
                                                 type={showPassword ? 'text' : 'password'}
                                                 name="password"
-                                                placeholder="Password"
+                                                placeholder={t('admin.login.password')}
                                                 className={`form-control bg-transparent ${formErrors.password ? 'is-invalid' : ''}`}
                                                 style={{ paddingRight: '3rem' }}
                                                 value={formData.password}
@@ -261,7 +263,7 @@ const AdminLogin = () => {
                                                 type="button"
                                                 className="btn btn-icon btn-sm position-absolute top-50 end-0 translate-middle-y me-2"
                                                 onClick={() => setShowPassword((prev) => !prev)}
-                                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                                aria-label={showPassword ? t('admin.login.hidePassword') : t('admin.login.showPassword')}
                                             >
                                                 <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
                                             </button>
@@ -273,10 +275,10 @@ const AdminLogin = () => {
                                     {/* Submit Button */}
                                     <div className="d-grid mb-10">
                                         <button type="submit" className="btn btn-primary" disabled={loading}>
-                                            <span className={loading ? 'd-none' : 'indicator-label'}>Sign In</span>
+                                            <span className={loading ? 'd-none' : 'indicator-label'}>{t('admin.login.signInButton')}</span>
                                             {loading && (
                                                 <span className="indicator-progress" style={{ display: 'block' }}>
-                                                    Signing In...
+                                                    {t('admin.login.signingIn')}
                                                     <span className="spinner-border spinner-border-sm align-middle ms-2"></span>
                                                 </span>
                                             )}

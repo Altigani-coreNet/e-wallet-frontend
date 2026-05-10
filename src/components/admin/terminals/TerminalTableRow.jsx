@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { useTranslation } from 'react-i18next';
 import { useCan } from '../../../utils/permissions';
 
 const TerminalTableRow = ({ 
@@ -13,6 +14,7 @@ const TerminalTableRow = ({
     onSelect, 
     onDelete 
 }) => {
+    const { t } = useTranslation();
     const canEditTerminal = useCan('pos.terminals.edit_terminals');
     const canDeleteTerminal = useCan('pos.terminals.delete_terminals');
 
@@ -22,7 +24,7 @@ const TerminalTableRow = ({
 
     const getStatusBadge = (status) => {
         const isActive = status === 'active' || status === 1 || status === '1' || status === true;
-        const statusText = isActive ? 'Active' : 'Inactive';
+        const statusText = isActive ? t('admin.common.active') : t('admin.common.inactive');
         const statusClass = isActive ? 'badge-light-success' : 'badge-light-warning';
         
         return (
@@ -34,13 +36,13 @@ const TerminalTableRow = ({
 
     const getTerminalStatusBadge = (terminalStatus) => {
         const statusMap = {
-            'online': { text: 'Online', class: 'badge-light-success' },
-            'offline': { text: 'Offline', class: 'badge-light-danger' },
-            'testing': { text: 'Testing', class: 'badge-light-warning' },
-            'maintenance': { text: 'Maintenance', class: 'badge-light-info' }
+            'online': { text: t('admin.common.online'), class: 'badge-light-success' },
+            'offline': { text: t('admin.common.offline'), class: 'badge-light-danger' },
+            'testing': { text: t('admin.common.testing'), class: 'badge-light-warning' },
+            'maintenance': { text: t('admin.common.maintenance'), class: 'badge-light-info' }
         };
         
-        const status = statusMap[terminalStatus] || { text: 'Unknown', class: 'badge-light-secondary' };
+        const status = statusMap[terminalStatus] || { text: t('admin.common.unknown'), class: 'badge-light-secondary' };
         
         return (
             <span className={`badge ${status.class}`}>
@@ -51,7 +53,7 @@ const TerminalTableRow = ({
 
     const getAddTypeBadge = (addType) => {
         const isAuto = addType === 'auto';
-        const text = isAuto ? 'Auto' : 'Static';
+        const text = isAuto ? t('admin.common.auto') : t('admin.common.static');
         const badgeClass = isAuto ? 'badge-light-success' : 'badge-light-warning';
         
         return (
@@ -63,14 +65,14 @@ const TerminalTableRow = ({
 
     const handleDelete = () => {
         Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete terminal "${terminal.name}". This action cannot be undone!`,
+            title: t('admin.common.areYouSure'),
+            text: t('admin.terminalsIndex.deleteConfirmText', { name: terminal.name }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('admin.terminalsIndex.yesDelete'),
+            cancelButtonText: t('admin.common.cancel')
         }).then((result) => {
             if (result.isConfirmed) {
                 onDelete(terminal.id);
@@ -106,9 +108,9 @@ const TerminalTableRow = ({
                     >
                         {terminal.name}
                     </Link>
-                    <span className="text-muted fs-7">ID: {terminal.terminal_id}</span>
+                    <span className="text-muted fs-7">{t('admin.terminalsIndex.colTerminalId')}: {terminal.terminal_id}</span>
                     {terminal.model && (
-                        <span className="text-muted fs-7">Model: {terminal.model}</span>
+                        <span className="text-muted fs-7">{t('admin.terminalsIndex.colModel')}: {terminal.model}</span>
                     )}
                 </div>
             </td>
@@ -121,7 +123,7 @@ const TerminalTableRow = ({
                         terminal.merchant_name ||
                         merchantsMap[terminal.merchant_id] ||
                         terminal.merchant_id ||
-                        'N/A'}
+                        t('admin.common.na')}
                 </span>
             </td>
 
@@ -132,21 +134,21 @@ const TerminalTableRow = ({
                         terminal.branch_name ||
                         branchesMap[terminal.branch_id] ||
                         terminal.branch_id ||
-                        'N/A'}
+                        t('admin.common.na')}
                 </span>
             </td>
 
             {/* Manufacturer */}
             <td>
                 <span className="text-gray-800">
-                    {terminal.manufacturer || 'N/A'}
+                    {terminal.manufacturer || t('admin.common.na')}
                 </span>
             </td>
 
             {/* Brand */}
             <td>
                 <span className="text-gray-800">
-                    {terminal.brand || 'N/A'}
+                    {terminal.brand || t('admin.common.na')}
                 </span>
             </td>
 
@@ -155,14 +157,14 @@ const TerminalTableRow = ({
                 {terminal.sdk_id || terminal.sdk_version ? (
                     <div className="d-flex flex-column">
                         {terminal.sdk_id && (
-                            <span className="text-gray-800 fs-7">ID: {terminal.sdk_id}</span>
+                            <span className="text-gray-800 fs-7">{t('admin.terminalsIndex.colSdkId')}: {terminal.sdk_id}</span>
                         )}
                         {terminal.sdk_version && (
-                            <span className="text-muted fs-7">Ver: {terminal.sdk_version}</span>
+                            <span className="text-muted fs-7">{t('admin.terminalsIndex.colSdkVersion')}: {terminal.sdk_version}</span>
                         )}
                     </div>
                 ) : (
-                    <span className="text-muted">N/A</span>
+                    <span className="text-muted">{t('admin.common.na')}</span>
                 )}
             </td>
 
@@ -187,15 +189,15 @@ const TerminalTableRow = ({
                     {(() => {
                         const country = terminal.country || terminal.merchant?.country;
                         if (!country) {
-                            return countriesMap[terminal.country_id] || terminal.country_id || 'N/A';
+                            return countriesMap[terminal.country_id] || terminal.country_id || t('admin.common.na');
                         }
                         
                         // Handle multilingual name object
                         if (country.name && typeof country.name === 'object') {
-                            return country.name.en || country.name.ar || 'N/A';
+                            return country.name[i18n.language] || country.name.en || country.name.ar || t('admin.common.na');
                         }
                         
-                        return country.name || 'N/A';
+                        return country.name || t('admin.common.na');
                     })()}
                 </span>
             </td>
@@ -203,7 +205,7 @@ const TerminalTableRow = ({
             {/* Created At */}
             <td>
                 <span className="text-gray-800">
-                    {terminal.created_at ? new Date(terminal.created_at).toLocaleDateString() : 'N/A'}
+                    {terminal.created_at ? new Date(terminal.created_at).toLocaleDateString(i18n.language) : t('admin.common.na')}
                 </span>
             </td>
 
@@ -213,7 +215,7 @@ const TerminalTableRow = ({
                     <Link
                         to={`/admin/terminals/${terminal.id}`}
                         className="btn btn-icon btn-sm btn-light-primary"
-                        title="View"
+                        title={t('admin.common.view')}
                     >
                         <i className="ki-duotone ki-eye fs-6">
                             <span className="path1"></span>
@@ -226,7 +228,7 @@ const TerminalTableRow = ({
                         <Link
                             to={`/admin/terminals/${terminal.id}/edit`}
                             className="btn btn-icon btn-sm btn-light-warning"
-                            title="Edit"
+                            title={t('admin.common.edit')}
                         >
                             <i className="ki-duotone ki-pencil fs-6">
                                 <span className="path1"></span>
@@ -239,7 +241,7 @@ const TerminalTableRow = ({
                         <button
                             className="btn btn-icon btn-sm btn-light-danger"
                             onClick={handleDelete}
-                            title="Delete"
+                            title={t('admin.common.delete')}
                         >
                             <i className="ki-duotone ki-trash fs-6">
                                 <span className="path1"></span>

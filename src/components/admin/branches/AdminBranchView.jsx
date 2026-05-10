@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -9,12 +10,13 @@ import { useToolbar } from '../../../contexts/ToolbarContext';
 const AdminBranchView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const [branch, setBranch] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setTitle('Branch Details');
+        setTitle(t('admin.branchView.title'));
         setActions(
             <div className="d-flex gap-2">
                 <Link to={`/admin/branches/${id}/edit`} className="btn btn-sm btn-primary">
@@ -22,20 +24,20 @@ const AdminBranchView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Edit Branch
+                    {t('admin.branchView.editBranch')}
                 </Link>
                 <Link to="/admin/branches" className="btn btn-sm btn-light">
                     <i className="ki-duotone ki-arrow-left fs-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back
+                    {t('admin.branchView.back')}
                 </Link>
             </div>
         );
         fetchBranchDetails();
         return () => setActions(null);
-    }, [id, setTitle, setActions]);
+    }, [id, setTitle, setActions, t]);
 
     const fetchBranchDetails = async () => {
         try {
@@ -49,7 +51,7 @@ const AdminBranchView = () => {
                 setBranch(response.data.data.branch || response.data.data);
             }
         } catch (error) {
-            toast.error('Failed to load branch details');
+            toast.error(t('admin.branchView.fetchFailed'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -57,7 +59,7 @@ const AdminBranchView = () => {
     };
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this branch?')) {
+        if (!window.confirm(t('admin.branchView.deleteConfirm'))) {
             return;
         }
 
@@ -69,17 +71,17 @@ const AdminBranchView = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Branch deleted successfully');
+                toast.success(t('admin.branchView.deleteSuccess'));
                 navigate('/admin/branches');
             }
         } catch (error) {
-            toast.error('Failed to delete branch');
+            toast.error(t('admin.branchView.deleteFailed'));
             console.error(error);
         }
     };
 
     const handleApprove = async () => {
-        if (!window.confirm('Are you sure you want to approve this branch?')) {
+        if (!window.confirm(t('admin.branchView.approveConfirm'))) {
             return;
         }
 
@@ -91,17 +93,17 @@ const AdminBranchView = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Branch approved successfully');
+                toast.success(t('admin.branchView.approveSuccess'));
                 fetchBranchDetails();
             }
         } catch (error) {
-            toast.error('Failed to approve branch');
+            toast.error(t('admin.branchView.approveFailed'));
             console.error(error);
         }
     };
 
     const handleReject = async () => {
-        const reason = window.prompt('Enter rejection reason:');
+        const reason = window.prompt(t('admin.branchView.rejectPrompt'));
         if (!reason) return;
 
         try {
@@ -114,17 +116,17 @@ const AdminBranchView = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Branch rejected successfully');
+                toast.success(t('admin.branchView.rejectSuccess'));
                 fetchBranchDetails();
             }
         } catch (error) {
-            toast.error('Failed to reject branch');
+            toast.error(t('admin.branchView.rejectFailed'));
             console.error(error);
         }
     };
 
     const handleSuspend = async () => {
-        const reason = window.prompt('Enter suspension reason:');
+        const reason = window.prompt(t('admin.branchView.suspendPrompt'));
         if (!reason) return;
 
         try {
@@ -137,17 +139,17 @@ const AdminBranchView = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Branch suspended successfully');
+                toast.success(t('admin.branchView.suspendSuccess'));
                 fetchBranchDetails();
             }
         } catch (error) {
-            toast.error('Failed to suspend branch');
+            toast.error(t('admin.branchView.suspendFailed'));
             console.error(error);
         }
     };
 
     const handleUnsuspend = async () => {
-        if (!window.confirm('Are you sure you want to unsuspend this branch?')) {
+        if (!window.confirm(t('admin.branchView.unsuspendConfirm'))) {
             return;
         }
 
@@ -159,11 +161,11 @@ const AdminBranchView = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Branch unsuspended successfully');
+                toast.success(t('admin.branchView.unsuspendSuccess'));
                 fetchBranchDetails();
             }
         } catch (error) {
-            toast.error('Failed to unsuspend branch');
+            toast.error(t('admin.branchView.unsuspendFailed'));
             console.error(error);
         }
     };
@@ -179,13 +181,21 @@ const AdminBranchView = () => {
     };
 
     const getCountryName = (country) => {
-        if (!country) return 'N/A';
-        return country.name?.en || country.name || country.text || 'N/A';
+        if (!country) return t('admin.common.na');
+        let name = country.name || country.text;
+        if (typeof name === 'object' && name !== null) {
+            return name[i18n.language] || name.en || name.ar || t('admin.common.na');
+        }
+        return name || t('admin.common.na');
     };
 
     const getCityName = (city) => {
-        if (!city) return 'N/A';
-        return city.name?.en || city.name || city.text || 'N/A';
+        if (!city) return t('admin.common.na');
+        let name = city.name || city.text;
+        if (typeof name === 'object' && name !== null) {
+            return name[i18n.language] || name.en || name.ar || t('admin.common.na');
+        }
+        return name || t('admin.common.na');
     };
 
     if (loading) {
@@ -200,9 +210,9 @@ const AdminBranchView = () => {
         return (
             <div className="card">
                 <div className="card-body text-center py-10">
-                    <p className="text-gray-600">Branch not found</p>
+                    <p className="text-gray-600">{t('admin.branchView.notFound')}</p>
                     <Link to="/admin/branches" className="btn btn-primary">
-                        Back to Branches
+                        {t('admin.branchView.backToBranches')}
                     </Link>
                 </div>
             </div>
@@ -214,7 +224,7 @@ const AdminBranchView = () => {
             <div id="kt_content_container" className="container-xxl">
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title">Branch Details: {branch.name}</h3>
+                        <h3 className="card-title">{t('admin.branchView.title')}: {branch.name}</h3>
                         <div className="card-toolbar d-flex gap-2">
                             {/* Action Buttons */}
                             {branch.status === 'pending' && (
@@ -224,14 +234,14 @@ const AdminBranchView = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Approve
+                                        {t('admin.branchView.approve')}
                                     </button>
                                     <button onClick={handleReject} className="btn btn-sm btn-danger">
                                         <i className="ki-duotone ki-cross fs-2">
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Reject
+                                        {t('admin.branchView.reject')}
                                     </button>
                                 </>
                             )}
@@ -241,7 +251,7 @@ const AdminBranchView = () => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Suspend
+                                    {t('admin.branchView.suspend')}
                                 </button>
                             )}
                             {branch.status === 'suspended' && (
@@ -250,7 +260,7 @@ const AdminBranchView = () => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Unsuspend
+                                    {t('admin.branchView.unsuspend')}
                                 </button>
                             )}
                             <Link to={`/admin/branches/${id}/edit`} className="btn btn-sm btn-primary">
@@ -258,7 +268,7 @@ const AdminBranchView = () => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Edit
+                                {t('admin.branchView.edit')}
                             </Link>
                             <button onClick={handleDelete} className="btn btn-sm btn-danger">
                                 <i className="ki-duotone ki-trash fs-2">
@@ -268,87 +278,87 @@ const AdminBranchView = () => {
                                     <span className="path4"></span>
                                     <span className="path5"></span>
                                 </i>
-                                Delete
+                                {t('admin.branchView.delete')}
                             </button>
                         </div>
                     </div>
 
                     <div className="card-body">
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Branch Name</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.branchView.branchName')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-semibold text-gray-800 fs-6">{branch.name}</span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Merchant</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.branchView.merchant')}</label>
                             <div className="col-lg-8">
                                 {branch.merchant ? (
                                     <Link to={`/admin/merchants/${branch.merchant.id}`} className="text-primary text-hover-primary fw-semibold">
                                         {branch.merchant.business_name || branch.merchant.name}
                                     </Link>
                                 ) : (
-                                    <span className="text-gray-600">N/A</span>
+                                    <span className="text-gray-600">{t('admin.common.na')}</span>
                                 )}
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Address</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.branchView.address')}</label>
                             <div className="col-lg-8">
-                                <span className="fw-semibold text-gray-800 fs-6">{branch.address || 'N/A'}</span>
+                                <span className="fw-semibold text-gray-800 fs-6">{branch.address || t('admin.common.na')}</span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Country</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.branchView.country')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-semibold text-gray-800 fs-6">{getCountryName(branch.country)}</span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">City</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.branchView.city')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-semibold text-gray-800 fs-6">{getCityName(branch.city)}</span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Status</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.branchView.status')}</label>
                             <div className="col-lg-8">
                                 <span className={`badge ${getStatusBadgeClass(branch.status)}`}>
-                                    {branch.status ? branch.status.charAt(0).toUpperCase() + branch.status.slice(1) : 'N/A'}
+                                    {branch.status ? t(`admin.common.${branch.status.toLowerCase()}`) : t('admin.common.na')}
                                 </span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Active Status</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.branchView.activeStatus')}</label>
                             <div className="col-lg-8">
                                 {branch.is_active ? (
-                                    <span className="badge badge-light-success">Active</span>
+                                    <span className="badge badge-light-success">{t('admin.common.active')}</span>
                                 ) : (
-                                    <span className="badge badge-light-danger">Inactive</span>
+                                    <span className="badge badge-light-danger">{t('admin.common.inactive')}</span>
                                 )}
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Created At</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.branchView.createdAt')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-semibold text-gray-800 fs-6">
-                                    {new Date(branch.created_at).toLocaleString()}
+                                    {new Date(branch.created_at).toLocaleString(i18n.language)}
                                 </span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Updated At</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.branchView.updatedAt')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-semibold text-gray-800 fs-6">
-                                    {new Date(branch.updated_at).toLocaleString()}
+                                    {new Date(branch.updated_at).toLocaleString(i18n.language)}
                                 </span>
                             </div>
                         </div>

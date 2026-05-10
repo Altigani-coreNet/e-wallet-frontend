@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { getPaymentGateway, updatePaymentGateway } from '../../../services/paymentGatewaysService';
 
 const PaymentGatewayEdit = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const navigate = useNavigate();
     const { name } = useParams();
@@ -22,18 +24,18 @@ const PaymentGatewayEdit = () => {
     const [errors, setErrors] = useState({});
 
     React.useEffect(() => {
-        setTitle('Configure Payment Gateway');
+        setTitle(t('merchant.breadcrumbs.configureGateway'));
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Payment Gateways', path: '/merchant/payment-gateways' },
-            { label: `Configure ${name}`, path: `/merchant/payment-gateways/${name}/edit`, active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.paymentGateways'), path: '/merchant/payment-gateways' },
+            { label: t('merchant.breadcrumbs.configureGatewayNamed', { name: name || '' }), path: `/merchant/payment-gateways/${name}/edit`, active: true }
         ]);
         setActions(null);
         return () => {
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [setTitle, setBreadcrumbs, setActions, name]);
+    }, [setTitle, setBreadcrumbs, setActions, name, t, i18n.language]);
 
     useEffect(() => {
         fetchPaymentGateway();

@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import MerchantCountryFilterFields from '../../common/filters/MerchantCountryFilterFields';
 
 const AdminPaymentLinksFilters = ({
@@ -10,6 +11,7 @@ const AdminPaymentLinksFilters = ({
     merchantsMap = {},
     countriesMap = {},
 }) => {
+    const { t } = useTranslation();
     const handleFilterChange = (field, value) => {
         setFilters((prev) => ({
             ...prev,
@@ -31,14 +33,14 @@ const AdminPaymentLinksFilters = ({
         <div className="card mb-5">
             <div className="card-header border-0 pt-6">
                 <div className="card-title">
-                    <h3 className="card-label">Filters</h3>
+                    <h3 className="card-label">{t('admin.paymentLinksIndex.filters')}</h3>
                 </div>
                 <div className="card-toolbar">
                     <button
                         onClick={onClear}
                         className="btn btn-sm btn-light me-2"
                     >
-                        Reset
+                        {t('admin.paymentLinksIndex.reset')}
                     </button>
                     <button
                         onClick={onClose}
@@ -54,21 +56,21 @@ const AdminPaymentLinksFilters = ({
             <div className="card-body pt-0">
                 <div className="row g-3 align-items-end">
                     <div className="col-md-3">
-                        <label className="form-label">Search</label>
+                        <label className="form-label">{t('admin.paymentLinksIndex.search')}</label>
                         <input
                             type="text"
                             className="form-control form-control-sm"
-                            placeholder="Search..."
+                            placeholder={t('admin.paymentLinksIndex.searchPlaceholder')}
                             value={filters.search}
                             onChange={(e) => handleFilterChange('search', e.target.value)}
                         />
                     </div>
                     <div className="col-md-3">
-                        <label className="form-label">Customer Name</label>
+                        <label className="form-label">{t('admin.paymentLinksIndex.customerName')}</label>
                         <input
                             type="text"
                             className="form-control form-control-sm"
-                            placeholder="Search by customer name"
+                            placeholder={t('admin.paymentLinksIndex.customerPlaceholder')}
                             value={filters.customer}
                             onChange={(e) => handleFilterChange('customer', e.target.value)}
                         />
@@ -79,8 +81,8 @@ const AdminPaymentLinksFilters = ({
                         countryValue={filters.country_id}
                         onMerchantChange={(value) => handleFilterChange('merchant_id', value || '')}
                         onCountryChange={(value) => handleFilterChange('country_id', value || '')}
-                        merchantPlaceholder="All Merchants"
-                        countryPlaceholder="All Countries"
+                        merchantPlaceholder={t('admin.paymentLinksIndex.allMerchants')}
+                        countryPlaceholder={t('admin.paymentLinksIndex.allCountries')}
                         merchantNameResolver={resolveMerchant}
                         countryNameResolver={resolveCountry}
                         merchantWrapperClassName="col-md-3"
@@ -88,7 +90,7 @@ const AdminPaymentLinksFilters = ({
                     />
 
                     <div className="col-md-3">
-                        <label className="form-label">From Date</label>
+                        <label className="form-label">{t('admin.paymentLinksIndex.fromDate')}</label>
                         <input
                             type="date"
                             className="form-control form-control-sm"
@@ -97,7 +99,7 @@ const AdminPaymentLinksFilters = ({
                         />
                     </div>
                     <div className="col-md-3">
-                        <label className="form-label">To Date</label>
+                        <label className="form-label">{t('admin.paymentLinksIndex.toDate')}</label>
                         <input
                             type="date"
                             className="form-control form-control-sm"
@@ -115,7 +117,7 @@ const AdminPaymentLinksFilters = ({
                                 <span className="path2"></span>
                                 <span className="path3"></span>
                             </i>
-                            Apply Filters
+                            {t('admin.paymentLinksIndex.applyFilters')}
                         </button>
                     </div>
                 </div>

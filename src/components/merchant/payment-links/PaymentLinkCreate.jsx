@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { createPaymentLink } from '../../../services/paymentLinksService';
 import PaymentLinkForm from './PaymentLinkForm';
@@ -6,6 +7,7 @@ import { useToolbar } from '../../../contexts/ToolbarContext';
 import Swal from 'sweetalert2';
 
 const PaymentLinkCreate = () => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [loading, setLoading] = useState(false);
@@ -14,12 +16,12 @@ const PaymentLinkCreate = () => {
 
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
-        setTitle('Create Payment Link');
+        setTitle(t('merchant.pages.createPaymentLinkTitle'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Payment Links', path: '/merchant/payment-links' },
-            { label: 'Create Payment Link', path: '/merchant/payment-links/create', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.paymentLinks'), path: '/merchant/payment-links' },
+            { label: t('merchant.pages.createPaymentLinkTitle'), path: '/merchant/payment-links/create', active: true }
         ]);
         
         setActions(
@@ -31,7 +33,7 @@ const PaymentLinkCreate = () => {
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back to Payment Links
+                {t('merchant.common.backToPaymentLinks')}
             </button>
         );
 
@@ -39,7 +41,7 @@ const PaymentLinkCreate = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions, navigate]);
+    }, [setTitle, setBreadcrumbs, setActions, navigate, t, i18n.language]);
 
     const handleSubmit = async (formData) => {
         setLoading(true);
@@ -51,25 +53,25 @@ const PaymentLinkCreate = () => {
             
             if (response.success) {
                 await Swal.fire({
-                    title: 'Success!',
-                    text: 'Payment link created successfully.',
+                    title: t('merchant.paymentLinks.createSuccessTitle'),
+                    text: t('merchant.paymentLinks.createSuccessText'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
                 });
                 navigate('/merchant/payment-links');
             } else {
-                const message = response.error || response.message || 'Failed to create payment link';
+                const message = response.error || response.message || t('merchant.paymentLinks.createFailed');
                 setError(message);
                 if (response.errors) setValidationErrors(response.errors);
-                Swal.fire('Error!', message, 'error');
+                Swal.fire(t('merchant.common.error'), message, 'error');
             }
         } catch (err) {
             const apiErrors = err?.response?.data?.errors || {};
-            const message = err?.response?.data?.message || 'An unexpected error occurred';
+            const message = err?.response?.data?.message || t('merchant.paymentLinks.unexpectedError');
             setValidationErrors(apiErrors);
             setError(message);
-            Swal.fire('Error!', message, 'error');
+            Swal.fire(t('merchant.common.error'), message, 'error');
         } finally {
             setLoading(false);
         }

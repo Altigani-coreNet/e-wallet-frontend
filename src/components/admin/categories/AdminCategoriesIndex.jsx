@@ -6,6 +6,7 @@ import { getCategories, exportCategories } from '../../../services/adminCategori
 import useAdminReferenceData from '../../../hooks/useAdminReferenceData';
 import useMerchantCountryLookup from '../../../hooks/useMerchantCountryLookup';
 import { fetchMerchantCountryInfo } from '../../../services/adminMerchantLookupService';
+import { useTranslation } from 'react-i18next';
 import CategoryFiltersPanel from './CategoryFiltersPanel';
 import { getTranslatedText } from '../../../utils/helpers';
 import { downloadCSV } from '../../../utils/export';
@@ -53,6 +54,7 @@ const initialFilters = {
 };
 
 const AdminCategoriesIndex = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const { merchantsMap, countriesMap, loading: refDataLoading } = useAdminReferenceData();
 
@@ -104,27 +106,27 @@ const AdminCategoriesIndex = () => {
                 });
 
                 downloadCSV(transformedRows, exportPayload?.filename || 'categories_export.csv');
-                toast.success('Categories export ready');
+                toast.success(t('admin.categoriesIndex.categoriesExportReady'));
             } else {
-                toast.info('No categories to export');
+                toast.info(t('admin.categoriesIndex.noCategoriesToExport'));
             }
         } catch (error) {
             console.error('Error exporting categories:', error);
-            toast.error('Failed to export categories');
+            toast.error(t('admin.categoriesIndex.failedToExportCategories'));
         }
     }, [appliedFilters]);
 
     useEffect(() => {
-        setTitle('Categories Management');
+        setTitle(t('admin.categoriesIndex.categoriesManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button className="btn btn-sm btn-flex btn-secondary fw-bold" onClick={() => setShowFilters(!showFilters)}>
                     <i className={`ki-duotone ki-filter fs-6 text-muted me-1 ${showFilters ? '' : 'rotate-90'}`}><span className="path1"></span><span className="path2"></span></i>
-                    Toggle Filters
+                    {t('admin.categoriesIndex.toggleFilters')}
                 </button>
                 <button className="btn btn-sm btn-flex btn-light-primary fw-bold" onClick={handleExport}>
                     <i className="ki-duotone ki-file-down fs-6 text-primary me-1"><span className="path1"></span><span className="path2"></span></i>
-                    Export
+                    {t('admin.categoriesIndex.export')}
                 </button>
             </div>
         );
@@ -158,7 +160,7 @@ const AdminCategoriesIndex = () => {
             }
         } catch (error) {
             console.error('Error fetching categories:', error);
-            toast.error('Failed to load categories');
+            toast.error(t('admin.categoriesIndex.failedToLoadCategories'));
         } finally {
             setLoading(false);
         }
@@ -312,7 +314,7 @@ const AdminCategoriesIndex = () => {
                                 <input
                                     type="text"
                                     className="form-control form-control-solid w-250px ps-12"
-                                    placeholder="Quick search: Category name, code..."
+                                    placeholder={t('admin.categoriesIndex.quickSearchPlaceholder')}
                                     value={filters.search}
                                     onChange={(e) => handleQuickSearch(e.target.value)}
                                 />
@@ -320,7 +322,7 @@ const AdminCategoriesIndex = () => {
                         </div>
                         <div className="card-toolbar">
                             <div className="d-flex align-items-center gap-2">
-                                <label className="form-label mb-0 text-nowrap">Show:</label>
+                                <label className="form-label mb-0 text-nowrap">{t('admin.categoriesIndex.show')}</label>
                                 <select 
                                     className="form-select form-select-sm" 
                                     value={pagination.per_page}
@@ -341,7 +343,7 @@ const AdminCategoriesIndex = () => {
                         <table className="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
                             <thead>
                                 <tr className="fw-bold text-muted">
-                                    <th>ID</th><th>Merchant</th><th>Name</th><th>Code</th><th>Parent Category</th><th>Country</th><th className="text-end">Actions</th>
+                                    <th>{t('admin.categoriesIndex.id')}</th><th>{t('admin.categoriesIndex.merchant')}</th><th>{t('admin.categoriesIndex.name')}</th><th>{t('admin.categoriesIndex.code')}</th><th>{t('admin.categoriesIndex.parentCategory')}</th><th>{t('admin.categoriesIndex.country')}</th><th className="text-end">{t('admin.categoriesIndex.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -375,7 +377,7 @@ const AdminCategoriesIndex = () => {
                             <input
                                 type="text"
                                 className="form-control form-control-solid w-250px ps-12"
-                                placeholder="Quick search: Category name, code..."
+                                placeholder={t('admin.categoriesIndex.quickSearchPlaceholder')}
                                 value={filters.search}
                                 onChange={(e) => handleQuickSearch(e.target.value)}
                             />
@@ -383,7 +385,7 @@ const AdminCategoriesIndex = () => {
                     </div>
                     <div className="card-toolbar">
                         <div className="d-flex align-items-center gap-2">
-                            <label className="form-label mb-0 text-nowrap">Show:</label>
+                            <label className="form-label mb-0 text-nowrap">{t('admin.categoriesIndex.show')}</label>
                             <select 
                                 className="form-select form-select-sm" 
                                 value={pagination.per_page}
@@ -405,22 +407,22 @@ const AdminCategoriesIndex = () => {
                             <thead>
                                 <tr className="fw-bold text-muted">
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('id')} className="user-select-none">
-                                        ID {getSortIcon('id')}
+                                        {t('admin.categoriesIndex.id')} {getSortIcon('id')}
                                     </th>
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('merchant_id')} className="user-select-none">
-                                        Merchant {getSortIcon('merchant_id')}
+                                        {t('admin.categoriesIndex.merchant')} {getSortIcon('merchant_id')}
                                     </th>
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')} className="user-select-none">
-                                        Name {getSortIcon('name')}
+                                        {t('admin.categoriesIndex.name')} {getSortIcon('name')}
                                     </th>
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('code')} className="user-select-none">
-                                        Code {getSortIcon('code')}
+                                        {t('admin.categoriesIndex.code')} {getSortIcon('code')}
                                     </th>
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('parent_id')} className="user-select-none">
-                                        Parent Category {getSortIcon('parent_id')}
+                                        {t('admin.categoriesIndex.parentCategory')} {getSortIcon('parent_id')}
                                     </th>
-                                    <th>Country</th>
-                                    <th className="text-end">Actions</th>
+                                    <th>{t('admin.categoriesIndex.country')}</th>
+                                    <th className="text-end">{t('admin.categoriesIndex.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -433,11 +435,11 @@ const AdminCategoriesIndex = () => {
                                         <td><span className="text-muted">{getTranslatedText(category.parent?.name) || 'None'}</span></td>
                                         <td>{renderCountry(category?.shop_id)}</td>
                                         <td className="text-end">
-                                            <Link to={`/admin/sales/categories/${category.id}`} className="btn btn-sm btn-light-primary">View</Link>
+                                            <Link to={`/admin/sales/categories/${category.id}`} className="btn btn-sm btn-light-primary">{t('admin.categoriesIndex.view')}</Link>
                                         </td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan="7" className="text-center py-5"><div className="text-muted">No categories found</div></td></tr>
+                                    <tr><td colSpan="7" className="text-center py-5"><div className="text-muted">{t('admin.categoriesIndex.noCategoriesFound')}</div></td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -450,16 +452,16 @@ const AdminCategoriesIndex = () => {
                                     const perPage = pagination.per_page ?? 15;
                                     const currentPage = pagination.current_page ?? 1;
                                     if (total === 0) {
-                                        return 'Showing 0 to 0 of 0 entries';
+                                        return t('admin.categoriesIndex.showingEntries', { start: 0, end: 0, total: 0 });
                                     }
                                     const start = ((currentPage - 1) * perPage) + 1;
                                     const end = Math.min(currentPage * perPage, total);
-                                    return `Showing ${start} to ${end} of ${total} entries`;
+                                    return t('admin.categoriesIndex.showingEntries', { start: ((currentPage - 1) * perPage) + 1, end: Math.min(currentPage * perPage, total), total: total });
                                 })()}
                             </div>
                             <ul className="pagination">
                                 <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}>
-                                    <button className="page-link" onClick={() => handlePageChange(pagination.current_page - 1)} disabled={pagination.current_page === 1}>Previous</button>
+                                    <button className="page-link" onClick={() => handlePageChange(pagination.current_page - 1)} disabled={pagination.current_page === 1}>{t('admin.categoriesIndex.previous')}</button>
                                 </li>
                                 {buildPaginationRange(pagination.last_page, pagination.current_page, 1).map((page, index) => (
                                     typeof page === 'number' ? (
@@ -475,7 +477,7 @@ const AdminCategoriesIndex = () => {
                                     )
                                 ))}
                                 <li className={`page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}`}>
-                                    <button className="page-link" onClick={() => handlePageChange(pagination.current_page + 1)} disabled={pagination.current_page === pagination.last_page}>Next</button>
+                                    <button className="page-link" onClick={() => handlePageChange(pagination.current_page + 1)} disabled={pagination.current_page === pagination.last_page}>{t('admin.categoriesIndex.next')}</button>
                                 </li>
                             </ul>
                         </div>

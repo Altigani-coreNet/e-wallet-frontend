@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
@@ -9,6 +10,7 @@ import CountryFiltersPanel from './CountryFiltersPanel';
 import BulkActionBar from '../../../common/BulkActionBar';
 
 const AdminCountriesIndex = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const canCreateCountry = useCan('pos.countries.create_countries');
     const [countries, setCountries] = useState([]);
@@ -20,23 +22,23 @@ const AdminCountriesIndex = () => {
     const [pagination, setPagination] = useState({ current_page: 1, per_page: 15, total: 0, last_page: 1 });
 
     useEffect(() => {
-        setTitle('Countries Management');
+        setTitle(t('admin.pages.countriesManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button className="btn btn-sm btn-flex btn-secondary fw-bold" onClick={() => setShowFilters(!showFilters)}>
                     <i className="ki-duotone ki-filter fs-3"><span className="path1"></span><span className="path2"></span></i>
-                    <span className="d-none d-md-inline ms-1">{showFilters ? 'Hide' : 'Show'} Filters</span>
+                    <span className="d-none d-md-inline ms-1">{showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}</span>
                 </button>
                 {canCreateCountry && (
                     <Link to="/admin/system/countries/create" className="btn btn-sm fw-bold btn-primary">
                         <i className="ki-duotone ki-plus fs-3"><span className="path1"></span><span className="path2"></span></i>
-                        <span className="d-none d-md-inline ms-1">Add Country</span>
+                        <span className="d-none d-md-inline ms-1">{t('admin.common.addCountry')}</span>
                     </Link>
                 )}
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters]);
+    }, [setTitle, setActions, showFilters, t, i18n.language]);
 
     useEffect(() => { fetchCountries(); }, [pagination.current_page]);
     useEffect(() => {
@@ -61,20 +63,20 @@ const AdminCountriesIndex = () => {
                 const lastPage = responseData?.last_page || Math.ceil(total / pagination.per_page);
                 setPagination(prev => ({ ...prev, total, last_page: lastPage }));
             } else {
-                toast.error(response.error || 'Failed to fetch countries');
+                toast.error(response.error || t('admin.countriesIndex.fetchFailed'));
             }
         } catch (error) {
-            toast.error('Failed to fetch countries');
+            toast.error(t('admin.countriesIndex.fetchFailed'));
         } finally {
             setLoading(false);
         }
     };
 
     const handleBulkDelete = async () => {
-        if (selectedIds.length === 0) return toast.warning('Please select countries to delete');
-        if (!window.confirm(`Delete ${selectedIds.length} country(ies)?`)) return;
+        if (selectedIds.length === 0) return toast.warning(t('admin.common.pleaseSelectToDelete'));
+        if (!window.confirm(t('admin.countriesIndex.deleteConfirm', { count: selectedIds.length }))) return;
         const response = await bulkDeleteCountries(selectedIds);
-        response.success ? (toast.success('Countries deleted'), setSelectedIds([]), fetchCountries()) : toast.error('Failed to delete countries');
+        response.success ? (toast.success(t('admin.countriesIndex.deleted')), setSelectedIds([]), fetchCountries()) : toast.error(t('admin.countriesIndex.deleteFailed'));
     };
 
     return (
@@ -96,7 +98,7 @@ const AdminCountriesIndex = () => {
                         <div className="card-title">
                             <div className="d-flex align-items-center position-relative my-1">
                                 <i className="ki-duotone ki-magnifier fs-3 position-absolute ms-5"><span className="path1"></span><span className="path2"></span></i>
-                                <input type="text" className="form-control form-control-solid w-250px ps-13" placeholder="Search Countries" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                                <input type="text" className="form-control form-control-solid w-250px ps-13" placeholder={t('admin.countriesIndex.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                             </div>
                         </div>
                     </div>
@@ -108,21 +110,21 @@ const AdminCountriesIndex = () => {
                                     <th className="w-10px pe-2"><div className="form-check form-check-sm form-check-custom form-check-solid me-3">
                                         <input className="form-check-input" type="checkbox" checked={selectedIds.length === countries.length && countries.length > 0} onChange={(e) => setSelectedIds(e.target.checked ? countries.map(c => c.id) : [])} />
                                     </div></th>
-                                    <th>Name (EN)</th>
-                                    <th>Name (AR)</th>
-                                    <th>Short Name</th>
-                                    <th>Code</th>
-                                    <th>Currency Code</th>
-                                    <th>Status</th>
-                                    <th>Created At</th>
-                                    <th className="text-end min-w-100px">Actions</th>
+                                    <th>{t('admin.table.nameEn')}</th>
+                                    <th>{t('admin.table.nameAr')}</th>
+                                    <th>{t('admin.table.shortName')}</th>
+                                    <th>{t('admin.table.code')}</th>
+                                    <th>{t('admin.table.currencyCode')}</th>
+                                    <th>{t('admin.common.status')}</th>
+                                    <th>{t('admin.common.createdAt')}</th>
+                                    <th className="text-end min-w-100px">{t('admin.common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="fw-semibold text-gray-600">
                                 {loading ? (
-                                    <tr><td colSpan="9" className="text-center py-5"><div className="spinner-border text-primary" role="status"><span className="visually-hidden">Loading...</span></div></td></tr>
+                                    <tr><td colSpan="9" className="text-center py-5"><div className="spinner-border text-primary" role="status"><span className="visually-hidden">{t('admin.common.loading')}</span></div></td></tr>
                                 ) : countries.length === 0 ? (
-                                    <tr><td colSpan="9" className="text-center py-5">No countries found</td></tr>
+                                    <tr><td colSpan="9" className="text-center py-5">{t('admin.common.noData')}</td></tr>
                                 ) : (
                                     countries.map(country => <CountryTableRow key={country.id} country={country} isSelected={selectedIds.includes(country.id)} onSelect={(id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id])} onRefresh={fetchCountries} />)
                                 )}
@@ -132,7 +134,7 @@ const AdminCountriesIndex = () => {
                         {!loading && pagination.last_page > 1 && (
                             <div className="row">
                                 <div className="col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start">
-                                    <div className="dataTables_length">Showing page {pagination.current_page} of {pagination.last_page}</div>
+                                    <div className="dataTables_length">{t('admin.common.showingPage', { current: pagination.current_page, total: pagination.last_page })}</div>
                                 </div>
                                 <div className="col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end">
                                     <div className="dataTables_paginate paging_simple_numbers">

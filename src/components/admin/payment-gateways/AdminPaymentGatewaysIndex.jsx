@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { getPaymentGateways } from '../../../services/adminPaymentGatewaysService';
 import PaymentGatewayTableRow from './PaymentGatewayTableRow';
 
 const AdminPaymentGatewaysIndex = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const [paymentGateways, setPaymentGateways] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ const AdminPaymentGatewaysIndex = () => {
     });
 
     useEffect(() => {
-        setTitle('Payment Providers');
+        setTitle(t('admin.paymentGatewaysIndex.paymentProviders'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button
@@ -33,7 +35,7 @@ const AdminPaymentGatewaysIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">{showFilters ? 'Hide' : 'Show'} Filters</span>
+                    <span className="d-none d-md-inline ms-1">{showFilters ? t('admin.paymentGatewaysIndex.hideFilters') : t('admin.paymentGatewaysIndex.showFilters')}</span>
                 </button>
 
                 <Link to="/admin/payment-gateways/create" className="btn btn-sm fw-bold btn-primary">
@@ -41,12 +43,12 @@ const AdminPaymentGatewaysIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Add Payment Provider</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.paymentGatewaysIndex.addPaymentProvider')}</span>
                 </Link>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters]);
+    }, [setTitle, setActions, showFilters, t]);
 
     useEffect(() => {
         fetchPaymentGateways();
@@ -92,11 +94,11 @@ const AdminPaymentGatewaysIndex = () => {
                     }));
                 }
             } else {
-                toast.error(response.error || 'Failed to fetch payment gateways');
+                toast.error(response.error || t('admin.paymentGatewaysIndex.failedToFetch'));
             }
         } catch (error) {
             console.error('Error fetching payment gateways:', error);
-            toast.error('Failed to fetch payment gateways');
+            toast.error(t('admin.paymentGatewaysIndex.failedToFetch'));
         } finally {
             setLoading(false);
         }
@@ -136,37 +138,37 @@ const AdminPaymentGatewaysIndex = () => {
                             <div className="card-body">
                                 <div className="row g-3">
                                     <div className="col-md-4">
-                                        <label className="form-label">Search</label>
+                                        <label className="form-label">{t('admin.paymentGatewaysIndex.search')}</label>
                                         <input 
                                             type="text" 
                                             className="form-control form-control-sm"
                                             value={searchTerm}
-                                            placeholder="Search by name, title, or alias..."
+                                            placeholder={t('admin.paymentGatewaysIndex.searchPlaceholder')}
                                             onChange={(e) => setSearchTerm(e.target.value)}
                                         />
                                     </div>
                                     <div className="col-md-4">
-                                        <label className="form-label">Mode</label>
+                                        <label className="form-label">{t('admin.paymentGatewaysIndex.mode')}</label>
                                         <select 
                                             className="form-select form-select-sm"
                                             value={modeFilter}
                                             onChange={(e) => setModeFilter(e.target.value)}
                                         >
-                                            <option value="">All Modes</option>
-                                            <option value="test">Test</option>
-                                            <option value="live">Live</option>
+                                            <option value="">{t('admin.paymentGatewaysIndex.allModes')}</option>
+                                            <option value="test">{t('admin.paymentGatewaysIndex.test')}</option>
+                                            <option value="live">{t('admin.paymentGatewaysIndex.live')}</option>
                                         </select>
                                     </div>
                                     <div className="col-md-4">
-                                        <label className="form-label">Status</label>
+                                        <label className="form-label">{t('admin.paymentGatewaysIndex.status')}</label>
                                         <select 
                                             className="form-select form-select-sm"
                                             value={statusFilter}
                                             onChange={(e) => setStatusFilter(e.target.value)}
                                         >
-                                            <option value="">All Statuses</option>
-                                            <option value="1">Active</option>
-                                            <option value="0">Inactive</option>
+                                            <option value="">{t('admin.paymentGatewaysIndex.allStatuses')}</option>
+                                            <option value="1">{t('admin.paymentGatewaysIndex.active')}</option>
+                                            <option value="0">{t('admin.paymentGatewaysIndex.inactive')}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -176,7 +178,7 @@ const AdminPaymentGatewaysIndex = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Reset Filters
+                                        {t('admin.paymentGatewaysIndex.resetFilters')}
                                     </button>
                                 </div>
                             </div>
@@ -198,7 +200,7 @@ const AdminPaymentGatewaysIndex = () => {
                                     <input
                                         type="text"
                                         className="form-control form-control-solid w-250px ps-13"
-                                        placeholder="Search Payment Providers"
+                                        placeholder={t('admin.paymentGatewaysIndex.searchProvidersPlaceholder')}
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
@@ -221,13 +223,13 @@ const AdminPaymentGatewaysIndex = () => {
                                                     />
                                                 </div>
                                             </th>
-                                            <th>Name</th>
-                                            <th>Title</th>
-                                            <th>Mode</th>
-                                            <th>Alias</th>
-                                            <th>Status</th>
-                                            <th>Created At</th>
-                                            <th className="text-end min-w-100px">Actions</th>
+                                            <th>{t('admin.paymentGatewaysIndex.name')}</th>
+                                            <th>{t('admin.paymentGatewaysIndex.title')}</th>
+                                            <th>{t('admin.paymentGatewaysIndex.mode')}</th>
+                                            <th>{t('admin.paymentGatewaysIndex.alias')}</th>
+                                            <th>{t('admin.common.status')}</th>
+                                            <th>{t('admin.common.createdAt')}</th>
+                                            <th className="text-end min-w-100px">{t('admin.paymentGatewaysIndex.actions')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="fw-semibold text-gray-600">
@@ -235,14 +237,14 @@ const AdminPaymentGatewaysIndex = () => {
                                             <tr>
                                                 <td colSpan="8" className="text-center py-5">
                                                     <div className="spinner-border text-primary" role="status">
-                                                        <span className="visually-hidden">Loading...</span>
+                                                        <span className="visually-hidden">{t('admin.common.loading')}</span>
                                                     </div>
                                                 </td>
                                             </tr>
                                         ) : paymentGateways.length === 0 ? (
                                             <tr>
                                                 <td colSpan="8" className="text-center py-5">
-                                                    No payment gateways found
+                                                    {t('admin.paymentGatewaysIndex.noGatewaysFound')}
                                                 </td>
                                             </tr>
                                         ) : (
@@ -265,7 +267,7 @@ const AdminPaymentGatewaysIndex = () => {
                                 <div className="row">
                                     <div className="col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start">
                                         <div className="dataTables_length">
-                                            Showing page {pagination.current_page} of {pagination.last_page} ({pagination.total} total)
+                                            {t('admin.paymentGatewaysIndex.showingPage', { current: pagination.current_page, total: pagination.last_page, records: pagination.total })}
                                         </div>
                                     </div>
                                     <div className="col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end">

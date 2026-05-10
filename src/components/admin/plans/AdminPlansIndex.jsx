@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -11,6 +12,7 @@ import PlanTableRow from './PlanTableRow';
 import BulkActionBar from '../../common/BulkActionBar';
 
 const AdminPlansIndex = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -30,7 +32,7 @@ const AdminPlansIndex = () => {
     });
 
     useEffect(() => {
-        setTitle('Plans Management');
+        setTitle(t('admin.plansIndex.plansManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button
@@ -41,19 +43,19 @@ const AdminPlansIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">{showFilters ? 'Hide' : 'Show'} Filters</span>
+                    <span className="d-none d-md-inline ms-1">{showFilters ? t('admin.plansIndex.hideFilters') : t('admin.plansIndex.showFilters')}</span>
                 </button>
                 <Link to="/admin/plans/create" className="btn btn-sm fw-bold btn-primary">
                     <i className="ki-duotone ki-plus fs-3">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Add Plan</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.plansIndex.addPlan')}</span>
                 </Link>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters]);
+    }, [setTitle, setActions, showFilters, t]);
 
     useEffect(() => {
         fetchPlans();
@@ -85,7 +87,7 @@ const AdminPlansIndex = () => {
                 });
             }
         } catch (error) {
-            toast.error('Failed to load plans');
+            toast.error(t('admin.plansIndex.failedToLoad'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -94,13 +96,13 @@ const AdminPlansIndex = () => {
 
     const handleDelete = async (id) => {
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
+            title: t('admin.plansIndex.deleteConfirm'),
+            text: t('admin.plansIndex.deleteText'),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonText: t('admin.plansIndex.deleteConfirmButton')
         });
 
         if (result.isConfirmed) {
@@ -109,10 +111,10 @@ const AdminPlansIndex = () => {
                 await axios.delete(ADMIN_ENDPOINTS.PLAN_DELETE(id), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                toast.success('Plan deleted successfully');
+                toast.success(t('admin.plansIndex.deleteSuccess'));
                 fetchPlans();
             } catch (error) {
-                toast.error('Failed to delete plan');
+                toast.error(t('admin.plansIndex.deleteFailed'));
                 console.error(error);
             }
         }
@@ -124,28 +126,28 @@ const AdminPlansIndex = () => {
             await axios.post(ADMIN_ENDPOINTS.PLAN_CHANGE_STATUS(id), {}, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            toast.success('Plan status updated successfully');
+            toast.success(t('admin.plansIndex.statusUpdateSuccess'));
             fetchPlans();
         } catch (error) {
-            toast.error('Failed to update plan status');
+            toast.error(t('admin.plansIndex.statusUpdateFailed'));
             console.error(error);
         }
     };
 
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) {
-            toast.warning('Please select plans to delete');
+            toast.warning(t('admin.plansIndex.selectPlansToDelete'));
             return;
         }
 
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete ${selectedIds.length} plan(s)`,
+            title: t('admin.plansIndex.bulkDeleteConfirm'),
+            text: t('admin.plansIndex.bulkDeleteText', { count: selectedIds.length }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete them!'
+            confirmButtonText: t('admin.plansIndex.bulkDeleteConfirmButton')
         });
 
         if (result.isConfirmed) {
@@ -158,11 +160,11 @@ const AdminPlansIndex = () => {
                         })
                     )
                 );
-                toast.success(`${selectedIds.length} plan(s) deleted successfully`);
+                toast.success(t('admin.plansIndex.bulkDeleteSuccess', { count: selectedIds.length }));
                 setSelectedIds([]);
                 fetchPlans();
             } catch (error) {
-                toast.error('Failed to delete plans');
+                toast.error(t('admin.plansIndex.bulkDeleteFailed'));
                 console.error(error);
             }
         }
@@ -189,10 +191,10 @@ const AdminPlansIndex = () => {
                             <div className="d-flex justify-content-end align-items-center d-none"
                                  data-kt-plan-table-toolbar="selected">
                                 <div className="fw-bolder me-5">
-                                    <span className="me-2" data-kt-plan-table-select="selected_count"></span>Selected
+                                    <span className="me-2" data-kt-plan-table-select="selected_count"></span>{t('admin.plansIndex.selected')}
                                 </div>
                                 <button type="button" className="btn btn-danger"
-                                        onClick={handleBulkDelete}>Delete Selected
+                                        onClick={handleBulkDelete}>{t('admin.plansIndex.deleteSelected')}
                                 </button>
                             </div>
                         </div>
@@ -227,14 +229,14 @@ const AdminPlansIndex = () => {
                                                 />
                                             </div>
                                         </th>
-                                        <th className="min-w-125px">Name</th>
-                                        <th className="min-w-125px">Description</th>
-                                        <th className="min-w-125px">Plan Type</th>
-                                        <th className="min-w-125px">Price</th>
-                                        <th className="min-w-125px">Discounted Price</th>
-                                        <th className="min-w-125px">Has Discount</th>
-                                        <th className="min-w-125px">Status</th>
-                                        <th className="min-w-125px">Actions</th>
+                                        <th className="min-w-125px">{t('admin.plansIndex.name')}</th>
+                                        <th className="min-w-125px">{t('admin.plansIndex.description')}</th>
+                                        <th className="min-w-125px">{t('admin.plansIndex.planType')}</th>
+                                        <th className="min-w-125px">{t('admin.plansIndex.price')}</th>
+                                        <th className="min-w-125px">{t('admin.plansIndex.discountedPrice')}</th>
+                                        <th className="min-w-125px">{t('admin.plansIndex.hasDiscount')}</th>
+                                        <th className="min-w-125px">{t('admin.plansIndex.status')}</th>
+                                        <th className="min-w-125px">{t('admin.plansIndex.actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-gray-600 fw-semibold">
@@ -242,14 +244,14 @@ const AdminPlansIndex = () => {
                                         <tr>
                                             <td colSpan="9" className="text-center py-10">
                                                 <div className="spinner-border text-primary" role="status">
-                                                    <span className="visually-hidden">Loading...</span>
+                                                    <span className="visually-hidden">{t('admin.common.loading')}</span>
                                                 </div>
                                             </td>
                                         </tr>
                                     ) : plans.length === 0 ? (
                                         <tr>
                                             <td colSpan="9" className="text-center py-10">
-                                                No plans found
+                                                {t('admin.plansIndex.noPlansFound')}
                                             </td>
                                         </tr>
                                     ) : (
@@ -277,9 +279,11 @@ const AdminPlansIndex = () => {
                         {pagination.last_page > 1 && (
                             <div className="d-flex justify-content-between align-items-center mt-5">
                                 <div>
-                                    Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to{' '}
-                                    {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of{' '}
-                                    {pagination.total} results
+                                    {t('admin.plansIndex.showingResults', {
+                                        from: ((pagination.current_page - 1) * pagination.per_page) + 1,
+                                        to: Math.min(pagination.current_page * pagination.per_page, pagination.total),
+                                        total: pagination.total
+                                    })}
                                 </div>
                                 <div>
                                     <button
@@ -287,14 +291,14 @@ const AdminPlansIndex = () => {
                                         disabled={pagination.current_page === 1}
                                         onClick={() => setPagination(prev => ({ ...prev, current_page: prev.current_page - 1 }))}
                                     >
-                                        Previous
+                                        {t('admin.plansIndex.previous')}
                                     </button>
                                     <button
                                         className="btn btn-sm btn-light ms-2"
                                         disabled={pagination.current_page === pagination.last_page}
                                         onClick={() => setPagination(prev => ({ ...prev, current_page: prev.current_page + 1 }))}
                                     >
-                                        Next
+                                        {t('admin.plansIndex.next')}
                                     </button>
                                 </div>
                             </div>

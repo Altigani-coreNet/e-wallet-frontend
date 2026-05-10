@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import PaymentLinkTableRow from './PaymentLinkTableRow';
 
 const PaymentLinksTable = ({
@@ -14,7 +15,10 @@ const PaymentLinksTable = ({
     loading,
     error
 }) => {
+    const { t } = useTranslation();
     const skeletonRows = Array.from({ length: 6 }, (_, i) => i);
+    const pageFrom = paymentLinks.length > 0 ? (pagination.current_page - 1) * pagination.per_page + 1 : 0;
+    const pageTo = Math.min(pagination.current_page * pagination.per_page, pagination.total);
     // Initialize KTMenu when payment links change
     useEffect(() => {
         if (paymentLinks.length > 0 && typeof window.KTMenu !== 'undefined') {
@@ -51,15 +55,15 @@ const PaymentLinksTable = ({
                     <thead>
                         <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                             <th className="w-10px pe-2"></th>
-                            <th>ID</th>
-                            <th>UUID</th>
-                            <th>Customer</th>
-                            <th>Amount</th>
-                            <th>Currency</th>
-                            <th>Status</th>
-                            <th>Created At</th>
-                            <th>Scheduled Date</th>
-                            <th className="text-end min-w-100px">Actions</th>
+                            <th>{t('merchant.paymentLinks.table.id')}</th>
+                            <th>{t('merchant.paymentLinks.table.uuid')}</th>
+                            <th>{t('merchant.paymentLinks.table.customer')}</th>
+                            <th>{t('merchant.paymentLinks.table.amount')}</th>
+                            <th>{t('merchant.paymentLinks.table.currency')}</th>
+                            <th>{t('merchant.paymentLinks.table.status')}</th>
+                            <th>{t('merchant.paymentLinks.table.createdAt')}</th>
+                            <th>{t('merchant.paymentLinks.table.scheduledDate')}</th>
+                            <th className="text-end min-w-100px">{t('merchant.paymentLinks.table.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="text-gray-600 fw-semibold">
@@ -99,7 +103,7 @@ const PaymentLinksTable = ({
     if (paymentLinks.length === 0) {
         return (
             <div className="text-center py-5">
-                <div className="text-gray-600">No payment links found.</div>
+                <div className="text-gray-600">{t('merchant.paymentLinks.table.empty')}</div>
             </div>
         );
     }
@@ -120,15 +124,15 @@ const PaymentLinksTable = ({
                                     />
                                 </div>
                             </th>
-                            <th>ID</th>
-                            <th>UUID</th>
-                            <th>Customer</th>
-                            <th>Amount</th>
-                            <th>Currency</th>
-                            <th>Status</th>
-                            <th>Created At</th>
-                            <th>Scheduled Date</th>
-                            <th className="text-end min-w-100px">Actions</th>
+                            <th>{t('merchant.paymentLinks.table.id')}</th>
+                            <th>{t('merchant.paymentLinks.table.uuid')}</th>
+                            <th>{t('merchant.paymentLinks.table.customer')}</th>
+                            <th>{t('merchant.paymentLinks.table.amount')}</th>
+                            <th>{t('merchant.paymentLinks.table.currency')}</th>
+                            <th>{t('merchant.paymentLinks.table.status')}</th>
+                            <th>{t('merchant.paymentLinks.table.createdAt')}</th>
+                            <th>{t('merchant.paymentLinks.table.scheduledDate')}</th>
+                            <th className="text-end min-w-100px">{t('merchant.paymentLinks.table.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="text-gray-600 fw-semibold">
@@ -166,9 +170,7 @@ const PaymentLinksTable = ({
                         </label>
                     </div>
                     <div className="dataTables_info ms-3">
-                        Showing {paymentLinks.length > 0 ? ((pagination.current_page - 1) * pagination.per_page) + 1 : 0} to{' '}
-                        {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of{' '}
-                        {pagination.total} entries
+                        {t('merchant.common.showingEntries', { from: pageFrom, to: pageTo, total: pagination.total })}
                     </div>
                 </div>
                 <div className="col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end">

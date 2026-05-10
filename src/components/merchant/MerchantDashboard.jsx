@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 import DashboardFilters from './DashboardFilters';
@@ -14,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDashboardStatistics, useDashboardCharts, useDashboardLatestTransactions } from '../../hooks/useDashboardQueries';
 
 const MerchantDashboard = ({ merchantId: propMerchantId }) => {
+    const { t, i18n } = useTranslation();
     const { user, merchant, profileLoading } = useAuthStore();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const navigate = useNavigate();
@@ -128,14 +130,14 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
 
     const handlePrintDashboard = useCallback(() => {
         window.print();
-        toast.info('Print dialog opened');
-    }, []);
+        toast.info(t('merchant.dashboard.printOpened'));
+    }, [t]);
 
     const handleExportExcel = useCallback(async () => {
         try {
             const token = getApiToken();
             if (!token) {
-                toast.error('Authentication token not found. Please login again.');
+                toast.error(t('merchant.dashboard.sessionExpired'));
                 return;
             }
 
@@ -166,21 +168,21 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            toast.success('Dashboard data exported successfully!');
+            toast.success(t('merchant.dashboard.exportSuccess'));
         } catch (err) {
             console.error('Export error:', err);
-            const errorMsg = err.response?.data?.message || err.message || 'Failed to export dashboard data';
+            const errorMsg = err.response?.data?.message || err.message || t('merchant.dashboard.exportFailed');
             
             // Check for specific error cases
             if (err.response?.status === 401) {
-                toast.error('Session expired. Please login again.');
+                toast.error(t('merchant.dashboard.sessionExpired'));
             } else if (err.response?.status === 403) {
-                toast.error('Unauthorized access to export dashboard data.');
+                toast.error(t('merchant.dashboard.exportUnauthorized'));
             } else {
                 toast.error(errorMsg);
             }
         }
-    }, [filters]);
+    }, [filters, t]);
 
     // Handle refresh - refetch all queries (must be defined before useEffect that uses it)
     const handleRefresh = useCallback(() => {
@@ -188,12 +190,12 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
             queryKey: ['dashboard'],
             exact: false 
         });
-        toast.info('Refreshing dashboard data...');
-    }, [queryClient]);
+        toast.info(t('merchant.dashboard.refreshing'));
+    }, [queryClient, t]);
 
     // Set toolbar title and actions - only update when filter count or collapsed state changes
     useEffect(() => {
-        setTitle('Merchant Dashboard');
+        setTitle(t('merchant.dashboard.title'));
         setBreadcrumbs([]); // No breadcrumbs for main dashboard
         
         // Set toolbar actions
@@ -203,8 +205,8 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
                 <button 
                     className="btn btn-sm btn-light btn-active-light-primary" 
                     onClick={handleRefresh}
-                    title="Refresh dashboard data"
-                    aria-label="Refresh dashboard data"
+                    title={t('merchant.common.refreshDashboardTitle')}
+                    aria-label={t('merchant.common.refreshDashboardTitle')}
                     disabled={statisticsLoading || chartsLoading || latestTransactionsLoading}
                 >
                     <i className={`ki-duotone ki-arrows-circle fs-6 me-0 me-lg-2 ${(statisticsLoading || chartsLoading || latestTransactionsLoading) ? 'spinning' : ''}`}>
@@ -212,7 +214,7 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
                         <span className="path2"></span>
                     </i>
                     <span className="d-none d-lg-inline">
-                        Refresh
+                        {t('merchant.common.refresh')}
                     </span>
                 </button>
 
@@ -221,7 +223,7 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
                     id="filters_button" 
                     className={`btn btn-sm btn-flex fw-bold ${activeFilterCount > 0 ? 'btn-primary' : 'btn-secondary'}`}
                     onClick={toggleFilters}
-                    aria-label={activeFilterCount > 0 ? `Filters active (${activeFilterCount})` : 'Toggle filters'}
+                    aria-label={activeFilterCount > 0 ? t('merchant.common.filtersActive', { count: activeFilterCount }) : t('merchant.common.toggleFilters')}
                 >
                     <i
                         className="ki-duotone ki-filter fs-6 me-0 me-lg-1"
@@ -234,7 +236,7 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
                         <span className="path2"></span>
                     </i>
                     <span className="d-none d-lg-inline ms-lg-1">
-                        {activeFilterCount > 0 ? `Filters Active (${activeFilterCount})` : 'Toggle Filters'}
+                        {activeFilterCount > 0 ? t('merchant.common.filtersActive', { count: activeFilterCount }) : t('merchant.common.toggleFilters')}
                     </span>
                 </button>
 
@@ -242,7 +244,7 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
                 <button 
                     className="btn btn-sm btn-primary" 
                     onClick={handlePrintDashboard}
-                    aria-label="Print dashboard"
+                    aria-label={t('merchant.common.printDashboard')}
                 >
                     <i className="ki-duotone ki-printer fs-6 me-0 me-lg-2">
                         <span className="path1"></span>
@@ -252,7 +254,7 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
                         <span className="path5"></span>
                     </i>
                     <span className="d-none d-lg-inline">
-                        Print Dashboard
+                        {t('merchant.common.printDashboard')}
                     </span>
                 </button>
                 
@@ -260,15 +262,15 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
                 <button 
                     className="btn btn-sm btn-success" 
                     onClick={handleExportExcel}
-                    title="Export dashboard data including charts, transactions, and statistics to Excel"
-                    aria-label="Export dashboard data to Excel"
+                    title={t('merchant.common.exportExcelTitle')}
+                    aria-label={t('merchant.common.exportExcelTitle')}
                 >
                     <i className="ki-duotone ki-file-down fs-6 me-0 me-lg-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
                     <span className="d-none d-lg-inline">
-                        Export to Excel
+                        {t('merchant.common.exportExcel')}
                     </span>
                 </button>
             </>
@@ -278,7 +280,7 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
         return () => {
             setActions(null);
         };
-    }, [activeFilterCount, filtersCollapsed, toggleFilters, handlePrintDashboard, handleExportExcel, handleRefresh, statisticsLoading, chartsLoading, latestTransactionsLoading, setTitle, setBreadcrumbs, setActions]);
+    }, [activeFilterCount, filtersCollapsed, toggleFilters, handlePrintDashboard, handleExportExcel, handleRefresh, statisticsLoading, chartsLoading, latestTransactionsLoading, setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     const latestTransactions = latestTransactionsData?.latestTransactions || latestTransactionsData || [];
 
@@ -457,23 +459,23 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
     // Handle errors
     useEffect(() => {
         if (error) {
-            const errorMsg = error.response?.data?.message || error.message || 'Error loading dashboard data';
+            const errorMsg = error.response?.data?.message || error.message || t('merchant.dashboard.loadError');
             if (error.response?.status === 401) {
-                toast.error('Session expired. Please login again.');
+                toast.error(t('merchant.dashboard.sessionExpired'));
             } else {
                 toast.error(errorMsg);
             }
         }
-    }, [error]);
+    }, [error, t]);
 
     if (error && !statisticsData && !chartsData && !latestTransactionsData && !statisticsLoading && !chartsLoading && !latestTransactionsLoading) {
         return (
             <div className="alert alert-danger m-5" role="alert">
-                <h4 className="alert-heading">Error!</h4>
-                <p>{error.response?.data?.message || error.message || 'Error loading dashboard data'}</p>
+                <h4 className="alert-heading">{t('merchant.dashboard.errorHeading')}</h4>
+                <p>{error.response?.data?.message || error.message || t('merchant.dashboard.loadError')}</p>
                 <hr />
                 <button className="btn btn-danger" onClick={handleRefresh}>
-                    Try Again
+                    {t('merchant.dashboard.tryAgain')}
                 </button>
             </div>
         );

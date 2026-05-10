@@ -1,3 +1,13 @@
+/* Arabic UI: Cairo (loaded in index.html). `app-i18n-rtl` is set in i18n/config.js for Arabic */
+html[lang='ar'] {
+  --bs-body-font-family: 'Cairo', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bs-font-sans-serif: 'Cairo', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+html[lang='ar'] body,
+body.app-i18n-rtl {
+  font-family: 'Cairo', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

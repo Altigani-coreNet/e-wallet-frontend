@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import SettlementFilters from './SettlementFilters';
@@ -10,6 +11,7 @@ import { useToolbar } from '../../../contexts/ToolbarContext';
 import { useCan } from '../../../utils/permissions';
 
 const MerchantSettlements = ({ merchantId: propMerchantId }) => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { user, merchant } = useAuthStore();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -67,12 +69,12 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
 
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
-        setTitle('Settlements');
+        setTitle(t('merchant.breadcrumbs.settlements'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Settlements', path: '/merchant/settlements' },
-            { label: 'Settlements List', path: '/merchant/settlements', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.settlements'), path: '/merchant/settlements' },
+            { label: t('merchant.breadcrumbs.settlementsList'), path: '/merchant/settlements', active: true }
         ]);
         
         setActions(
@@ -85,7 +87,7 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Filter
+                    {t('merchant.common.filter')}
                 </button>
 
                 <button
@@ -97,7 +99,7 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Refresh
+                    {t('merchant.common.refresh')}
                 </button>
 
                 {canViewSettlements && (
@@ -109,7 +111,7 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Settlement Transactions
+                        {t('merchant.breadcrumbs.settlementTransactions')}
                     </button>
                 )}
             </>
@@ -119,7 +121,7 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [showFilters, settlementsLoading, statisticsLoading, handleRefresh, navigate, setTitle, setBreadcrumbs, setActions]);
+    }, [showFilters, settlementsLoading, statisticsLoading, handleRefresh, navigate, setTitle, setBreadcrumbs, setActions, t, i18n.language, canViewSettlements]);
 
     // Handle page change
     const handlePageChange = (page) => {
@@ -227,6 +229,14 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
         return pages;
     };
 
+    const settlementStatusLabel = (s) => {
+        const m = { settled: 'statusSettled', pending: 'statusPending', failed: 'statusFailed' }[s?.toLowerCase()];
+        return m ? t(`merchant.settlements.${m}`) : (s ? s.charAt(0).toUpperCase() + s.slice(1) : t('merchant.common.na'));
+    };
+
+    const pageFrom = settlements.length > 0 ? (currentPage - 1) * perPage + 1 : 0;
+    const pageTo = Math.min(currentPage * perPage, totalRows);
+
     return (
         <>
             <style>{`
@@ -298,44 +308,44 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
                                         onClick={() => handleSort('settlement_id')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Settlement ID {getSortIcon('settlement_id')}
+                                        {t('merchant.settlements.colSettlementId')} {getSortIcon('settlement_id')}
                                     </th>
                                     <th 
                                         className="text-dark cursor-pointer" 
                                         onClick={() => handleSort('batch_number')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Batch Number {getSortIcon('batch_number')}
+                                        {t('merchant.settlements.colBatchNumber')} {getSortIcon('batch_number')}
                                     </th>
                                     <th 
                                         className="text-dark cursor-pointer" 
                                         onClick={() => handleSort('status')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Status {getSortIcon('status')}
+                                        {t('merchant.settlements.colStatus')} {getSortIcon('status')}
                                     </th>
                                     <th 
                                         className="text-dark cursor-pointer" 
                                         onClick={() => handleSort('total_amount')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Amount {getSortIcon('total_amount')}
+                                        {t('merchant.settlements.colAmount')} {getSortIcon('total_amount')}
                                     </th>
                                     <th 
                                         className="text-dark cursor-pointer" 
                                         onClick={() => handleSort('settlement_date')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Settlement Date {getSortIcon('settlement_date')}
+                                        {t('merchant.settlements.colSettlementDate')} {getSortIcon('settlement_date')}
                                     </th>
                                     <th 
                                         className="text-dark cursor-pointer" 
                                         onClick={() => handleSort('created_at')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Created Time {getSortIcon('created_at')}
+                                        {t('merchant.settlements.colCreatedTime')} {getSortIcon('created_at')}
                                     </th>
-                                    <th className="text-end text-dark">Actions</th>
+                                    <th className="text-end text-dark">{t('merchant.settlements.colActions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -360,23 +370,23 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
                                                     <span className="path1"></span>
                                                     <span className="path2"></span>
                                                 </i>
-                                                <p className="fw-bold">No settlements found</p>
+                                                <p className="fw-bold">{t('merchant.settlements.empty')}</p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
                                     settlements.map((settlement) => (
                                         <tr key={settlement.id}>
-                                            <td>{settlement.settlement_id || 'N/A'}</td>
-                                            <td>{settlement.batch_number || 'N/A'}</td>
+                                            <td>{settlement.settlement_id || t('merchant.common.na')}</td>
+                                            <td>{settlement.batch_number || t('merchant.common.na')}</td>
                                             <td>
                                                 <span className={`badge badge-light-${getStatusColor(settlement.status)}`}>
-                                                    {settlement.status ? settlement.status.charAt(0).toUpperCase() + settlement.status.slice(1) : 'N/A'}
+                                                    {settlementStatusLabel(settlement.status)}
                                                 </span>
                                             </td>
                                             <td>{settlement.currency_symbol || '$'}{parseFloat(settlement.total_amount || 0).toFixed(2)}</td>
-                                            <td>{settlement.settlement_date || 'N/A'}</td>
-                                            <td>{settlement.created_at || 'N/A'}</td>
+                                            <td>{settlement.settlement_date || t('merchant.common.na')}</td>
+                                            <td>{settlement.created_at || t('merchant.common.na')}</td>
                                             <td className="text-end">
                                                 <SettlementActions settlement={settlement} />
                                             </td>
@@ -393,7 +403,7 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
                             <div className="col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start">
                                 <div className="dataTables_length">
                                     <label className="d-flex align-items-center">
-                                        <span className="me-2">Show</span>
+                                        <span className="me-2">{t('merchant.common.show')}</span>
                                         <select 
                                             className="form-select form-select-sm" 
                                             value={perPage}
@@ -405,12 +415,12 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
                                             <option value="50">50</option>
                                             <option value="100">100</option>
                                         </select>
-                                        <span className="ms-2">entries</span>
+                                        <span className="ms-2">{t('merchant.common.entries')}</span>
                                     </label>
                                 </div>
                                 <div className="ms-5">
                                     <span className="text-muted">
-                                        Showing {((currentPage - 1) * perPage) + 1} to {Math.min(currentPage * perPage, totalRows)} of {totalRows} entries
+                                        {t('merchant.common.showingEntries', { from: pageFrom, to: pageTo, total: totalRows })}
                                     </span>
                                 </div>
                             </div>
@@ -423,7 +433,7 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
                                                 onClick={() => handlePageChange(currentPage - 1)}
                                                 disabled={currentPage === 1}
                                             >
-                                                Previous
+                                                {t('merchant.common.previous')}
                                             </button>
                                         </li>
                                         {getPaginationNumbers().map((page, index) => (
@@ -448,7 +458,7 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
                                                 onClick={() => handlePageChange(currentPage + 1)}
                                                 disabled={currentPage === lastPage}
                                             >
-                                                Next
+                                                {t('merchant.common.next')}
                                             </button>
                                         </li>
                                     </ul>

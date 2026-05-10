@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const PaymentLinksFilters = ({ filters, setFilters, onApply, onClear, onClose }) => {
+    const { t } = useTranslation();
     const fromDateRef = useRef(null);
     const toDateRef = useRef(null);
 
@@ -34,14 +36,14 @@ const PaymentLinksFilters = ({ filters, setFilters, onApply, onClear, onClose })
         <div className="card mb-5">
             <div className="card-header border-0 pt-6">
                 <div className="card-title">
-                    <h3 className="card-label">Filters</h3>
+                    <h3 className="card-label">{t('merchant.paymentLinks.filters.title')}</h3>
                 </div>
                 <div className="card-toolbar">
                     <button
                         onClick={onClear}
                         className="btn btn-sm btn-light me-2"
                     >
-                        Reset
+                        {t('merchant.paymentLinks.filters.reset')}
                     </button>
                     <button
                         onClick={onClose}
@@ -70,11 +72,11 @@ const PaymentLinksFilters = ({ filters, setFilters, onApply, onClear, onClose })
 
                     {/* Customer */}
                     <div className="col-md-3">
-                        <label className="form-label">Customer Name</label>
+                        <label className="form-label">{t('merchant.paymentLinks.filters.customerName')}</label>
                         <input
                             type="text"
                             className="form-control form-control-sm"
-                            placeholder="Search by customer name"
+                            placeholder={t('merchant.paymentLinks.filters.customerPlaceholder')}
                             value={filters.customer}
                             onChange={(e) => handleFilterChange('customer', e.target.value)}
                         />
@@ -82,7 +84,7 @@ const PaymentLinksFilters = ({ filters, setFilters, onApply, onClear, onClose })
 
                     {/* From Date */}
                     <div className="col-md-3">
-                        <label className="form-label">From Date</label>
+                        <label className="form-label">{t('merchant.paymentLinks.filters.fromDate')}</label>
                         <input
                             ref={fromDateRef}
                             type="date"
@@ -96,7 +98,7 @@ const PaymentLinksFilters = ({ filters, setFilters, onApply, onClear, onClose })
 
                     {/* To Date */}
                     <div className="col-md-3">
-                        <label className="form-label">To Date</label>
+                        <label className="form-label">{t('merchant.paymentLinks.filters.toDate')}</label>
                         <input
                             ref={toDateRef}
                             type="date"
@@ -119,7 +121,7 @@ const PaymentLinksFilters = ({ filters, setFilters, onApply, onClear, onClose })
                                 <span className="path2"></span>
                                 <span className="path3"></span>
                             </i>
-                            Apply Filters
+                            {t('merchant.paymentLinks.filters.apply')}
                         </button>
                     </div>
                 </div>

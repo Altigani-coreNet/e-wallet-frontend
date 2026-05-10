@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -11,6 +12,7 @@ import BranchTableRow from './BranchTableRow';
 import BulkActionBar from '../../common/BulkActionBar';
 
 const AdminBranchesIndex = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const canCreateBranch = useCan('pos.branches.create_branches');
     const [branches, setBranches] = useState([]);
@@ -34,7 +36,7 @@ const AdminBranchesIndex = () => {
     const [searchInput, setSearchInput] = useState('');
 
     useEffect(() => {
-        setTitle('Branches Management');
+        setTitle(t('admin.branchesIndex.branchesManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 {/* Toggle Filters */}
@@ -46,7 +48,7 @@ const AdminBranchesIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Toggle Filters
+                    {t('admin.branchesIndex.toggleFilters')}
                 </button>
 
                 {/* Export */}
@@ -55,7 +57,7 @@ const AdminBranchesIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Export
+                    {t('admin.branchesIndex.export')}
                 </button>
 
                 {/* Add Branch */}
@@ -65,7 +67,7 @@ const AdminBranchesIndex = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Add Branch
+                        {t('admin.branchesIndex.addBranch')}
                     </Link>
                 )}
             </div>
@@ -118,7 +120,7 @@ const AdminBranchesIndex = () => {
                 });
             }
         } catch (error) {
-            toast.error('Failed to load branches');
+            toast.error(t('admin.branchesIndex.failedToLoadBranches'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -138,7 +140,7 @@ const AdminBranchesIndex = () => {
                 const { data, filename } = response.data.data;
                 
                 if (!data || data.length === 0) {
-                    toast.error('No data to export');
+                    toast.error(t('admin.branchesIndex.noDataToExport'));
                     return;
                 }
 
@@ -169,12 +171,12 @@ const AdminBranchesIndex = () => {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(link.href);
                 
-                toast.success('Export successful!');
+                toast.success(t('admin.branchesIndex.exportSuccessful'));
             } else {
-                toast.error('No data to export');
+                toast.error(t('admin.branchesIndex.noDataToExport'));
             }
         } catch (error) {
-            toast.error('Export failed');
+            toast.error(t('admin.branchesIndex.exportFailed'));
             console.error(error);
         }
     };
@@ -220,7 +222,7 @@ const AdminBranchesIndex = () => {
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) return;
 
-        if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} branch(es)?`)) {
+        if (!window.confirm(t('admin.branchesIndex.bulkDeleteConfirm', { count: selectedIds.length }))) {
             return;
         }
 
@@ -234,18 +236,18 @@ const AdminBranchesIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success(`${selectedIds.length} branch(es) deleted successfully`);
+                toast.success(t('admin.branchesIndex.bulkDeleteSuccess', { count: selectedIds.length }));
                 setSelectedIds([]);
                 fetchBranches();
             }
         } catch (error) {
-            toast.error('Failed to delete branches');
+            toast.error(t('admin.branchesIndex.bulkDeleteFailed'));
             console.error(error);
         }
     };
 
     const handleApprove = async (id) => {
-        if (!window.confirm('Are you sure you want to approve this branch?')) {
+        if (!window.confirm(t('admin.branchesIndex.approveConfirm'))) {
             return;
         }
 
@@ -257,17 +259,17 @@ const AdminBranchesIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Branch approved successfully');
+                toast.success(t('admin.branchesIndex.approveSuccess'));
                 fetchBranches();
             }
         } catch (error) {
-            toast.error('Failed to approve branch');
+            toast.error(t('admin.branchesIndex.approveFailed'));
             console.error(error);
         }
     };
 
     const handleReject = async (branch) => {
-        const reason = window.prompt('Enter rejection reason:');
+        const reason = window.prompt(t('admin.branchesIndex.rejectReasonPrompt'));
         if (!reason) return;
 
         try {
@@ -280,17 +282,17 @@ const AdminBranchesIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Branch rejected successfully');
+                toast.success(t('admin.branchesIndex.rejectSuccess'));
                 fetchBranches();
             }
         } catch (error) {
-            toast.error('Failed to reject branch');
+            toast.error(t('admin.branchesIndex.rejectFailed'));
             console.error(error);
         }
     };
 
     const handleSuspend = async (branch) => {
-        const reason = window.prompt('Enter suspension reason:');
+        const reason = window.prompt(t('admin.branchesIndex.suspendReasonPrompt'));
         if (!reason) return;
 
         try {
@@ -303,17 +305,17 @@ const AdminBranchesIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Branch suspended successfully');
+                toast.success(t('admin.branchesIndex.suspendSuccess'));
                 fetchBranches();
             }
         } catch (error) {
-            toast.error('Failed to suspend branch');
+            toast.error(t('admin.branchesIndex.suspendFailed'));
             console.error(error);
         }
     };
 
     const handleUnsuspend = async (id) => {
-        if (!window.confirm('Are you sure you want to unsuspend this branch?')) {
+        if (!window.confirm(t('admin.branchesIndex.unsuspendConfirm'))) {
             return;
         }
 
@@ -325,17 +327,17 @@ const AdminBranchesIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Branch unsuspended successfully');
+                toast.success(t('admin.branchesIndex.unsuspendSuccess'));
                 fetchBranches();
             }
         } catch (error) {
-            toast.error('Failed to unsuspend branch');
+            toast.error(t('admin.branchesIndex.unsuspendFailed'));
             console.error(error);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this branch?')) {
+        if (!window.confirm(t('admin.branchesIndex.deleteConfirm'))) {
             return;
         }
 
@@ -347,11 +349,11 @@ const AdminBranchesIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Branch deleted successfully');
+                toast.success(t('admin.branchesIndex.deleteSuccess'));
                 fetchBranches();
             }
         } catch (error) {
-            toast.error('Failed to delete branch');
+            toast.error(t('admin.branchesIndex.deleteFailed'));
             console.error(error);
         }
     };
@@ -380,7 +382,7 @@ const AdminBranchesIndex = () => {
                             <input
                                 type="text"
                                 className="form-control form-control-solid ps-13"
-                                placeholder="Quick search branches..."
+                                placeholder={t('admin.branchesIndex.quickSearchPlaceholder')}
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
                                 style={{ paddingLeft: '3rem', fontSize: '1rem', paddingTop: '0.75rem', paddingBottom: '0.75rem' }}
@@ -424,7 +426,7 @@ const AdminBranchesIndex = () => {
                     </div>
                 ) : branches.length === 0 ? (
                     <div className="text-center py-10">
-                        <div className="text-gray-600 fs-5">No branches found</div>
+                        <div className="text-gray-600 fs-5">{t('admin.branchesIndex.noBranchesFound')}</div>
                     </div>
                 ) : (
                     <div className="table-responsive">
@@ -441,15 +443,15 @@ const AdminBranchesIndex = () => {
                                             />
                                         </div>
                                     </th>
-                                    <th className="text-dark">ID</th>
-                                    <th className="min-w-200px text-dark">Branch Name</th>
-                                    <th className="min-w-150px text-dark">Merchant</th>
-                                    <th className="min-w-200px text-dark">Address</th>
-                                    <th className="text-dark">Country</th>
-                                    <th className="text-dark">Status</th>
-                                    <th className="text-dark">Is Active</th>
-                                    <th className="text-dark">Created At</th>
-                                    <th className="text-end text-dark">Actions</th>
+                                    <th className="text-dark">{t('admin.branchesIndex.id')}</th>
+                                    <th className="min-w-200px text-dark">{t('admin.branchesIndex.branchName')}</th>
+                                    <th className="min-w-150px text-dark">{t('admin.branchesIndex.merchant')}</th>
+                                    <th className="min-w-200px text-dark">{t('admin.branchesIndex.address')}</th>
+                                    <th className="text-dark">{t('admin.branchesIndex.country')}</th>
+                                    <th className="text-dark">{t('admin.branchesIndex.status')}</th>
+                                    <th className="text-dark">{t('admin.branchesIndex.isActive')}</th>
+                                    <th className="text-dark">{t('admin.branchesIndex.createdAt')}</th>
+                                    <th className="text-end text-dark">{t('admin.branchesIndex.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="text-gray-600 fw-semibold">
@@ -475,17 +477,17 @@ const AdminBranchesIndex = () => {
                 {!loading && branches.length > 0 && (
                     <div className="d-flex flex-stack flex-wrap pt-10">
                         <div className="fs-6 fw-semibold text-gray-700">
-                            Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} entries
+                            {t('admin.branchesIndex.showingEntries', { from: ((pagination.current_page - 1) * pagination.per_page) + 1, to: Math.min(pagination.current_page * pagination.per_page, pagination.total), total: pagination.total })}
                         </div>
                         <ul className="pagination">
                             <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}>
                                 <button className="page-link" onClick={() => setPagination({ ...pagination, current_page: pagination.current_page - 1 })}>
-                                    Previous
+                                    {t('admin.branchesIndex.previous')}
                                 </button>
                             </li>
                             <li className={`page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}`}>
                                 <button className="page-link" onClick={() => setPagination({ ...pagination, current_page: pagination.current_page + 1 })}>
-                                    Next
+                                    {t('admin.branchesIndex.next')}
                                 </button>
                             </li>
                         </ul>
@@ -498,6 +500,4 @@ const AdminBranchesIndex = () => {
 };
 
 export default AdminBranchesIndex;
-
-
 

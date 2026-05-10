@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-toastify';
 import html2pdf from 'html2pdf.js';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../utils/constants';
 import { getToken } from '../../utils/api';
 import { useToolbar } from '../../contexts/ToolbarContext';
@@ -22,6 +23,7 @@ const createInitialFilters = () => ({
 });
 
 const AdminDashboard = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const queryClient = useQueryClient();
 
@@ -48,7 +50,7 @@ const AdminDashboard = () => {
         queryFn: () => fetchAdminDashboardV3(filtersForData),
         keepPreviousData: true,
         onError: (err) => {
-            const message = err?.response?.data?.message || err?.message || 'Failed to load dashboard data.';
+            const message = err?.response?.data?.message || err?.message || t('admin.dashboard.loadFailed');
             toast.error(message);
         },
     });
@@ -59,7 +61,7 @@ const AdminDashboard = () => {
         keepPreviousData: true,
         retry: false,
         onError: (err) => {
-            const message = err?.response?.data?.message || err?.message || 'Failed to load latest transactions.';
+            const message = err?.response?.data?.message || err?.message || t('admin.dashboard.latestTxFailed');
             toast.error(message);
         },
     });
@@ -73,7 +75,7 @@ const AdminDashboard = () => {
     const isRefreshing = queryStates.some((query) => query.isFetching && !query.isLoading);
 
     useEffect(() => {
-        setTitle('Admin Dashboard');
+        setTitle(t('admin.pages.adminDashboard'));
     }, [setTitle]);
 
     const activeFilterCount = useMemo(() => {
@@ -269,7 +271,7 @@ const AdminDashboard = () => {
         try {
             const token = getToken();
             if (!token) {
-                toast.error('Authentication token not found. Please login again.');
+                toast.error(t('admin.dashboard.noToken'));
                 return;
             }
 
@@ -295,7 +297,7 @@ const AdminDashboard = () => {
             const contentType = response.headers.get('content-type') || '';
 
             if (!response.ok) {
-                let errorMessage = 'Failed to export dashboard data';
+                let errorMessage = t('admin.dashboard.exportFailed');
                 try {
                     if (contentType.includes('application/json')) {
                         const errorData = await response.json();
@@ -311,7 +313,7 @@ const AdminDashboard = () => {
 
             if (contentType.includes('application/json')) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || errorData.error || 'Export failed: Unexpected response format');
+                throw new Error(errorData.message || errorData.error || t('admin.dashboard.exportFailed'));
             }
 
             const blob = await response.blob();
@@ -333,10 +335,10 @@ const AdminDashboard = () => {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            toast.success('Dashboard data exported successfully!');
+            toast.success(t('admin.dashboard.exportSuccess'));
         } catch (err) {
             console.error('Export error:', err);
-            const errorMessage = err?.message || 'Failed to export dashboard data. Please try again.';
+            const errorMessage = err?.message || t('admin.dashboard.exportFailed');
             toast.error(errorMessage);
         } finally {
             setExporting(false);
@@ -346,11 +348,11 @@ const AdminDashboard = () => {
     const handlePrintDashboard = useCallback(async () => {
         try {
             if (!dashboardContentRef.current) {
-                toast.error('Dashboard content not found');
+                toast.error(t('admin.common.noData'));
                 return;
             }
 
-            toast.info('Generating PDF...');
+            toast.info(t('admin.common.loading'));
 
             const element = dashboardContentRef.current;
             const opt = {
@@ -372,10 +374,10 @@ const AdminDashboard = () => {
             };
 
             await html2pdf().set(opt).from(element).save();
-            toast.success('Dashboard PDF generated successfully!');
+            toast.success(t('admin.dashboard.printSuccess'));
         } catch (err) {
             console.error('Print error:', err);
-            toast.error('Failed to generate PDF. Please try again.');
+            toast.error(t('admin.dashboard.printFailed'));
         }
     }, []);
 
@@ -386,10 +388,10 @@ const AdminDashboard = () => {
                 queryClient.invalidateQueries({ queryKey: ['admin-dashboard-latest-transactions'] }),
             ];
             await Promise.all(tasks);
-            toast.success('Dashboard data refreshed');
+            toast.success(t('admin.common.refresh'));
         } catch (err) {
             console.error('Refresh error:', err);
-            toast.error('Failed to refresh dashboard data');
+            toast.error(t('admin.common.refreshFailed'));
         }
     }, [queryClient]);
 
@@ -411,20 +413,20 @@ const AdminDashboard = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    {activeFilterCount > 0 ? `Filters Active (${activeFilterCount})` : 'Toggle Filters'}
+                    {activeFilterCount > 0 ? t('admin.common.filtersActive', { count: activeFilterCount }) : t('admin.common.toggleFilters')}
                 </button>
 
                 <button
                     className="btn btn-sm btn-light-primary"
                     onClick={handleRefresh}
                     disabled={isRefreshing}
-                    title="Refresh all dashboard data"
+                    title={t('admin.common.refreshDashboardTitle')}
                 >
                     <i className="ki-duotone ki-arrows-circle fs-6 me-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                    {isRefreshing ? t('admin.common.refreshing') : t('admin.common.refresh')}
                 </button>
 
                 <button
@@ -438,20 +440,20 @@ const AdminDashboard = () => {
                         <span className="path4"></span>
                         <span className="path5"></span>
                     </i>
-                    Print Dashboard
+                    {t('admin.common.printDashboard')}
                 </button>
 
                 <button
                     className="btn btn-sm btn-success"
                     onClick={handleExportExcel}
                     disabled={exporting}
-                    title="Export dashboard data including charts, transactions, and statistics to Excel"
+                    title={t('admin.common.exportExcelTitle')}
                 >
                     <i className="ki-duotone ki-file-down fs-6 me-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    {exporting ? 'Exporting...' : 'Export to Excel'}
+                    {exporting ? t('admin.common.exporting') : t('admin.common.exportExcel')}
                 </button>
             </>
         );
@@ -474,11 +476,11 @@ const AdminDashboard = () => {
     if (dashboardV3Query.isError && !dashboardV3Query.data) {
         return (
             <div className="alert alert-danger m-5" role="alert">
-                <h4 className="alert-heading">Error!</h4>
-                <p>{dashboardV3Query.error?.response?.data?.message || dashboardV3Query.error?.message || 'Failed to load dashboard data.'}</p>
+                <h4 className="alert-heading">{t('admin.dashboard.errorHeading')}</h4>
+                <p>{dashboardV3Query.error?.response?.data?.message || dashboardV3Query.error?.message || t('admin.dashboard.loadFailed')}</p>
                 <hr />
                 <button className="btn btn-danger" onClick={() => dashboardV3Query.refetch()}>
-                    Try Again
+                    {t('admin.dashboard.tryAgain')}
                 </button>
             </div>
         );

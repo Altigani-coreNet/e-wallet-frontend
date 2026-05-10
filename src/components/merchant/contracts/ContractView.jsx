@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getContractTerms } from '../../../services/contractsService';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import Swal from 'sweetalert2';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 
 const ContractView = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [contract, setContract] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -26,22 +28,22 @@ const ContractView = () => {
             window.html2pdf().set(options).from(element).save();
         } else {
             Swal.fire({
-                title: 'Error!',
-                text: 'PDF library not loaded. Please refresh the page.',
+                title: t('merchant.common.error'),
+                text: t('merchant.contracts.pdfLibraryError'),
                 icon: 'error',
-                confirmButtonText: 'OK'
+                confirmButtonText: t('merchant.common.ok'),
             });
         }
-    }, []);
+    }, [t]);
 
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
-        setTitle('Contract Agreement');
-        
+        setTitle(t('merchant.contracts.title'));
+
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Contracts', path: '/merchant/contracts' },
-            { label: 'Contract Agreement', path: '/merchant/contracts', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.contracts'), path: '/merchant/contracts' },
+            { label: t('merchant.contracts.title'), path: '/merchant/contracts', active: true },
         ]);
         
         setActions(
@@ -79,11 +81,11 @@ const ContractView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Download Contract
+                    {t('merchant.contracts.downloadContract')}
                 </button>
             </div>
         );
-    }, [setTitle, setBreadcrumbs, setActions, locale, handleDownloadPDF]);
+    }, [setTitle, setBreadcrumbs, setActions, locale, handleDownloadPDF, t, i18n.language]);
 
     // Load html2pdf library
     useEffect(() => {
@@ -116,11 +118,11 @@ const ContractView = () => {
                 console.log('Contract Data:', contractData);
                 setContract(contractData);
             } else {
-                setError(response.error || 'Failed to fetch contract');
+                setError(response.error || t('merchant.contracts.fetchFailed'));
             }
         } catch (err) {
             console.error('Error fetching contract:', err);
-            setError('An unexpected error occurred');
+            setError(t('merchant.contracts.unexpectedError'));
         } finally {
             setLoading(false);
         }
@@ -141,7 +143,7 @@ const ContractView = () => {
             <div className="post d-flex flex-column-fluid" id="kt_post">
                 <div id="kt_content_container" className="container-xxl">
                     <div className="alert alert-danger">
-                        <strong>Error:</strong> {error || 'Contract not found'}
+                        <strong>{t('merchant.contracts.errorPrefix')}</strong> {error || t('merchant.contracts.notFound')}
                     </div>
                 </div>
             </div>

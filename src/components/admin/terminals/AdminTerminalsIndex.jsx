@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { useCan } from '../../../utils/permissions';
@@ -17,6 +18,7 @@ import {
 } from '../../../services/adminTerminalsService';
 
 const AdminTerminalsIndex = () => {
+    const { t, i18n } = useTranslation();
     const queryClient = useQueryClient();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const canCreateTerminal = useCan('pos.terminals.create_terminals');
@@ -72,11 +74,11 @@ const AdminTerminalsIndex = () => {
 
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
-        setTitle('Terminals Management');
+        setTitle(t('admin.pages.terminalsManagement'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/admin/dashboard' },
-            { label: 'Terminals', path: '/admin/terminals', active: true }
+            { label: t('admin.header.dashboard'), path: '/admin/dashboard' },
+            { label: t('admin.sidebar.terminals'), path: '/admin/terminals', active: true }
         ]);
         
         setActions(
@@ -85,14 +87,14 @@ const AdminTerminalsIndex = () => {
                 <button
                     className="btn btn-sm btn-flex btn-secondary fw-bold"
                     onClick={() => setShowFilters(!showFilters)}
-                    aria-label={showFilters ? 'Hide filters' : 'Show filters'}
+                    aria-label={showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}
                 >
                     <i className="ki-duotone ki-filter fs-6 text-muted me-0 me-lg-1">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
                     <span className="d-none d-lg-inline ms-lg-1">
-                        {showFilters ? 'Hide' : 'Show'} Filters
+                        {showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}
                     </span>
                 </button>
 
@@ -101,7 +103,7 @@ const AdminTerminalsIndex = () => {
                     <button
                         className="btn btn-sm fw-bold btn-danger"
                         onClick={handleBulkDelete}
-                        aria-label={`Delete selected terminals (${selectedIds.length})`}
+                        aria-label={t('admin.terminalsIndex.ariaDeleteSelected', { count: selectedIds.length })}
                     >
                         <i className="ki-duotone ki-trash fs-3 me-0 me-lg-2">
                             <span className="path1"></span>
@@ -111,7 +113,7 @@ const AdminTerminalsIndex = () => {
                             <span className="path5"></span>
                         </i>
                         <span className="d-none d-lg-inline">
-                            Delete Selected ({selectedIds.length})
+                            {t('admin.terminalsIndex.deleteSelected', { count: selectedIds.length })}
                         </span>
                     </button>
                 )}
@@ -120,14 +122,14 @@ const AdminTerminalsIndex = () => {
                 <button
                     className="btn btn-sm fw-bold btn-success"
                     onClick={() => setShowImportModal(true)}
-                    aria-label="Import terminals"
+                    aria-label={t('admin.common.ariaImportTerminals')}
                 >
                     <i className="ki-duotone ki-file-up fs-3 me-0 me-lg-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
                     <span className="d-none d-lg-inline">
-                        Import
+                        {t('admin.common.import')}
                     </span>
                 </button>
 
@@ -136,14 +138,14 @@ const AdminTerminalsIndex = () => {
                     className="btn btn-sm fw-bold btn-success"
                     onClick={handleExport}
                     disabled={exportLoading}
-                    aria-label="Export terminals"
+                    aria-label={t('admin.common.ariaExportTerminals')}
                 >
                     <i className="ki-duotone ki-download fs-3 me-0 me-lg-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
                     <span className="d-none d-lg-inline">
-                        Export
+                        {t('admin.common.export')}
                     </span>
                 </button>
 
@@ -152,14 +154,14 @@ const AdminTerminalsIndex = () => {
                     <Link
                         to="/admin/terminals/create"
                         className="btn btn-sm fw-bold btn-primary"
-                        aria-label="Add terminal"
+                        aria-label={t('admin.common.ariaAddTerminal')}
                     >
                         <i className="ki-duotone ki-plus fs-3 me-0 me-lg-2">
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
                         <span className="d-none d-lg-inline">
-                            Add Terminal
+                            {t('admin.common.addTerminal')}
                         </span>
                     </Link>
                 )}
@@ -170,7 +172,7 @@ const AdminTerminalsIndex = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions, showFilters, selectedIds.length, exportLoading]);
+    }, [setTitle, setBreadcrumbs, setActions, showFilters, selectedIds.length, exportLoading, t, i18n.language]);
 
     // Debounced search effect - updates filters
     useEffect(() => {
@@ -200,15 +202,15 @@ const AdminTerminalsIndex = () => {
             link.remove();
             window.URL.revokeObjectURL(url);
             
-            toast.success('Export completed successfully');
+            toast.success(t('admin.terminalsIndex.exportSuccess'));
         } catch (error) {
             console.error('Export error:', error);
             if (error.message === 'No data to export') {
-                toast.warning('No data available to export with the current filters');
+                toast.warning(t('admin.terminalsIndex.exportNoData'));
             } else if (error.response?.status === 500) {
-                toast.error('Server error occurred while exporting. Please try again or contact support.');
+                toast.error(t('admin.terminalsIndex.exportServerError'));
             } else {
-                toast.error(error.response?.data?.message || 'Failed to export terminals');
+                toast.error(error.response?.data?.message || t('admin.terminalsIndex.exportFailed'));
             }
         } finally {
             setExportLoading(false);
@@ -220,14 +222,14 @@ const AdminTerminalsIndex = () => {
         if (selectedIds.length === 0) return;
 
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete ${selectedIds.length} terminal(s). This action cannot be undone!`,
+            title: t('admin.terminalsIndex.bulkDeleteTitle'),
+            text: t('admin.terminalsIndex.bulkDeleteText', { count: selectedIds.length }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete them!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('admin.terminalsIndex.yesDelete'),
+            cancelButtonText: t('admin.terminalsIndex.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -235,11 +237,11 @@ const AdminTerminalsIndex = () => {
         const response = await bulkDeleteAdminTerminals(selectedIds);
         
         if (response.success) {
-            Swal.fire('Deleted!', response.message, 'success');
+            Swal.fire(t('admin.terminalsIndex.deleted'), response.message, 'success');
             setSelectedIds([]);
             await refetch();
         } else {
-            Swal.fire('Error!', response.error, 'error');
+            Swal.fire(t('admin.terminalsIndex.deleteError'), response.error, 'error');
         }
     };
 
@@ -251,7 +253,7 @@ const AdminTerminalsIndex = () => {
             toast.success(response.message);
             await refetch();
         } else {
-            toast.error(response.error);
+            toast.error(t('admin.terminalsIndex.deleteFailed'));
         }
     };
 
@@ -355,7 +357,7 @@ const AdminTerminalsIndex = () => {
                             <input
                                 type="text"
                                 className="form-control form-control-solid ps-13"
-                                placeholder="Quick search terminals..."
+                                placeholder={t('admin.terminalsIndex.searchPlaceholder')}
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
                                 style={{ paddingLeft: '3rem', fontSize: '1rem', paddingTop: '0.75rem', paddingBottom: '0.75rem' }}
@@ -389,18 +391,19 @@ const AdminTerminalsIndex = () => {
                                 <thead>
                                     <tr className="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
                                         <th className="w-10px pe-2"></th>
-                                        <th className="text-dark">#</th>
-                                        <th className="min-w-200px text-dark">Terminal Info</th>
-                                        <th className="min-w-125px text-dark">Merchant</th>
-                                        <th className="min-w-125px text-dark">Branch</th>
-                                        <th className="min-w-100px text-dark">Manufacturer</th>
-                                        <th className="min-w-100px text-dark">Brand</th>
-                                        <th className="min-w-100px text-dark">SDK</th>
-                                        <th className="text-dark">Add Type</th>
-                                        <th className="text-dark">Status</th>
-                                        <th className="text-dark">Terminal Status</th>
-                                        <th className="text-dark">Created At</th>
-                                        <th className="text-end text-dark">Actions</th>
+                                        <th className="text-dark">{t('admin.terminalsIndex.colHash')}</th>
+                                        <th className="min-w-200px text-dark">{t('admin.terminalsIndex.colTerminalInfo')}</th>
+                                        <th className="min-w-125px text-dark">{t('admin.terminalsIndex.colMerchant')}</th>
+                                        <th className="min-w-125px text-dark">{t('admin.terminalsIndex.colBranch')}</th>
+                                        <th className="min-w-100px text-dark">{t('admin.terminalsIndex.colManufacturer')}</th>
+                                        <th className="min-w-100px text-dark">{t('admin.terminalsIndex.colBrand')}</th>
+                                        <th className="min-w-100px text-dark">{t('admin.terminalsIndex.colSDK')}</th>
+                                        <th className="text-dark">{t('admin.terminalsIndex.colAddType')}</th>
+                                        <th className="text-dark">{t('admin.terminalsIndex.colStatus')}</th>
+                                        <th className="text-dark">{t('admin.terminalsIndex.colTerminalStatus')}</th>
+                                        <th className="text-dark">{t('admin.terminalsIndex.colCountry')}</th>
+                                        <th className="text-dark">{t('admin.terminalsIndex.colCreatedAt')}</th>
+                                        <th className="text-end text-dark">{t('admin.terminalsIndex.colActions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -468,9 +471,9 @@ const AdminTerminalsIndex = () => {
                                 <span className="path2"></span>
                                 <span className="path3"></span>
                             </i>
-                            <p className="text-muted fs-4">No terminals found</p>
+                            <p className="text-muted fs-4">{t('admin.terminalsIndex.noTerminalsFound')}</p>
                             <Link to="/admin/terminals/create" className="btn btn-primary mt-3">
-                                Add Your First Terminal
+                                {t('admin.terminalsIndex.addFirstTerminal')}
                             </Link>
                         </div>
                     ) : (
@@ -490,18 +493,18 @@ const AdminTerminalsIndex = () => {
                                                 </div>
                                             </th>
                                             <th className="text-dark">#</th>
-                                            <th className="min-w-200px text-dark">Terminal Info</th>
-                                            <th className="min-w-125px text-dark">Merchant</th>
-                                            <th className="min-w-125px text-dark">Branch</th>
-                                            <th className="min-w-100px text-dark">Manufacturer</th>
-                                            <th className="min-w-100px text-dark">Brand</th>
-                                            <th className="min-w-100px text-dark">SDK</th>
-                                            <th className="text-dark">Add Type</th>
-                                            <th className="text-dark">Status</th>
-                                            <th className="text-dark">Terminal Status</th>
-                                            <th className="text-dark">Country</th>
-                                            <th className="text-dark">Created At</th>
-                                            <th className="text-end text-dark">Actions</th>
+                                            <th className="min-w-200px text-dark">{t('admin.terminalsIndex.colTerminalInfo')}</th>
+                                            <th className="min-w-125px text-dark">{t('admin.terminalsIndex.colMerchant')}</th>
+                                            <th className="min-w-125px text-dark">{t('admin.terminalsIndex.colBranch')}</th>
+                                            <th className="min-w-100px text-dark">{t('admin.terminalsIndex.colManufacturer')}</th>
+                                            <th className="min-w-100px text-dark">{t('admin.terminalsIndex.colBrand')}</th>
+                                            <th className="min-w-100px text-dark">{t('admin.terminalsIndex.colSDK')}</th>
+                                            <th className="text-dark">{t('admin.terminalsIndex.colAddType')}</th>
+                                            <th className="text-dark">{t('admin.terminalsIndex.colStatus')}</th>
+                                            <th className="text-dark">{t('admin.terminalsIndex.colTerminalStatus')}</th>
+                                            <th className="text-dark">{t('admin.terminalsIndex.colCountry')}</th>
+                                            <th className="text-dark">{t('admin.terminalsIndex.colCreatedAt')}</th>
+                                            <th className="text-end text-dark">{t('admin.terminalsIndex.colActions')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="text-gray-600 fw-semibold">
@@ -524,9 +527,13 @@ const AdminTerminalsIndex = () => {
 
                             {/* Pagination */}
                             <div className="d-flex flex-stack flex-wrap pt-10">
-                                <div className="fs-6 fw-semibold text-gray-700">
-                                    Showing {((paginationData.current_page - 1) * paginationData.per_page) + 1} to {Math.min(paginationData.current_page * paginationData.per_page, paginationData.total)} of {paginationData.total} entries
-                                </div>
+                                    <div className="fs-6 fw-semibold text-gray-700">
+                                        {t('admin.common.showingEntries', {
+                                            from: ((paginationData.current_page - 1) * paginationData.per_page) + 1,
+                                            to: Math.min(paginationData.current_page * paginationData.per_page, paginationData.total),
+                                            total: paginationData.total
+                                        })}
+                                    </div>
                                 <ul className="pagination">
                                     <li className={`page-item ${paginationData.current_page === 1 ? 'disabled' : ''}`}>
                                         <button 
@@ -534,8 +541,8 @@ const AdminTerminalsIndex = () => {
                                             onClick={() => handlePageChange(paginationData.current_page - 1)}
                                             disabled={paginationData.current_page === 1}
                                         >
-                                            Previous
-                                        </button>
+                                                {t('admin.common.previous')}
+                                            </button>
                                     </li>
                                     {[...Array(Math.min(5, paginationData.last_page))].map((_, idx) => {
                                         const page = idx + 1;
@@ -559,8 +566,8 @@ const AdminTerminalsIndex = () => {
                                             onClick={() => handlePageChange(paginationData.current_page + 1)}
                                             disabled={paginationData.current_page === paginationData.last_page}
                                         >
-                                            Next
-                                        </button>
+                                                {t('admin.common.next')}
+                                            </button>
                                     </li>
                                 </ul>
                             </div>

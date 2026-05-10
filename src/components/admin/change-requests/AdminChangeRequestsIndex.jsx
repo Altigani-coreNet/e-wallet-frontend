@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import {
     getChangeRequests,
@@ -14,22 +15,22 @@ const initialFilters = {
     type: '',
 };
 
-const statusOptions = [
-    { value: '', label: 'All Statuses' },
-    { value: 'pending', label: 'Pending' },
-    { value: 'approved', label: 'Approved' },
-    { value: 'rejected', label: 'Rejected' },
-    { value: 'suspended', label: 'Suspended' },
+const statusOptions = (t) => [
+    { value: '', label: t('admin.changeRequestsIndex.allStatuses') },
+    { value: 'pending', label: t('admin.changeRequestsIndex.pending') },
+    { value: 'approved', label: t('admin.changeRequestsIndex.approved') },
+    { value: 'rejected', label: t('admin.changeRequestsIndex.rejected') },
+    { value: 'suspended', label: t('admin.changeRequestsIndex.suspended') },
 ];
 
-const typeOptions = [
-    { value: '', label: 'All Types' },
-    { value: 'merchant', label: 'Merchant' },
-    { value: 'branch', label: 'Branch' },
+const typeOptions = (t) => [
+    { value: '', label: t('admin.changeRequestsIndex.allTypes') },
+    { value: 'merchant', label: t('admin.changeRequestsIndex.merchant') },
+    { value: 'branch', label: t('admin.changeRequestsIndex.branch') },
 ];
 
-const formatStatus = (status) => {
-    if (!status) return 'Unknown';
+const formatStatus = (status, t) => {
+    if (!status) return t('admin.changeRequestsIndex.unknown');
     return status
         .split('_')
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -52,6 +53,7 @@ const statusBadgeClass = (status) => {
 };
 
 const AdminChangeRequestsIndex = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
 
     const [changeRequests, setChangeRequests] = useState([]);
@@ -67,7 +69,7 @@ const AdminChangeRequestsIndex = () => {
         const response = await getChangeRequestStatistics();
         const success = response?.status ?? response?.success ?? false;
         if (!success) {
-            throw new Error(response?.message || 'Failed to load change request statistics');
+            throw new Error(response?.message || t('admin.changeRequestsIndex.failedToLoadStats'));
         }
         const pending = response?.data?.pending ?? {};
         setStats({
@@ -77,7 +79,7 @@ const AdminChangeRequestsIndex = () => {
                 pending.total ??
                 ((pending.merchant ?? 0) + (pending.branch ?? 0)),
         });
-    }, []);
+    }, [t]);
 
     const fetchChangeRequests = useCallback(async () => {
         const params = {
@@ -98,7 +100,7 @@ const AdminChangeRequestsIndex = () => {
         const response = await getChangeRequests(params);
         const success = response?.status ?? response?.success ?? false;
         if (!success) {
-            throw new Error(response?.message || 'Failed to load change requests');
+            throw new Error(response?.message || t('admin.changeRequestsIndex.failedToRefresh'));
         }
 
         const payload = response?.data ?? {};
@@ -122,10 +124,10 @@ const AdminChangeRequestsIndex = () => {
         if (nextPerPage !== perPage) {
             setPerPage(nextPerPage);
         }
-    }, [appliedFilters, page, perPage]);
+    }, [appliedFilters, page, perPage, t]);
 
     useEffect(() => {
-        setTitle('Change Request History');
+        setTitle(t('admin.changeRequestsIndex.changeRequestHistory'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button
@@ -137,7 +139,7 @@ const AdminChangeRequestsIndex = () => {
                             await Promise.all([loadStats(), fetchChangeRequests()]);
                         } catch (error) {
                             console.error('Error refreshing change requests:', error);
-                            toast.error('Failed to refresh change requests');
+                            toast.error(t('admin.changeRequestsIndex.failedToRefresh'));
                         } finally {
                             setLoading(false);
                         }
@@ -147,12 +149,12 @@ const AdminChangeRequestsIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Refresh
+                    {t('admin.changeRequestsIndex.refresh')}
                 </button>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, fetchChangeRequests, loadStats]);
+    }, [setTitle, setActions, fetchChangeRequests, loadStats, t]);
 
     useEffect(() => {
         let isMounted = true;
@@ -162,7 +164,7 @@ const AdminChangeRequestsIndex = () => {
             } catch (error) {
                 if (isMounted) {
                     console.error('Error loading change request statistics:', error);
-                    toast.error(error?.message || 'Failed to load change request counts');
+                    toast.error(error?.message || t('admin.changeRequestsIndex.failedToLoadStats'));
                 }
             }
         };
@@ -170,7 +172,7 @@ const AdminChangeRequestsIndex = () => {
         return () => {
             isMounted = false;
         };
-    }, [loadStats]);
+    }, [loadStats, t]);
 
     useEffect(() => {
         let isMounted = true;
@@ -181,7 +183,7 @@ const AdminChangeRequestsIndex = () => {
             } catch (error) {
                 if (isMounted) {
                     console.error('Error loading change requests:', error);
-                    toast.error(error?.message || 'Failed to load change requests');
+                    toast.error(error?.message || t('admin.changeRequestsIndex.failedToRefresh'));
                 }
             } finally {
                 if (isMounted) {
@@ -193,7 +195,7 @@ const AdminChangeRequestsIndex = () => {
         return () => {
             isMounted = false;
         };
-    }, [page, perPage, appliedFilters, fetchChangeRequests]);
+    }, [page, perPage, appliedFilters, fetchChangeRequests, t]);
 
     const handleApplyFilters = () => {
         setPage(1);
@@ -222,7 +224,7 @@ const AdminChangeRequestsIndex = () => {
 
     const renderRequester = (requester) => {
         if (!requester) {
-            return <span className="text-muted">System</span>;
+            return <span className="text-muted">{t('admin.changeRequestsIndex.system')}</span>;
         }
         return requester.name || requester.email || `#${requester.id}`;
     };
@@ -248,7 +250,7 @@ const AdminChangeRequestsIndex = () => {
             return (
                 <tr>
                     <td colSpan={7} className="text-center text-muted py-10">
-                        No change requests found for the selected filters.
+                        {t('admin.changeRequestsIndex.noChangeRequestsFoundFilters')}
                     </td>
                 </tr>
             );
@@ -257,8 +259,8 @@ const AdminChangeRequestsIndex = () => {
         return changeRequests.map((request) => {
             const createdAt = request.created_at
                 ? new Date(request.created_at).toLocaleString()
-                : 'N/A';
-            const changeableLabel = request.changeable_label || 'Unknown';
+                : t('admin.changeRequestsIndex.unknown');
+            const changeableLabel = request.changeable_label || t('admin.changeRequestsIndex.unknown');
             const changeableName = request.changeable_name || 'N/A';
             return (
                 <tr key={request.id}>
@@ -273,7 +275,7 @@ const AdminChangeRequestsIndex = () => {
                     <td>
                         <div className="d-flex align-items-center">
                             <span className="badge badge-light-info me-2 text-capitalize">
-                                {request.changeable_type || 'unknown'}
+                                {request.changeable_type || t('admin.changeRequestsIndex.unknown')}
                             </span>
                             <span className="fw-semibold">{changeableLabel}</span>
                         </div>
@@ -288,7 +290,7 @@ const AdminChangeRequestsIndex = () => {
                     </td>
                     <td>
                         <span className={`badge ${statusBadgeClass(request.status)}`}>
-                            {formatStatus(request.status)}
+                            {formatStatus(request.status, t)}
                         </span>
                     </td>
                     <td>{renderRequester(request.requester)}</td>
@@ -298,7 +300,7 @@ const AdminChangeRequestsIndex = () => {
                             to={`/admin/merchants/change-requests/${request.id}`}
                             className="btn btn-sm btn-light-primary"
                         >
-                            View
+                            {t('admin.changeRequestsIndex.view')}
                         </Link>
                     </td>
                 </tr>
@@ -317,7 +319,7 @@ const AdminChangeRequestsIndex = () => {
                 <div className="col-sm-4">
                     <div className="card card-flush h-md-100">
                         <div className="card-body d-flex flex-column justify-content-center">
-                            <span className="text-muted fw-semibold fs-7">Pending Merchant Requests</span>
+                            <span className="text-muted fw-semibold fs-7">{t('admin.changeRequestsIndex.pendingMerchantRequests')}</span>
                             <span className="fs-2hx fw-bold text-warning">
                                 {stats.merchant}
                             </span>
@@ -327,7 +329,7 @@ const AdminChangeRequestsIndex = () => {
                 <div className="col-sm-4">
                     <div className="card card-flush h-md-100">
                         <div className="card-body d-flex flex-column justify-content-center">
-                            <span className="text-muted fw-semibold fs-7">Pending Branch Requests</span>
+                            <span className="text-muted fw-semibold fs-7">{t('admin.changeRequestsIndex.pendingBranchRequests')}</span>
                             <span className="fs-2hx fw-bold text-warning">
                                 {stats.branch}
                             </span>
@@ -337,7 +339,7 @@ const AdminChangeRequestsIndex = () => {
                 <div className="col-sm-4">
                     <div className="card card-flush h-md-100">
                         <div className="card-body d-flex flex-column justify-content-center">
-                            <span className="text-muted fw-semibold fs-7">Total Pending</span>
+                            <span className="text-muted fw-semibold fs-7">{t('admin.changeRequestsIndex.totalPending')}</span>
                             <span className="fs-2hx fw-bold text-danger">
                                 {stats.total}
                             </span>
@@ -350,23 +352,23 @@ const AdminChangeRequestsIndex = () => {
                 <div className="card-body">
                     <div className="row g-4">
                         <div className="col-md-4">
-                            <label className="form-label fw-semibold">Search</label>
+                            <label className="form-label fw-semibold">{t('admin.changeRequestsIndex.search')}</label>
                             <input
                                 type="text"
                                 className="form-control"
-                                placeholder="Search by name, reason or notes"
+                                placeholder={t('admin.changeRequestsIndex.searchPlaceholder')}
                                 value={filters.search}
                                 onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                             />
                         </div>
                         <div className="col-md-3">
-                            <label className="form-label fw-semibold">Type</label>
+                            <label className="form-label fw-semibold">{t('admin.changeRequestsIndex.type')}</label>
                             <select
                                 className="form-select"
                                 value={filters.type}
                                 onChange={(e) => setFilters({ ...filters, type: e.target.value })}
                             >
-                                {typeOptions.map((option) => (
+                                {typeOptions(t).map((option) => (
                                     <option key={option.value} value={option.value}>
                                         {option.label}
                                     </option>
@@ -374,13 +376,13 @@ const AdminChangeRequestsIndex = () => {
                             </select>
                         </div>
                         <div className="col-md-3">
-                            <label className="form-label fw-semibold">Status</label>
+                            <label className="form-label fw-semibold">{t('admin.changeRequestsIndex.status')}</label>
                             <select
                                 className="form-select"
                                 value={filters.status}
                                 onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                             >
-                                {statusOptions.map((option) => (
+                                {statusOptions(t).map((option) => (
                                     <option key={option.value} value={option.value}>
                                         {option.label}
                                     </option>
@@ -394,14 +396,14 @@ const AdminChangeRequestsIndex = () => {
                                     className="btn btn-primary"
                                     onClick={handleApplyFilters}
                                 >
-                                    Apply
+                                    {t('admin.changeRequestsIndex.apply')}
                                 </button>
                                 <button
                                     type="button"
                                     className="btn btn-light"
                                     onClick={handleResetFilters}
                                 >
-                                    Reset
+                                    {t('admin.changeRequestsIndex.reset')}
                                 </button>
                             </div>
                         </div>
@@ -415,13 +417,13 @@ const AdminChangeRequestsIndex = () => {
                 <table className="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
                     <thead>
                         <tr className="fw-bold text-muted">
-                            <th>ID</th>
-                            <th>Type</th>
-                            <th>Subject / Reason</th>
-                            <th>Status</th>
-                            <th>Requested By</th>
-                            <th>Created At</th>
-                            <th className="text-end">Actions</th>
+                            <th>{t('admin.changeRequestsIndex.id')}</th>
+                            <th>{t('admin.changeRequestsIndex.typeHeader')}</th>
+                            <th>{t('admin.changeRequestsIndex.subjectReason')}</th>
+                            <th>{t('admin.changeRequestsIndex.statusHeader')}</th>
+                            <th>{t('admin.changeRequestsIndex.requestedBy')}</th>
+                            <th>{t('admin.changeRequestsIndex.createdAt')}</th>
+                            <th className="text-end">{t('admin.changeRequestsIndex.actions')}</th>
                         </tr>
                     </thead>
                     <tbody>{renderTableBody()}</tbody>
@@ -433,19 +435,17 @@ const AdminChangeRequestsIndex = () => {
                     {paginationMeta.total > 0
                         ? (
                             <span>
-                                Showing <strong>{displayStart}</strong> to{' '}
-                                <strong>{displayEnd}</strong> of{' '}
-                                <strong>{paginationMeta.total}</strong> change requests
+                                {t('admin.changeRequestsIndex.showingEntries', { displayStart, displayEnd, total: paginationMeta.total })}
                             </span>
                         )
                         : (
-                            <span>No change requests to display</span>
+                            <span>{t('admin.changeRequestsIndex.noChangeRequestsToDisplay')}</span>
                         )}
                 </div>
 
                 <div className="d-flex align-items-center gap-3">
                     <div className="d-flex align-items-center gap-2">
-                        <span className="text-muted">Rows per page:</span>
+                        <span className="text-muted">{t('admin.changeRequestsIndex.rowsPerPage')}</span>
                         <select
                             className="form-select form-select-sm w-auto"
                             value={perPage}

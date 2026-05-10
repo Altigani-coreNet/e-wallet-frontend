@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { getAdmin, deleteAdmin, changeAdminStatus } from '../../../../services/adminAdminsService';
 
 const AdminAdminView = () => {
     const { id } = useParams();
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
     const [admin, setAdmin] = useState(null);
@@ -13,10 +15,10 @@ const AdminAdminView = () => {
     const [statusChanging, setStatusChanging] = useState(false);
 
     useEffect(() => {
-        setTitle('Admin Details');
+        setTitle(t('admin.adminView.title'));
         fetchAdmin();
         return () => setActions(null);
-    }, [id, setTitle, setActions]);
+    }, [id, setTitle, setActions, t]);
 
     useEffect(() => {
         if (!admin) return;
@@ -35,10 +37,10 @@ const AdminAdminView = () => {
                     </i>
                     <span className="d-none d-md-inline ms-1">
                         {statusChanging
-                            ? 'Changing...'
+                            ? t('admin.adminView.changing')
                             : admin.status === 'active'
-                                ? 'Deactivate'
-                                : 'Activate'}
+                                ? t('admin.adminView.deactivate')
+                                : t('admin.adminView.activate')}
                     </span>
                 </button>
                 <Link to={`/admin/system/admins/${id}/edit`} className="btn btn-sm btn-primary">
@@ -46,7 +48,7 @@ const AdminAdminView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Edit</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.adminView.edit')}</span>
                 </Link>
                 <button onClick={handleDelete} className="btn btn-sm btn-danger">
                     <i className="ki-duotone ki-trash fs-3">
@@ -56,7 +58,7 @@ const AdminAdminView = () => {
                         <span className="path4"></span>
                         <span className="path5"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Delete</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.adminView.delete')}</span>
                 </button>
             </div>
         );
@@ -69,11 +71,11 @@ const AdminAdminView = () => {
             if (response.success) {
                 setAdmin(response.data);
             } else {
-                toast.error(response.error || 'Failed to fetch admin');
+                toast.error(response.error || t('admin.adminView.fetchFailed'));
             }
         } catch (error) {
             console.error('Error fetching admin:', error);
-            toast.error('Failed to fetch admin');
+            toast.error(t('admin.adminView.fetchFailed'));
         } finally {
             setLoading(false);
         }
@@ -82,7 +84,7 @@ const AdminAdminView = () => {
     const handleStatusToggle = async () => {
         const targetAdminId = admin?.id || id;
         if (!targetAdminId) {
-            toast.error('Admin ID is missing');
+            toast.error(t('admin.adminView.idMissing'));
             return;
         }
         setStatusChanging(true);
@@ -91,34 +93,34 @@ const AdminAdminView = () => {
             if (response.success) {
                 const updated = response.data;
                 setAdmin(updated);
-                toast.success('Status changed successfully');
+                toast.success(t('admin.adminView.statusChanged'));
             } else {
-                toast.error(response.error || 'Failed to change status');
+                toast.error(response.error || t('admin.adminView.statusChangeFailed'));
             }
         } catch (error) {
             console.error('Error changing status:', error);
-            toast.error('Failed to change status');
+            toast.error(t('admin.adminView.statusChangeFailed'));
         } finally {
             setStatusChanging(false);
         }
     };
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this admin?')) {
+        if (!window.confirm(t('admin.adminView.deleteConfirm'))) {
             return;
         }
 
         try {
             const response = await deleteAdmin(id);
             if (response.success) {
-                toast.success('Admin deleted successfully');
+                toast.success(t('admin.adminView.deleted'));
                 navigate('/admin/system/admins');
             } else {
-                toast.error(response.error || 'Failed to delete admin');
+                toast.error(response.error || t('admin.adminView.deleteFailed'));
             }
         } catch (error) {
             console.error('Error deleting admin:', error);
-            toast.error('Failed to delete admin');
+            toast.error(t('admin.adminView.deleteFailed'));
         }
     };
 
@@ -150,7 +152,7 @@ const AdminAdminView = () => {
         return (
             <div className="card">
                 <div className="card-body text-center py-10">
-                    <p>Admin not found</p>
+                    <p>{t('admin.adminView.notFound')}</p>
                 </div>
             </div>
         );
@@ -159,13 +161,13 @@ const AdminAdminView = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Admin Information</h3>
+                <h3 className="card-title">{t('admin.adminView.infoCard')}</h3>
             </div>
 
             <div className="card-body">
                 {admin.profile_image && (
                     <div className="row mb-7">
-                        <label className="col-lg-4 fw-semibold text-muted">Profile Image</label>
+                        <label className="col-lg-4 fw-semibold text-muted">{t('admin.adminCreate.profileImage')}</label>
                         <div className="col-lg-8">
                             <img src={admin.profile_image} alt={admin.name} className="img-thumbnail" style={{maxWidth: '200px'}} />
                         </div>
@@ -173,28 +175,28 @@ const AdminAdminView = () => {
                 )}
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Name</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.adminCreate.name')}</label>
                     <div className="col-lg-8">
                         <span className="fw-bold fs-6 text-gray-800">{admin.name}</span>
                     </div>
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Email</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.adminCreate.email')}</label>
                     <div className="col-lg-8">
                         <span className="fw-semibold text-gray-800">{admin.email}</span>
                     </div>
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Phone</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.adminCreate.phone')}</label>
                     <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800">{admin.phone || 'N/A'}</span>
+                        <span className="fw-semibold text-gray-800">{admin.phone || t('admin.common.na')}</span>
                     </div>
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Status</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.adminCreate.status')}</label>
                     <div className="col-lg-8">
                         <button
                             type="button"
@@ -203,16 +205,16 @@ const AdminAdminView = () => {
                             className={`badge border-0 cursor-pointer badge-light-${admin.status === 'active' ? 'success' : 'danger'}`}
                         >
                             {statusChanging
-                                ? 'Changing...'
+                                ? t('admin.adminView.changing')
                                 : admin.status === 'active'
-                                    ? 'Active (click to deactivate)'
-                                    : 'Inactive (click to activate)'}
+                                    ? t('admin.adminView.activeHint')
+                                    : t('admin.adminView.inactiveHint')}
                         </button>
                     </div>
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Roles</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.adminCreate.roles')}</label>
                     <div className="col-lg-8">
                         <div className="d-flex flex-wrap gap-2">
                             {admin.roles && Array.isArray(admin.roles) && admin.roles.length > 0 ? (
@@ -222,43 +224,52 @@ const AdminAdminView = () => {
                                     </span>
                                 ))
                             ) : (
-                                <span className="text-muted">No roles assigned</span>
+                                <span className="text-muted">{t('admin.adminView.noRoles')}</span>
                             )}
                         </div>
                     </div>
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Custom Region</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.adminCreate.customRegion')}</label>
                     <div className="col-lg-8">
                         <span className={`badge badge-light-${admin.custom_region ? 'success' : 'secondary'}`}>
-                            {admin.custom_region ? 'Yes' : 'No'}
+                            {admin.custom_region ? t('admin.common.yes') : t('admin.common.no')}
                         </span>
                     </div>
                 </div>
 
                 {admin.custom_region && admin.regions && Array.isArray(admin.regions) && admin.regions.length > 0 && (
                     <div className="row mb-7">
-                        <label className="col-lg-4 fw-semibold text-muted">Regions</label>
+                        <label className="col-lg-4 fw-semibold text-muted">{t('admin.adminCreate.regions')}</label>
                         <div className="col-lg-8">
                             <div className="d-flex flex-wrap gap-2">
-                                {admin.regions.map((region, index) => (
-                                    <span key={index} className="badge badge-light">
-                                        {typeof region === 'object'
-                                            ? (typeof region.name === 'object' ? (region.name.en || region.name.ar || '') : (region.name || region.code || 'N/A'))
-                                            : region}
-                                    </span>
-                                ))}
+                                {admin.regions.map((region, index) => {
+                                    let displayText = region.name;
+                                    if (typeof displayText === 'object' && displayText !== null) {
+                                        displayText = displayText[i18n.language] || displayText.en || displayText.ar || '';
+                                    } else if (typeof displayText === 'string' && displayText.startsWith('{')) {
+                                        try {
+                                            const parsed = JSON.parse(displayText);
+                                            displayText = parsed[i18n.language] || parsed.en || parsed.ar || displayText;
+                                        } catch (e) {}
+                                    }
+                                    return (
+                                        <span key={index} className="badge badge-light">
+                                            {displayText || region.code || t('admin.common.na')}
+                                        </span>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>
                 )}
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Created At</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.adminsIndex.colCreatedAt')}</label>
                     <div className="col-lg-8">
                         <span className="fw-semibold text-gray-800">
-                            {new Date(admin.created_at).toLocaleString()}
+                            {new Date(admin.created_at).toLocaleString(i18n.language)}
                         </span>
                     </div>
                 </div>

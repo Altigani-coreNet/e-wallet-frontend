@@ -1,8 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCan } from '../../../utils/permissions';
 
 const BatchActions = ({ batch }) => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const canView = useCan('pos.batches.view_batches');
 
@@ -16,14 +18,14 @@ const BatchActions = ({ batch }) => {
                 <button
                     onClick={handleView}
                     className="btn btn-sm btn-light btn-active-light-primary"
-                    title="View Details"
+                    title={t('merchant.common.viewDetails')}
                 >
                     <i className="ki-duotone ki-eye fs-5">
                         <span className="path1"></span>
                         <span className="path2"></span>
                         <span className="path3"></span>
                     </i>
-                    View
+                    {t('merchant.paymentLinks.row.view')}
                 </button>
             )}
         </div>
@@ -31,4 +33,3 @@ const BatchActions = ({ batch }) => {
 };
 
 export default BatchActions;
-

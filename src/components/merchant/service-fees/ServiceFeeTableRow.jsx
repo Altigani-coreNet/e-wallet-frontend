@@ -1,11 +1,17 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const ServiceFeeTableRow = ({ serviceFee }) => {
+    const { t, i18n } = useTranslation();
     const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
+        if (!dateString) return t('merchant.common.na');
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        return date.toLocaleDateString(i18n.language === 'ar' ? 'ar' : 'en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+        });
     };
 
     const formatCurrency = (amount) => {
@@ -40,7 +46,7 @@ const ServiceFeeTableRow = ({ serviceFee }) => {
             </td>
             <td>
                 <span className={`badge ${getTypeBadge(serviceFee.type)}`}>
-                    {serviceFee.type?.toUpperCase() || 'N/A'}
+                    {serviceFee.type?.toUpperCase() || t('merchant.common.na')}
                 </span>
             </td>
             <td>

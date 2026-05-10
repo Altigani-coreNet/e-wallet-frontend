@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getServiceFee } from '../../../services/serviceFeesService';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 
 const ServiceFeeView = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [serviceFee, setServiceFee] = useState(null);
@@ -13,16 +15,20 @@ const ServiceFeeView = () => {
 
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
-        setTitle('Service Fee Details');
-        
+        setTitle(t('merchant.serviceFees.detailTitle'));
+
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Service Fees', path: '/merchant/service-fees' },
-            { label: 'Service Fee Details', path: `/merchant/service-fees/${id}`, active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.serviceFees'), path: '/merchant/service-fees' },
+            {
+                label: t('merchant.breadcrumbs.serviceFeeDetails'),
+                path: `/merchant/service-fees/${id}`,
+                active: true,
+            },
         ]);
-        
+
         setActions(null);
-    }, [setTitle, setBreadcrumbs, setActions, id]);
+    }, [setTitle, setBreadcrumbs, setActions, id, t, i18n.language]);
 
     useEffect(() => {
         fetchServiceFee();
@@ -38,18 +44,18 @@ const ServiceFeeView = () => {
                 const feeData = response.data?.data || response.data;
                 setServiceFee(feeData);
             } else {
-                setError(response.error || 'Failed to fetch service fee');
+                setError(response.error || t('merchant.serviceFees.fetchFailed'));
             }
         } catch (err) {
             console.error('Error fetching service fee:', err);
-            setError('An unexpected error occurred');
+            setError(t('merchant.serviceFees.unexpectedError'));
         } finally {
             setLoading(false);
         }
     };
 
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-US', {
+        return new Intl.NumberFormat(i18n.language === 'ar' ? 'ar' : 'en-US', {
             style: 'currency',
             currency: 'USD',
             minimumFractionDigits: 2
@@ -71,10 +77,10 @@ const ServiceFeeView = () => {
             <div className="post d-flex flex-column-fluid" id="kt_post">
                 <div id="kt_content_container" className="container-xxl">
                     <div className="alert alert-danger">
-                        <strong>Error:</strong> {error || 'Service fee not found'}
+                        <strong>{t('merchant.serviceFees.errorPrefix')}</strong> {error || t('merchant.serviceFees.notFound')}
                     </div>
                     <Link to="/merchant/service-fees" className="btn btn-primary">
-                        Back to Service Fees
+                        {t('merchant.common.backToServiceFees')}
                     </Link>
                 </div>
             </div>
@@ -86,28 +92,28 @@ const ServiceFeeView = () => {
                 <div id="kt_content_container" className="container-xxl">
                     <div className="card">
                         <div className="card-header">
-                            <h3 className="card-title">Service Fee Information</h3>
+                            <h3 className="card-title">{t('merchant.serviceFees.information')}</h3>
                         </div>
 
                         <div className="card-body">
                             <div className="row mb-7">
-                                <label className="col-lg-4 fw-bold text-muted">Fee Name</label>
+                                <label className="col-lg-4 fw-bold text-muted">{t('merchant.serviceFees.feeName')}</label>
                                 <div className="col-lg-8">
                                     <span className="fw-bolder fs-6 text-gray-800">{serviceFee.name}</span>
                                 </div>
                             </div>
 
                             <div className="row mb-7">
-                                <label className="col-lg-4 fw-bold text-muted">Type</label>
+                                <label className="col-lg-4 fw-bold text-muted">{t('merchant.serviceFees.feeType')}</label>
                                 <div className="col-lg-8">
                                     <span className="badge badge-light-primary">
-                                        {serviceFee.type?.toUpperCase() || 'N/A'}
+                                        {serviceFee.type?.toUpperCase() || t('merchant.common.na')}
                                     </span>
                                 </div>
                             </div>
 
                             <div className="row mb-7">
-                                <label className="col-lg-4 fw-bold text-muted">Fee Amount</label>
+                                <label className="col-lg-4 fw-bold text-muted">{t('merchant.serviceFees.feeAmount')}</label>
                                 <div className="col-lg-8">
                                     <span className="fw-bolder fs-3 text-success">
                                         {formatCurrency(serviceFee.fees)}
@@ -116,28 +122,36 @@ const ServiceFeeView = () => {
                             </div>
 
                             <div className="row mb-7">
-                                <label className="col-lg-4 fw-bold text-muted">Description</label>
+                                <label className="col-lg-4 fw-bold text-muted">{t('merchant.serviceFees.description')}</label>
                                 <div className="col-lg-8">
                                     <span className="fw-bolder fs-6 text-gray-800">
-                                        {serviceFee.description || 'No description available'}
+                                        {serviceFee.description || t('merchant.serviceFees.noDescription')}
                                     </span>
                                 </div>
                             </div>
 
                             <div className="row mb-7">
-                                <label className="col-lg-4 fw-bold text-muted">Created At</label>
+                                <label className="col-lg-4 fw-bold text-muted">{t('merchant.serviceFees.createdAt')}</label>
                                 <div className="col-lg-8">
                                     <span className="fw-bolder fs-6 text-gray-800">
-                                        {serviceFee.created_at ? new Date(serviceFee.created_at).toLocaleString() : 'N/A'}
+                                        {serviceFee.created_at
+                                            ? new Date(serviceFee.created_at).toLocaleString(
+                                                  i18n.language === 'ar' ? 'ar' : undefined
+                                              )
+                                            : t('merchant.common.na')}
                                     </span>
                                 </div>
                             </div>
 
                             <div className="row mb-7">
-                                <label className="col-lg-4 fw-bold text-muted">Updated At</label>
+                                <label className="col-lg-4 fw-bold text-muted">{t('merchant.serviceFees.updatedAt')}</label>
                                 <div className="col-lg-8">
                                     <span className="fw-bolder fs-6 text-gray-800">
-                                        {serviceFee.updated_at ? new Date(serviceFee.updated_at).toLocaleString() : 'N/A'}
+                                        {serviceFee.updated_at
+                                            ? new Date(serviceFee.updated_at).toLocaleString(
+                                                  i18n.language === 'ar' ? 'ar' : undefined
+                                              )
+                                            : t('merchant.common.na')}
                                     </span>
                                 </div>
                             </div>
@@ -145,7 +159,7 @@ const ServiceFeeView = () => {
 
                         <div className="card-footer d-flex justify-content-end">
                             <Link to="/merchant/service-fees" className="btn btn-light">
-                                Back to List
+                                {t('merchant.serviceFees.backToList')}
                             </Link>
                         </div>
                     </div>

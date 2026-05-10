@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { attachAcceptLanguageInterceptor } from '../i18n/acceptLanguage';
 import { ADMIN_ENDPOINTS } from '../utils/constants';
 import { getToken } from '../utils/api';
 
@@ -7,6 +8,8 @@ const api = axios.create({
         'Content-Type': 'application/json',
     },
 });
+
+attachAcceptLanguageInterceptor(api);
 
 // Add auth token to requests
 api.interceptors.request.use((config) => {

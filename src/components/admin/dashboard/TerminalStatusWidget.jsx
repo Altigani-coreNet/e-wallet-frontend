@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const TerminalStatusWidget = ({ data, loading }) => {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('online');
     
     const terminalStatus = data?.terminalStatus || {};
@@ -21,7 +23,7 @@ const TerminalStatusWidget = ({ data, loading }) => {
         if (terminals.length === 0) {
             return (
                 <div className="m-0 text-center py-10">
-                    <div className="text-gray-500 fs-6">No terminals found</div>
+                    <div className="text-gray-500 fs-6">{t('admin.dashboard.noTerminalsFound')}</div>
                 </div>
             );
         }
@@ -39,11 +41,11 @@ const TerminalStatusWidget = ({ data, loading }) => {
                                 </i>
                             </div>
                             <div className="timeline-content m-0">
-                                <span className={`fs-8 fw-bolder text-${statusColor} text-uppercase`}>Terminal ID</span>
+                                <span className={`fs-8 fw-bolder text-${statusColor} text-uppercase`}>{t('admin.dashboard.terminalIdLabel')}</span>
                                 <a href="#" className="fs-6 text-gray-800 fw-bold d-block text-hover-primary">
-                                    {terminal.terminal_id || 'N/A'}
+                                    {terminal.terminal_id || t('admin.dashboard.na')}
                                 </a>
-                                <span className="fw-semibold text-gray-500">{terminal.name || 'Unnamed'}</span>
+                                <span className="fw-semibold text-gray-500">{terminal.name || t('admin.dashboard.unnamed')}</span>
                             </div>
                         </div>
                     </div>
@@ -71,9 +73,9 @@ const TerminalStatusWidget = ({ data, loading }) => {
         <div className="card card-flush h-xl-100">
             <div className="card-header pt-7">
                 <h3 className="card-title align-items-start flex-column">
-                    <span className="card-label fw-bold text-gray-800">Terminal Status</span>
+                    <span className="card-label fw-bold text-gray-800">{t('admin.dashboard.terminalStatus')}</span>
                     <span className="text-gray-500 mt-1 fw-semibold fs-6">
-                        {loading ? '--' : terminalStatus.onlineCount || 0} terminals in use
+                        {loading ? '--' : t('admin.dashboard.terminalsInUse', { count: terminalStatus.onlineCount || 0 })}
                     </span>
                 </h3>
             </div>
@@ -109,7 +111,7 @@ const TerminalStatusWidget = ({ data, loading }) => {
                             style={{ cursor: 'pointer' }}
                         >
                             <span className="nav-text text-gray-800 fw-bold fs-6 mb-3">
-                                Online ({loading ? '--' : terminalStatus.onlineCount || 0})
+                                {t('admin.dashboard.onlineWithCount', { count: loading ? '--' : terminalStatus.onlineCount || 0 })}
                             </span>
                             <span className="bullet-custom position-absolute z-index-2 bottom-0 w-100 h-4px bg-primary rounded"></span>
                         </a>
@@ -121,7 +123,7 @@ const TerminalStatusWidget = ({ data, loading }) => {
                             style={{ cursor: 'pointer' }}
                         >
                             <span className="nav-text text-gray-800 fw-bold fs-6 mb-3">
-                                Offline ({loading ? '--' : terminalStatus.offlineCount || 0})
+                                {t('admin.dashboard.offlineWithCount', { count: loading ? '--' : terminalStatus.offlineCount || 0 })}
                             </span>
                             <span className="bullet-custom position-absolute z-index-2 bottom-0 w-100 h-4px bg-primary rounded"></span>
                         </a>
@@ -133,7 +135,7 @@ const TerminalStatusWidget = ({ data, loading }) => {
                             style={{ cursor: 'pointer' }}
                         >
                             <span className="nav-text text-gray-800 fw-bold fs-6 mb-3">
-                                Testing ({loading ? '--' : terminalStatus.testingCount || 0})
+                                {t('admin.dashboard.testingWithCount', { count: loading ? '--' : terminalStatus.testingCount || 0 })}
                             </span>
                             <span className="bullet-custom position-absolute z-index-2 bottom-0 w-100 h-4px bg-primary rounded"></span>
                         </a>

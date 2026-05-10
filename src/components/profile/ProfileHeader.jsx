@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, activeTab, onTabChange }) => {
+    const { t } = useTranslation();
     const [showTooltip, setShowTooltip] = useState(false);
 
     // Get status badge class
@@ -18,15 +20,15 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
 
     // Get status label
     const getStatusLabel = (status) => {
-        const labels = {
-            'pending': 'Pending',
-            'approved': 'Approved',
-            'rejected': 'Rejected',
-            'suspended': 'Suspended',
-            'viewed': 'Viewed',
-            'requesting_updated': 'Requesting Updated',
-        };
-        return labels[status] || status;
+        const key = {
+            pending: 'merchant.profile.statusPending',
+            approved: 'merchant.profile.statusApproved',
+            rejected: 'merchant.profile.statusRejected',
+            suspended: 'merchant.profile.statusSuspended',
+            viewed: 'merchant.profile.statusViewed',
+            requesting_updated: 'merchant.profile.statusRequestingUpdated',
+        }[status];
+        return key ? t(key) : t('merchant.profile.statusUnknown');
     };
 
     return (
@@ -38,12 +40,12 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                     <div className="me-7 mb-4">
                         <div className="symbol symbol-100px symbol-lg-160px symbol-fixed position-relative">
                             {user?.profile_image || merchant?.logo_url ? (
-                                <img src={user?.profile_image || merchant?.logo_url} alt="User Logo" className="rounded" />
+                                <img src={user?.profile_image || merchant?.logo_url} alt={t('merchant.profile.userLogoAlt')} className="rounded" />
                             ) : (
                                 <div className="symbol-label fs-3 bg-light-primary text-primary">
                                     {user?.user_name
                                         ? user.user_name.substring(0, 2).toUpperCase()
-                                        : 'NA'}
+                                        : t('merchant.profile.na')}
                                 </div>
                             )}
                             <div className="position-absolute translate-middle bottom-0 start-100 mb-6 bg-success rounded-circle border border-4 border-white h-20px w-20px"></div>
@@ -59,7 +61,7 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                                 {/* Name */}
                                 <div className="d-flex align-items-center mb-2">
                                     <a href="#" className="text-gray-900 text-hover-primary fs-2 fw-bolder me-1">
-                                        {user?.user_name || 'N/A'}
+                                        {user?.user_name || t('merchant.profile.na')}
                                     </a>
                                     <a href="#">
                                         <span className="svg-icon svg-icon-1 svg-icon-primary">
@@ -92,7 +94,7 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                                                 <path d="M21 5H2.99999C2.69999 5 2.49999 5.10005 2.29999 5.30005L11.2 13.3C11.7 13.7 12.4 13.7 12.8 13.3L21.7 5.30005C21.5 5.10005 21.3 5 21 5Z" fill="black" />
                                             </svg>
                                         </span>
-                                        {user?.email || 'N/A'}
+                                        {user?.email || t('merchant.profile.na')}
                                     </a>
                                 </div>
                             </div>
@@ -126,7 +128,7 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                                                 {merchantCompletion?.branches_count || merchant?.branches_count || 0}
                                             </div>
                                         </div>
-                                        <div className="fw-bold fs-6 text-gray-400">Branches</div>
+                                        <div className="fw-bold fs-6 text-gray-400">{t('merchant.profile.branches')}</div>
                                     </div>
 
                                     {/* Stat - Terminals */}
@@ -144,7 +146,7 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                                                 {merchantCompletion?.terminals_count || 0}
                                             </div>
                                         </div>
-                                        <div className="fw-bold fs-6 text-gray-400">Terminals</div>
+                                        <div className="fw-bold fs-6 text-gray-400">{t('merchant.profile.terminals')}</div>
                                     </div>
 
                                     {/* Stat - Users */}
@@ -160,7 +162,7 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                                                 {merchantCompletion?.users_count || 1}
                                             </div>
                                         </div>
-                                        <div className="fw-bold fs-6 text-gray-400">Users</div>
+                                        <div className="fw-bold fs-6 text-gray-400">{t('merchant.profile.users')}</div>
                                     </div>
 
                                     {/* Stat - Transactions */}
@@ -191,7 +193,7 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                                     onMouseLeave={() => setShowTooltip(false)}
                                     style={{ cursor: 'pointer', position: 'relative' }}
                                 >
-                                    <span className="fw-bold fs-6 text-gray-400">Profile Completion</span>
+                                    <span className="fw-bold fs-6 text-gray-400">{t('merchant.profile.profileCompletion')}</span>
                                     <span className="fw-bolder fs-6">{merchantCompletion?.completion || 0}%</span>
                                     
                                     {/* Tooltip */}
@@ -208,7 +210,7 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                                         >
                                             <div className="tooltip-arrow" style={{ left: '50%' }}></div>
                                             <div className="tooltip-inner bg-dark text-start" style={{ maxWidth: '300px' }}>
-                                                <p className="fw-bold mb-2">Complete Your Profile</p>
+                                                <p className="fw-bold mb-2">{t('merchant.profile.completeProfileTooltip')}</p>
                                                 {merchantCompletion.missing.map((message, index) => (
                                                     <div key={index} className="d-flex align-items-center mb-2">
                                                         <span className="bullet bullet-dot bg-danger me-2"></span>
@@ -270,7 +272,7 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                             href="#"
                             onClick={(e) => { e.preventDefault(); onTabChange('overview'); }}
                         >
-                            Merchant Profile
+                            {t('merchant.profile.tabMerchantProfile')}
                         </a>
                     </li>
                     <li className="nav-item mt-2">
@@ -279,7 +281,7 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                             href="#"
                             onClick={(e) => { e.preventDefault(); onTabChange('info'); }}
                         >
-                            User Info
+                            {t('merchant.profile.tabUserInfo')}
                         </a>
                     </li>
                     <li className="nav-item mt-2">
@@ -288,7 +290,7 @@ const ProfileHeader = ({ user, merchant, profileCompletion, merchantCompletion, 
                             href="#"
                             onClick={(e) => { e.preventDefault(); onTabChange('events'); }}
                         >
-                            Activity Events
+                            {t('merchant.profile.tabActivityEvents')}
                         </a>
                     </li>
                 </ul>

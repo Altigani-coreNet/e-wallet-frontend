@@ -1,5 +1,10 @@
 import React, { createContext, useState, useContext, useMemo, useCallback } from 'react';
 
+/**
+ * Toolbar chrome state (title, breadcrumbs, actions) for MainLayout’s <Toolbar />.
+ * Layout direction for Arabic is handled in Toolbar.jsx via i18next (dir=rtl + flex),
+ * not here — avoid duplicating RTL state in context.
+ */
 const ToolbarContext = createContext();
 
 export const useToolbar = () => {

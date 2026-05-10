@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { usePaymentLinkDetails, deletePaymentLink, updatePaymentLinkDate, sendPaymentLink } from '../../../services/paymentLinksService';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -8,6 +9,7 @@ import RescheduleModal from './RescheduleModal';
 import SendModal from './SendModal';
 
 const PaymentLinkDetail = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -21,12 +23,12 @@ const PaymentLinkDetail = () => {
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
         if (paymentLink) {
-            setTitle(`Payment Link - ${paymentLink.uuid || id}`);
+            setTitle(t('merchant.pages.paymentLinkTitle', { id: paymentLink.uuid || id }));
             
             setBreadcrumbs([
-                { label: 'Dashboard', path: '/merchant/dashboard' },
-                { label: 'Payment Links', path: '/merchant/payment-links' },
-                { label: paymentLink.uuid || 'Payment Link Details', path: `/merchant/payment-links/${id}`, active: true }
+                { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+                { label: t('merchant.breadcrumbs.paymentLinks'), path: '/merchant/payment-links' },
+                { label: paymentLink.uuid || t('merchant.breadcrumbs.paymentLinkDetail'), path: `/merchant/payment-links/${id}`, active: true }
             ]);
             
             setActions(
@@ -39,7 +41,7 @@ const PaymentLinkDetail = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Back
+                        {t('merchant.common.back')}
                     </button>
                     <button
                         className="btn btn-sm btn-primary me-2"
@@ -49,7 +51,7 @@ const PaymentLinkDetail = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Edit
+                        {t('merchant.common.edit')}
                     </button>
                 </>
             );
@@ -59,7 +61,7 @@ const PaymentLinkDetail = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [paymentLink, id, navigate, setTitle, setBreadcrumbs, setActions]);
+    }, [paymentLink, id, navigate, setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     // Get status badge color
     const getStatusColor = (status) => {
@@ -75,8 +77,9 @@ const PaymentLinkDetail = () => {
 
     // Format date
     const formatDate = (date) => {
-        if (!date) return 'N/A';
-        return new Date(date).toLocaleString('en-US', {
+        if (!date) return t('merchant.common.na');
+        const loc = (i18n.language || 'en').toLowerCase().startsWith('ar') ? 'ar-SA' : 'en-US';
+        return new Date(date).toLocaleString(loc, {
             year: 'numeric',
             month: 'short',
             day: 'numeric',
@@ -98,38 +101,38 @@ const PaymentLinkDetail = () => {
         
         const url = `${window.location.origin}/payment/${paymentLink.uuid}`;
         navigator.clipboard.writeText(url).then(() => {
-            toast.success('Link copied to clipboard!');
+            toast.success(t('merchant.paymentLinks.row.linkCopied'));
         }).catch(() => {
-            toast.error('Failed to copy link');
+            toast.error(t('merchant.common.copyFailed'));
         });
-    }, [paymentLink]);
+    }, [paymentLink, t]);
 
     // Handle delete
     const handleDelete = useCallback(async () => {
         if (!paymentLink) return;
         
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
+            title: t('merchant.paymentLinks.row.deleteConfirmTitle'),
+            text: t('merchant.paymentLinks.row.deleteConfirmText'),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('merchant.common.yesDelete'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (result.isConfirmed) {
             try {
                 await deletePaymentLink(paymentLink.id);
-                toast.success('Payment link deleted successfully');
+                toast.success(t('merchant.paymentLinks.detail.deleteSuccess'));
                 navigate('/merchant/payment-links');
             } catch (error) {
                 console.error('Delete error:', error);
-                toast.error('Failed to delete payment link');
+                toast.error(t('merchant.paymentLinks.detail.deleteFailed'));
             }
         }
-    }, [paymentLink, navigate]);
+    }, [paymentLink, navigate, t]);
 
     // Handle reschedule success
     const handleRescheduleSuccess = useCallback(() => {
@@ -192,14 +195,14 @@ const PaymentLinkDetail = () => {
                         <span className="path2"></span>
                         <span className="path3"></span>
                     </i>
-                    <h3 className="text-gray-800 mb-2">Payment Link Not Found</h3>
-                    <p className="text-gray-600 mb-5">The payment link you're looking for doesn't exist or you don't have access to it.</p>
+                    <h3 className="text-gray-800 mb-2">{t('merchant.paymentLinks.detail.notFoundTitle')}</h3>
+                    <p className="text-gray-600 mb-5">{t('merchant.paymentLinks.detail.notFoundDesc')}</p>
                     <button className="btn btn-primary" onClick={() => navigate('/merchant/payment-links')}>
                         <i className="ki-duotone ki-arrow-left fs-3">
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Back to Payment Links
+                        {t('merchant.common.backToPaymentLinks')}
                     </button>
                 </div>
             </div>
@@ -216,34 +219,38 @@ const PaymentLinkDetail = () => {
                     <div className="card">
                         <div className="card-header pt-5">
                             <h3 className="card-title align-items-start flex-column">
-                                <span className="card-label fw-bold text-gray-800">Payment Link Information</span>
-                                <span className="text-gray-500 mt-1 fw-semibold fs-6">Complete payment link details</span>
+                                <span className="card-label fw-bold text-gray-800">{t('merchant.paymentLinks.detail.infoTitle')}</span>
+                                <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('merchant.paymentLinks.detail.infoSubtitle')}</span>
                             </h3>
                         </div>
                         <div className="card-body pt-2 pb-4">
                             <div className="row mb-7">
                                 <div className="col-md-6 mb-3">
-                                    <label className="text-gray-600 fw-bold">UUID</label>
-                                    <div className="text-gray-800 fw-semibold">{paymentLink.uuid || 'N/A'}</div>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.detail.uuid')}</label>
+                                    <div className="text-gray-800 fw-semibold">{paymentLink.uuid || t('merchant.common.na')}</div>
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="text-gray-600 fw-bold">Status</label>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.table.status')}</label>
                                     <div>
                                         <span className={`badge badge-light-${getStatusColor(paymentLink.status)}`}>
-                                            {paymentLink.status ? paymentLink.status.charAt(0).toUpperCase() + paymentLink.status.slice(1) : 'N/A'}
+                                            {paymentLink.status
+                                                ? t(`merchant.paymentLinks.status.${paymentLink.status.toLowerCase()}`, {
+                                                    defaultValue: paymentLink.status.charAt(0).toUpperCase() + paymentLink.status.slice(1)
+                                                })
+                                                : t('merchant.common.na')}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="text-gray-600 fw-bold">Amount</label>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.table.amount')}</label>
                                     <div className="text-gray-800 fw-bold fs-3">
                                         {formatAmount(paymentLink.amount, paymentLink.currency_symbol, paymentLink.currency_code)}
                                     </div>
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="text-gray-600 fw-bold">Currency</label>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.table.currency')}</label>
                                     <div className="text-gray-800 fw-semibold">
-                                        {paymentLink.currency_code || 'N/A'} 
+                                        {paymentLink.currency_code || t('merchant.common.na')} 
                                         {paymentLink.currency_name && ` (${paymentLink.currency_name})`}
                                     </div>
                                 </div>
@@ -251,28 +258,28 @@ const PaymentLinkDetail = () => {
 
                             <div className="separator mb-7"></div>
 
-                            <h4 className="mb-5">Customer Information</h4>
+                            <h4 className="mb-5">{t('merchant.paymentLinks.detail.customerSection')}</h4>
                             <div className="row mb-7">
                                 <div className="col-md-6 mb-3">
-                                    <label className="text-gray-600 fw-bold">Customer Name</label>
-                                    <div className="text-gray-800 fw-semibold">{paymentLink.customer_name || 'N/A'}</div>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.form.customerName')}</label>
+                                    <div className="text-gray-800 fw-semibold">{paymentLink.customer_name || t('merchant.common.na')}</div>
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="text-gray-600 fw-bold">Customer Email</label>
-                                    <div className="text-gray-800 fw-semibold">{paymentLink.customer_email || 'N/A'}</div>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.form.customerEmail')}</label>
+                                    <div className="text-gray-800 fw-semibold">{paymentLink.customer_email || t('merchant.common.na')}</div>
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="text-gray-600 fw-bold">Customer Phone</label>
-                                    <div className="text-gray-800 fw-semibold">{paymentLink.customer_phone || 'N/A'}</div>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.form.customerPhone')}</label>
+                                    <div className="text-gray-800 fw-semibold">{paymentLink.customer_phone || t('merchant.common.na')}</div>
                                 </div>
                             </div>
 
                             <div className="separator mb-7"></div>
 
-                            <h4 className="mb-5">Payment Link Details</h4>
+                            <h4 className="mb-5">{t('merchant.paymentLinks.detail.detailsSection')}</h4>
                             <div className="row mb-7">
                                 <div className="col-md-12 mb-3">
-                                    <label className="text-gray-600 fw-bold">Payment Link URL</label>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.detail.paymentLinkUrl')}</label>
                                     <div className="d-flex align-items-center">
                                         <input
                                             type="text"
@@ -283,7 +290,7 @@ const PaymentLinkDetail = () => {
                                         <button
                                             className="btn btn-sm btn-light-primary"
                                             onClick={handleCopyLink}
-                                            title="Copy link"
+                                            title={t('merchant.paymentLinks.detail.copyLinkTitle')}
                                         >
                                             <i className="ki-duotone ki-copy fs-3">
                                                 <span className="path1"></span>
@@ -293,27 +300,27 @@ const PaymentLinkDetail = () => {
                                     </div>
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="text-gray-600 fw-bold">Payment Method Types</label>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.detail.paymentMethodTypes')}</label>
                                     <div className="text-gray-800 fw-semibold">
                                         {paymentLink.payment_method_types && Array.isArray(paymentLink.payment_method_types) 
-                                            ? paymentLink.payment_method_types.join(', ') 
-                                            : paymentLink.payment_method_types || 'N/A'}
+                                            ? paymentLink.payment_method_types.map((m) => t(`merchant.paymentLinks.methods.${m}`, { defaultValue: m })).join(', ') 
+                                            : paymentLink.payment_method_types || t('merchant.common.na')}
                                     </div>
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="text-gray-600 fw-bold">Scheduled Date</label>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.detail.scheduledDate')}</label>
                                     <div className="text-gray-800 fw-semibold">{formatDate(paymentLink.scheduled_date)}</div>
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="text-gray-600 fw-bold">Expired Date</label>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.detail.expiredDate')}</label>
                                     <div className="text-gray-800 fw-semibold">{formatDate(paymentLink.expired_date)}</div>
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="text-gray-600 fw-bold">Created At</label>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.detail.createdAt')}</label>
                                     <div className="text-gray-800 fw-semibold">{formatDate(paymentLink.created_at)}</div>
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="text-gray-600 fw-bold">Updated At</label>
+                                    <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.detail.updatedAt')}</label>
                                     <div className="text-gray-800 fw-semibold">{formatDate(paymentLink.updated_at)}</div>
                                 </div>
                             </div>
@@ -328,7 +335,7 @@ const PaymentLinkDetail = () => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Reschedule
+                                    {t('merchant.paymentLinks.row.reschedule')}
                                 </button>
                                 <button
                                     className="btn btn-light-primary"
@@ -338,7 +345,7 @@ const PaymentLinkDetail = () => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Send
+                                    {t('merchant.paymentLinks.row.send')}
                                 </button>
                                 <button
                                     className="btn btn-danger"
@@ -351,7 +358,7 @@ const PaymentLinkDetail = () => {
                                         <span className="path4"></span>
                                         <span className="path5"></span>
                                     </i>
-                                    Delete
+                                    {t('merchant.paymentLinks.row.delete')}
                                 </button>
                             </div>
                         </div>

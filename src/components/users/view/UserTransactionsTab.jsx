@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import TransactionActions from '../../merchant/transactions/TransactionActions';
+import { getTransactionStatusLabel } from '../../../utils/transactionStatusHelpers';
 import { fetchTransactions } from '../../../services/transactionsService';
 import useAuthStore from '../../../stores/authStore';
 import { toast } from 'react-toastify';
 
 const UserTransactionsTab = ({ userId, merchantId: propMerchantId }) => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { user, merchant } = useAuthStore();
     
@@ -316,7 +319,8 @@ const UserTransactionsTab = ({ userId, merchantId: propMerchantId }) => {
                                             </td>
                                             <td>
                                                 <span className={`badge badge-light-${getStatusColor(transaction.status)}`}>
-                                                    {transaction.status}
+                                                    {getTransactionStatusLabel(transaction.status, t) ||
+                                                        t('merchant.common.na')}
                                                 </span>
                                             </td>
                                             <td className="text-end">

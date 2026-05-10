@@ -1,6 +1,6 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
+import LocalizedNavigate from '../../i18n/LocalizedNavigate';
 
 const MerchantDefaultRedirect = () => {
   const { merchant } = useAuthStore();
@@ -29,15 +29,14 @@ const MerchantDefaultRedirect = () => {
       : salesScopes.length > 0 && salesScopes.some((scope) => scope.is_enabled === true);
 
   if (hasAnyPosScopesEnabled) {
-    return <Navigate to="/merchant/dashboard" replace />;
+    return <LocalizedNavigate to="/merchant/dashboard" />;
   }
 
   if (hasAnySalesScopesEnabled) {
-    return <Navigate to="/sales/dashboard" replace />;
+    return <LocalizedNavigate to="/sales/dashboard" />;
   }
 
-  // Fallback to merchant dashboard
-  return <Navigate to="/merchant/dashboard" replace />;
+  return <LocalizedNavigate to="/merchant/dashboard" />;
 };
 
 export default MerchantDefaultRedirect;

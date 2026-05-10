@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { createTerminal } from '../../../services/terminalsService';
 import TerminalForm from './TerminalForm';
@@ -6,18 +7,19 @@ import { useToolbar } from '../../../contexts/ToolbarContext';
 import Swal from 'sweetalert2';
 
 const TerminalCreate = () => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        setTitle('Create Terminal');
+        setTitle(t('merchant.breadcrumbs.createTerminal'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Terminals', path: '/merchant/terminals' },
-            { label: 'Create Terminal', path: '/merchant/terminals/create', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.terminals'), path: '/merchant/terminals' },
+            { label: t('merchant.breadcrumbs.createTerminal'), path: '/merchant/terminals/create', active: true }
         ]);
         
         setActions(
@@ -29,7 +31,7 @@ const TerminalCreate = () => {
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back to Terminals
+                {t('merchant.common.backToTerminals')}
             </button>
         );
 
@@ -37,7 +39,7 @@ const TerminalCreate = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions, navigate]);
+    }, [setTitle, setBreadcrumbs, setActions, navigate, t, i18n.language]);
 
     const handleSubmit = async (formData) => {
         setLoading(true);

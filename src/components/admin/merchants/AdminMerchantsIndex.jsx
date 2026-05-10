@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
@@ -17,6 +18,7 @@ import { getMerchantsList } from '../../../services/adminMerchantsService';
 const PLACEHOLDER_ROWS = 6;
 
 const AdminMerchantsIndex = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const canCreateMerchant = useCan('pos.merchants.create_merchants');
     const [merchants, setMerchants] = useState([]);
@@ -44,7 +46,7 @@ const AdminMerchantsIndex = () => {
     const [searchInput, setSearchInput] = useState('');
 
     useEffect(() => {
-        setTitle('Merchants Management');
+        setTitle(t('admin.pages.merchantsManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 {/* Toggle Filters Button */}
@@ -57,7 +59,7 @@ const AdminMerchantsIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Filter</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.common.filter')}</span>
                 </button>
 
                 {/* Import Button */}
@@ -70,7 +72,7 @@ const AdminMerchantsIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Import</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.common.import')}</span>
                 </button>
 
                 {/* Export Button */}
@@ -83,7 +85,7 @@ const AdminMerchantsIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Export</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.common.export')}</span>
                 </button>
 
                 {/* Change Requests Button */}
@@ -92,7 +94,7 @@ const AdminMerchantsIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Requests</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.common.requests')}</span>
                 </Link>
 
                 {/* Add Merchant Button */}
@@ -102,13 +104,13 @@ const AdminMerchantsIndex = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        <span className="d-none d-md-inline ms-1">Add</span>
+                        <span className="d-none d-md-inline ms-1">{t('admin.common.add')}</span>
                     </Link>
                 )}
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters]);
+    }, [setTitle, setActions, showFilters, t, i18n.language]);
 
     // Debounced search effect - updates filters
     useEffect(() => {
@@ -142,7 +144,7 @@ const AdminMerchantsIndex = () => {
                 setPagination(paginationMeta);
             }
         } catch (error) {
-            toast.error('Failed to load merchants');
+            toast.error(t('admin.merchantsIndex.loadFailed'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -162,7 +164,7 @@ const AdminMerchantsIndex = () => {
                 const { data, filename } = response.data.data;
                 
                 if (!data || data.length === 0) {
-                    toast.error('No data to export');
+                    toast.error(t('admin.merchantsIndex.exportNoData'));
                     return;
                 }
 
@@ -193,12 +195,12 @@ const AdminMerchantsIndex = () => {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(link.href);
                 
-                toast.success('Export successful!');
+                toast.success(t('admin.merchantsIndex.exportSuccess'));
             } else {
-                toast.error('No data to export');
+                toast.error(t('admin.merchantsIndex.exportNoData'));
             }
         } catch (error) {
-            toast.error('Export failed');
+            toast.error(t('admin.merchantsIndex.exportFailed'));
             console.error(error);
         }
     };
@@ -246,12 +248,12 @@ const AdminMerchantsIndex = () => {
         if (selectedIds.length === 0) return;
 
         const confirmation = await Swal.fire({
-            title: 'Delete merchants?',
-            text: `Are you sure you want to delete ${selectedIds.length} merchant(s)?`,
+            title: t('admin.merchantsIndex.bulkDeleteTitle'),
+            text: t('admin.merchantsIndex.bulkDeleteText', { count: selectedIds.length }),
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.merchantsIndex.yesDelete'),
+            cancelButtonText: t('admin.merchantsIndex.cancel'),
             customClass: {
                 confirmButton: 'btn btn-danger',
                 cancelButton: 'btn btn-light'
@@ -273,24 +275,24 @@ const AdminMerchantsIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success(`${selectedIds.length} merchant(s) deleted successfully`);
+                toast.success(t('admin.merchantsIndex.bulkDeleted', { count: selectedIds.length }));
                 setSelectedIds([]);
                 fetchMerchants();
             }
         } catch (error) {
-            toast.error('Failed to delete merchants');
+            toast.error(t('admin.merchantsIndex.bulkDeleteFailed'));
             console.error(error);
         }
     };
 
     const handleApprove = async (id) => {
         const confirmation = await Swal.fire({
-            title: 'Approve merchant?',
-            text: 'Are you sure you want to approve this merchant?',
+            title: t('admin.merchantsIndex.approveTitle'),
+            text: t('admin.merchantsIndex.approveText'),
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Approve',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.merchantsIndex.approve'),
+            cancelButtonText: t('admin.merchantsIndex.cancel'),
             customClass: {
                 confirmButton: 'btn btn-success',
                 cancelButton: 'btn btn-light'
@@ -312,11 +314,11 @@ const AdminMerchantsIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Merchant approved successfully');
+                toast.success(t('admin.merchantsIndex.approveSuccess'));
                 fetchMerchants();
             }
         } catch (error) {
-            toast.error('Failed to approve merchant');
+            toast.error(t('admin.merchantsIndex.approveFailed'));
             console.error(error);
         }
     };
@@ -338,15 +340,15 @@ const AdminMerchantsIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Merchant rejected successfully');
+                toast.success(t('admin.merchantsIndex.rejectSuccess'));
                 setRejectModalOpen(false);
                 setRejectingMerchant(null);
                 fetchMerchants();
             } else {
-                toast.error(response.data.message || 'Failed to reject merchant');
+                toast.error(response.data.message || t('admin.merchantsIndex.rejectFailed'));
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to reject merchant');
+            toast.error(error.response?.data?.message || t('admin.merchantsIndex.rejectFailed'));
             console.error(error);
         } finally {
             setIsRejectSubmitting(false);
@@ -355,14 +357,14 @@ const AdminMerchantsIndex = () => {
 
     const handleSuspend = async (merchant) => {
         const suspensionPrompt = await Swal.fire({
-            title: 'Suspend merchant',
-            text: 'Provide a reason for suspension (minimum 10 characters).',
+            title: t('admin.merchantsIndex.suspendTitle'),
+            text: t('admin.merchantsIndex.suspendText'),
             icon: 'warning',
             input: 'textarea',
-            inputPlaceholder: 'Enter suspension reason...',
+            inputPlaceholder: t('admin.merchantsIndex.suspendPlaceholder'),
             showCancelButton: true,
-            confirmButtonText: 'Suspend',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.merchantsIndex.suspend'),
+            cancelButtonText: t('admin.merchantsIndex.cancel'),
             customClass: {
                 confirmButton: 'btn btn-warning',
                 cancelButton: 'btn btn-light'
@@ -371,7 +373,7 @@ const AdminMerchantsIndex = () => {
             preConfirm: (value) => {
                 const trimmed = value?.trim();
                 if (!trimmed || trimmed.length < 10) {
-                    Swal.showValidationMessage('Suspension reason must be at least 10 characters.');
+                    Swal.showValidationMessage(t('admin.merchantsIndex.suspendValidation'));
                     return;
                 }
                 return trimmed;
@@ -394,23 +396,23 @@ const AdminMerchantsIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Merchant suspended successfully');
+                toast.success(t('admin.merchantsIndex.suspendSuccess'));
                 fetchMerchants();
             }
         } catch (error) {
-            toast.error('Failed to suspend merchant');
+            toast.error(t('admin.merchantsIndex.suspendFailed'));
             console.error(error);
         }
     };
 
     const handleUnsuspend = async (id) => {
         const confirmation = await Swal.fire({
-            title: 'Unsuspend merchant?',
-            text: 'Are you sure you want to unsuspend this merchant?',
+            title: t('admin.merchantsIndex.unsuspendTitle'),
+            text: t('admin.merchantsIndex.unsuspendText'),
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Unsuspend',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.merchantsIndex.unsuspend'),
+            cancelButtonText: t('admin.merchantsIndex.cancel'),
             customClass: {
                 confirmButton: 'btn btn-success',
                 cancelButton: 'btn btn-light'
@@ -432,23 +434,23 @@ const AdminMerchantsIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Merchant unsuspended successfully');
+                toast.success(t('admin.merchantsIndex.unsuspendSuccess'));
                 fetchMerchants();
             }
         } catch (error) {
-            toast.error('Failed to unsuspend merchant');
+            toast.error(t('admin.merchantsIndex.unsuspendFailed'));
             console.error(error);
         }
     };
 
     const handleDelete = async (id) => {
         const confirmation = await Swal.fire({
-            title: 'Delete merchant?',
-            text: 'Are you sure you want to delete this merchant?',
+            title: t('admin.merchantsIndex.deleteOneTitle'),
+            text: t('admin.merchantsIndex.deleteOneText'),
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.merchantsIndex.yesDelete'),
+            cancelButtonText: t('admin.merchantsIndex.cancel'),
             customClass: {
                 confirmButton: 'btn btn-danger',
                 cancelButton: 'btn btn-light'
@@ -469,28 +471,28 @@ const AdminMerchantsIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Merchant deleted successfully');
+                toast.success(t('admin.merchantsIndex.deleteOneSuccess'));
                 fetchMerchants();
             }
         } catch (error) {
-            toast.error('Failed to delete merchant');
+            toast.error(t('admin.merchantsIndex.deleteOneFailed'));
             console.error(error);
         }
     };
 
     const handleResetPassword = async (merchant) => {
         if (!merchant.user_id && !merchant.user?.id) {
-            toast.error('This merchant does not have an associated user account');
+            toast.error(t('admin.merchantsIndex.noUserForReset'));
             return;
         }
 
         const confirmation = await Swal.fire({
-            title: 'Reset Password?',
-            text: `Are you sure you want to send a password reset link to ${merchant.user?.email || merchant.email}?`,
+            title: t('admin.merchantsIndex.resetPasswordTitle'),
+            text: t('admin.merchantsIndex.resetPasswordText', { email: merchant.user?.email || merchant.email }),
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Yes, send reset link',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.merchantsIndex.yesSendReset'),
+            cancelButtonText: t('admin.merchantsIndex.cancel'),
             customClass: {
                 confirmButton: 'btn btn-primary',
                 cancelButton: 'btn btn-light'
@@ -513,12 +515,12 @@ const AdminMerchantsIndex = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success(response.data.data?.message || 'Password reset link sent successfully');
+                toast.success(response.data.data?.message || t('admin.merchantsIndex.resetSuccessDefault'));
             } else {
-                toast.error(response.data.message || 'Failed to send reset password link');
+                toast.error(response.data.message || t('admin.merchantsIndex.resetFailed'));
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to send reset password link');
+            toast.error(error.response?.data?.message || t('admin.merchantsIndex.resetFailed'));
             console.error(error);
         }
     };
@@ -626,7 +628,7 @@ const AdminMerchantsIndex = () => {
                                     <input
                                         type="text"
                                         className="form-control form-control-solid ps-13"
-                                        placeholder="Quick search merchants..."
+                                        placeholder={t('admin.merchantsIndex.searchPlaceholder')}
                                         value={searchInput}
                                         onChange={(e) => setSearchInput(e.target.value)}
                                         style={{ paddingLeft: '3rem' }}
@@ -679,16 +681,16 @@ const AdminMerchantsIndex = () => {
                                                         />
                                                     </div>
                                                 </th>
-                                                <th className="text-dark">ID</th>
-                                                <th className="min-w-125px text-dark">Logo</th>
-                                                <th className="min-w-200px text-dark">Merchant Info</th>
-                                                <th className="text-dark">Phone</th>
-                                                <th className="text-dark">Business Type</th>
-                                                <th className="text-dark">Plan</th>
-                                                <th className="text-dark">Status</th>
-                                                <th className="text-dark">Is Active</th>
-                                                <th className="text-dark">Country</th>
-                                                <th className="text-end text-dark">Actions</th>
+                                                <th className="text-dark">{t('admin.merchantsIndex.colId')}</th>
+                                                <th className="min-w-125px text-dark">{t('admin.merchantsIndex.colLogo')}</th>
+                                                <th className="min-w-200px text-dark">{t('admin.merchantsIndex.colMerchantInfo')}</th>
+                                                <th className="text-dark">{t('admin.merchantsIndex.colPhone')}</th>
+                                                <th className="text-dark">{t('admin.merchantsIndex.colBusinessType')}</th>
+                                                <th className="text-dark">{t('admin.merchantsIndex.colPlan')}</th>
+                                                <th className="text-dark">{t('admin.merchantsIndex.colStatus')}</th>
+                                                <th className="text-dark">{t('admin.merchantsIndex.colIsActive')}</th>
+                                                <th className="text-dark">{t('admin.merchantsIndex.colCountry')}</th>
+                                                <th className="text-end text-dark">{t('admin.merchantsIndex.colActions')}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="text-gray-600 fw-semibold">
@@ -716,7 +718,11 @@ const AdminMerchantsIndex = () => {
                             {!loading && merchants.length > 0 && (
                                 <div className="d-flex flex-stack flex-wrap pt-10">
                                     <div className="fs-6 fw-semibold text-gray-700">
-                                        Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} entries
+                                        {t('admin.common.showingEntries', {
+                                            from: ((pagination.current_page - 1) * pagination.per_page) + 1,
+                                            to: Math.min(pagination.current_page * pagination.per_page, pagination.total),
+                                            total: pagination.total
+                                        })}
                                     </div>
                                     <ul className="pagination">
                                         <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}>
@@ -725,7 +731,7 @@ const AdminMerchantsIndex = () => {
                                                 onClick={() => setPagination({ ...pagination, current_page: pagination.current_page - 1 })}
                                                 disabled={pagination.current_page === 1}
                                             >
-                                                Previous
+                                                {t('admin.common.previous')}
                                             </button>
                                         </li>
                                         {[...Array(pagination.last_page)].map((_, idx) => {
@@ -770,7 +776,7 @@ const AdminMerchantsIndex = () => {
                             {/* No Results */}
                             {!loading && merchants.length === 0 && (
                                 <div className="text-center py-10">
-                                    <p className="text-gray-600 fs-4">No merchants found</p>
+                                    <p className="text-gray-600 fs-4">{t('admin.merchantsIndex.noMerchantsFound')}</p>
                                 </div>
                             )}
                         </div>

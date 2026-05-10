@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import Select from 'react-select';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { getTranslatedText } from '../../../utils/helpers';
 
 const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loading }) => {
+    const { t } = useTranslation();
     const [merchants, setMerchants] = useState([]);
     const [branches, setBranches] = useState([]);
     const [loadingMerchants, setLoadingMerchants] = useState(false);
@@ -32,7 +34,7 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
     });
     
     const [errors, setErrors] = useState({});
-
+    
     useEffect(() => {
         fetchMerchants();
     }, []);
@@ -53,12 +55,12 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
             if (merchant) {
                 setSelectedMerchant({
                     value: merchant.id,
-                    label: getTranslatedText(merchant.business_name) || getTranslatedText(merchant.name) || 'N/A',
+                    label: getTranslatedText(merchant.business_name) || getTranslatedText(merchant.name) || t('admin.common.na'),
                     data: merchant
                 });
             }
         }
-    }, [mode, initialData.merchant_id, merchants]);
+    }, [mode, initialData.merchant_id, merchants, t]);
 
     useEffect(() => {
         if (mode === 'edit' && initialData.branch_id && branches.length > 0) {
@@ -66,12 +68,12 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
             if (branch) {
                 setSelectedBranch({
                     value: branch.id,
-                    label: getTranslatedText(branch.name) || 'N/A',
+                    label: getTranslatedText(branch.name) || t('admin.common.na'),
                     data: branch
                 });
             }
         }
-    }, [mode, initialData.branch_id, branches]);
+    }, [mode, initialData.branch_id, branches, t]);
 
     const fetchMerchants = async () => {
         setLoadingMerchants(true);
@@ -115,19 +117,19 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
     const merchantOptions = useMemo(() => {
         return merchants.map(merchant => ({
             value: merchant.id,
-            label: getTranslatedText(merchant.business_name) || getTranslatedText(merchant.name) || 'N/A',
+            label: getTranslatedText(merchant.business_name) || getTranslatedText(merchant.name) || t('admin.common.na'),
             data: merchant
         }));
-    }, [merchants]);
+    }, [merchants, t]);
 
     // Transform branches to react-select format
     const branchOptions = useMemo(() => {
         return branches.map(branch => ({
             value: branch.id,
-            label: getTranslatedText(branch.name) || 'N/A',
+            label: getTranslatedText(branch.name) || t('admin.common.na'),
             data: branch
         }));
-    }, [branches]);
+    }, [branches, t]);
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -164,23 +166,23 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
         const newErrors = {};
 
         if (!formData.name.trim()) {
-            newErrors.name = 'Terminal name is required';
+            newErrors.name = t('admin.terminalCreate.terminalNameRequired');
         }
 
         if (!formData.terminal_id.trim()) {
-            newErrors.terminal_id = 'Terminal ID is required';
+            newErrors.terminal_id = t('admin.terminalCreate.terminalIdRequired');
         }
 
         if (!formData.model.trim()) {
-            newErrors.model = 'Model is required';
+            newErrors.model = t('admin.terminalCreate.modelRequired');
         }
 
         if (!formData.brand.trim()) {
-            newErrors.brand = 'Brand is required';
+            newErrors.brand = t('admin.terminalCreate.brandRequired');
         }
 
         if (!formData.merchant_id) {
-            newErrors.merchant_id = 'Merchant is required';
+            newErrors.merchant_id = t('admin.terminalCreate.merchantRequired');
         }
 
         setErrors(newErrors);
@@ -201,19 +203,19 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
         <form onSubmit={handleSubmit}>
             <div className="card mb-5">
                 <div className="card-header">
-                    <h3 className="card-title">Basic Information</h3>
+                    <h3 className="card-title">{t('admin.terminalCreate.basicInfo')}</h3>
                 </div>
                 <div className="card-body">
                     <div className="row g-5">
                         {/* Terminal Name */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold required">Terminal Name</label>
+                            <label className="form-label fw-bold required">{t('admin.terminalCreate.terminalName')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors.name ? 'is-invalid' : ''}`}
                                 value={formData.name}
                                 onChange={(e) => handleChange('name', e.target.value)}
-                                placeholder="Enter terminal name"
+                                placeholder={t('admin.terminalCreate.terminalNamePlaceholder')}
                                 required
                             />
                             {errors.name && <div className="invalid-feedback">{errors.name}</div>}
@@ -221,13 +223,13 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
 
                         {/* Terminal ID */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold required">Terminal ID</label>
+                            <label className="form-label fw-bold required">{t('admin.terminalCreate.terminalId')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors.terminal_id ? 'is-invalid' : ''}`}
                                 value={formData.terminal_id}
                                 onChange={(e) => handleChange('terminal_id', e.target.value)}
-                                placeholder="Enter terminal ID"
+                                placeholder={t('admin.terminalCreate.terminalIdPlaceholder')}
                                 required
                                 disabled={mode === 'edit'}
                             />
@@ -236,7 +238,7 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
 
                         {/* Merchant */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold required">Merchant</label>
+                            <label className="form-label fw-bold required">{t('admin.terminalCreate.merchant')}</label>
                             <Select
                                 value={selectedMerchant}
                                 onChange={handleMerchantChange}
@@ -245,8 +247,8 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
                                 isClearable={true}
                                 isLoading={loadingMerchants}
                                 isDisabled={loadingMerchants || loading}
-                                placeholder={loadingMerchants ? "Loading merchants..." : "Search and select merchant..."}
-                                noOptionsMessage={() => "No merchants found"}
+                                placeholder={loadingMerchants ? t('admin.terminalCreate.loadingMerchants') : t('admin.terminalCreate.merchantPlaceholder')}
+                                noOptionsMessage={() => t('admin.terminalCreate.noMerchantsFound')}
                                 className={errors.merchant_id ? 'is-invalid' : ''}
                                 styles={{
                                     control: (base, state) => ({
@@ -277,7 +279,7 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
 
                         {/* Branch */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold">Branch (Optional)</label>
+                            <label className="form-label fw-bold">{t('admin.terminalCreate.branch')}</label>
                             <Select
                                 value={selectedBranch}
                                 onChange={handleBranchChange}
@@ -288,14 +290,14 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
                                 isDisabled={!formData.merchant_id || loadingBranches || loading}
                                 placeholder={
                                     !formData.merchant_id 
-                                        ? "Select a merchant first" 
+                                        ? t('admin.terminalCreate.selectMerchantFirst') 
                                         : loadingBranches 
-                                            ? "Loading branches..." 
+                                            ? t('admin.terminalCreate.loadingBranches') 
                                             : branches.length > 0 
-                                                ? "Search and select branch..." 
-                                                : "No branches available"
+                                                ? t('admin.terminalCreate.branchPlaceholder') 
+                                                : t('admin.terminalCreate.noBranchesFound')
                                 }
-                                noOptionsMessage={() => "No branches found"}
+                                noOptionsMessage={() => t('admin.terminalCreate.noBranchesFound')}
                                 styles={{
                                     control: (base, state) => ({
                                         ...base,
@@ -313,7 +315,7 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
                                 }}
                             />
                             {!formData.merchant_id && (
-                                <div className="form-text">Select a merchant first</div>
+                                <div className="form-text">{t('admin.terminalCreate.selectMerchantFirst')}</div>
                             )}
                         </div>
                     </div>
@@ -322,19 +324,19 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
 
             <div className="card mb-5">
                 <div className="card-header">
-                    <h3 className="card-title">Hardware Information</h3>
+                    <h3 className="card-title">{t('admin.terminalCreate.hardwareInfo')}</h3>
                 </div>
                 <div className="card-body">
                     <div className="row g-5">
                         {/* Brand */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold required">Brand</label>
+                            <label className="form-label fw-bold required">{t('admin.terminalCreate.brand')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors.brand ? 'is-invalid' : ''}`}
                                 value={formData.brand}
                                 onChange={(e) => handleChange('brand', e.target.value)}
-                                placeholder="e.g., Verifone, Ingenico"
+                                placeholder={t('admin.terminalCreate.brandPlaceholder')}
                                 required
                             />
                             {errors.brand && <div className="invalid-feedback">{errors.brand}</div>}
@@ -342,13 +344,13 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
 
                         {/* Model */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold required">Model</label>
+                            <label className="form-label fw-bold required">{t('admin.terminalCreate.model')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors.model ? 'is-invalid' : ''}`}
                                 value={formData.model}
                                 onChange={(e) => handleChange('model', e.target.value)}
-                                placeholder="e.g., VX520, iWL250"
+                                placeholder={t('admin.terminalCreate.modelPlaceholder')}
                                 required
                             />
                             {errors.model && <div className="invalid-feedback">{errors.model}</div>}
@@ -356,37 +358,37 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
 
                         {/* Manufacturer */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold">Manufacturer</label>
+                            <label className="form-label fw-bold">{t('admin.terminalCreate.manufacturer')}</label>
                             <input
                                 type="text"
                                 className="form-control"
                                 value={formData.manufacturer}
                                 onChange={(e) => handleChange('manufacturer', e.target.value)}
-                                placeholder="e.g., Verifone Inc."
+                                placeholder={t('admin.terminalCreate.manufacturerPlaceholder')}
                             />
                         </div>
 
                         {/* Serial Number */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold">Serial Number</label>
+                            <label className="form-label fw-bold">{t('admin.terminalCreate.serialNumber')}</label>
                             <input
                                 type="text"
                                 className="form-control"
                                 value={formData.serial_no}
                                 onChange={(e) => handleChange('serial_no', e.target.value)}
-                                placeholder="Enter serial number"
+                                placeholder={t('admin.terminalCreate.serialNumberPlaceholder')}
                             />
                         </div>
 
                         {/* Device ID */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold">Device ID</label>
+                            <label className="form-label fw-bold">{t('admin.terminalCreate.deviceId')}</label>
                             <input
                                 type="text"
                                 className="form-control"
                                 value={formData.device_id}
                                 onChange={(e) => handleChange('device_id', e.target.value)}
-                                placeholder="Enter device ID"
+                                placeholder={t('admin.terminalCreate.deviceIdPlaceholder')}
                             />
                         </div>
                     </div>
@@ -395,43 +397,43 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
 
             <div className="card mb-5">
                 <div className="card-header">
-                    <h3 className="card-title">SDK Information</h3>
+                    <h3 className="card-title">{t('admin.terminalCreate.sdkInfo')}</h3>
                 </div>
                 <div className="card-body">
                     <div className="row g-5">
                         {/* SDK ID */}
                         <div className="col-md-4">
-                            <label className="form-label fw-bold">SDK ID</label>
+                            <label className="form-label fw-bold">{t('admin.terminalCreate.sdkId')}</label>
                             <input
                                 type="text"
                                 className="form-control"
                                 value={formData.sdk_id}
                                 onChange={(e) => handleChange('sdk_id', e.target.value)}
-                                placeholder="e.g., SDK001"
+                                placeholder={t('admin.terminalCreate.sdkIdPlaceholder')}
                             />
                         </div>
 
                         {/* SDK Version */}
                         <div className="col-md-4">
-                            <label className="form-label fw-bold">SDK Version</label>
+                            <label className="form-label fw-bold">{t('admin.terminalCreate.sdkVersion')}</label>
                             <input
                                 type="text"
                                 className="form-control"
                                 value={formData.sdk_version}
                                 onChange={(e) => handleChange('sdk_version', e.target.value)}
-                                placeholder="e.g., 1.0.0"
+                                placeholder={t('admin.terminalCreate.sdkVersionPlaceholder')}
                             />
                         </div>
 
                         {/* Android OS */}
                         <div className="col-md-4">
-                            <label className="form-label fw-bold">Android OS</label>
+                            <label className="form-label fw-bold">{t('admin.terminalCreate.androidOs')}</label>
                             <input
                                 type="text"
                                 className="form-control"
                                 value={formData.android_os}
                                 onChange={(e) => handleChange('android_os', e.target.value)}
-                                placeholder="e.g., Android 11"
+                                placeholder={t('admin.terminalCreate.androidOsPlaceholder')}
                             />
                         </div>
                     </div>
@@ -440,48 +442,48 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
 
             <div className="card mb-5">
                 <div className="card-header">
-                    <h3 className="card-title">Status Settings</h3>
+                    <h3 className="card-title">{t('admin.terminalCreate.statusSettings')}</h3>
                 </div>
                 <div className="card-body">
                     <div className="row g-5">
                         {/* Add Type */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold">Add Type</label>
+                            <label className="form-label fw-bold">{t('admin.terminalCreate.addType')}</label>
                             <select
                                 className="form-select"
                                 value={formData.add_type}
                                 onChange={(e) => handleChange('add_type', e.target.value)}
                             >
-                                <option value="static">Static (Manual)</option>
-                                <option value="auto">Auto (Registered)</option>
+                                <option value="static">{t('admin.terminalCreate.static')}</option>
+                                <option value="auto">{t('admin.terminalCreate.auto')}</option>
                             </select>
                         </div>
 
                         {/* Terminal Status */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold">Terminal Status</label>
+                            <label className="form-label fw-bold">{t('admin.terminalCreate.terminalStatus')}</label>
                             <select
                                 className="form-select"
                                 value={formData.terminal_status}
                                 onChange={(e) => handleChange('terminal_status', e.target.value)}
                             >
-                                <option value="offline">Offline</option>
-                                <option value="online">Online</option>
-                                <option value="testing">Testing</option>
-                                <option value="maintenance">Maintenance</option>
+                                <option value="offline">{t('admin.common.offline')}</option>
+                                <option value="online">{t('admin.common.online')}</option>
+                                <option value="testing">{t('admin.common.testing')}</option>
+                                <option value="maintenance">{t('admin.common.maintenance')}</option>
                             </select>
                         </div>
 
                         {/* Is Active */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold">Status</label>
+                            <label className="form-label fw-bold">{t('admin.terminalCreate.status')}</label>
                             <select
                                 className="form-select"
                                 value={formData.is_active ? '1' : '0'}
                                 onChange={(e) => handleChange('is_active', e.target.value === '1')}
                             >
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
+                                <option value="1">{t('admin.common.active')}</option>
+                                <option value="0">{t('admin.common.inactive')}</option>
                             </select>
                         </div>
                     </div>
@@ -498,7 +500,7 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
                             onClick={() => window.history.back()}
                             disabled={loading}
                         >
-                            Cancel
+                            {t('admin.terminalCreate.cancel')}
                         </button>
                         <button
                             type="submit"
@@ -508,7 +510,7 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
                             {loading ? (
                                 <>
                                     <span className="spinner-border spinner-border-sm me-2"></span>
-                                    {mode === 'create' ? 'Creating...' : 'Updating...'}
+                                    {mode === 'create' ? t('admin.terminalCreate.creating') : t('admin.terminalEdit.updating')}
                                 </>
                             ) : (
                                 <>
@@ -516,7 +518,7 @@ const AdminTerminalForm = ({ initialData = {}, mode = 'create', onSubmit, loadin
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    {mode === 'create' ? 'Create Terminal' : 'Update Terminal'}
+                                    {mode === 'create' ? t('admin.terminalCreate.create') : t('admin.terminalEdit.update')}
                                 </>
                             )}
                         </button>

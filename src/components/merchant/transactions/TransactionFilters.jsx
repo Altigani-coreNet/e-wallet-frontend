@@ -1,9 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { SOFTPOS_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
+import {
+    MERCHANT_TRANSACTION_STATUS_FILTER_VALUES,
+    getTransactionStatusLabel,
+} from '../../../utils/transactionStatusHelpers';
 
 const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
+    const { t } = useTranslation();
     const startDateRef = useRef(null);
     const endDateRef = useRef(null);
     const [terminals, setTerminals] = useState([]);
@@ -14,12 +20,20 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
     const [activeFiltersCount, setActiveFiltersCount] = useState(0);
     const terminalDropdownRef = useRef(null);
 
+    const paymentTypeLabels = useMemo(() => ({
+        card: t('merchant.transactions.typeCard'),
+        web: t('merchant.transactions.typeWeb'),
+        bank: t('merchant.transactions.typeBank'),
+        mobile: t('merchant.transactions.typeMobile'),
+        qr: t('merchant.transactions.typeQr'),
+        other: t('merchant.transactions.typeOther'),
+    }), [t]);
+
     useEffect(() => {
         fetchTerminals();
     }, []);
 
     useEffect(() => {
-        // Count active filters
         let count = 0;
         if (filters.search) count++;
         if (filters.status) count++;
@@ -30,7 +44,6 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
         setActiveFiltersCount(count);
     }, [filters]);
 
-    // Filter terminals based on search term
     useEffect(() => {
         if (!terminalSearchTerm.trim()) {
             setFilteredTerminals(terminals);
@@ -44,17 +57,15 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
         }
     }, [terminalSearchTerm, terminals]);
 
-    // Set selected terminal when terminal_id filter changes
     useEffect(() => {
         if (filters.terminal_id) {
-            const terminal = terminals.find(t => t.id === parseInt(filters.terminal_id));
+            const terminal = terminals.find(term => term.id === parseInt(filters.terminal_id, 10));
             setSelectedTerminal(terminal || null);
         } else {
             setSelectedTerminal(null);
         }
     }, [filters.terminal_id, terminals]);
 
-    // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (terminalDropdownRef.current && !terminalDropdownRef.current.contains(event.target)) {
@@ -110,16 +121,12 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
 
     const handleDateInputClick = (ref) => {
         if (ref && ref.current) {
-            // Try to use the showPicker() method if available (modern browsers)
             if (ref.current.showPicker && typeof ref.current.showPicker === 'function') {
-                ref.current.showPicker().catch((err) => {
-                    // Fallback: if showPicker fails, just focus the input
+                ref.current.showPicker().catch(() => {
                     ref.current.focus();
                 });
             } else {
-                // Fallback for browsers that don't support showPicker()
                 ref.current.focus();
-                // For some browsers, we need to trigger click after focus
                 setTimeout(() => {
                     ref.current.click();
                 }, 10);
@@ -129,17 +136,31 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
 
     const getFilterSummary = () => {
         const details = [];
-        if (filters.search) details.push(`Search: "${filters.search}"`);
-        if (filters.status) details.push(`Status: ${filters.status}`);
-        if (filters.payment_type) details.push(`Payment Type: ${filters.payment_type}`);
-        if (filters.terminal_id) {
-            const terminal = terminals.find(t => t.id === parseInt(filters.terminal_id));
-            details.push(`Terminal: ${terminal?.name || filters.terminal_id}`);
+        if (filters.search) details.push(t('merchant.transactions.filterSearch', { q: filters.search }));
+        if (filters.status) {
+            details.push(
+                t('merchant.transactions.filterStatus', {
+                    status: statusLabels[filters.status] || filters.status,
+                })
+            );
         }
-        if (filters.start_date) details.push(`From: ${filters.start_date}`);
-        if (filters.end_date) details.push(`To: ${filters.end_date}`);
+        if (filters.payment_type) {
+            details.push(t('merchant.transactions.filterPaymentType', {
+                type: paymentTypeLabels[filters.payment_type] || filters.payment_type
+            }));
+        }
+        if (filters.terminal_id) {
+            const terminal = terminals.find(term => term.id === parseInt(filters.terminal_id, 10));
+            details.push(t('merchant.transactions.filterTerminal', {
+                name: terminal?.name || filters.terminal_id
+            }));
+        }
+        if (filters.start_date) details.push(t('merchant.transactions.filterFrom', { date: filters.start_date }));
+        if (filters.end_date) details.push(t('merchant.transactions.filterTo', { date: filters.end_date }));
         return details.join(', ');
     };
+
+    const filterWord = activeFiltersCount === 1 ? t('merchant.common.filterSingular') : t('merchant.common.filterPlural');
 
     return (
         <>
@@ -156,60 +177,55 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
             <div className="card bg-white card-xl-stretch mb-5 mb-xl-8">
                 <div className="card-body">
                 <div className="row">
-                    {/* Search */}
                     <div className="col-md-3 mb-3">
-                        <label htmlFor="search" className="form-label">Search</label>
+                        <label htmlFor="search" className="form-label">{t('merchant.common.search')}</label>
                         <input
                             type="text"
                             className="form-control"
                             id="search"
-                            placeholder="Transaction ID, RRN, Auth Code"
+                            placeholder={t('merchant.transactions.searchPlaceholder')}
                             value={filters.search}
                             onChange={(e) => handleInputChange('search', e.target.value)}
                         />
                     </div>
 
-                    {/* Status */}
                     <div className="col-md-3 mb-3">
-                        <label htmlFor="status" className="form-label">Status</label>
+                        <label htmlFor="status" className="form-label">{t('merchant.common.status')}</label>
                         <select
                             className="form-select"
                             id="status"
                             value={filters.status}
                             onChange={(e) => handleInputChange('status', e.target.value)}
                         >
-                            <option value="">All Statuses</option>
-                            <option value="APPROVED">APPROVED</option>
-                            <option value="DECLINED">DECLINED</option>
-                            <option value="PENDING">PENDING</option>
-                            <option value="CAPTURED">CAPTURED</option>
-                            <option value="VOIDED">VOIDED</option>
-                            <option value="REFUNDED">REFUNDED</option>
+                            <option value="">{t('merchant.common.allStatuses')}</option>
+                            {MERCHANT_TRANSACTION_STATUS_FILTER_VALUES.map((value) => (
+                                <option key={value} value={value}>
+                                    {getTransactionStatusLabel(value, t)}
+                                </option>
+                            ))}
                         </select>
                     </div>
 
-                    {/* Payment Type */}
                     <div className="col-md-3 mb-3">
-                        <label htmlFor="payment_type" className="form-label">Payment Type</label>
+                        <label htmlFor="payment_type" className="form-label">{t('merchant.common.paymentType')}</label>
                         <select
                             className="form-select"
                             id="payment_type"
                             value={filters.payment_type}
                             onChange={(e) => handleInputChange('payment_type', e.target.value)}
                         >
-                            <option value="">All Types</option>
-                            <option value="card">Card</option>
-                            <option value="web">Web</option>
-                            <option value="bank">Bank</option>
-                            <option value="mobile">Mobile</option>
-                            <option value="qr">QR</option>
-                            <option value="other">Other</option>
+                            <option value="">{t('merchant.common.allTypes')}</option>
+                            <option value="card">{paymentTypeLabels.card}</option>
+                            <option value="web">{paymentTypeLabels.web}</option>
+                            <option value="bank">{paymentTypeLabels.bank}</option>
+                            <option value="mobile">{paymentTypeLabels.mobile}</option>
+                            <option value="qr">{paymentTypeLabels.qr}</option>
+                            <option value="other">{paymentTypeLabels.other}</option>
                         </select>
                     </div>
 
-                    {/* Terminal - Searchable Dropdown */}
                     <div className="col-md-3 mb-3">
-                        <label htmlFor="terminal_id" className="form-label">Terminal</label>
+                        <label htmlFor="terminal_id" className="form-label">{t('merchant.common.terminal')}</label>
                         <div className="position-relative" ref={terminalDropdownRef}>
                             <div 
                                 className="form-control d-flex align-items-center justify-content-between"
@@ -219,10 +235,10 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
                                 <div className="d-flex align-items-center">
                                     {selectedTerminal ? (
                                         <span className="text-gray-800">
-                                            {selectedTerminal.name || selectedTerminal.terminal_id || `Terminal ${selectedTerminal.id}`}
+                                            {selectedTerminal.name || selectedTerminal.terminal_id || t('merchant.common.terminalNamed', { id: selectedTerminal.id })}
                                         </span>
                                     ) : (
-                                        <span className="text-muted">All Terminals</span>
+                                        <span className="text-muted">{t('merchant.common.allTerminals')}</span>
                                     )}
                                 </div>
                                 <div className="d-flex align-items-center">
@@ -254,7 +270,7 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
                                         <input 
                                             type="text" 
                                             className="form-control form-control-sm mb-2" 
-                                            placeholder="Search terminals..."
+                                            placeholder={t('merchant.common.searchTerminals')}
                                             value={terminalSearchTerm}
                                             onChange={(e) => handleTerminalSearch(e.target.value)}
                                             onClick={(e) => e.stopPropagation()}
@@ -269,7 +285,7 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
                                                     onMouseDown={(e) => { e.preventDefault(); handleRemoveTerminal(); }}
                                                     style={{ cursor: 'pointer' }}
                                                 >
-                                                    <div className="text-gray-800">All Terminals</div>
+                                                    <div className="text-gray-800">{t('merchant.common.allTerminals')}</div>
                                                 </div>
                                             )}
                                             {filteredTerminals.map((terminal) => (
@@ -280,14 +296,14 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
                                                     style={{ cursor: 'pointer' }}
                                                 >
                                                     <div className="text-gray-800">
-                                                        {terminal.name || terminal.terminal_id || `Terminal ${terminal.id}`}
+                                                        {terminal.name || terminal.terminal_id || t('merchant.common.terminalNamed', { id: terminal.id })}
                                                     </div>
                                                 </div>
                                             ))}
                                         </>
                                     ) : (
                                         <div className="p-3 text-muted text-center">
-                                            No terminals found
+                                            {t('merchant.common.noTerminalsFound')}
                                         </div>
                                     )}
                                 </div>
@@ -296,10 +312,9 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
                     </div>
                 </div>
 
-                {/* Date Range */}
                 <div className="row mt-3">
                     <div className="col-md-6 mb-3">
-                        <label htmlFor="start_date" className="form-label">From Date</label>
+                        <label htmlFor="start_date" className="form-label">{t('merchant.common.fromDate')}</label>
                         <input
                             ref={startDateRef}
                             type="date"
@@ -312,7 +327,7 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
                         />
                     </div>
                     <div className="col-md-6 mb-3">
-                        <label htmlFor="end_date" className="form-label">To Date</label>
+                        <label htmlFor="end_date" className="form-label">{t('merchant.common.toDate')}</label>
                         <input
                             ref={endDateRef}
                             type="date"
@@ -326,7 +341,6 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
                     </div>
                 </div>
 
-                {/* Filter Summary */}
                 <div className="row mt-3">
                     <div className="col-8">
                         {activeFiltersCount > 0 && (
@@ -335,10 +349,10 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                <span className="fw-bold">{activeFiltersCount}</span> active filter{activeFiltersCount !== 1 ? 's' : ''}
+                                <span className="fw-bold">{activeFiltersCount}</span>{' '}{filterWord}
                                 <span className="ms-2 badge badge-light-primary fs-8" title={getFilterSummary()}>
                                     {getFilterSummary().length > 50 
-                                        ? getFilterSummary().substring(0, 50) + '...' 
+                                        ? `${getFilterSummary().substring(0, 50)}...` 
                                         : getFilterSummary()}
                                 </span>
                             </div>
@@ -354,7 +368,7 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Clear Filters
+                            {t('merchant.common.clearFilters')}
                         </button>
                     </div>
                 </div>
@@ -365,4 +379,3 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
 };
 
 export default TransactionFilters;
-

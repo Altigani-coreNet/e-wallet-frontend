@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getUserInfo } from '../../services/profileService';
 
 const ActivityEvents = () => {
+    const { t } = useTranslation();
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -24,7 +26,7 @@ const ActivityEvents = () => {
             }
         } catch (err) {
             console.error('Error fetching activity logs:', err);
-            setError(err.message || 'Failed to load activity logs');
+            setError(err.message || t('merchant.profile.activityEvents.loadLogsFailed'));
         } finally {
             setLoading(false);
         }
@@ -67,11 +69,17 @@ const ActivityEvents = () => {
         ? logs 
         : logs.filter(log => log.label === filter);
 
+    const filterTypeLabel = useMemo(() => ({
+        success: t('merchant.profile.activityEvents.filterSuccess'),
+        warning: t('merchant.profile.activityEvents.filterWarning'),
+        danger: t('merchant.profile.activityEvents.filterError'),
+    }), [t]);
+
     if (loading) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
                 <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                    <span className="visually-hidden">{t('merchant.profile.activityEvents.loading')}</span>
                 </div>
             </div>
         );
@@ -87,7 +95,7 @@ const ActivityEvents = () => {
                     </div>
                     <button className="btn btn-primary" onClick={fetchActivityLogs}>
                         <i className="bi bi-arrow-clockwise me-2"></i>
-                        Retry
+                        {t('merchant.profile.activityEvents.retry')}
                     </button>
                 </div>
             </div>
@@ -101,9 +109,11 @@ const ActivityEvents = () => {
                 <div className="card card-flush h-lg-100">
                     <div className="card-header pt-7">
                         <h3 className="card-title align-items-start flex-column">
-                            <span className="card-label fw-bold text-gray-800">Activity Timeline</span>
+                            <span className="card-label fw-bold text-gray-800">{t('merchant.profile.activityEvents.title')}</span>
                             <span className="text-gray-400 mt-1 fw-semibold fs-6">
-                                {filteredLogs.length} {filteredLogs.length === 1 ? 'event' : 'events'} found
+                                {filteredLogs.length === 1
+                                    ? t('merchant.profile.activityEvents.eventsFoundOne', { count: filteredLogs.length })
+                                    : t('merchant.profile.activityEvents.eventsFoundMany', { count: filteredLogs.length })}
                             </span>
                         </h3>
                         
@@ -115,28 +125,28 @@ const ActivityEvents = () => {
                                     className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-light'}`}
                                     onClick={() => setFilter('all')}
                                 >
-                                    All
+                                    {t('merchant.profile.activityEvents.filterAll')}
                                 </button>
                                 <button 
                                     type="button" 
                                     className={`btn btn-sm ${filter === 'success' ? 'btn-success' : 'btn-light'}`}
                                     onClick={() => setFilter('success')}
                                 >
-                                    Success
+                                    {t('merchant.profile.activityEvents.filterSuccess')}
                                 </button>
                                 <button 
                                     type="button" 
                                     className={`btn btn-sm ${filter === 'warning' ? 'btn-warning' : 'btn-light'}`}
                                     onClick={() => setFilter('warning')}
                                 >
-                                    Warning
+                                    {t('merchant.profile.activityEvents.filterWarning')}
                                 </button>
                                 <button 
                                     type="button" 
                                     className={`btn btn-sm ${filter === 'danger' ? 'btn-danger' : 'btn-light'}`}
                                     onClick={() => setFilter('danger')}
                                 >
-                                    Error
+                                    {t('merchant.profile.activityEvents.filterError')}
                                 </button>
                             </div>
                         </div>
@@ -169,11 +179,11 @@ const ActivityEvents = () => {
                         ) : (
                             <div className="text-center py-10">
                                 <i className="bi bi-inbox fs-3x text-muted mb-4"></i>
-                                <h4 className="text-muted">No events found</h4>
+                                <h4 className="text-muted">{t('merchant.profile.activityEvents.noEventsTitle')}</h4>
                                 <p className="text-muted">
                                     {filter !== 'all' 
-                                        ? `No ${filter} events to display. Try changing the filter.`
-                                        : 'No activity events have been logged yet.'}
+                                        ? t('merchant.profile.activityEvents.noEventsFiltered', { type: filterTypeLabel[filter] || filter })
+                                        : t('merchant.profile.activityEvents.noEventsYet')}
                                 </p>
                             </div>
                         )}
@@ -186,8 +196,8 @@ const ActivityEvents = () => {
                 <div className="card card-flush h-lg-100">
                     <div className="card-header pt-7">
                         <h3 className="card-title align-items-start flex-column">
-                            <span className="card-label fw-bold text-gray-800">Event Statistics</span>
-                            <span className="text-gray-400 mt-1 fw-semibold fs-6">Activity summary</span>
+                            <span className="card-label fw-bold text-gray-800">{t('merchant.profile.activityEvents.statsTitle')}</span>
+                            <span className="text-gray-400 mt-1 fw-semibold fs-6">{t('merchant.profile.activityEvents.statsSubtitle')}</span>
                         </h3>
                     </div>
                     
@@ -201,10 +211,10 @@ const ActivityEvents = () => {
                             </div>
                             <div className="flex-grow-1">
                                 <a href="#" className="text-gray-800 text-hover-primary fs-6 fw-bold">
-                                    Total Events
+                                    {t('merchant.profile.activityEvents.statsTotal')}
                                 </a>
                                 <span className="text-muted fw-semibold d-block fs-7">
-                                    All time activity
+                                    {t('merchant.profile.activityEvents.statsAllTimeDesc')}
                                 </span>
                             </div>
                             <span className="badge badge-light-primary fs-3">{logs.length}</span>
@@ -219,10 +229,10 @@ const ActivityEvents = () => {
                             </div>
                             <div className="flex-grow-1">
                                 <a href="#" className="text-gray-800 text-hover-primary fs-6 fw-bold">
-                                    Success
+                                    {t('merchant.profile.activityEvents.statsSuccess')}
                                 </a>
                                 <span className="text-muted fw-semibold d-block fs-7">
-                                    Completed actions
+                                    {t('merchant.profile.activityEvents.statsSuccessDesc')}
                                 </span>
                             </div>
                             <span className="badge badge-light-success fs-3">
@@ -239,10 +249,10 @@ const ActivityEvents = () => {
                             </div>
                             <div className="flex-grow-1">
                                 <a href="#" className="text-gray-800 text-hover-primary fs-6 fw-bold">
-                                    Warnings
+                                    {t('merchant.profile.activityEvents.statsWarnings')}
                                 </a>
                                 <span className="text-muted fw-semibold d-block fs-7">
-                                    Attention needed
+                                    {t('merchant.profile.activityEvents.statsWarningsDesc')}
                                 </span>
                             </div>
                             <span className="badge badge-light-warning fs-3">
@@ -259,10 +269,10 @@ const ActivityEvents = () => {
                             </div>
                             <div className="flex-grow-1">
                                 <a href="#" className="text-gray-800 text-hover-primary fs-6 fw-bold">
-                                    Errors
+                                    {t('merchant.profile.activityEvents.statsErrors')}
                                 </a>
                                 <span className="text-muted fw-semibold d-block fs-7">
-                                    Failed actions
+                                    {t('merchant.profile.activityEvents.statsErrorsDesc')}
                                 </span>
                             </div>
                             <span className="badge badge-light-danger fs-3">
@@ -279,10 +289,10 @@ const ActivityEvents = () => {
                             </div>
                             <div className="flex-grow-1">
                                 <a href="#" className="text-gray-800 text-hover-primary fs-6 fw-bold">
-                                    Info
+                                    {t('merchant.profile.activityEvents.statsInfo')}
                                 </a>
                                 <span className="text-muted fw-semibold d-block fs-7">
-                                    General updates
+                                    {t('merchant.profile.activityEvents.statsInfoDesc')}
                                 </span>
                             </div>
                             <span className="badge badge-light-info fs-3">

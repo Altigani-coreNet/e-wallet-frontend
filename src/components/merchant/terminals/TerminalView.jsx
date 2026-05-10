@@ -1,4 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTerminalDetails, deleteTerminal } from '../../../services/terminalsService';
 import { useQueryClient } from '@tanstack/react-query';
@@ -7,6 +8,7 @@ import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import Swal from 'sweetalert2';
 
 const TerminalView = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -22,14 +24,14 @@ const TerminalView = () => {
 
     const handleDelete = useCallback(async () => {
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete terminal "${terminal?.name}". This action cannot be undone!`,
+            title: t('merchant.common.areYouSure'),
+            text: t('merchant.terminals.deleteOneConfirm', { name: terminal?.name || '' }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('merchant.common.yesDelete'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (result.isConfirmed) {
@@ -39,29 +41,29 @@ const TerminalView = () => {
                     queryClient.invalidateQueries({ queryKey: ['terminals'] });
                     
                     await Swal.fire({
-                        title: 'Deleted!',
-                        text: 'Terminal has been deleted successfully.',
+                        title: t('merchant.common.deleted'),
+                        text: t('merchant.terminals.deletedOne'),
                         icon: 'success',
                         timer: 2000,
                         showConfirmButton: false
                     });
                     navigate('/merchant/terminals');
                 } else {
-                    Swal.fire('Error!', response.error || 'Failed to delete terminal.', 'error');
+                    Swal.fire(t('merchant.common.error'), response.error || t('merchant.terminals.deleteOneFailed'), 'error');
                 }
             } catch (error) {
-                Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+                Swal.fire(t('merchant.common.error'), t('merchant.paymentLinks.unexpectedError'), 'error');
             }
         }
-    }, [id, terminal?.name, navigate, queryClient]);
+    }, [id, terminal?.name, navigate, queryClient, t]);
 
     useEffect(() => {
-        setTitle('Terminal Details');
+        setTitle(t('merchant.breadcrumbs.terminalDetails'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Terminals', path: '/merchant/terminals' },
-            { label: terminal?.name || 'Terminal Details', path: `/merchant/terminals/${id}`, active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.terminals'), path: '/merchant/terminals' },
+            { label: terminal?.name || t('merchant.breadcrumbs.terminalDetails'), path: `/merchant/terminals/${id}`, active: true }
         ]);
         
         setActions(
@@ -74,7 +76,7 @@ const TerminalView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back to List
+                    {t('merchant.common.backToList')}
                 </button>
                 <Link
                     to={`/merchant/terminals/${id}/edit`}
@@ -84,7 +86,7 @@ const TerminalView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Edit
+                    {t('merchant.common.edit')}
                 </Link>
                 <button
                     className="btn btn-sm btn-danger"
@@ -97,7 +99,7 @@ const TerminalView = () => {
                         <span className="path4"></span>
                         <span className="path5"></span>
                     </i>
-                    Delete
+                    {t('merchant.terminals.delete')}
                 </button>
             </>
         );
@@ -106,7 +108,7 @@ const TerminalView = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions, navigate, id, terminal?.name, handleDelete]);
+    }, [setTitle, setBreadcrumbs, setActions, navigate, id, terminal?.name, handleDelete, t, i18n.language]);
 
     if (loading) {
         return <LoadingSpinner />;

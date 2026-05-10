@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { createAdmin } from '../../../../services/adminAdminsService';
@@ -16,6 +17,7 @@ const debounce = (func, delay) => {
 };
 
 const AdminAdminCreate = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -48,10 +50,10 @@ const AdminAdminCreate = () => {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        setTitle('Create Admin');
+        setTitle(t('admin.adminCreate.title'));
         setActions(null);
         fetchDropdownData();
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t]);
 
     const fetchDropdownData = async () => {
         const rolesRes = await getRolesSelect();
@@ -106,12 +108,12 @@ const AdminAdminCreate = () => {
         let displayText = country.text || country.name;
         // text is an object: {ar: "...", en: "..."}
         if (typeof displayText === 'object' && displayText !== null) {
-            displayText = displayText.en || displayText.ar || '';
+            displayText = displayText[i18n.language] || displayText.en || displayText.ar || '';
         } else if (typeof displayText === 'string' && displayText.startsWith('{')) {
             // Fallback for JSON string
             try {
                 const parsed = JSON.parse(displayText);
-                displayText = parsed.en || parsed.ar || displayText;
+                displayText = parsed[i18n.language] || parsed.en || parsed.ar || displayText;
             } catch (e) {}
         }
         setCountrySearchTerm(displayText);
@@ -197,15 +199,15 @@ const AdminAdminCreate = () => {
         try {
             const response = await createAdmin(formData);
             if (response.success) {
-                toast.success('Admin created successfully');
+                toast.success(t('admin.adminCreate.success'));
                 navigate('/admin/system/admins');
             } else {
                 if (response.errors) setErrors(response.errors);
-                toast.error(response.error || 'Failed to create admin');
+                toast.error(response.error || t('admin.adminCreate.failed'));
             }
         } catch (error) {
             console.error('Error creating admin:', error);
-            toast.error('Failed to create admin');
+            toast.error(t('admin.adminCreate.failed'));
         } finally {
             setLoading(false);
         }
@@ -223,14 +225,14 @@ const AdminAdminCreate = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Create New Admin</h3>
+                <h3 className="card-title">{t('admin.adminCreate.title')}</h3>
             </div>
 
             <form onSubmit={handleSubmit}>
                 <div className="card-body">
                     <div className="row">
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Name</label>
+                            <label className="form-label required">{t('admin.adminCreate.name')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors.name ? 'is-invalid' : ''}`}
@@ -241,7 +243,7 @@ const AdminAdminCreate = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Email</label>
+                            <label className="form-label required">{t('admin.adminCreate.email')}</label>
                             <input
                                 type="email"
                                 className={`form-control ${errors.email ? 'is-invalid' : ''}`}
@@ -252,7 +254,7 @@ const AdminAdminCreate = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Phone</label>
+                            <label className="form-label">{t('admin.adminCreate.phone')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
@@ -263,7 +265,7 @@ const AdminAdminCreate = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Country</label>
+                            <label className="form-label required">{t('admin.adminCreate.country')}</label>
                             <div className="position-relative">
                                 <div 
                                     className={`form-control h-50px d-flex align-items-center justify-content-between ${errors.country_id ? 'is-invalid' : ''}`}
@@ -283,7 +285,7 @@ const AdminAdminCreate = () => {
                                                 <span className="text-gray-800">{countrySearchTerm}</span>
                                             </>
                                         ) : (
-                                            <span className="text-muted">Select Country</span>
+                                            <span className="text-muted">{t('admin.adminCreate.selectCountry')}</span>
                                         )}
                                     </div>
                                     <div className="d-flex align-items-center">
@@ -312,7 +314,7 @@ const AdminAdminCreate = () => {
                                             <input 
                                                 type="text" 
                                                 className="form-control form-control-sm mb-2" 
-                                                placeholder="Search countries..."
+                                                placeholder={t('admin.adminCreate.searchCountries')}
                                                 value={countrySearchTerm}
                                                 onChange={(e) => handleCountrySearch(e.target.value)}
                                                 onClick={(e) => e.stopPropagation()}
@@ -324,11 +326,11 @@ const AdminAdminCreate = () => {
                                                 let displayText = country.text || country.name;
                                                 // text is an object: {ar: "...", en: "..."}
                                                 if (typeof displayText === 'object' && displayText !== null) {
-                                                    displayText = displayText.en || displayText.ar || '';
+                                                    displayText = displayText[i18n.language] || displayText.en || displayText.ar || '';
                                                 } else if (typeof displayText === 'string' && displayText.startsWith('{')) {
                                                     try {
                                                         const parsed = JSON.parse(displayText);
-                                                        displayText = parsed.en || parsed.ar || displayText;
+                                                        displayText = parsed[i18n.language] || parsed.en || parsed.ar || displayText;
                                                     } catch (e) {}
                                                 }
                                                 return (
@@ -350,7 +352,7 @@ const AdminAdminCreate = () => {
                                                 );
                                             })
                                         ) : (
-                                            <div className="p-3 text-muted text-center">No countries found</div>
+                                            <div className="p-3 text-muted text-center">{t('admin.adminCreate.noCountries')}</div>
                                         )}
                                     </div>
                                 )}
@@ -359,7 +361,7 @@ const AdminAdminCreate = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Password</label>
+                            <label className="form-label required">{t('admin.adminCreate.password')}</label>
                             <input
                                 type="password"
                                 className={`form-control ${errors.password ? 'is-invalid' : ''}`}
@@ -370,7 +372,7 @@ const AdminAdminCreate = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Confirm Password</label>
+                            <label className="form-label required">{t('admin.adminCreate.confirmPassword')}</label>
                             <input
                                 type="password"
                                 className={`form-control ${errors.password_confirmation ? 'is-invalid' : ''}`}
@@ -381,7 +383,7 @@ const AdminAdminCreate = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Profile Image</label>
+                            <label className="form-label">{t('admin.adminCreate.profileImage')}</label>
                             <input
                                 type="file"
                                 className={`form-control ${errors.profile_image ? 'is-invalid' : ''}`}
@@ -397,20 +399,20 @@ const AdminAdminCreate = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Status</label>
+                            <label className="form-label required">{t('admin.adminCreate.status')}</label>
                             <select
                                 className={`form-select ${errors.status ? 'is-invalid' : ''}`}
                                 value={formData.status}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                             >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option value="active">{t('admin.common.active')}</option>
+                                <option value="inactive">{t('admin.common.inactive')}</option>
                             </select>
                             {errors.status && <div className="invalid-feedback">{errors.status[0]}</div>}
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Custom Region</label>
+                            <label className="form-label">{t('admin.adminCreate.customRegion')}</label>
                             <div className="form-check form-switch form-check-custom form-check-solid">
                                 <input
                                     className="form-check-input"
@@ -423,7 +425,7 @@ const AdminAdminCreate = () => {
                                     }}
                                 />
                                 <label className="form-check-label ms-2" htmlFor="custom_region_toggle">
-                                    Enable custom regions
+                                    {t('admin.adminCreate.enableCustomRegions')}
                                 </label>
                             </div>
                         </div>
@@ -484,7 +486,7 @@ const AdminAdminCreate = () => {
                                                 <input 
                                                     type="text" 
                                                     className="form-control form-control-sm mb-2" 
-                                                    placeholder="Search regions..."
+                                                    placeholder={t('admin.adminCreate.searchRegions')}
                                                     value={regionSearchTerm}
                                                     onChange={(e) => handleRegionSearch(e.target.value)}
                                                     onClick={(e) => e.stopPropagation()}
@@ -496,12 +498,12 @@ const AdminAdminCreate = () => {
                                                     let displayText = country.text || country.name;
                                                     // text is an object: {ar: "...", en: "..."}
                                                     if (typeof displayText === 'object' && displayText !== null) {
-                                                        displayText = displayText.en || displayText.ar || '';
+                                                        displayText = displayText[i18n.language] || displayText.en || displayText.ar || '';
                                                     } else if (typeof displayText === 'string' && displayText.startsWith('{')) {
                                                         // Fallback for JSON string
                                                         try {
                                                             const parsed = JSON.parse(displayText);
-                                                            displayText = parsed.en || parsed.ar || displayText;
+                                                            displayText = parsed[i18n.language] || parsed.en || parsed.ar || displayText;
                                                         } catch (e) {}
                                                     }
                                                     const isSelected = selectedRegions.some(r => r.id === country.id);
@@ -523,7 +525,7 @@ const AdminAdminCreate = () => {
                                                     );
                                                 })
                                             ) : (
-                                                <div className="p-3 text-muted text-center">No regions found</div>
+                                                <div className="p-3 text-muted text-center">{t('admin.adminCreate.noRegions')}</div>
                                             )}
                                         </div>
                                     )}
@@ -532,7 +534,7 @@ const AdminAdminCreate = () => {
                         )}
 
                         <div className="col-12 mb-5">
-                            <label className="form-label">Roles</label>
+                            <label className="form-label">{t('admin.adminCreate.roles')}</label>
                             <div className="row">
                                 {roles.map(role => (
                                     <div key={role.id} className="col-md-4 mb-2">
@@ -562,10 +564,10 @@ const AdminAdminCreate = () => {
                         onClick={() => navigate('/admin/system/admins')}
                         disabled={loading}
                     >
-                        Cancel
+                        {t('admin.common.cancel')}
                     </button>
                     <button type="submit" className="btn btn-primary" disabled={loading}>
-                        {loading ? 'Creating...' : 'Create Admin'}
+                        {loading ? t('admin.adminCreate.creating') : t('admin.adminCreate.title')}
                     </button>
                 </div>
             </form>

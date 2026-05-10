@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import ProfileHeader from './ProfileHeader';
 import Overview from './Overview';
 import ProfileInfo from './ProfileInfo';
@@ -9,6 +10,7 @@ import { getUserInfo } from '../../services/profileService';
 import useAuthStore from '../../stores/authStore';
 
 const Profile = () => {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('overview');
     const [user, setUser] = useState(null);
     const [merchant, setMerchant] = useState(null);
@@ -89,7 +91,7 @@ const Profile = () => {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
                 <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
+                    <span className="visually-hidden">{t('merchant.profile.loading')}</span>
                 </div>
             </div>
         );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { getTranslatedText } from '../../../utils/helpers';
@@ -14,6 +15,7 @@ const TerminalFiltersPanel = ({
     merchantsMap = {},
     countriesMap = {},
 }) => {
+    const { t } = useTranslation();
     const [branches, setBranches] = useState([]);
     const [loadingBranches, setLoadingBranches] = useState(false);
 
@@ -70,11 +72,11 @@ const TerminalFiltersPanel = ({
                 <div className="row g-5">
                     {/* Search */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Search</label>
+                        <label className="form-label fw-bold">{t('admin.terminalsIndex.search')}</label>
                         <input
                             type="text"
                             className="form-control"
-                            placeholder="Search by name, terminal ID, model, merchant..."
+                            placeholder={t('admin.terminalsIndex.searchPlaceholder')}
                             value={filters.search}
                             onChange={(e) => handleChange('search', e.target.value)}
                         />
@@ -82,31 +84,31 @@ const TerminalFiltersPanel = ({
 
                     {/* Status Filter (is_active) */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Status</label>
+                        <label className="form-label fw-bold">{t('admin.terminalsIndex.status')}</label>
                         <select
                             className="form-select"
                             value={filters.status}
                             onChange={(e) => handleChange('status', e.target.value)}
                         >
-                            <option value="">All Statuses</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="">{t('admin.terminalsIndex.allStatuses')}</option>
+                            <option value="active">{t('admin.common.active')}</option>
+                            <option value="inactive">{t('admin.common.inactive')}</option>
                         </select>
                     </div>
 
                     {/* Terminal Status Filter (online/offline/testing) */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Terminal Status</label>
+                        <label className="form-label fw-bold">{t('admin.terminalsIndex.terminalStatus')}</label>
                         <select
                             className="form-select"
                             value={filters.terminal_status}
                             onChange={(e) => handleChange('terminal_status', e.target.value)}
                         >
-                            <option value="">All Terminal Statuses</option>
-                            <option value="online">Online</option>
-                            <option value="offline">Offline</option>
-                            <option value="testing">Testing</option>
-                            <option value="maintenance">Maintenance</option>
+                            <option value="">{t('admin.terminalsIndex.allTerminalStatuses')}</option>
+                            <option value="online">{t('admin.common.online')}</option>
+                            <option value="offline">{t('admin.common.offline')}</option>
+                            <option value="testing">{t('admin.common.testing')}</option>
+                            <option value="maintenance">{t('admin.common.maintenance')}</option>
                         </select>
                     </div>
 
@@ -122,8 +124,8 @@ const TerminalFiltersPanel = ({
                             }
                         }}
                         onCountryChange={(value) => handleChange('country_id', value || '')}
-                        merchantPlaceholder="All Merchants"
-                        countryPlaceholder="All Countries"
+                        merchantPlaceholder={t('admin.terminalsIndex.allMerchants')}
+                        countryPlaceholder={t('admin.terminalsIndex.allCountries')}
                         merchantNameResolver={resolveMerchant}
                         countryNameResolver={resolveCountry}
                         merchantWrapperClassName="col-md-4"
@@ -132,14 +134,14 @@ const TerminalFiltersPanel = ({
 
                     {/* Branch Filter */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Branch</label>
+                        <label className="form-label fw-bold">{t('admin.terminalsIndex.branch')}</label>
                         <select
                             className="form-select"
                             value={filters.branch_id}
                             onChange={(e) => handleChange('branch_id', e.target.value)}
                             disabled={loadingBranches || !filters.merchant_id}
                         >
-                            <option value="">All Branches</option>
+                            <option value="">{t('admin.terminalsIndex.allBranches')}</option>
                             {branches.map((branch) => (
                                 <option key={branch.id} value={branch.id}>
                                     {getTranslatedText(branch.name)}
@@ -150,7 +152,7 @@ const TerminalFiltersPanel = ({
 
                     {/* Date From */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Date From</label>
+                        <label className="form-label fw-bold">{t('admin.terminalsIndex.dateFrom')}</label>
                         <input
                             type="date"
                             className="form-control"
@@ -161,7 +163,7 @@ const TerminalFiltersPanel = ({
 
                     {/* Date To */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Date To</label>
+                        <label className="form-label fw-bold">{t('admin.terminalsIndex.dateTo')}</label>
                         <input
                             type="date"
                             className="form-control"
@@ -179,7 +181,7 @@ const TerminalFiltersPanel = ({
                             className="btn btn-light btn-active-light-primary"
                             onClick={onClearFilters}
                         >
-                            Clear Filters
+                            {t('admin.terminalsIndex.clearFilters')}
                         </button>
                         <button
                             type="button"
@@ -190,7 +192,7 @@ const TerminalFiltersPanel = ({
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Apply Filters
+                            {t('admin.terminalsIndex.applyFilters')}
                         </button>
                     </div>
                 </div>

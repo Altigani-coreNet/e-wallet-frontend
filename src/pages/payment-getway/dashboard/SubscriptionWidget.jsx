@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
 import Chart from 'react-apexcharts';
+import { useTranslation } from 'react-i18next';
 
 const SubscriptionWidget = ({ data, loading }) => {
+    const { t } = useTranslation();
     const transactionsData = data?.subscriptionData || data || {};
     const chartDataRaw = transactionsData.chart || transactionsData.charts || transactionsData.transactionChart || [];
     const partnersRaw =
@@ -71,11 +73,11 @@ const SubscriptionWidget = ({ data, loading }) => {
         return {
             series: [
                 {
-                    name: 'Success Transactions',
+                    name: t('admin.dashboard.successTransactions'),
                     data: successTransactionsSeries,
                 },
                 {
-                    name: 'Failed Transactions',
+                    name: t('admin.dashboard.failedTransactions'),
                     data: failedTransactionsSeries,
                 }
             ],
@@ -189,8 +191,8 @@ const SubscriptionWidget = ({ data, loading }) => {
                     <div className="card card-flush h-xl-100">
                         <div className="card-header pt-5">
                             <h3 className="card-title align-items-start flex-column">
-                                <span className="card-label fw-bold text-gray-800">Transaction Trends</span>
-                                <span className="text-gray-500 mt-1 fw-semibold fs-6">Last 12 months overview</span>
+                                <span className="card-label fw-bold text-gray-800">{t('admin.dashboard.transactionTrends')}</span>
+                                <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('admin.dashboard.last12MonthsOverview')}</span>
                             </h3>
                         </div>
                         <div className="card-body pt-6">
@@ -219,15 +221,15 @@ const SubscriptionWidget = ({ data, loading }) => {
                    <div className="card card-flush h-xl-100">
                         <div className="card-header pt-5">
                             <h3 className="card-title align-items-start flex-column">
-                                <span className="card-label fw-bold text-gray-800">Top 10 Partners</span>
-                                <span className="text-gray-500 mt-1 fw-semibold fs-6">By transaction count</span>
+                                <span className="card-label fw-bold text-gray-800">{t('admin.dashboard.top10Partners')}</span>
+                                <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('admin.dashboard.byTransactionCount')}</span>
                             </h3>
                         </div>
                         <div className="card-body pt-3">
                             {loading ? (
                                 <div className="d-flex align-items-center justify-content-center" style={{ height: '200px' }}>
                                     <div className="spinner-border text-primary" role="status">
-                                        <span className="visually-hidden">Loading...</span>
+                                        <span className="visually-hidden">{t('admin.common.loading')}</span>
                                     </div>
                                 </div>
                             ) : partners && partners.length > 0 ? (
@@ -248,10 +250,10 @@ const SubscriptionWidget = ({ data, loading }) => {
                                                 </div>
                                                 <div className="flex-grow-1">
                                                     <div className="fw-bold text-gray-800 fs-6">
-                                                        {provider.name || provider.partner_name || provider.title || `Partner ${index + 1}`}
+                                                        {provider.name || provider.partner_name || provider.title || `${t('admin.dashboard.partners')} ${index + 1}`}
                                                     </div>
                                                     <div className="text-gray-500 fs-7">
-                                                        {pickCount(provider, ['transactionCount', 'transaction_count', 'total_transactions', 'subscriberCount', 'subscription_count']).toLocaleString()} transactions
+                                                        {t('admin.dashboard.transactionsCountLabel', { count: pickCount(provider, ['transactionCount', 'transaction_count', 'total_transactions', 'subscriberCount', 'subscription_count']).toLocaleString() })}
                                                     </div>
                                                 </div>
                                                 <div className="text-end">
@@ -264,7 +266,7 @@ const SubscriptionWidget = ({ data, loading }) => {
                                 </div>
                             ) : (
                                 <div className="d-flex align-items-center justify-content-center" style={{ height: '200px' }}>
-                                    <div className="text-muted">No partners data available</div>
+                                    <div className="text-muted">{t('admin.dashboard.noPartnersData')}</div>
                                 </div>
                             )}
                         </div>
@@ -279,15 +281,15 @@ const SubscriptionWidget = ({ data, loading }) => {
                         <div className="card card-flush">
                             <div className="card-header pt-5">
                                 <h3 className="card-title align-items-start flex-column">
-                                    <span className="card-label fw-bold text-gray-800">Top Countries by Transactions</span>
-                                    <span className="text-gray-500 mt-1 fw-semibold fs-6">Transaction distribution by country</span>
+                                    <span className="card-label fw-bold text-gray-800">{t('admin.dashboard.topCountriesByTransactions')}</span>
+                                    <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('admin.dashboard.transactionDistributionByCountry')}</span>
                                 </h3>
                             </div>
                             <div className="card-body pt-3">
                                 {loading ? (
                                     <div className="d-flex align-items-center justify-content-center" style={{ height: '100px' }}>
                                         <div className="spinner-border text-primary" role="status">
-                                            <span className="visually-hidden">Loading...</span>
+                                            <span className="visually-hidden">{t('admin.common.loading')}</span>
                                         </div>
                                     </div>
                                 ) : (
@@ -295,9 +297,9 @@ const SubscriptionWidget = ({ data, loading }) => {
                                         <table className="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
                                             <thead>
                                                 <tr className="fw-bold text-muted">
-                                                    <th className="min-w-100px">Country</th>
-                                                    <th className="min-w-120px text-end">Transactions</th>
-                                                    <th className="min-w-120px text-end">Revenue</th>
+                                                    <th className="min-w-100px">{t('admin.dashboard.country')}</th>
+                                                    <th className="min-w-120px text-end">{t('admin.dashboard.transactions')}</th>
+                                                    <th className="min-w-120px text-end">{t('admin.dashboard.revenue')}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -307,7 +309,7 @@ const SubscriptionWidget = ({ data, loading }) => {
                                                             <div className="d-flex align-items-center">
                                                                 <div className="d-flex justify-content-start flex-column">
                                                                     <span className="text-gray-800 fw-bold text-hover-primary mb-1 fs-6">
-                                                                        {country.name || country.country_name || country.short_name || country.code || 'Unknown'}
+                                                                        {country.name || country.country_name || country.short_name || country.code || t('admin.dashboard.unknown')}
                                                                     </span>
                                                                 </div>
                                                             </div>

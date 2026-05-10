@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
@@ -9,6 +10,7 @@ import { SOFTPOS_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 
 const SettlementTransactions = ({ merchantId: propMerchantId }) => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { user, merchant } = useAuthStore();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -148,12 +150,12 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
 
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
-        setTitle('Settlement Transactions');
+        setTitle(t('merchant.breadcrumbs.settlementTransactions'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Settlements', path: '/merchant/settlements' },
-            { label: 'Settlement Transactions', path: '/merchant/settlements/transactions', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.settlements'), path: '/merchant/settlements' },
+            { label: t('merchant.breadcrumbs.settlementTransactions'), path: '/merchant/settlements/transactions', active: true }
         ]);
         
         setActions(
@@ -166,7 +168,7 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Filter
+                    {t('merchant.common.filter')}
                 </button>
 
                 <button
@@ -178,7 +180,7 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Refresh
+                    {t('merchant.common.refresh')}
                 </button>
 
                 <button
@@ -189,7 +191,7 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back to Settlements
+                    {t('merchant.common.backToSettlements')}
                 </button>
             </>
         );
@@ -198,7 +200,7 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [showFilters, transactionsLoading, statisticsLoading, handleRefresh, navigate, setTitle, setBreadcrumbs, setActions]);
+    }, [showFilters, transactionsLoading, statisticsLoading, handleRefresh, navigate, setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     // Handle page change
     const handlePageChange = (page) => {
@@ -306,6 +308,30 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
         return pages;
     };
 
+    const stx = (suffix) => `merchant.settlements.settlementTx.${suffix}`;
+    const settlementTxStatusLabel = (status) => {
+        const key = (status || '').toLowerCase();
+        const map = {
+            approved: 'statusApproved',
+            declined: 'statusDeclined',
+            pending: 'statusPending',
+            captured: 'statusCaptured',
+            voided: 'statusVoided',
+            refunded: 'statusRefunded'
+        };
+        const sk = map[key];
+        return sk ? t(stx(sk)) : (status ? String(status).charAt(0).toUpperCase() + String(status).slice(1).toLowerCase() : t('merchant.common.na'));
+    };
+    const settlementTxTypeLabel = (type) => {
+        const key = (type || '').toLowerCase();
+        const map = { refunded: 'typeRefunded', voided: 'typeVoided', sale: 'typeSale' };
+        const tk = map[key];
+        return tk ? t(stx(tk)) : (type ? type.charAt(0).toUpperCase() + type.slice(1) : t('merchant.common.na'));
+    };
+
+    const pageFrom = transactions.length > 0 ? (currentPage - 1) * perPage + 1 : 0;
+    const pageTo = Math.min(currentPage * perPage, totalRows);
+
     return (
         <>
             <style>{`
@@ -353,8 +379,8 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                             <span className="path3"></span>
                         </i>
                         <div className="d-flex flex-column">
-                            <h4 className="mb-1">Settlement Transactions</h4>
-                            <span>Showing refunded and voided transactions</span>
+                            <h4 className="mb-1">{t('merchant.settlements.settlementTx.alertTitle')}</h4>
+                            <span>{t('merchant.settlements.settlementTx.alertSubtitle')}</span>
                         </div>
                     </div>
                 </div>
@@ -385,8 +411,8 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                         <div className="card card-flush h-xl-100 bg-light-warning">
                             <div className="card-header pt-5">
                                 <h3 className="card-title align-items-start flex-column">
-                                    <span className="card-label fw-bold text-gray-800">Refunded Transactions</span>
-                                    <span className="text-gray-500 mt-1 fw-semibold fs-6">Total refunded transactions and amount</span>
+                                    <span className="card-label fw-bold text-gray-800">{t('merchant.settlements.settlementTx.refundedTitle')}</span>
+                                    <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('merchant.settlements.settlementTx.refundedSubtitle')}</span>
                                 </h3>
                             </div>
                             <div className="card-body pt-2 row">
@@ -409,8 +435,8 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                         <div className="card card-flush h-xl-100 bg-light-danger">
                             <div className="card-header pt-5">
                                 <h3 className="card-title align-items-start flex-column">
-                                    <span className="card-label fw-bold text-gray-800">Voided Transactions</span>
-                                    <span className="text-gray-500 mt-1 fw-semibold fs-6">Total voided transactions and amount</span>
+                                    <span className="card-label fw-bold text-gray-800">{t('merchant.settlements.settlementTx.voidedTitle')}</span>
+                                    <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('merchant.settlements.settlementTx.voidedSubtitle')}</span>
                                 </h3>
                             </div>
                             <div className="card-body pt-2 row">
@@ -437,12 +463,12 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                         <div className="row">
                             {/* Search */}
                             <div className="col-md-3">
-                                <label className="form-label">Search</label>
+                                <label className="form-label">{t('merchant.common.search')}</label>
                                 <input
                                     type="text"
                                     name="search"
                                     className="form-control form-control-sm"
-                                    placeholder="Search by transaction ID..."
+                                    placeholder={t('merchant.settlements.settlementTx.searchPlaceholder')}
                                     value={filters.search || ''}
                                     onChange={(e) => handleFilterChange({ search: e.target.value })}
                                 />
@@ -450,41 +476,41 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
 
                             {/* Status */}
                             <div className="col-md-3">
-                                <label className="form-label">Status</label>
+                                <label className="form-label">{t('merchant.common.status')}</label>
                                 <select
                                     name="status"
                                     className="form-select form-select-sm"
                                     value={filters.status || ''}
                                     onChange={(e) => handleFilterChange({ status: e.target.value })}
                                 >
-                                    <option value="">All</option>
-                                    <option value="APPROVED">Approved</option>
-                                    <option value="DECLINED">Declined</option>
-                                    <option value="PENDING">Pending</option>
-                                    <option value="CAPTURED">Captured</option>
-                                    <option value="VOIDED">Voided</option>
-                                    <option value="REFUNDED">Refunded</option>
+                                    <option value="">{t('merchant.common.all')}</option>
+                                    <option value="APPROVED">{t('merchant.settlements.settlementTx.statusApproved')}</option>
+                                    <option value="DECLINED">{t('merchant.settlements.settlementTx.statusDeclined')}</option>
+                                    <option value="PENDING">{t('merchant.settlements.settlementTx.statusPending')}</option>
+                                    <option value="CAPTURED">{t('merchant.settlements.settlementTx.statusCaptured')}</option>
+                                    <option value="VOIDED">{t('merchant.settlements.settlementTx.statusVoided')}</option>
+                                    <option value="REFUNDED">{t('merchant.settlements.settlementTx.statusRefunded')}</option>
                                 </select>
                             </div>
 
                             {/* Type */}
                             <div className="col-md-3">
-                                <label className="form-label">Type</label>
+                                <label className="form-label">{t('merchant.settlements.settlementTx.type')}</label>
                                 <select
                                     name="type"
                                     className="form-select form-select-sm"
                                     value={filters.type || ''}
                                     onChange={(e) => handleFilterChange({ type: e.target.value })}
                                 >
-                                    <option value="">All</option>
-                                    <option value="refunded">Refunded</option>
-                                    <option value="voided">Voided</option>
+                                    <option value="">{t('merchant.common.all')}</option>
+                                    <option value="refunded">{t('merchant.settlements.settlementTx.typeRefunded')}</option>
+                                    <option value="voided">{t('merchant.settlements.settlementTx.typeVoided')}</option>
                                 </select>
                             </div>
 
                             {/* Terminal - Searchable Dropdown */}
                             <div className="col-md-3">
-                                <label className="form-label">Terminal</label>
+                                <label className="form-label">{t('merchant.common.terminal')}</label>
                                 <div className="position-relative" ref={terminalDropdownRef}>
                                     <div 
                                         className="form-control form-control-sm d-flex align-items-center justify-content-between"
@@ -494,10 +520,10 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                         <div className="d-flex align-items-center">
                                             {selectedTerminal ? (
                                                 <span className="text-gray-800">
-                                                    {selectedTerminal.name || selectedTerminal.terminal_id || `Terminal ${selectedTerminal.id}`}
+                                                    {selectedTerminal.name || selectedTerminal.terminal_id || t('merchant.common.terminalNamed', { id: selectedTerminal.id })}
                                                 </span>
                                             ) : (
-                                                <span className="text-muted">All Terminals</span>
+                                                <span className="text-muted">{t('merchant.common.allTerminals')}</span>
                                             )}
                                         </div>
                                         <div className="d-flex align-items-center">
@@ -529,7 +555,7 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                                 <input 
                                                     type="text" 
                                                     className="form-control form-control-sm mb-2" 
-                                                    placeholder="Search terminals..."
+                                                    placeholder={t('merchant.common.searchTerminals')}
                                                     value={terminalSearchTerm}
                                                     onChange={(e) => handleTerminalSearch(e.target.value)}
                                                     onClick={(e) => e.stopPropagation()}
@@ -544,7 +570,7 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                                             onMouseDown={(e) => { e.preventDefault(); handleRemoveTerminal(); }}
                                                             style={{ cursor: 'pointer' }}
                                                         >
-                                                            <div className="text-gray-800">All Terminals</div>
+                                                            <div className="text-gray-800">{t('merchant.common.allTerminals')}</div>
                                                         </div>
                                                     )}
                                                     {filteredTerminals.map((terminal) => (
@@ -555,14 +581,14 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                                             style={{ cursor: 'pointer' }}
                                                         >
                                                             <div className="text-gray-800">
-                                                                {terminal.name || terminal.terminal_id || `Terminal ${terminal.id}`}
+                                                                {terminal.name || terminal.terminal_id || t('merchant.common.terminalNamed', { id: terminal.id })}
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </>
                                             ) : (
                                                 <div className="p-3 text-muted text-center">
-                                                    No terminals found
+                                                    {t('merchant.common.noTerminalsFound')}
                                                 </div>
                                             )}
                                         </div>
@@ -574,7 +600,7 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                         <div className="row mt-3">
                             {/* Start Date */}
                             <div className="col-md-3">
-                                <label className="form-label">From Date</label>
+                                <label className="form-label">{t('merchant.common.fromDate')}</label>
                                 <input
                                     ref={startDateRef}
                                     type="date"
@@ -613,7 +639,7 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Clear Filters
+                                    {t('merchant.settlements.settlementTx.filterClear')}
                                 </button>
                             </div>
                         </div>
@@ -628,14 +654,14 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                         <table className="table align-middle table-row-dashed fs-7 gy-5">
                             <thead>
                                 <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                    <th className="text-dark">Transaction ID</th>
-                                    <th className="text-dark">Batch Number</th>
-                                    <th className="text-dark">Payment Channel</th>
-                                    <th className="text-dark">Type</th>
-                                    <th className="text-dark">Status</th>
-                                    <th className="text-dark">Amount</th>
-                                    <th className="text-dark">Created At</th>
-                                    <th className="text-end text-dark">Actions</th>
+                                    <th className="text-dark">{t('merchant.settlements.settlementTx.colTransactionId')}</th>
+                                    <th className="text-dark">{t('merchant.settlements.settlementTx.colBatchNumber')}</th>
+                                    <th className="text-dark">{t('merchant.settlements.settlementTx.paymentChannel')}</th>
+                                    <th className="text-dark">{t('merchant.settlements.settlementTx.type')}</th>
+                                    <th className="text-dark">{t('merchant.settlements.status')}</th>
+                                    <th className="text-dark">{t('merchant.settlements.settlementTx.colAmount')}</th>
+                                    <th className="text-dark">{t('merchant.settlements.settlementTx.colCreatedAt')}</th>
+                                    <th className="text-end text-dark">{t('merchant.settlements.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -661,44 +687,44 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                                     <span className="path1"></span>
                                                     <span className="path2"></span>
                                                 </i>
-                                                <p className="fw-bold">No settlement transactions found</p>
+                                                <p className="fw-bold">{t('merchant.settlements.settlementTx.empty')}</p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
                                     transactions.map((transaction) => (
                                         <tr key={transaction.id}>
-                                            <td>{transaction.transaction_id || 'N/A'}</td>
-                                            <td>{transaction.batch_number || 'N/A'}</td>
+                                            <td>{transaction.transaction_id || t('merchant.common.na')}</td>
+                                            <td>{transaction.batch_number || t('merchant.common.na')}</td>
                                             <td>
                                                 <span className="badge badge-light-primary">
-                                                    {transaction.payment_channel || 'N/A'}
+                                                    {transaction.payment_channel || t('merchant.common.na')}
                                                 </span>
                                             </td>
                                             <td>
                                                 <span className={`badge badge-light-${getTypeColor(transaction.type)}`}>
-                                                    {transaction.type ? transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1) : 'N/A'}
+                                                    {settlementTxTypeLabel(transaction.type)}
                                                 </span>
                                             </td>
                                             <td>
                                                 <span className={`badge badge-light-${getStatusColor(transaction.status)}`}>
-                                                    {transaction.status ? transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1) : 'N/A'}
+                                                    {settlementTxStatusLabel(transaction.status)}
                                                 </span>
                                             </td>
                                             <td>${parseFloat(transaction.amount || 0).toFixed(2)}</td>
-                                            <td>{transaction.created_at || 'N/A'}</td>
+                                            <td>{transaction.created_at || t('merchant.common.na')}</td>
                                             <td className="text-end">
                                                 <button
                                                     className="btn btn-sm btn-light btn-active-light-primary"
                                                     onClick={() => navigate(`/merchant/transactions/${transaction.id}`)}
-                                                    title="View Transaction"
+                                                    title={t('merchant.common.viewTransaction')}
                                                 >
                                                     <i className="ki-duotone ki-eye fs-5">
                                                         <span className="path1"></span>
                                                         <span className="path2"></span>
                                                         <span className="path3"></span>
                                                     </i>
-                                                    View
+                                                    {t('merchant.settlements.settlementTx.view')}
                                                 </button>
                                             </td>
                                         </tr>
@@ -744,7 +770,7 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                                 onClick={() => handlePageChange(currentPage - 1)}
                                                 disabled={currentPage === 1}
                                             >
-                                                Previous
+                                                {t('merchant.common.previous')}
                                             </button>
                                         </li>
                                         {getPaginationNumbers().map((page, index) => (
@@ -769,7 +795,7 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                                 onClick={() => handlePageChange(currentPage + 1)}
                                                 disabled={currentPage === lastPage}
                                             >
-                                                Next
+                                                {t('merchant.common.next')}
                                             </button>
                                         </li>
                                     </ul>

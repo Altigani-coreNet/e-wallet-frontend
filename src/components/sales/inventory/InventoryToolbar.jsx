@@ -8,8 +8,20 @@ const InventoryToolbar = ({
     selectedCount = 0,
     onBulkDelete,
     onAdd,
-    addButtonLabel = 'Add'
+    addButtonLabel = 'Add',
+    bulkDeleteLabel,
+    exportButtonLabel = 'Export',
+    importButtonLabel = 'Import',
+    refreshButtonTitle = 'Refresh',
+    bulkDeleteAriaLabel,
+    exportAriaLabel = 'Export inventory',
+    importAriaLabel = 'Import inventory',
+    refreshAriaLabel = 'Refresh inventory',
 }) => {
+    const bulkDeleteText =
+        bulkDeleteLabel ?? `Delete Selected (${selectedCount})`;
+    const bulkDeleteAria =
+        bulkDeleteAriaLabel ?? `Delete selected items (${selectedCount})`;
     return (
         <>
             {/* Bulk Delete Button (shown when items selected) */}
@@ -17,7 +29,7 @@ const InventoryToolbar = ({
                 <button
                     className="btn btn-sm fw-bold btn-danger me-2"
                     onClick={onBulkDelete}
-                    aria-label={`Delete selected items (${selectedCount})`}
+                    aria-label={bulkDeleteAria}
                 >
                     <i className="ki-duotone ki-trash fs-3 me-0 me-lg-2">
                         <span className="path1"></span>
@@ -27,7 +39,7 @@ const InventoryToolbar = ({
                         <span className="path5"></span>
                     </i>
                     <span className="d-none d-lg-inline">
-                        Delete Selected ({selectedCount})
+                        {bulkDeleteText}
                     </span>
                 </button>
             )}
@@ -38,14 +50,14 @@ const InventoryToolbar = ({
                     className="btn btn-sm fw-bold btn-success me-2"
                     onClick={onExport}
                     disabled={loading}
-                    aria-label="Export inventory"
+                    aria-label={exportAriaLabel}
                 >
                     <i className="ki-duotone ki-exit-up fs-3 me-0 me-lg-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
                     <span className="d-none d-lg-inline">
-                        Export
+                        {exportButtonLabel}
                     </span>
                 </button>
             )}
@@ -56,14 +68,14 @@ const InventoryToolbar = ({
                     className="btn btn-sm fw-bold btn-info me-2"
                     onClick={onImport}
                     disabled={loading}
-                    aria-label="Import inventory"
+                    aria-label={importAriaLabel}
                 >
                     <i className="ki-duotone ki-exit-down fs-3 me-0 me-lg-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
                     <span className="d-none d-lg-inline">
-                        Import
+                        {importButtonLabel}
                     </span>
                 </button>
             )}
@@ -74,8 +86,8 @@ const InventoryToolbar = ({
                     className="btn btn-sm btn-icon btn-light me-2"
                     onClick={onRefresh}
                     disabled={loading}
-                    title="Refresh"
-                    aria-label="Refresh inventory"
+                    title={refreshButtonTitle}
+                    aria-label={refreshAriaLabel}
                 >
                     <i className={`ki-duotone ki-arrows-circle fs-3 ${loading ? 'spinner' : ''}`}>
                         <span className="path1"></span>

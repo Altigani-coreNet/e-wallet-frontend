@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import BatchFilters from './BatchFilters';
@@ -9,6 +10,7 @@ import useAuthStore from '../../../stores/authStore';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 
 const MerchantBatches = ({ merchantId: propMerchantId }) => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { user, merchant } = useAuthStore();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -65,12 +67,12 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
 
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
-        setTitle('Batches');
+        setTitle(t('merchant.breadcrumbs.batches'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Batches', path: '/merchant/batches' },
-            { label: 'Batches List', path: '/merchant/batches', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.batches'), path: '/merchant/batches' },
+            { label: t('merchant.breadcrumbs.batchesList'), path: '/merchant/batches', active: true }
         ]);
         
         setActions(
@@ -83,7 +85,7 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Filter
+                    {t('merchant.common.filter')}
                 </button>
 
                 <button
@@ -95,7 +97,7 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Refresh
+                    {t('merchant.common.refresh')}
                 </button>
             </>
         );
@@ -104,7 +106,7 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [showFilters, batchesLoading, statisticsLoading, handleRefresh, setTitle, setBreadcrumbs, setActions]);
+    }, [showFilters, batchesLoading, statisticsLoading, handleRefresh, setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     // Handle page change
     const handlePageChange = (page) => {
@@ -212,6 +214,14 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
         return pages;
     };
 
+    const batchStatusLabel = (s) => {
+        const m = { settled: 'statusSettled', pending: 'statusPending', failed: 'statusFailed' }[s?.toLowerCase()];
+        return m ? t(`merchant.batches.${m}`) : (s ? s.charAt(0).toUpperCase() + s.slice(1) : t('merchant.common.na'));
+    };
+
+    const pageFrom = batches.length > 0 ? (currentPage - 1) * perPage + 1 : 0;
+    const pageTo = Math.min(currentPage * perPage, totalRows);
+
     return (
         <>
             <style>{`
@@ -290,37 +300,37 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
                                         onClick={() => handleSort('batch_number')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Batch Number {getSortIcon('batch_number')}
+                                        {t('merchant.batches.colBatchNumber')} {getSortIcon('batch_number')}
                                     </th>
                                     <th 
                                         className="text-dark cursor-pointer" 
                                         onClick={() => handleSort('status')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Status {getSortIcon('status')}
+                                        {t('merchant.batches.colStatus')} {getSortIcon('status')}
                                     </th>
                                     <th 
                                         className="text-dark cursor-pointer" 
                                         onClick={() => handleSort('total_amount')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Total Amount {getSortIcon('total_amount')}
+                                        {t('merchant.batches.colTotalAmount')} {getSortIcon('total_amount')}
                                     </th>
                                     <th 
                                         className="text-dark cursor-pointer" 
                                         onClick={() => handleSort('transaction_count')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Transaction Count {getSortIcon('transaction_count')}
+                                        {t('merchant.batches.colTransactionCount')} {getSortIcon('transaction_count')}
                                     </th>
                                     <th 
                                         className="text-dark cursor-pointer" 
                                         onClick={() => handleSort('created_at')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Created Time {getSortIcon('created_at')}
+                                        {t('merchant.batches.colCreatedTime')} {getSortIcon('created_at')}
                                     </th>
-                                    <th className="text-end text-dark">Actions</th>
+                                    <th className="text-end text-dark">{t('merchant.batches.colActions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -344,22 +354,22 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
                                                     <span className="path1"></span>
                                                     <span className="path2"></span>
                                                 </i>
-                                                <p className="fw-bold">No batches found</p>
+                                                <p className="fw-bold">{t('merchant.batches.empty')}</p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
                                     batches.map((batch) => (
                                         <tr key={batch.id}>
-                                            <td>{batch.batch_number || 'N/A'}</td>
+                                            <td>{batch.batch_number || t('merchant.common.na')}</td>
                                             <td>
                                                 <span className={`badge badge-light-${getStatusColor(batch.status)}`}>
-                                                    {batch.status ? batch.status.charAt(0).toUpperCase() + batch.status.slice(1) : 'N/A'}
+                                                    {batchStatusLabel(batch.status)}
                                                 </span>
                                             </td>
                                             <td>{batch.currency_symbol || '$'}{parseFloat(batch.total_amount || 0).toFixed(2)}</td>
                                             <td>{batch.transaction_count || 0}</td>
-                                            <td>{batch.created_at || 'N/A'}</td>
+                                            <td>{batch.created_at || t('merchant.common.na')}</td>
                                             <td className="text-end">
                                                 <BatchActions batch={batch} />
                                             </td>
@@ -376,7 +386,7 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
                             <div className="col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start">
                                 <div className="dataTables_length">
                                     <label className="d-flex align-items-center">
-                                        <span className="me-2">Show</span>
+                                        <span className="me-2">{t('merchant.common.show')}</span>
                                         <select 
                                             className="form-select form-select-sm" 
                                             value={perPage}
@@ -388,12 +398,12 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
                                             <option value="50">50</option>
                                             <option value="100">100</option>
                                         </select>
-                                        <span className="ms-2">entries</span>
+                                        <span className="ms-2">{t('merchant.common.entries')}</span>
                                     </label>
                                 </div>
                                 <div className="ms-5">
                                     <span className="text-muted">
-                                        Showing {((currentPage - 1) * perPage) + 1} to {Math.min(currentPage * perPage, totalRows)} of {totalRows} entries
+                                        {t('merchant.common.showingEntries', { from: pageFrom, to: pageTo, total: totalRows })}
                                     </span>
                                 </div>
                             </div>
@@ -406,7 +416,7 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
                                                 onClick={() => handlePageChange(currentPage - 1)}
                                                 disabled={currentPage === 1}
                                             >
-                                                Previous
+                                                {t('merchant.common.previous')}
                                             </button>
                                         </li>
                                         {getPaginationNumbers().map((page, index) => (
@@ -431,7 +441,7 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
                                                 onClick={() => handlePageChange(currentPage + 1)}
                                                 disabled={currentPage === lastPage}
                                             >
-                                                Next
+                                                {t('merchant.common.next')}
                                             </button>
                                         </li>
                                     </ul>

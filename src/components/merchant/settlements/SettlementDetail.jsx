@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useSettlementDetails } from '../../../services/settlementsService';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 
 const SettlementDetail = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -14,12 +16,12 @@ const SettlementDetail = () => {
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
         if (settlement) {
-            setTitle(`Settlement Details - ${settlement.settlement_number || id}`);
+            setTitle(t('merchant.pages.settlementDetail', { id: settlement.settlement_number || id }));
             
             setBreadcrumbs([
-                { label: 'Dashboard', path: '/merchant/dashboard' },
-                { label: 'Settlements', path: '/merchant/settlements' },
-                { label: settlement.settlement_number || 'Settlement Details', path: `/merchant/settlements/${id}`, active: true }
+                { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+                { label: t('merchant.breadcrumbs.settlements'), path: '/merchant/settlements' },
+                { label: settlement.settlement_number || t('merchant.breadcrumbs.settlements'), path: `/merchant/settlements/${id}`, active: true }
             ]);
             
             setActions(
@@ -31,7 +33,7 @@ const SettlementDetail = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back to Settlements
+                    {t('merchant.common.backToSettlements')}
                 </button>
             );
         }
@@ -40,7 +42,7 @@ const SettlementDetail = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [settlement, id, navigate, setTitle, setBreadcrumbs, setActions]);
+    }, [settlement, id, navigate, setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     // Get status badge color
     const getStatusColor = (status) => {
@@ -52,10 +54,23 @@ const SettlementDetail = () => {
         return statusMap[status?.toLowerCase()] || 'secondary';
     };
 
+    const settlementStatusLabel = (s) => {
+        const m = { settled: 'statusSettled', pending: 'statusPending', failed: 'statusFailed' }[s?.toLowerCase()];
+        return m ? t(`merchant.settlements.${m}`) : (s ? s.charAt(0).toUpperCase() + s.slice(1) : t('merchant.common.na'));
+    };
+
+    const txStatusLabel = (s) => {
+        const key = (s || '').toLowerCase();
+        const path = `merchant.batches.txStatus.${key}`;
+        if (i18n.exists(path)) return t(path);
+        return s ? String(s).charAt(0).toUpperCase() + String(s).slice(1).toLowerCase() : t('merchant.common.na');
+    };
+
     // Format date
     const formatDate = (date) => {
-        if (!date) return 'N/A';
-        return new Date(date).toLocaleString('en-US', {
+        if (!date) return t('merchant.common.na');
+        const loc = (i18n.language || 'en').toLowerCase().startsWith('ar') ? 'ar-SA' : 'en-US';
+        return new Date(date).toLocaleString(loc, {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -154,14 +169,14 @@ const SettlementDetail = () => {
                         <span className="path2"></span>
                         <span className="path3"></span>
                     </i>
-                    <h3 className="text-gray-800 mb-2">Settlement Not Found</h3>
-                    <p className="text-gray-600 mb-5">The settlement you're looking for doesn't exist or you don't have access to it.</p>
+                    <h3 className="text-gray-800 mb-2">{t('merchant.settlements.detailNotFound')}</h3>
+                    <p className="text-gray-600 mb-5">{t('merchant.settlements.detailNotFoundDesc')}</p>
                     <button className="btn btn-primary" onClick={() => navigate('/merchant/settlements')}>
                         <i className="ki-duotone ki-arrow-left fs-3">
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Back to Settlements
+                        {t('merchant.settlements.backToSettlements')}
                     </button>
                 </div>
             </div>
@@ -173,43 +188,47 @@ const SettlementDetail = () => {
             {/* Settlement Info Card */}
             <div className="card mb-5">
                 <div className="card-header">
-                    <h3 className="card-title">Settlement Information</h3>
+                    <h3 className="card-title">{t('merchant.settlements.settlementInformation')}</h3>
                 </div>
                 <div className="card-body">
                     <div className="row mb-7">
                         <div className="col-md-6">
                             <div className="mb-5">
-                                <label className="form-label fw-bold">Settlement Number</label>
-                                <div className="text-gray-800">{settlement.settlement_number || 'N/A'}</div>
+                                <label className="form-label fw-bold">{t('merchant.settlements.settlementNumber')}</label>
+                                <div className="text-gray-800">{settlement.settlement_number || t('merchant.common.na')}</div>
                             </div>
                             <div className="mb-5">
-                                <label className="form-label fw-bold">Merchant</label>
-                                <div className="text-gray-800">{settlement.merchant?.name || 'N/A'}</div>
+                                <label className="form-label fw-bold">{t('merchant.settlements.merchant')}</label>
+                                <div className="text-gray-800">{settlement.merchant?.name || t('merchant.common.na')}</div>
                             </div>
                             <div className="mb-5">
-                                <label className="form-label fw-bold">Batch Number</label>
-                                <div className="text-gray-800">{settlement.batch?.batch_number || 'N/A'}</div>
+                                <label className="form-label fw-bold">{t('merchant.settlements.batchNumber')}</label>
+                                <div className="text-gray-800">{settlement.batch?.batch_number || t('merchant.common.na')}</div>
                             </div>
                         </div>
                         <div className="col-md-6">
                             <div className="mb-5">
-                                <label className="form-label fw-bold">Status</label>
+                                <label className="form-label fw-bold">{t('merchant.settlements.colStatus')}</label>
                                 <div>
                                     <span className={`badge badge-light-${getStatusColor(settlement.status)}`}>
-                                        {settlement.status ? settlement.status.charAt(0).toUpperCase() + settlement.status.slice(1) : 'N/A'}
+                                        {settlementStatusLabel(settlement.status)}
                                     </span>
                                 </div>
                             </div>
                             <div className="mb-5">
-                                <label className="form-label fw-bold">Total Amount</label>
+                                <label className="form-label fw-bold">{t('merchant.settlements.totalAmount')}</label>
                                 <div className="text-gray-800">
                                     {settlement.currency_symbol || '$'}{parseFloat(settlement.total_amount || 0).toFixed(2)}
                                 </div>
                             </div>
                             <div className="mb-5">
-                                <label className="form-label fw-bold">Settlement Date</label>
+                                <label className="form-label fw-bold">{t('merchant.settlements.settlementDate')}</label>
                                 <div className="text-gray-800">
-                                    {settlement.settlement_date ? new Date(settlement.settlement_date).toLocaleDateString() : 'N/A'}
+                                    {settlement.settlement_date
+                                        ? new Date(settlement.settlement_date).toLocaleDateString(
+                                            (i18n.language || 'en').toLowerCase().startsWith('ar') ? 'ar-SA' : 'en-US'
+                                        )
+                                        : t('merchant.common.na')}
                                 </div>
                             </div>
                         </div>
@@ -217,7 +236,7 @@ const SettlementDetail = () => {
                     <div className="row">
                         <div className="col-md-12">
                             <div className="mb-5">
-                                <label className="form-label fw-bold">Created At</label>
+                                <label className="form-label fw-bold">{t('merchant.settlements.createdAt')}</label>
                                 <div className="text-gray-800">
                                     {formatDate(settlement.created_at)}
                                 </div>
@@ -231,30 +250,30 @@ const SettlementDetail = () => {
             {settlement.batch?.transactions && settlement.batch.transactions.length > 0 && (
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title">Batch Transactions</h3>
+                        <h3 className="card-title">{t('merchant.settlements.batchTransactions')}</h3>
                     </div>
                     <div className="card-body">
                         <div className="table-responsive">
                             <table className="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
                                 <thead>
                                     <tr className="fw-bold text-muted">
-                                        <th>Transaction ID</th>
-                                        <th>Amount</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
-                                        <th>Actions</th>
+                                        <th>{t('merchant.settlements.transactionId')}</th>
+                                        <th>{t('merchant.settlements.amount')}</th>
+                                        <th>{t('merchant.settlements.status')}</th>
+                                        <th>{t('merchant.settlements.date')}</th>
+                                        <th>{t('merchant.settlements.actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {settlement.batch.transactions.map((transaction) => (
                                         <tr key={transaction.id}>
-                                            <td>{transaction.transaction_id || 'N/A'}</td>
+                                            <td>{transaction.transaction_id || t('merchant.common.na')}</td>
                                             <td>
                                                 {transaction.currency_symbol || '$'} {parseFloat(transaction.amount || 0).toFixed(2)}
                                             </td>
                                             <td>
                                                 <span className={`badge badge-light-${transaction.status === 'APPROVED' ? 'success' : 'secondary'}`}>
-                                                    {transaction.status}
+                                                    {txStatusLabel(transaction.status)}
                                                 </span>
                                             </td>
                                             <td>{formatDate(transaction.created_at)}</td>
@@ -262,7 +281,7 @@ const SettlementDetail = () => {
                                                 <Link 
                                                     to={`/merchant/transactions/${transaction.id}`}
                                                     className="btn btn-icon btn-bg-light btn-active-color-primary btn-sm"
-                                                    title="View Transaction"
+                                                    title={t('merchant.common.viewTransaction')}
                                                 >
                                                     <i className="ki-duotone ki-eye fs-2">
                                                         <span className="path1"></span>

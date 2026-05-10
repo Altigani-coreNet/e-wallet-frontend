@@ -1,12 +1,20 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { useLocalePrefix } from '../../hooks/useLocalePrefix';
+import { stripLocalePrefix } from '../../i18n/localePaths';
 import NotificationMenu from './NotificationMenu';
+import LanguageSwitcher from '../common/LanguageSwitcher';
 
 const Header = () => {
+    const { t, i18n } = useTranslation();
+    const isRtl = i18n.dir() === 'rtl';
     const navigate = useNavigate();
     const location = useLocation();
+    const p = useLocalePrefix();
+    const pathNoLocale = stripLocalePrefix(location.pathname);
     const { user, merchant, logout, testMode, toggleTestMode } = useAuthStore();
     const planName = merchant?.plan?.name || merchant?.plan_name || '';
     const isEnterprisePlan = planName && ['enterprise', 'premium'].some((kw) => planName.toLowerCase().includes(kw));
@@ -44,13 +52,22 @@ const Header = () => {
                 item.style.opacity = '1';
             });
         }
-    }, [location.pathname]);
+    }, [location.pathname, i18n.language]);
 
     return (
-        <div id="kt_app_header" className="app-header" data-kt-sticky="true" data-kt-sticky-activate="{default: true, lg: true}" data-kt-sticky-name="app-header-minimize" data-kt-sticky-offset="{default: '200px', lg: '0'}" data-kt-sticky-animation="false">
+        <div
+            id="kt_app_header"
+            className="app-header"
+            dir={isRtl ? 'rtl' : 'ltr'}
+            data-kt-sticky="true"
+            data-kt-sticky-activate="{default: true, lg: true}"
+            data-kt-sticky-name="app-header-minimize"
+            data-kt-sticky-offset="{default: '200px', lg: '0'}"
+            data-kt-sticky-animation="false"
+        >
             <div className="app-container container-fluid d-flex align-items-stretch justify-content-between" id="kt_app_header_container">
                 {/* Sidebar mobile toggle */}
-                <div className="d-flex align-items-center d-lg-none ms-n3 me-1 me-md-2" title="Show sidebar menu">
+                <div className="d-flex align-items-center d-lg-none ms-n3 me-1 me-md-2" title={t('header.showSidebarMenu')}>
                     <button 
                         type="button" 
                         className="btn" 
@@ -67,23 +84,26 @@ const Header = () => {
 
                 {/* Mobile logo */}
                 <div className="d-flex align-items-center flex-grow-1 flex-lg-grow-0">
-                    <Link to="/merchant/dashboard" className="d-lg-none">
-                        <img alt="Logo" src="/assets/media/logos/default-small.svg" className="h-30px" />
+                    <Link to={p('/merchant/dashboard')} className="d-lg-none">
+                        <img alt={t('merchant.header.logoAlt')} src="/assets/media/logos/default-small.svg" className="h-30px" />
                     </Link>
                 </div>
 
-                {/* Header wrapper */}
+                {/* Header wrapper: inherits page dir — RTL puts Dashboard on the right, icon cluster on the left */}
                 <div className="d-flex align-items-stretch justify-content-between flex-lg-grow-1" id="kt_app_header_wrapper">
                     {/* Menu wrapper */}
                     <div className="app-header-menu app-header-mobile-drawer align-items-stretch" data-kt-drawer="true" data-kt-drawer-name="app-header-menu" data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true" data-kt-drawer-width="250px" data-kt-drawer-direction="end" data-kt-drawer-toggle="#kt_app_header_menu_toggle" data-kt-swapper="true" data-kt-swapper-mode="{default: 'append', lg: 'prepend'}" data-kt-swapper-parent="{default: '#kt_app_body', lg: '#kt_app_header_wrapper'}">
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        <div
+                            style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}
+                            dir={isRtl ? 'rtl' : 'ltr'}
+                        >
                             {hasSoftPosScope && (
                                 <Link 
-                                    to="/merchant/dashboard" 
+                                    to={p('/merchant/dashboard')} 
                                     style={{ 
                                         textDecoration: 'none',
-                                        color: location.pathname.startsWith('/merchant/dashboard') ? '#009ef7' : 'inherit',
-                                        fontWeight: location.pathname.startsWith('/merchant/dashboard') ? '600' : '500',
+                                        color: pathNoLocale.startsWith('/merchant/dashboard') ? '#009ef7' : 'inherit',
+                                        fontWeight: pathNoLocale.startsWith('/merchant/dashboard') ? '600' : '500',
                                         display: 'flex',
                                         alignItems: 'center',
                                         gap: '0.5rem',
@@ -96,14 +116,18 @@ const Header = () => {
                                         <span className="path3"></span>
                                         <span className="path4"></span>
                                     </i>
-                                    <span>Dashboard</span>
+                                    <span>{t('merchant.header.dashboard')}</span>
                                 </Link>
                             )}
                         </div>
                     </div>
 
-                    {/* Navbar */}
-                    <div className="app-navbar flex-shrink-0">
+                    {/* Navbar: dir=ltr keeps icon order stable; row-reverse in RTL matches profile→…→search reading toward outer edge */}
+                    <div
+                        className="app-navbar flex-shrink-0 d-flex align-items-stretch"
+                        dir="ltr"
+                        style={{ flexDirection: isRtl ? 'row-reverse' : 'row' }}
+                    >
                         {/* Search */}
                         <div className="app-navbar-item align-items-stretch ms-1 ms-md-4">
                             <div className="header-search d-flex align-items-stretch">
@@ -163,7 +187,7 @@ const Header = () => {
                                                 <span className="path10"></span>
                                             </i>
                                         </span>
-                                        <span className="menu-title">Light</span>
+                                        <span className="menu-title">{t('header.themeLight')}</span>
                                     </a>
                                 </div>
                                 <div className="menu-item px-3 my-0">
@@ -174,7 +198,7 @@ const Header = () => {
                                                 <span className="path2"></span>
                                             </i>
                                         </span>
-                                        <span className="menu-title">Dark</span>
+                                        <span className="menu-title">{t('header.themeDark')}</span>
                                     </a>
                                 </div>
                                 <div className="menu-item px-3 my-0">
@@ -187,7 +211,7 @@ const Header = () => {
                                                 <span className="path4"></span>
                                             </i>
                                         </span>
-                                        <span className="menu-title">System</span>
+                                        <span className="menu-title">{t('header.themeSystem')}</span>
                                     </a>
                                 </div>
                             </div>
@@ -199,7 +223,7 @@ const Header = () => {
                                 type="button"
                                 onClick={toggleTestMode}
                                 className={`btn btn-icon btn-custom w-35px h-35px ${testMode ? 'btn-active-color-warning' : 'btn-active-color-success'}`}
-                                title={testMode ? "Test Mode: ON (Click to disable)" : "Test Mode: OFF (Click to enable)"}
+                                title={testMode ? t('merchant.header.testModeOn') : t('merchant.header.testModeOff')}
                             >
                                 {testMode ? (
                                     <i className="ki-duotone ki-shield-tick fs-1 text-warning">
@@ -221,7 +245,7 @@ const Header = () => {
                                 <img 
                                     src={user?.profile_image || '/assets/media/avatars/300-1.jpg'}
                                     className="rounded-3" 
-                                    alt="user"
+                                    alt={t('merchant.header.userAvatarAlt')}
                                 />
                             </div>
                             
@@ -232,7 +256,7 @@ const Header = () => {
                                     <div className="menu-content d-flex align-items-center px-3">
                                         {/* Avatar */}
                                         <div className="symbol symbol-50px me-5">
-                                            <img alt="Logo" src={user?.profile_image || '/assets/media/avatars/300-1.jpg'} />
+                                            <img alt={t('merchant.header.userAvatarAlt')} src={user?.profile_image || '/assets/media/avatars/300-1.jpg'} />
                                         </div>
                                         {/* Username */}
                                         <div className="d-flex flex-column">
@@ -253,27 +277,49 @@ const Header = () => {
                                 
                                 {/* Menu separator */}
                                 <div className="separator my-2"></div>
+
+                                <LanguageSwitcher variant="userMenu" />
                                 
-                                {/* Menu item */}
+                                {/* Menu item — same icon row layout as LanguageSwitcher (userMenu) */}
                                 <div className="menu-item px-5">
-                                    <Link to="/merchant/profile" className="menu-link px-5">
-                                        My Profile
+                                    <Link to={p('/merchant/profile')} className="menu-link px-5 py-3 d-flex align-items-center">
+                                        <span className="menu-icon">
+                                            <i className="ki-duotone ki-profile-user fs-2">
+                                                <span className="path1" />
+                                                <span className="path2" />
+                                            </i>
+                                        </span>
+                                        <span className="menu-title flex-grow-1">{t('merchant.header.myProfile')}</span>
                                     </Link>
                                 </div>
-                                
-                                {/* Upgrade plan */}
+
                                 {!isEnterprisePlan && (
                                     <div className="menu-item px-5">
-                                        <Link to="/merchant/plans" className="menu-link px-5">
-                                            Upgrade Plan
+                                        <Link to={p('/merchant/plans')} className="menu-link px-5 py-3 d-flex align-items-center">
+                                            <span className="menu-icon">
+                                                <i className="ki-duotone ki-rocket fs-2">
+                                                    <span className="path1" />
+                                                    <span className="path2" />
+                                                </i>
+                                            </span>
+                                            <span className="menu-title flex-grow-1">{t('merchant.header.upgradePlan')}</span>
                                         </Link>
                                     </div>
                                 )}
-                                
-                                {/* Menu item */}
+
                                 <div className="menu-item px-5">
-                                    <a href="#" onClick={(e) => { e.preventDefault(); handleLogout(); }} className="menu-link px-5">
-                                        Sign Out
+                                    <a
+                                        href="#"
+                                        onClick={(e) => { e.preventDefault(); handleLogout(); }}
+                                        className="menu-link px-5 py-3 d-flex align-items-center"
+                                    >
+                                        <span className="menu-icon">
+                                            <i className="ki-duotone ki-exit-left fs-2 text-danger">
+                                                <span className="path1" />
+                                                <span className="path2" />
+                                            </i>
+                                        </span>
+                                        <span className="menu-title flex-grow-1 text-danger">{t('merchant.header.signOut')}</span>
                                     </a>
                                 </div>
                             </div>

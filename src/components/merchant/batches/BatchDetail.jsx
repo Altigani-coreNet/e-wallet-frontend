@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useBatchDetails } from '../../../services/batchesService';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 
 const BatchDetail = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -14,12 +16,12 @@ const BatchDetail = () => {
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
         if (batch) {
-            setTitle(`Batch Details - ${batch.batch_number || id}`);
+            setTitle(t('merchant.pages.batchDetail', { id: batch.batch_number || id }));
             
             setBreadcrumbs([
-                { label: 'Dashboard', path: '/merchant/dashboard' },
-                { label: 'Batches', path: '/merchant/batches' },
-                { label: batch.batch_number || 'Batch Details', path: `/merchant/batches/${id}`, active: true }
+                { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+                { label: t('merchant.breadcrumbs.batches'), path: '/merchant/batches' },
+                { label: batch.batch_number || t('merchant.breadcrumbs.batches'), path: `/merchant/batches/${id}`, active: true }
             ]);
             
             setActions(
@@ -31,7 +33,7 @@ const BatchDetail = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back to Batches
+                    {t('merchant.common.backToBatches')}
                 </button>
             );
         }
@@ -40,7 +42,7 @@ const BatchDetail = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [batch, id, navigate, setTitle, setBreadcrumbs, setActions]);
+    }, [batch, id, navigate, setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     // Get status badge color
     const getStatusColor = (status) => {
@@ -69,10 +71,23 @@ const BatchDetail = () => {
         return statusMap[status?.toLowerCase()] || 'secondary';
     };
 
+    const batchStatusLabel = (s) => {
+        const m = { settled: 'statusSettled', pending: 'statusPending', failed: 'statusFailed' }[s?.toLowerCase()];
+        return m ? t(`merchant.batches.${m}`) : (s ? s.charAt(0).toUpperCase() + s.slice(1) : t('merchant.common.na'));
+    };
+
+    const txStatusLabel = (s) => {
+        const key = (s || '').toLowerCase();
+        const path = `merchant.batches.txStatus.${key}`;
+        if (i18n.exists(path)) return t(path);
+        return s ? s.charAt(0).toUpperCase() + s.slice(1) : t('merchant.common.na');
+    };
+
     // Format date
     const formatDate = (date) => {
-        if (!date) return 'N/A';
-        return new Date(date).toLocaleString('en-US', {
+        if (!date) return t('merchant.common.na');
+        const loc = (i18n.language || 'en').toLowerCase().startsWith('ar') ? 'ar-SA' : 'en-US';
+        return new Date(date).toLocaleString(loc, {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit',
@@ -175,14 +190,14 @@ const BatchDetail = () => {
                         <span className="path2"></span>
                         <span className="path3"></span>
                     </i>
-                    <h3 className="text-gray-800 mb-2">Batch Not Found</h3>
-                    <p className="text-gray-600 mb-5">The batch you're looking for doesn't exist or you don't have access to it.</p>
+                    <h3 className="text-gray-800 mb-2">{t('merchant.batches.detailNotFound')}</h3>
+                    <p className="text-gray-600 mb-5">{t('merchant.batches.detailNotFoundDesc')}</p>
                     <button className="btn btn-primary" onClick={() => navigate('/merchant/batches')}>
                         <i className="ki-duotone ki-arrow-left fs-3">
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Back to Batches
+                        {t('merchant.batches.backToBatches')}
                     </button>
                 </div>
             </div>
@@ -195,18 +210,18 @@ const BatchDetail = () => {
             <div className="d-flex flex-wrap flex-stack mb-6">
                 <ul className="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
                     <li className="breadcrumb-item text-muted">
-                        <Link to="/merchant/dashboard" className="text-muted text-hover-primary">Home</Link>
+                        <Link to="/merchant/dashboard" className="text-muted text-hover-primary">{t('merchant.common.home')}</Link>
                     </li>
                     <li className="breadcrumb-item">
                         <span className="bullet bg-gray-500 w-5px h-2px"></span>
                     </li>
                     <li className="breadcrumb-item text-muted">
-                        <Link to="/merchant/batches" className="text-muted text-hover-primary">Batches</Link>
+                        <Link to="/merchant/batches" className="text-muted text-hover-primary">{t('merchant.breadcrumbs.batches')}</Link>
                     </li>
                     <li className="breadcrumb-item">
                         <span className="bullet bg-gray-500 w-5px h-2px"></span>
                     </li>
-                    <li className="breadcrumb-item text-muted">Batch Details</li>
+                    <li className="breadcrumb-item text-muted">{t('merchant.batches.batchDetails')}</li>
                 </ul>
             </div>
 
@@ -217,40 +232,40 @@ const BatchDetail = () => {
                         <div className="card-header pt-5">
                             <div className="card-title d-flex flex-column">
                                 <div className="d-flex align-items-center">
-                                    <span className="fs-2hx fw-bold text-dark me-2 lh-1 ls-n2">{batch.batch_number || 'N/A'}</span>
+                                    <span className="fs-2hx fw-bold text-dark me-2 lh-1 ls-n2">{batch.batch_number || t('merchant.common.na')}</span>
                                 </div>
-                                <span className="text-gray-400 pt-1 fw-semibold fs-6">Batch Information</span>
+                                <span className="text-gray-400 pt-1 fw-semibold fs-6">{t('merchant.batches.batchInformation')}</span>
                             </div>
                         </div>
                         <div className="card-body pt-2 pb-4 d-flex align-items-center">
                             <div className="d-flex flex-column flex-grow-1">
                                 <div className="d-flex align-items-center mb-2">
-                                    <span className="text-gray-600 fw-semibold fs-6 me-2">Merchant:</span>
-                                    <span className="text-dark fw-bold fs-6">{batch.merchant?.name || 'N/A'}</span>
+                                    <span className="text-gray-600 fw-semibold fs-6 me-2">{t('merchant.batches.merchant')}:</span>
+                                    <span className="text-dark fw-bold fs-6">{batch.merchant?.name || t('merchant.common.na')}</span>
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
-                                    <span className="text-gray-600 fw-semibold fs-6 me-2">Status:</span>
+                                    <span className="text-gray-600 fw-semibold fs-6 me-2">{t('merchant.batches.colStatus')}:</span>
                                     <span className={`badge badge-light-${getStatusColor(batch.status)} fs-7`}>
-                                        {batch.status ? batch.status.charAt(0).toUpperCase() + batch.status.slice(1) : 'N/A'}
+                                        {batchStatusLabel(batch.status)}
                                     </span>
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
-                                    <span className="text-gray-600 fw-semibold fs-6 me-2">Total Amount:</span>
+                                    <span className="text-gray-600 fw-semibold fs-6 me-2">{t('merchant.batches.totalAmount')}:</span>
                                     <span className="text-dark fw-bold fs-6">{batch.currency_symbol || '$'}{parseFloat(batch.total_amount || 0).toFixed(2)}</span>
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
-                                    <span className="text-gray-600 fw-semibold fs-6 me-2">Transaction Count:</span>
+                                    <span className="text-gray-600 fw-semibold fs-6 me-2">{t('merchant.batches.transactionCount')}:</span>
                                     <span className="text-dark fw-bold fs-6">{batch.transaction_count || 0}</span>
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
-                                    <span className="text-gray-600 fw-semibold fs-6 me-2">Created At:</span>
+                                    <span className="text-gray-600 fw-semibold fs-6 me-2">{t('merchant.batches.createdAt')}:</span>
                                     <span className="text-dark fw-bold fs-6">
                                         {formatDate(batch.created_at)}
                                     </span>
                                 </div>
                                 {batch.settled_at && (
                                     <div className="d-flex align-items-center">
-                                        <span className="text-gray-600 fw-semibold fs-6 me-2">Settled At:</span>
+                                        <span className="text-gray-600 fw-semibold fs-6 me-2">{t('merchant.batches.settledAt')}:</span>
                                         <span className="text-dark fw-bold fs-6">
                                             {formatDate(batch.settled_at)}
                                         </span>
@@ -266,7 +281,7 @@ const BatchDetail = () => {
             <div className="card">
                 <div className="card-header border-0 pt-6">
                     <div className="card-title">
-                        <h3 className="card-title">Transactions</h3>
+                        <h3 className="card-title">{t('merchant.batches.transactions')}</h3>
                     </div>
                 </div>
                 <div className="card-body pt-0">
@@ -274,19 +289,19 @@ const BatchDetail = () => {
                         <table className="table align-middle table-row-dashed fs-6 gy-5">
                             <thead>
                                 <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                    <th className="text-dark">Transaction ID</th>
-                                    <th className="text-dark">Amount</th>
-                                    <th className="text-dark">Status</th>
-                                    <th className="text-dark">Terminal</th>
-                                    <th className="text-dark">Created At</th>
-                                    <th className="text-dark">Actions</th>
+                                    <th className="text-dark">{t('merchant.batches.transactionId')}</th>
+                                    <th className="text-dark">{t('merchant.batches.amount')}</th>
+                                    <th className="text-dark">{t('merchant.batches.colStatus')}</th>
+                                    <th className="text-dark">{t('merchant.batches.terminal')}</th>
+                                    <th className="text-dark">{t('merchant.batches.createdAt')}</th>
+                                    <th className="text-dark">{t('merchant.batches.colActions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="fw-semibold text-gray-600">
                                 {batch.transactions && batch.transactions.length > 0 ? (
                                     batch.transactions.map((transaction) => (
                                         <tr key={transaction.id}>
-                                            <td className="text-dark fw-bold">{transaction.transaction_id || 'N/A'}</td>
+                                            <td className="text-dark fw-bold">{transaction.transaction_id || t('merchant.common.na')}</td>
                                             <td className="text-dark fw-bold">
                                                 {transaction.currency_symbol || '$'} {parseFloat(transaction.amount || 0).toFixed(2)}
                                             </td>
@@ -303,7 +318,7 @@ const BatchDetail = () => {
                                                 <Link 
                                                     to={`/merchant/transactions/${transaction.id}`}
                                                     className="btn btn-icon btn-bg-light btn-active-color-primary btn-sm"
-                                                    title="View Transaction"
+                                                    title={t('merchant.common.viewTransaction')}
                                                 >
                                                     <i className="ki-duotone ki-eye fs-2">
                                                         <span className="path1"></span>
@@ -321,7 +336,7 @@ const BatchDetail = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            <div>No transactions found</div>
+                                            <div>{t('merchant.batches.noTransactions')}</div>
                                         </td>
                                     </tr>
                                 )}

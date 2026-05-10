@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -19,6 +20,7 @@ const getStatusBadgeClass = (status) => {
 };
 
 const AdminServiceTransactionsIndex = () => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
     const [loading, setLoading] = useState(false);
@@ -43,25 +45,25 @@ const AdminServiceTransactionsIndex = () => {
     });
 
     useEffect(() => {
-        setTitle('Service Transactions');
+        setTitle(t('admin.pages.serviceTransactions'));
         setActions(
             <div className="d-flex gap-2">
                 <button className="btn btn-sm btn-light" onClick={() => setShowFilters((v) => !v)}>
                     <i className="ki-duotone ki-filter fs-3 me-1"><span className="path1"></span><span className="path2"></span></i>
-                    {showFilters ? 'Hide Filters' : 'Filter'}
+                    {showFilters ? t('admin.common.hideFilters') : t('admin.common.filter')}
                 </button>
                 <button className="btn btn-sm btn-light-danger" onClick={clearFilters}>
                     <i className="ki-duotone ki-filter-remove fs-3 me-1"><span className="path1"></span><span className="path2"></span></i>
-                    Clear Filters
+                    {t('admin.common.clearFilters')}
                 </button>
                 <button className="btn btn-sm btn-success" onClick={handleExport}>
                     <i className="ki-duotone ki-file-down fs-3 me-1"><span className="path1"></span><span className="path2"></span></i>
-                    Export
+                    {t('admin.common.export')}
                 </button>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters, filters]);
+    }, [setTitle, setActions, showFilters, filters, t, i18n.language]);
 
     useEffect(() => {
         fetchItems();
@@ -94,7 +96,7 @@ const AdminServiceTransactionsIndex = () => {
             }));
         } catch (error) {
             console.error('Error fetching service transactions:', error);
-            toast.error('Failed to load service transactions');
+            toast.error(t('admin.serviceTransactionsIndex.fetchFailed'));
         } finally {
             setLoading(false);
         }
@@ -125,7 +127,7 @@ const AdminServiceTransactionsIndex = () => {
             setDropdownsLoaded(true);
         } catch (error) {
             console.error('Error loading service transaction filter dropdowns:', error);
-            toast.error('Failed to load filter dropdowns');
+            toast.error(t('admin.serviceTransactionsIndex.filterDropdownsFailed'));
         } finally {
             setDropdownsLoading(false);
         }
@@ -152,12 +154,12 @@ const AdminServiceTransactionsIndex = () => {
 
     const handleExport = async () => {
         const result = await Swal.fire({
-            title: 'Export Service Transactions',
-            text: 'Export with current filters?',
+            title: t('admin.serviceTransactionsIndex.exportTitle'),
+            text: t('admin.serviceTransactionsIndex.exportText'),
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Export',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.serviceTransactionsIndex.exportConfirm'),
+            cancelButtonText: t('admin.serviceTransactionsIndex.exportCancel'),
             confirmButtonColor: '#28a745',
         });
         if (!result.isConfirmed) return;
@@ -204,10 +206,10 @@ const AdminServiceTransactionsIndex = () => {
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-            toast.success(`Exported ${allRows.length} service transactions`);
+            toast.success(t('admin.serviceTransactionsIndex.exported', { count: allRows.length }));
         } catch (error) {
             console.error('Export service transactions error:', error);
-            toast.error('Failed to export service transactions');
+            toast.error(t('admin.serviceTransactionsIndex.exportFailed'));
         }
     };
 
@@ -248,23 +250,23 @@ const AdminServiceTransactionsIndex = () => {
                     <div className="card-body">
                         <div className="row">
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Search</label>
+                                <label className="form-label">{t('admin.serviceTransactionsIndex.searchLabel')}</label>
                                 <input type="text" className="form-control" value={filters.search} onChange={(e) => handleFilterChange('search', e.target.value)} />
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Status</label>
+                                <label className="form-label">{t('admin.serviceTransactionsIndex.statusLabel')}</label>
                                 <select className="form-select" value={filters.status} onChange={(e) => handleFilterChange('status', e.target.value)}>
-                                    <option value="">All</option>
-                                    <option value="pending">pending</option>
-                                    <option value="completed">completed</option>
-                                    <option value="failed">failed</option>
-                                    <option value="skipped">skipped</option>
+                                    <option value="">{t('admin.serviceTransactionsIndex.statusAll')}</option>
+                                    <option value="pending">{t('admin.serviceTransactionsIndex.statusPending')}</option>
+                                    <option value="completed">{t('admin.serviceTransactionsIndex.statusCompleted')}</option>
+                                    <option value="failed">{t('admin.serviceTransactionsIndex.statusFailed')}</option>
+                                    <option value="skipped">{t('admin.serviceTransactionsIndex.statusSkipped')}</option>
                                 </select>
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Merchant</label>
+                                <label className="form-label">{t('admin.serviceTransactionsIndex.merchantLabel')}</label>
                                 <SearchableDropdown
-                                    placeholder="All Merchants"
+                                    placeholder={t('admin.serviceTransactionsIndex.merchantAll')}
                                     options={merchantOptions}
                                     selected={filters.merchant_id || null}
                                     onSelect={(option) => handleFilterChange('merchant_id', option?.value || '')}
@@ -273,9 +275,9 @@ const AdminServiceTransactionsIndex = () => {
                                 />
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Partner</label>
+                                <label className="form-label">{t('admin.serviceTransactionsIndex.partnerLabel')}</label>
                                 <SearchableDropdown
-                                    placeholder="All Partners"
+                                    placeholder={t('admin.serviceTransactionsIndex.partnerAll')}
                                     options={partnerOptions}
                                     selected={filters.partner_id || null}
                                     onSelect={(option) => handleFilterChange('partner_id', option?.value || '')}
@@ -286,9 +288,9 @@ const AdminServiceTransactionsIndex = () => {
                         </div>
                         <div className="row">
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Service</label>
+                                <label className="form-label">{t('admin.serviceTransactionsIndex.serviceLabel')}</label>
                                 <SearchableDropdown
-                                    placeholder="All Services"
+                                    placeholder={t('admin.serviceTransactionsIndex.serviceAll')}
                                     options={serviceOptions}
                                     selected={filters.service_id || null}
                                     onSelect={(option) => handleFilterChange('service_id', option?.value || '')}
@@ -297,9 +299,9 @@ const AdminServiceTransactionsIndex = () => {
                                 />
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">Product</label>
+                                <label className="form-label">{t('admin.serviceTransactionsIndex.productLabel')}</label>
                                 <SearchableDropdown
-                                    placeholder="All Products"
+                                    placeholder={t('admin.serviceTransactionsIndex.productAll')}
                                     options={productOptions}
                                     selected={filters.product_id || null}
                                     onSelect={(option) => handleFilterChange('product_id', option?.value || '')}
@@ -308,11 +310,11 @@ const AdminServiceTransactionsIndex = () => {
                                 />
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">From Date</label>
+                                <label className="form-label">{t('admin.serviceTransactionsIndex.fromDateLabel')}</label>
                                 <input type="date" className="form-control" value={filters.start_date} onChange={(e) => handleFilterChange('start_date', e.target.value)} />
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">To Date</label>
+                                <label className="form-label">{t('admin.serviceTransactionsIndex.toDateLabel')}</label>
                                 <input type="date" className="form-control" value={filters.end_date} onChange={(e) => handleFilterChange('end_date', e.target.value)} />
                             </div>
                         </div>
@@ -326,7 +328,7 @@ const AdminServiceTransactionsIndex = () => {
                         <input
                             type="text"
                             className="form-control form-control-solid w-250px"
-                            placeholder="Quick search..."
+                            placeholder={t('admin.serviceTransactionsIndex.searchPlaceholder')}
                             value={filters.search}
                             onChange={(e) => handleFilterChange('search', e.target.value)}
                         />
@@ -337,14 +339,14 @@ const AdminServiceTransactionsIndex = () => {
                     <table className="table align-middle table-row-dashed fs-7 gy-5">
                         <thead>
                             <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                <th>Country</th>
-                                <th>Partner</th>
-                                <th>Merchant</th>
-                                <th>Transaction ID</th>
-                                <th>Date</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th className="text-end">Action</th>
+                                <th>{t('admin.serviceTransactionsIndex.colCountry')}</th>
+                                <th>{t('admin.serviceTransactionsIndex.colPartner')}</th>
+                                <th>{t('admin.serviceTransactionsIndex.colMerchant')}</th>
+                                <th>{t('admin.serviceTransactionsIndex.colTransactionId')}</th>
+                                <th>{t('admin.serviceTransactionsIndex.colDate')}</th>
+                                <th>{t('admin.serviceTransactionsIndex.colAmount')}</th>
+                                <th>{t('admin.serviceTransactionsIndex.colStatus')}</th>
+                                <th className="text-end">{t('admin.serviceTransactionsIndex.colAction')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -367,7 +369,7 @@ const AdminServiceTransactionsIndex = () => {
                                     </tr>
                                 ))
                             ) : items.length === 0 ? (
-                                <tr><td colSpan="8" className="text-center py-8">No service transactions found</td></tr>
+                                <tr><td colSpan="8" className="text-center py-8">{t('admin.serviceTransactionsIndex.noData')}</td></tr>
                             ) : (
                                 items.map((item) => (
                                     <tr key={item.id}>
@@ -389,8 +391,8 @@ const AdminServiceTransactionsIndex = () => {
                                             <button
                                                 className="btn btn-icon btn-sm btn-light btn-active-light-primary"
                                                 onClick={() => navigate(`/admin/service-transactions/${item.id}`)}
-                                                title="Service Details"
-                                                aria-label="Service Details"
+                                                title={t('admin.serviceTransactionsIndex.serviceDetails')}
+                                                aria-label={t('admin.serviceTransactionsIndex.serviceDetails')}
                                             >
                                                 <i className="ki-duotone ki-eye fs-3">
                                                     <span className="path1"></span>
@@ -409,7 +411,7 @@ const AdminServiceTransactionsIndex = () => {
                     <div className="row mt-5">
                         <div className="col-sm-12 col-md-5 d-flex align-items-center">
                             <label className="d-flex align-items-center">
-                                <span className="me-2">Show</span>
+                                <span className="me-2">{t('admin.serviceTransactionsIndex.show')}</span>
                                 <select
                                     className="form-select form-select-sm"
                                     value={pagination.per_page}
@@ -421,17 +423,17 @@ const AdminServiceTransactionsIndex = () => {
                                     <option value="50">50</option>
                                     <option value="100">100</option>
                                 </select>
-                                <span className="ms-2">entries</span>
+                                <span className="ms-2">{t('admin.serviceTransactionsIndex.entries')}</span>
                             </label>
                         </div>
                         <div className="col-sm-12 col-md-7 d-flex align-items-center justify-content-end">
                             <ul className="pagination">
                                 <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}>
-                                    <button className="page-link" onClick={() => setPagination((p) => ({ ...p, current_page: p.current_page - 1 }))}>Previous</button>
+                                    <button className="page-link" onClick={() => setPagination((p) => ({ ...p, current_page: p.current_page - 1 }))}>{t('admin.common.previous')}</button>
                                 </li>
                                 <li className="page-item active"><button className="page-link">{pagination.current_page}</button></li>
                                 <li className={`page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}`}>
-                                    <button className="page-link" onClick={() => setPagination((p) => ({ ...p, current_page: p.current_page + 1 }))}>Next</button>
+                                    <button className="page-link" onClick={() => setPagination((p) => ({ ...p, current_page: p.current_page + 1 }))}>{t('admin.common.next')}</button>
                                 </li>
                             </ul>
                         </div>

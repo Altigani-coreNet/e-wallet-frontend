@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -9,11 +10,12 @@ import { SidebarProvider, useSidebar } from '../../contexts/SidebarContext';
 import useAuthStore from '../../stores/authStore';
 
 const MainLayoutContent = () => {
+    const { i18n } = useTranslation();
+    const layoutDir = i18n.dir();
+    const isArabicLayout = layoutDir === 'rtl';
     const { title, breadcrumbs, actions } = useToolbar();
     const { closeSidebar } = useSidebar();
     const location = useLocation();
-    const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     const { 
         token,
         profileLoading,
@@ -21,16 +23,6 @@ const MainLayoutContent = () => {
         profileError,
         fetchProfile
     } = useAuthStore();
-
-    // Track window width for responsive layout
-    useEffect(() => {
-        const handleResize = () => {
-            setWindowWidth(window.innerWidth);
-        };
-
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
 
     // Close sidebar on route change (mobile only)
     useEffect(() => {
@@ -119,74 +111,31 @@ const MainLayoutContent = () => {
         }, 100);
     }, []);
 
-    // Monitor sidebar minimize state
-    useEffect(() => {
-        const checkSidebarState = () => {
-            // Check multiple ways the sidebar minimize state might be stored
-            const sidebar = document.getElementById('kt_app_sidebar');
-            const isMinimized = 
-                document.body.classList.contains('app-sidebar-minimize') || 
-                document.body.getAttribute('data-kt-app-sidebar-minimize') === 'on' ||
-                (sidebar && sidebar.classList.contains('app-sidebar-minimize')) ||
-                (sidebar && sidebar.classList.contains('minimize'));
-            
-            setIsSidebarMinimized(isMinimized);
-        };
-
-        // Initial check
-        checkSidebarState();
-
-        // Watch for changes using MutationObserver on body
-        const bodyObserver = new MutationObserver(checkSidebarState);
-        bodyObserver.observe(document.body, {
-            attributes: true,
-            attributeFilter: ['class', 'data-kt-app-sidebar-minimize']
-        });
-
-        // Watch for changes on sidebar element
-        const sidebar = document.getElementById('kt_app_sidebar');
-        let sidebarObserver = null;
-        if (sidebar) {
-            sidebarObserver = new MutationObserver(checkSidebarState);
-            sidebarObserver.observe(sidebar, {
-                attributes: true,
-                attributeFilter: ['class']
-            });
-        }
-
-        // Also listen for sidebar toggle events
-        const sidebarToggle = document.querySelector('[data-kt-toggle-name="app-sidebar-minimize"]');
-        const handleToggle = () => {
-            setTimeout(checkSidebarState, 100); // Small delay to let the class update
-        };
-        
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', handleToggle);
-        }
-
-        return () => {
-            bodyObserver.disconnect();
-            if (sidebarObserver) {
-                sidebarObserver.disconnect();
-            }
-            if (sidebarToggle) {
-                sidebarToggle.removeEventListener('click', handleToggle);
-            }
-        };
-    }, []);
-
     return (
         <>
             {/* Begin::App */}
-            <div className="d-flex flex-column flex-root app-root" id="kt_app_root" style={{ width: windowWidth <= 1024 ? '100%' : (isSidebarMinimized ? '100%' : '90%') }}>
+            <div
+                className={`d-flex flex-column flex-root app-root${isArabicLayout ? ' app-layout-ar' : ''}`}
+                id="kt_app_root"
+                dir={layoutDir}
+                data-app-locale={isArabicLayout ? 'ar' : 'en'}
+            >
                 {/* Begin::Page */}
-                <div className="app-page flex-column flex-column-fluid" id="kt_app_page" style={{ width: windowWidth <= 1024 ? '100%' : (isSidebarMinimized ? '93%' : '90%') }}>
+                <div
+                    className={`app-page flex-column flex-column-fluid${isArabicLayout ? ' app-layout-ar' : ''}`}
+                    id="kt_app_page"
+                    dir={layoutDir}
+                >
                     {/* Begin::Header */}
                     <Header />
                     {/* End::Header */}
                     
-                    {/* Begin::Wrapper */}
-                    <div className="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                    {/* Begin::Wrapper — dir + app-layout-ar so RTL flex/order mirror reliably */}
+                    <div
+                        className={`app-wrapper flex-column flex-row-fluid${isArabicLayout ? ' app-layout-ar' : ''}`}
+                        id="kt_app_wrapper"
+                        dir={layoutDir}
+                    >
                         {/* Begin::Sidebar */}
                         <Sidebar isLoading={showSidebarSkeleton} error={profileError} onRetry={fetchProfile} />
                         {/* End::Sidebar */}
@@ -200,9 +149,9 @@ const MainLayoutContent = () => {
                                 {/* End::Toolbar */}
                                 
                                 {/* Begin::Content */}
-                                <div id="kt_app_content" className="app-content flex-column-fluid" style={{ width: '100%' }}>
+                                <div id="kt_app_content" className="app-content flex-column-fluid">
                                     {/* Begin::Content container */}
-                                    <div id="kt_app_content_container" className="app-container container-fluid" style={{ width: '100%' }}>
+                                    <div id="kt_app_content_container" className="app-container container-fluid">
                                         {profileError && (
                                             <div className="alert alert-danger d-flex align-items-center justify-content-between mb-5" role="alert">
                                                 <div>

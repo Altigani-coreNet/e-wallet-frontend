@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { useCurrencies } from '../../../services/currenciesService';
 
 const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validationErrors = {} }) => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     
     // Fetch currencies from AuthService
@@ -239,29 +241,16 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
         return err || null;
     };
 
-    const paymentMethods = [
-        { value: 'card', label: 'Card' },
-        { value: 'afterpay_clearpay', label: 'Afterpay / Clearpay' },
-        { value: 'alipay', label: 'Alipay' },
-        { value: 'bancontact', label: 'Bancontact' },
-        { value: 'eps', label: 'EPS' },
-        { value: 'giropay', label: 'Giropay' },
-        { value: 'grabpay', label: 'GrabPay' },
-        { value: 'ideal', label: 'iDEAL' },
-        { value: 'klarna', label: 'Klarna' },
-        { value: 'oxxo', label: 'OXXO' },
-        { value: 'p24', label: 'Przelewy24' },
-        { value: 'sepa_debit', label: 'SEPA Debit' },
-        { value: 'sofort', label: 'Sofort' },
-        { value: 'us_bank_account', label: 'US Bank Account' },
-        { value: 'wechat_pay', label: 'WeChat Pay' }
+    const paymentMethodValues = [
+        'card', 'afterpay_clearpay', 'alipay', 'bancontact', 'eps', 'giropay', 'grabpay', 'ideal',
+        'klarna', 'oxxo', 'p24', 'sepa_debit', 'sofort', 'us_bank_account', 'wechat_pay'
     ];
 
     return (
         <div className="card">
             <div className="card-header">
                 <div className="card-title">
-                    <h3>{mode === 'create' ? 'Create' : 'Edit'} Payment Link</h3>
+                    <h3>{mode === 'create' ? t('merchant.paymentLinks.form.titleCreate') : t('merchant.paymentLinks.form.titleEdit')}</h3>
                 </div>
             </div>
             <form onSubmit={handleSubmit}>
@@ -275,14 +264,14 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                     <div className="row">
                         {/* Amount */}
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Amount</label>
+                            <label className="form-label required">{t('merchant.paymentLinks.form.amount')}</label>
                             <input
                                 type="number"
                                 step="0.01"
                                 min="0.01"
                                 name="amount"
                                 className={`form-control ${getFieldError('amount') ? 'is-invalid' : ''}`}
-                                placeholder="Enter amount"
+                                placeholder={t('merchant.paymentLinks.form.amountPlaceholder')}
                                 value={formData.amount}
                                 onChange={handleChange}
                                 required
@@ -292,7 +281,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
 
                         {/* Currency */}
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Currency</label>
+                            <label className="form-label required">{t('merchant.paymentLinks.form.currency')}</label>
                             <select
                                 name="currency_id"
                                 className={`form-select ${getFieldError('currency_id') ? 'is-invalid' : ''}`}
@@ -302,12 +291,12 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                                 disabled={loadingCurrencies}
                             >
                                 {loadingCurrencies ? (
-                                    <option value="">Loading currencies...</option>
+                                    <option value="">{t('merchant.paymentLinks.form.loadingCurrencies')}</option>
                                 ) : currenciesError ? (
-                                    <option value="">Failed to load currencies</option>
+                                    <option value="">{t('merchant.paymentLinks.form.currenciesError')}</option>
                                 ) : (
                                     <>
-                                        <option value="">Select currency</option>
+                                        <option value="">{t('merchant.paymentLinks.form.selectCurrency')}</option>
                                         {currencies && currencies.map(currency => (
                                             <option key={currency.id} value={currency.id}>
                                                 {getDisplayText(currency.currency_code)} - {getDisplayText(currency.name)} ({getDisplayText(currency.symbol)})
@@ -318,7 +307,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                             </select>
                             {currenciesError && (
                                 <div className="form-text text-danger">
-                                    Failed to load currencies from server
+                                    {t('merchant.paymentLinks.form.currenciesLoadError')}
                                 </div>
                             )}
                             {getFieldError('currency_id') && <div className="invalid-feedback d-block">{getFieldError('currency_id')}</div>}
@@ -326,12 +315,12 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
 
                         {/* Customer Name */}
                         <div className="col-md-12 mb-5">
-                            <label className="form-label required">Customer Name</label>
+                            <label className="form-label required">{t('merchant.paymentLinks.form.customerName')}</label>
                             <input
                                 type="text"
                                 name="customer_name"
                                 className={`form-control ${getFieldError('customer_name') ? 'is-invalid' : ''}`}
-                                placeholder="Enter customer name"
+                                placeholder={t('merchant.paymentLinks.form.customerNamePlaceholder')}
                                 value={formData.customer_name}
                                 onChange={handleChange}
                                 required
@@ -341,24 +330,24 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
 
                         {/* Customer Email */}
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Customer Email</label>
+                            <label className="form-label">{t('merchant.paymentLinks.form.customerEmail')}</label>
                             <input
                                 type="email"
                                 name="customer_email"
                                 className={`form-control ${getFieldError('customer_email') ? 'is-invalid' : ''}`}
-                                placeholder="Enter customer email"
+                                placeholder={t('merchant.paymentLinks.form.customerEmailPlaceholder')}
                                 value={formData.customer_email}
                                 onChange={handleChange}
                             />
                             <div className="form-text">
-                                Optional: Email for sending payment link
+                                {t('merchant.paymentLinks.form.customerEmailHint')}
                             </div>
                             {getFieldError('customer_email') && <div className="invalid-feedback d-block">{getFieldError('customer_email')}</div>}
                         </div>
 
                         {/* Customer Phone */}
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Customer Phone</label>
+                            <label className="form-label">{t('merchant.paymentLinks.form.customerPhone')}</label>
                             <div className="form-control p-0">
                                 <PhoneInput
                                     country={"ae"}
@@ -382,7 +371,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                                         height: 'calc(1.5em + 1rem + 6px)',
                                         paddingLeft: '48px'
                                     }}
-                                    placeholder="Enter phone number"
+                                    placeholder={t('merchant.paymentLinks.form.phonePlaceholder')}
                                     specialLabel=""
                                 />
                             </div>
@@ -406,7 +395,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                                         }
                                     }}
                                 />
-                                <span>Schedule Date</span>
+                                <span>{t('merchant.paymentLinks.form.scheduleDate')}</span>
                             </label>
                             {useScheduledDate ? (
                                 <>
@@ -419,18 +408,18 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                                         min={new Date().toISOString().split('T')[0]}
                                     />
                                     <div className="form-text">
-                                        Choose when this payment link becomes active.
+                                        {t('merchant.paymentLinks.form.scheduleDateHint')}
                                     </div>
                                     {getFieldError('scheduled_date') && <div className="invalid-feedback d-block">{getFieldError('scheduled_date')}</div>}
                                 </>
                             ) : (
-                                <div className="form-text">Enable to set a start date for this payment link.</div>
+                                <div className="form-text">{t('merchant.paymentLinks.form.scheduleDisabledHint')}</div>
                             )}
                         </div>
 
                         {/* Expiry Date */}
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Expiry Date</label>
+                            <label className="form-label">{t('merchant.paymentLinks.form.expiryDate')}</label>
                             <input
                                 type="date"
                                 name="expired_date"
@@ -440,14 +429,14 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                                 min={new Date().toISOString().split('T')[0]}
                             />
                             <div className="form-text">
-                                Optional: Set when this link expires
+                                {t('merchant.paymentLinks.form.expiryHint')}
                             </div>
                             {getFieldError('expired_date') && <div className="invalid-feedback d-block">{getFieldError('expired_date')}</div>}
                         </div>
 
                         {/* Payment Method Types - Beautiful Multi-Select */}
                         <div className="col-md-12 mb-5">
-                            <label className="form-label required">Payment Methods</label>
+                            <label className="form-label required">{t('merchant.paymentLinks.form.paymentMethods')}</label>
                             <div className="position-relative" ref={paymentMethodsRef}>
                                 {/* Selected Tags */}
                                 <div 
@@ -457,9 +446,9 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                                 >
                                     {formData.payment_method_types && formData.payment_method_types.length > 0 ? (
                                         formData.payment_method_types.map(methodValue => {
-                                            const method = paymentMethods.find(m => m.value === methodValue);
-                                            if (!method) return null;
-                                            
+                                            const methodLabel = paymentMethodValues.includes(methodValue)
+                                                ? t(`merchant.paymentLinks.methods.${methodValue}`)
+                                                : methodValue;
                                             return (
                                                 <span
                                                     key={methodValue}
@@ -470,7 +459,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                                                         handleRemovePaymentMethod(methodValue);
                                                     }}
                                                 >
-                                                    <span className="me-2">{method.label}</span>
+                                                    <span className="me-2">{methodLabel}</span>
                                                     <i 
                                                         className="ki-duotone ki-cross fs-6 cursor-pointer"
                                                         style={{ cursor: 'pointer' }}
@@ -482,7 +471,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                                             );
                                         })
                                     ) : (
-                                        <span className="text-muted">Select payment methods...</span>
+                                        <span className="text-muted">{t('merchant.paymentLinks.form.selectMethodsPlaceholder')}</span>
                                     )}
                                 </div>
 
@@ -513,11 +502,14 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                                             marginTop: '4px'
                                         }}
                                     >
-                                        {paymentMethods.map(method => {
-                                            const isSelected = formData.payment_method_types?.includes(method.value);
+                                        {[...new Set([...paymentMethodValues, ...(formData.payment_method_types || [])])].map(methodValue => {
+                                            const isSelected = formData.payment_method_types?.includes(methodValue);
+                                            const methodLabel = paymentMethodValues.includes(methodValue)
+                                                ? t(`merchant.paymentLinks.methods.${methodValue}`)
+                                                : methodValue;
                                             return (
                                                 <div
-                                                    key={method.value}
+                                                    key={methodValue}
                                                     className={`d-flex align-items-center p-3 cursor-pointer ${
                                                         isSelected 
                                                             ? 'bg-light-primary' 
@@ -529,7 +521,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                                                     }}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        handlePaymentMethodToggle(method.value);
+                                                        handlePaymentMethodToggle(methodValue);
                                                     }}
                                                     onMouseEnter={(e) => {
                                                         if (!isSelected) {
@@ -547,12 +539,12 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                                                             className="form-check-input"
                                                             type="checkbox"
                                                             checked={isSelected}
-                                                            onChange={() => handlePaymentMethodToggle(method.value)}
+                                                            onChange={() => handlePaymentMethodToggle(methodValue)}
                                                             onClick={(e) => e.stopPropagation()}
                                                         />
                                                     </div>
                                                     <span className={`fw-semibold ${isSelected ? 'text-primary' : 'text-gray-800'}`}>
-                                                        {method.label}
+                                                        {methodLabel}
                                                     </span>
                                                     {isSelected && (
                                                         <i className="ki-duotone ki-check fs-3 text-primary ms-auto">
@@ -567,7 +559,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                                 )}
                             </div>
                             <div className="form-text mt-2">
-                                Click to select multiple payment methods. Selected methods appear as tags above.
+                                {t('merchant.paymentLinks.form.paymentMethodsHint')}
                             </div>
                             {getFieldError('payment_method_types') && <div className="invalid-feedback d-block">{getFieldError('payment_method_types')}</div>}
                             {/* Hidden input for form validation */}
@@ -587,7 +579,7 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                         onClick={() => navigate('/merchant/payment-links')}
                         className="btn btn-light btn-active-light-primary me-2"
                     >
-                        Cancel
+                        {t('merchant.paymentLinks.form.cancel')}
                     </button>
                     <button
                         type="submit"
@@ -597,12 +589,12 @@ const PaymentLinkForm = ({ mode, initialData, onSubmit, loading, error, validati
                         {loading ? (
                             <>
                                 <span className="spinner-border spinner-border-sm me-2"></span>
-                                Saving...
+                                {t('merchant.paymentLinks.form.saving')}
                             </>
                         ) : (
                             <>
                                 <i className="ki-duotone ki-check fs-2"></i>
-                                {mode === 'create' ? 'Create' : 'Update'} Payment Link
+                                {mode === 'create' ? t('merchant.paymentLinks.form.submitCreate') : t('merchant.paymentLinks.form.submitUpdate')}
                             </>
                         )}
                     </button>

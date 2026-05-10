@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS, ADMIN_SYSTEM_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -16,6 +17,7 @@ const debounce = (func, delay) => {
 };
 
 const AdminPlanCreate = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
     const [saving, setSaving] = useState(false);
@@ -52,18 +54,18 @@ const AdminPlanCreate = () => {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        setTitle('Add New Plan');
+        setTitle(t('admin.planCreate.addNewPlan'));
         setActions(
             <Link to="/admin/plans" className="btn btn-sm btn-light-danger">
                 <i className="ki-duotone ki-arrow-left fs-2">
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back
+                {t('admin.planCreate.back')}
             </Link>
         );
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t]);
 
     // Fetch currencies
     useEffect(() => {
@@ -76,14 +78,14 @@ const AdminPlanCreate = () => {
                 setCurrencies(currenciesRes.data?.data || currenciesRes.data || []);
             } catch (error) {
                 console.error('Failed to fetch currencies:', error);
-                toast.error('Failed to load currencies');
+                toast.error(t('admin.planCreate.failedToLoadCurrencies'));
             } finally {
                 setLoadingCurrencies(false);
             }
         };
 
         fetchCurrencies();
-    }, []);
+    }, [t]);
 
     // Fetch countries from API with optional search term
     const fetchCountries = async (index, searchTerm = '') => {
@@ -314,29 +316,29 @@ const AdminPlanCreate = () => {
         const newErrors = {};
 
         if (!formData.name?.trim()) {
-            newErrors.name = 'Plan name is required';
+            newErrors.name = t('admin.planCreate.nameRequired');
         }
 
         // Validate prices array
         if (!formData.prices || formData.prices.length === 0) {
-            newErrors.prices = 'At least one price is required';
+            newErrors.prices = t('admin.planCreate.priceRequired');
         } else {
             formData.prices.forEach((price, index) => {
                 if (!price.currency_id) {
-                    newErrors[`prices.${index}.currency_id`] = 'Currency is required';
+                    newErrors[`prices.${index}.currency_id`] = t('admin.planCreate.currencyRequired');
                 }
                 if (!price.price || parseFloat(price.price) < 0) {
-                    newErrors[`prices.${index}.price`] = 'Valid price is required';
+                    newErrors[`prices.${index}.price`] = t('admin.planCreate.validPriceRequired');
                 }
             });
         }
 
         if (!formData.plan_type) {
-            newErrors.plan_type = 'Plan type is required';
+            newErrors.plan_type = t('admin.planCreate.selectPlanType');
         }
 
         if (formData.has_discount && (!formData.current_price || parseFloat(formData.current_price) < 0)) {
-            newErrors.current_price = 'Discounted price is required when discount is enabled';
+            newErrors.current_price = t('admin.planCreate.discountedPriceRequired');
         }
 
         setErrors(newErrors);
@@ -347,7 +349,7 @@ const AdminPlanCreate = () => {
         e.preventDefault();
 
         if (!validateForm()) {
-            toast.error('Please fill in all required fields');
+            toast.error(t('admin.planCreate.fillRequiredFields'));
             return;
         }
 
@@ -408,11 +410,11 @@ const AdminPlanCreate = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Plan created successfully');
+                toast.success(t('admin.planCreate.createSuccess'));
                 navigate('/admin/plans');
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Failed to create plan';
+            const errorMessage = error.response?.data?.message || t('admin.planCreate.createFailed');
             toast.error(errorMessage);
             
             if (error.response?.data?.errors) {
@@ -432,7 +434,7 @@ const AdminPlanCreate = () => {
                     <div className="card">
                         <div className="card-header border-0">
                             <div className="card-title">
-                                <h2>Add New Plan</h2>
+                                <h2>{t('admin.planCreate.addNewPlan')}</h2>
                             </div>
                         </div>
 
@@ -445,7 +447,7 @@ const AdminPlanCreate = () => {
                                             <span className="path2"></span>
                                         </i>
                                         <div className="d-flex flex-column">
-                                            <h4 className="mb-1">Validation Errors</h4>
+                                            <h4 className="mb-1">{t('admin.planCreate.validationErrors')}</h4>
                                             <ul className="mb-0">
                                                 {Object.values(errors).map((error, idx) => (
                                                     <li key={idx}>{error}</li>
@@ -459,20 +461,20 @@ const AdminPlanCreate = () => {
 
                             <div className="row">
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold required">Plan Name</label>
+                                    <label className="form-label fw-bold required">{t('admin.planCreate.planName')}</label>
                                     <input
                                         type="text"
                                         name="name"
                                         className={`form-control ${errors.name ? 'is-invalid' : ''}`}
                                         value={formData.name}
                                         onChange={handleInputChange}
-                                        placeholder="Enter plan name"
+                                        placeholder={t('admin.planCreate.enterPlanName')}
                                     />
                                     {errors.name && <div className="invalid-feedback d-block">{errors.name}</div>}
                                 </div>
 
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold">Legacy Price (Optional)</label>
+                                    <label className="form-label fw-bold">{t('admin.planCreate.legacyPrice')}</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -482,40 +484,40 @@ const AdminPlanCreate = () => {
                                         onChange={handleInputChange}
                                         placeholder="0.00"
                                     />
-                                    <small className="text-muted">Use plan prices below instead</small>
+                                    <small className="text-muted">{t('admin.planCreate.usePricesBelow')}</small>
                                 </div>
 
                                 <div className="col-md-12 mb-7">
-                                    <label className="form-label fw-bold">Description</label>
+                                    <label className="form-label fw-bold">{t('admin.planCreate.description')}</label>
                                     <textarea
                                         name="description"
                                         className="form-control"
                                         rows="3"
                                         value={formData.description}
                                         onChange={handleInputChange}
-                                        placeholder="Enter plan description"
+                                        placeholder={t('admin.planCreate.enterDescription')}
                                     />
                                 </div>
 
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold required">Plan Type</label>
+                                    <label className="form-label fw-bold required">{t('admin.planCreate.planType')}</label>
                                     <select
                                         name="plan_type"
                                         className={`form-select ${errors.plan_type ? 'is-invalid' : ''}`}
                                         value={formData.plan_type}
                                         onChange={handleInputChange}
                                     >
-                                        <option value="">Select Plan Type</option>
-                                        <option value="Onetime">Onetime</option>
-                                        <option value="Weekly">Weekly</option>
-                                        <option value="Monthly">Monthly</option>
-                                        <option value="Yearly">Yearly</option>
+                                        <option value="">{t('admin.planCreate.selectPlanType')}</option>
+                                        <option value="Onetime">{t('admin.planCreate.onetime')}</option>
+                                        <option value="Weekly">{t('admin.planCreate.weekly')}</option>
+                                        <option value="Monthly">{t('admin.planCreate.monthly')}</option>
+                                        <option value="Yearly">{t('admin.planCreate.yearly')}</option>
                                     </select>
                                     {errors.plan_type && <div className="invalid-feedback d-block">{errors.plan_type}</div>}
                                 </div>
 
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold">Status</label>
+                                    <label className="form-label fw-bold">{t('admin.planCreate.status')}</label>
                                     <div className="form-check form-switch">
                                         <input
                                             className="form-check-input"
@@ -524,12 +526,12 @@ const AdminPlanCreate = () => {
                                             checked={formData.status}
                                             onChange={handleInputChange}
                                         />
-                                        <label className="form-check-label">Active</label>
+                                        <label className="form-check-label">{t('admin.planCreate.active')}</label>
                                     </div>
                                 </div>
 
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold">Has Discount</label>
+                                    <label className="form-label fw-bold">{t('admin.planCreate.hasDiscount')}</label>
                                     <div className="form-check form-switch">
                                         <input
                                             className="form-check-input"
@@ -538,13 +540,13 @@ const AdminPlanCreate = () => {
                                             checked={formData.has_discount}
                                             onChange={handleInputChange}
                                         />
-                                        <label className="form-check-label">Enable Discount</label>
+                                        <label className="form-check-label">{t('admin.planCreate.enableDiscount')}</label>
                                     </div>
                                 </div>
 
                                 {formData.has_discount && (
                                     <div className="col-md-6 mb-7">
-                                        <label className="form-label fw-bold">Legacy Discounted Price (Optional)</label>
+                                        <label className="form-label fw-bold">{t('admin.planCreate.legacyDiscountedPrice')}</label>
                                         <input
                                             type="number"
                                             step="0.01"
@@ -554,7 +556,7 @@ const AdminPlanCreate = () => {
                                             onChange={handleInputChange}
                                             placeholder="0.00"
                                         />
-                                        <small className="text-muted">Use plan prices below instead</small>
+                                        <small className="text-muted">{t('admin.planCreate.usePricesBelow')}</small>
                                     </div>
                                 )}
                             </div>
@@ -564,21 +566,21 @@ const AdminPlanCreate = () => {
                             {/* Plan Prices Section */}
                             <div className="row mb-6">
                                 <div className="col-12">
-                                    <h3 className="fs-6 fw-bold mb-4">Plan Prices</h3>
-                                    <p className="text-muted mb-4">Add prices for different currencies and countries. At least one price is required.</p>
+                                    <h3 className="fs-6 fw-bold mb-4">{t('admin.planCreate.planPrices')}</h3>
+                                    <p className="text-muted mb-4">{t('admin.planCreate.planPricesDescription')}</p>
                                     
                                     {formData.prices.map((price, index) => (
                                         <div key={index} className="card mb-4 p-6">
                                             <div className="row g-4">
                                                 <div className="col-md-3">
-                                                    <label className="form-label fw-bold required">Currency</label>
+                                                    <label className="form-label fw-bold required">{t('admin.planCreate.currency')}</label>
                                                     <select
                                                         className={`form-select ${errors[`prices.${index}.currency_id`] ? 'is-invalid' : ''}`}
                                                         value={price.currency_id}
                                                         onChange={(e) => handlePriceChange(index, 'currency_id', e.target.value)}
                                                         disabled={loadingCurrencies}
                                                     >
-                                                        <option value="">Select Currency</option>
+                                                        <option value="">{t('admin.planCreate.selectCurrency')}</option>
                                                         {currencies.map((currency) => (
                                                             <option key={currency.id} value={currency.id}>
                                                                 {currency.text || currency.name || `${currency.currency_code || currency.symbol || ''}`}
@@ -591,7 +593,7 @@ const AdminPlanCreate = () => {
                                                 </div>
 
                                                 <div className="col-md-3">
-                                                    <label className="form-label fw-bold">Country (Optional)</label>
+                                                    <label className="form-label fw-bold">{t('admin.planCreate.country')}</label>
                                                     <div className="position-relative">
                                                         <div 
                                                             className="form-control h-50px d-flex align-items-center justify-content-between"
@@ -611,7 +613,7 @@ const AdminPlanCreate = () => {
                                                                         <span className="text-gray-800">{selectedCountries[index].text || selectedCountries[index].name}</span>
                                                                     </>
                                                                 ) : (
-                                                                    <span className="text-muted">All Countries</span>
+                                                                    <span className="text-muted">{t('admin.planCreate.allCountries')}</span>
                                                                 )}
                                                             </div>
                                                             <div className="d-flex align-items-center">
@@ -640,7 +642,7 @@ const AdminPlanCreate = () => {
                                                                     <input 
                                                                         type="text" 
                                                                         className="form-control form-control-sm mb-2" 
-                                                                        placeholder="Search countries..."
+                                                                        placeholder={t('admin.planCreate.searchCountries')}
                                                                         value={countrySearchStates[index]?.searchTerm || ''}
                                                                         onChange={(e) => handleCountrySearch(index, e.target.value)}
                                                                         onClick={(e) => e.stopPropagation()}
@@ -651,10 +653,10 @@ const AdminPlanCreate = () => {
                                                                     <>
                                                                         <div 
                                                                             className="p-3 border-bottom cursor-pointer hover-bg-light d-flex align-items-center"
-                                                                            onMouseDown={(e) => { e.preventDefault(); handleCountrySelect(index, { id: '', text: 'All Countries', name: 'All Countries' }); }}
+                                                                            onMouseDown={(e) => { e.preventDefault(); handleCountrySelect(index, { id: '', text: t('admin.planCreate.allCountries'), name: t('admin.planCreate.allCountries') }); }}
                                                                             style={{ cursor: 'pointer' }}
                                                                         >
-                                                                            <span className="text-gray-800">All Countries</span>
+                                                                            <span className="text-gray-800">{t('admin.planCreate.allCountries')}</span>
                                                                         </div>
                                                                         {(countrySearchStates[index]?.filteredCountries || []).map((country) => {
                                                                             // Extract English name from country data
@@ -696,7 +698,7 @@ const AdminPlanCreate = () => {
                                                                         })}
                                                                     </>
                                                                 ) : (
-                                                                    <div className="p-3 text-muted text-center">No countries found</div>
+                                                                    <div className="p-3 text-muted text-center">{t('admin.planCreate.noCountriesFound')}</div>
                                                                 )}
                                                             </div>
                                                         )}
@@ -704,7 +706,7 @@ const AdminPlanCreate = () => {
                                                 </div>
 
                                                 <div className="col-md-2">
-                                                    <label className="form-label fw-bold required">Price</label>
+                                                    <label className="form-label fw-bold required">{t('admin.planCreate.price')}</label>
                                                     <input
                                                         type="number"
                                                         step="0.01"
@@ -719,7 +721,7 @@ const AdminPlanCreate = () => {
                                                 </div>
 
                                                 <div className="col-md-2">
-                                                    <label className="form-label fw-bold">Discounted Price</label>
+                                                    <label className="form-label fw-bold">{t('admin.planCreate.discountedPrice')}</label>
                                                     <input
                                                         type="number"
                                                         step="0.01"
@@ -731,7 +733,7 @@ const AdminPlanCreate = () => {
                                                 </div>
 
                                                 <div className="col-md-1">
-                                                    <label className="form-label fw-bold">Default</label>
+                                                    <label className="form-label fw-bold">{t('admin.planCreate.default')}</label>
                                                     <div className="form-check form-switch mt-2">
                                                         <input
                                                             className="form-check-input"
@@ -772,7 +774,7 @@ const AdminPlanCreate = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Add Price
+                                        {t('admin.planCreate.addPrice')}
                                     </button>
                                 </div>
                             </div>
@@ -782,23 +784,23 @@ const AdminPlanCreate = () => {
                             {/* Plan Scopes Section */}
                             <div className="row mb-6">
                                 <div className="col-12">
-                                    <h3 className="fs-6 fw-bold mb-4">Plan Scopes (Cashier)</h3>
+                                    <h3 className="fs-6 fw-bold mb-4">{t('admin.planCreate.planScopes')}</h3>
 
                                     <div className="card mb-5">
                                         <div className="card-header">
-                                            <h4 className="card-title mb-0">Cashier Module</h4>
+                                            <h4 className="card-title mb-0">{t('admin.planCreate.cashierModule')}</h4>
                                         </div>
                                         <div className="card-body">
                                             {[
-                                                { key: 'users', label: 'Users' },
-                                                { key: 'payment_links', label: 'Payment Links' },
-                                                { key: 'branches', label: 'Branches' },
-                                                { key: 'categories', label: 'Categories' },
-                                                { key: 'products', label: 'Products' },
-                                                { key: 'customers', label: 'Customers' },
-                                                { key: 'suppliers', label: 'Suppliers' },
-                                                { key: 'purchases', label: 'Purchases' },
-                                                { key: 'sales', label: 'Sales' }
+                                                { key: 'users', label: t('admin.planCreate.users') },
+                                                { key: 'payment_links', label: t('admin.planCreate.paymentLinks') },
+                                                { key: 'branches', label: t('admin.planCreate.branches') },
+                                                { key: 'categories', label: t('admin.planCreate.categories') },
+                                                { key: 'products', label: t('admin.planCreate.products') },
+                                                { key: 'customers', label: t('admin.planCreate.customers') },
+                                                { key: 'suppliers', label: t('admin.planCreate.suppliers') },
+                                                { key: 'purchases', label: t('admin.planCreate.purchases') },
+                                                { key: 'sales', label: t('admin.planCreate.sales') }
                                             ].map(({ key, label }) => (
                                                 <div key={key} className="row mb-5 align-items-center">
                                                     <div className="col-md-3">
@@ -812,17 +814,17 @@ const AdminPlanCreate = () => {
                                                                 checked={formData.scopes[key].is_enabled}
                                                                 onChange={(e) => handleScopeChange(key, 'is_enabled', e.target.checked)}
                                                             />
-                                                            <label className="form-check-label">Enable Limit</label>
+                                                            <label className="form-check-label">{t('admin.planCreate.enableLimit')}</label>
                                                         </div>
                                                     </div>
                                                     {formData.scopes[key].is_enabled && (
                                                         <div className="col-md-4">
                                                             <div className="d-flex align-items-center gap-2">
-                                                                <label className="form-label fw-semibold mb-0">Max count</label>
+                                                                <label className="form-label fw-semibold mb-0">{t('admin.planCreate.maxCount')}</label>
                                                                 <input
                                                                     type="number"
                                                                     className="form-control"
-                                                                    placeholder="Leave empty for unlimited"
+                                                                    placeholder={t('admin.planCreate.unlimitedPlaceholder')}
                                                                     value={formData.scopes[key].max_count}
                                                                     onChange={(e) => handleScopeChange(key, 'max_count', e.target.value)}
                                                                     min="0"
@@ -841,18 +843,18 @@ const AdminPlanCreate = () => {
 
                             <div className="row mb-6">
                                 <div className="col-12">
-                                    <h3 className="fs-6 fw-bold mb-4">Plan Features</h3>
+                                    <h3 className="fs-6 fw-bold mb-4">{t('admin.planCreate.planFeatures')}</h3>
                                     {formData.features.map((feature, index) => (
                                         <div key={index} className="feature-item mb-4 p-4 border rounded">
                                             <div className="row align-items-center">
                                                 <div className="col-md-5">
-                                                    <label className="form-label fw-semibold fs-6">Feature Name</label>
+                                                    <label className="form-label fw-semibold fs-6">{t('admin.planCreate.featureName')}</label>
                                                     <input
                                                         type="text"
                                                         className="form-control form-control-solid"
                                                         value={feature.name}
                                                         onChange={(e) => handleFeatureChange(index, 'name', e.target.value)}
-                                                        placeholder="Feature name"
+                                                        placeholder={t('admin.planCreate.featureNamePlaceholder')}
                                                     />
                                                 </div>
                                                 <div className="col-md-4">
@@ -863,7 +865,7 @@ const AdminPlanCreate = () => {
                                                             checked={feature.is_enabled}
                                                             onChange={(e) => handleFeatureChange(index, 'is_enabled', e.target.checked)}
                                                         />
-                                                        <label className="form-check-label">Is Enabled</label>
+                                                        <label className="form-check-label">{t('admin.planCreate.isEnabled')}</label>
                                                     </div>
                                                 </div>
                                                 <div className="col-md-3">
@@ -880,7 +882,7 @@ const AdminPlanCreate = () => {
                                                                 <span className="path4"></span>
                                                                 <span className="path5"></span>
                                                             </i>
-                                                            Remove
+                                                            {t('admin.planCreate.remove')}
                                                         </button>
                                                     )}
                                                 </div>
@@ -896,7 +898,7 @@ const AdminPlanCreate = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Add Feature
+                                        {t('admin.planCreate.addFeature')}
                                     </button>
                                 </div>
                             </div>
@@ -908,10 +910,10 @@ const AdminPlanCreate = () => {
                                 className="btn btn-primary"
                                 disabled={saving}
                             >
-                                {saving ? 'Saving...' : 'Save Plan'}
+                                {saving ? t('admin.planCreate.saving') : t('admin.planCreate.savePlan')}
                             </button>
                             <Link to="/admin/plans" className="btn btn-light-danger ms-2">
-                                Cancel
+                                {t('admin.planCreate.cancel')}
                             </Link>
                         </div>
                     </div>

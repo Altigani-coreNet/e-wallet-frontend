@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const AdminLatestTransactions = ({ transactions, limit, onLimitChange, loading }) => {
+    const { t } = useTranslation();
     const sales = transactions?.sales || [];
     const refunds = transactions?.refunds || [];
     const voids = transactions?.voids || [];
@@ -23,7 +25,7 @@ const AdminLatestTransactions = ({ transactions, limit, onLimitChange, loading }
                 transaction?.terminal_uuid ??
                 'N/A';
 
-            const merchantName = transaction?.merchant_name || transaction?.merchant?.business_name || 'Unknown Merchant';
+            const merchantName = transaction?.merchant_name || transaction?.merchant?.business_name || t('admin.dashboard.unknownMerchant');
             const partnerName = transaction?.partner_name || null;
             const countryName = transaction?.country_name || null;
             const terminalName = transaction?.terminal_name || transaction?.terminal?.name || null;
@@ -51,12 +53,12 @@ const AdminLatestTransactions = ({ transactions, limit, onLimitChange, loading }
                                 )}
                                 {partnerName && (
                                     <span className="text-muted fw-semibold d-block fs-7">
-                                        Partner: {partnerName}
+                                        {t('admin.dashboard.partnerLabel', { name: partnerName })}
                                     </span>
                                 )}
                                 {countryName && (
                                     <span className="text-muted fw-semibold d-block fs-7">
-                                        Country: {countryName}
+                                        {t('admin.dashboard.countryLabel', { name: countryName })}
                                     </span>
                                 )}
                                 {transaction.terminal?.branch_name && (
@@ -74,14 +76,14 @@ const AdminLatestTransactions = ({ transactions, limit, onLimitChange, loading }
                 </td>
                 <td>
                     <span className={`badge badge-light-${statusColor} fs-7 fw-bold`}>
-                        {transaction.status || 'Unknown'}
+                        {transaction.status || t('admin.dashboard.unknown')}
                     </span>
                 </td>
                 <td className="text-end">
                     <a
                         href={`/admin/transactions/${transaction.id}`}
                         className="btn btn-sm btn-icon btn-bg-light btn-active-color-primary w-30px h-30px"
-                        title="View Details"
+                        title={t('admin.dashboard.viewDetails')}
                     >
                         <i className="ki-duotone ki-eye fs-2 text-gray-500"></i>
                     </a>
@@ -102,8 +104,8 @@ const AdminLatestTransactions = ({ transactions, limit, onLimitChange, loading }
         <div className="card card-flush h-xl-100">
             <div className="card-header pt-7">
                 <h3 className="card-title align-items-start flex-column">
-                    <span className="card-label fw-bold text-gray-800">Latest Transactions</span>
-                    <span className="text-gray-500 mt-1 fw-semibold fs-6">Recent activity</span>
+                    <span className="card-label fw-bold text-gray-800">{t('admin.dashboard.latestTransactions')}</span>
+                    <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('admin.dashboard.recentActivity')}</span>
                 </h3>
                 <div className="card-toolbar">
                     <select
@@ -111,10 +113,10 @@ const AdminLatestTransactions = ({ transactions, limit, onLimitChange, loading }
                         value={limit}
                         onChange={(e) => onLimitChange(parseInt(e.target.value, 10))}
                     >
-                        <option value="5">5 Items</option>
-                        <option value="10">10 Items</option>
-                        <option value="25">25 Items</option>
-                        <option value="50">50 Items</option>
+                        <option value="5">{t('admin.dashboard.itemsCount', { count: 5 })}</option>
+                        <option value="10">{t('admin.dashboard.itemsCount', { count: 10 })}</option>
+                        <option value="25">{t('admin.dashboard.itemsCount', { count: 25 })}</option>
+                        <option value="50">{t('admin.dashboard.itemsCount', { count: 50 })}</option>
                     </select>
                 </div>
             </div>
@@ -124,10 +126,10 @@ const AdminLatestTransactions = ({ transactions, limit, onLimitChange, loading }
                         <table className="table table-row-dashed align-middle gs-0 gy-4 my-0">
                             <thead>
                                 <tr className="fs-7 fw-bold text-gray-500 border-bottom-0">
-                                    <th className="p-0 min-w-150px">Merchant/Terminal</th>
-                                    <th className="p-0 min-w-100px">Amount</th>
-                                    <th className="p-0 min-w-100px">Status</th>
-                                    <th className="p-0 w-50px">Action</th>
+                                    <th className="p-0 min-w-150px">{t('admin.dashboard.merchantTerminal')}</th>
+                                    <th className="p-0 min-w-100px">{t('admin.dashboard.amount')}</th>
+                                    <th className="p-0 min-w-100px">{t('admin.dashboard.status')}</th>
+                                    <th className="p-0 w-50px">{t('admin.dashboard.action')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -164,10 +166,10 @@ const AdminLatestTransactions = ({ transactions, limit, onLimitChange, loading }
                         <table className="table table-row-dashed align-middle gs-0 gy-4 my-0">
                             <thead>
                                 <tr className="fs-7 fw-bold text-gray-500 border-bottom-0">
-                                    <th className="p-0 min-w-150px">Merchant/Terminal</th>
-                                    <th className="p-0 min-w-100px">Amount</th>
-                                    <th className="p-0 min-w-100px">Status</th>
-                                    <th className="p-0 w-50px">Action</th>
+                                    <th className="p-0 min-w-150px">{t('admin.dashboard.merchantTerminal')}</th>
+                                    <th className="p-0 min-w-100px">{t('admin.dashboard.amount')}</th>
+                                    <th className="p-0 min-w-100px">{t('admin.dashboard.status')}</th>
+                                    <th className="p-0 w-50px">{t('admin.dashboard.action')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -176,7 +178,7 @@ const AdminLatestTransactions = ({ transactions, limit, onLimitChange, loading }
                                 ) : (
                                     <tr>
                                         <td colSpan="4" className="text-center text-muted py-4">
-                                            <span className="fs-6">No transactions found</span>
+                                            <span className="fs-6">{t('admin.dashboard.noTransactionsFound')}</span>
                                         </td>
                                     </tr>
                                 )}

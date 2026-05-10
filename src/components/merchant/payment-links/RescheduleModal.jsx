@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { updatePaymentLinkDate } from '../../../services/paymentLinksService';
-import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 
 const RescheduleModal = ({ show, paymentLink, onClose, onSuccess }) => {
+    const { t } = useTranslation();
     const [scheduledDate, setScheduledDate] = useState(
         paymentLink.scheduled_date ? paymentLink.scheduled_date.split(' ')[0] : ''
     );
@@ -13,7 +14,7 @@ const RescheduleModal = ({ show, paymentLink, onClose, onSuccess }) => {
         e.preventDefault();
         
         if (!scheduledDate) {
-            Swal.fire('Error!', 'Please select a date.', 'error');
+            Swal.fire(t('merchant.common.error'), t('merchant.paymentLinks.modals.selectDateError'), 'error');
             return;
         }
 
@@ -22,18 +23,18 @@ const RescheduleModal = ({ show, paymentLink, onClose, onSuccess }) => {
             const response = await updatePaymentLinkDate(paymentLink.id, scheduledDate);
             if (response.success) {
                 await Swal.fire({
-                    title: 'Success!',
-                    text: 'Payment link rescheduled successfully.',
+                    title: t('merchant.paymentLinks.createSuccessTitle'),
+                    text: t('merchant.paymentLinks.modals.rescheduleSuccess'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
                 });
                 onSuccess();
             } else {
-                Swal.fire('Error!', response.error || 'Failed to reschedule payment link.', 'error');
+                Swal.fire(t('merchant.common.error'), response.error || t('merchant.paymentLinks.modals.rescheduleFailed'), 'error');
             }
         } catch (error) {
-            Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+            Swal.fire(t('merchant.common.error'), t('merchant.paymentLinks.unexpectedError'), 'error');
         } finally {
             setLoading(false);
         }
@@ -48,7 +49,7 @@ const RescheduleModal = ({ show, paymentLink, onClose, onSuccess }) => {
                     <div className="modal-content">
                         <form onSubmit={handleSubmit}>
                             <div className="modal-header">
-                                <h5 className="modal-title">Reschedule Payment Link</h5>
+                                <h5 className="modal-title">{t('merchant.paymentLinks.modals.rescheduleTitle')}</h5>
                                 <button
                                     type="button"
                                     className="btn-close"
@@ -58,7 +59,7 @@ const RescheduleModal = ({ show, paymentLink, onClose, onSuccess }) => {
                             </div>
                             <div className="modal-body">
                                 <div className="mb-3">
-                                    <label className="form-label required">New Scheduled Date</label>
+                                    <label className="form-label required">{t('merchant.paymentLinks.modals.newScheduledDate')}</label>
                                     <input
                                         type="date"
                                         className="form-control"
@@ -69,7 +70,7 @@ const RescheduleModal = ({ show, paymentLink, onClose, onSuccess }) => {
                                     />
                                 </div>
                                 <div className="alert alert-info">
-                                    <strong>Payment Link:</strong> {paymentLink.uuid}
+                                    <strong>{t('merchant.paymentLinks.modals.paymentLinkLabel')}</strong> {paymentLink.uuid}
                                 </div>
                             </div>
                             <div className="modal-footer">
@@ -79,7 +80,7 @@ const RescheduleModal = ({ show, paymentLink, onClose, onSuccess }) => {
                                     onClick={onClose}
                                     disabled={loading}
                                 >
-                                    Cancel
+                                    {t('merchant.paymentLinks.form.cancel')}
                                 </button>
                                 <button
                                     type="submit"
@@ -89,10 +90,10 @@ const RescheduleModal = ({ show, paymentLink, onClose, onSuccess }) => {
                                     {loading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Saving...
+                                            {t('merchant.paymentLinks.form.saving')}
                                         </>
                                     ) : (
-                                        'Save'
+                                        t('merchant.common.save')
                                     )}
                                 </button>
                             </div>
@@ -106,4 +107,3 @@ const RescheduleModal = ({ show, paymentLink, onClose, onSuccess }) => {
 };
 
 export default RescheduleModal;
-

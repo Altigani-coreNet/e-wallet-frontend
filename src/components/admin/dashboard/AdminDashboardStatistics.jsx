@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const AdminDashboardStatistics = ({ data, loading }) => {
+    const { t } = useTranslation();
     const stats = data?.statistics || {};
 
     useEffect(() => {
@@ -44,8 +46,8 @@ const AdminDashboardStatistics = ({ data, loading }) => {
                     <Link to="/admin/merchants" className="card card-flush h-xl-100 cursor-pointer hover-elevate-up" style={{ textDecoration: 'none' }}>
                     <div className="card-header pt-5">
                         <h3 className="card-title align-items-start flex-column">
-                            <span className="card-label fw-bold text-gray-800">Total Merchants</span>
-                            <span className="text-gray-500 mt-1 fw-semibold fs-6">Active merchants count</span>
+                            <span className="card-label fw-bold text-gray-800">{t('admin.dashboard.totalMerchants')}</span>
+                            <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('admin.dashboard.activeMerchantsCount')}</span>
                         </h3>
                     </div>
                     <div className="card-body pt-2">
@@ -67,8 +69,8 @@ const AdminDashboardStatistics = ({ data, loading }) => {
                 <Link to="/admin/users" className="card card-flush h-xl-100 bg-light-info cursor-pointer hover-elevate-up">
                     <div className="card-header pt-5">
                         <h3 className="card-title align-items-start flex-column">
-                            <span className="card-label fw-bold text-gray-800">Total Users</span>
-                            <span className="text-gray-500 mt-1 fw-semibold fs-6">Active users count</span>
+                            <span className="card-label fw-bold text-gray-800">{t('admin.dashboard.totalUsers')}</span>
+                            <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('admin.dashboard.activeUsersCount')}</span>
                         </h3>
                     </div>
                     <div className="card-body pt-2">
@@ -90,8 +92,8 @@ const AdminDashboardStatistics = ({ data, loading }) => {
                 <Link to="/admin/terminals" className="card card-flush h-xl-100 bg-light-warning cursor-pointer hover-elevate-up">
                     <div className="card-header pt-5">
                         <h3 className="card-title align-items-start flex-column">
-                            <span className="card-label fw-bold text-gray-800">Total Terminals</span>
-                            <span className="text-gray-500 mt-1 fw-semibold fs-6">Active terminals count</span>
+                            <span className="card-label fw-bold text-gray-800">{t('admin.dashboard.totalTerminals')}</span>
+                            <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('admin.dashboard.activeTerminalsCount')}</span>
                         </h3>
                     </div>
                     <div className="card-body pt-2">
@@ -113,8 +115,8 @@ const AdminDashboardStatistics = ({ data, loading }) => {
                 <Link to="/admin/transactions" className="card card-flush h-xl-100 bg-light-primary cursor-pointer hover-elevate-up">
                     <div className="card-header pt-5">
                         <h3 className="card-title align-items-start flex-column">
-                            <span className="card-label fw-bold text-gray-800">Total Transactions</span>
-                            <span className="text-gray-500 mt-1 fw-semibold fs-6">All time transactions</span>
+                            <span className="card-label fw-bold text-gray-800">{t('admin.dashboard.totalTransactions')}</span>
+                            <span className="text-gray-500 mt-1 fw-semibold fs-6">{t('admin.dashboard.allTimeTransactions')}</span>
                         </h3>
                     </div>
                     <div className="card-body pt-2">
@@ -130,7 +132,7 @@ const AdminDashboardStatistics = ({ data, loading }) => {
                         <div className="fw-semibold text-gray-600 fs-6">
                             {loading
                                 ? <div className="skeleton mt-2" style={{ width: '45%', height: '16px' }}></div>
-                                : `$${stats.totalAmount || '0.00'} total`}
+                                : t('admin.dashboard.totalAmount', { amount: stats.totalAmount || '0.00' })}
                         </div>
                     </div>
                 </Link>

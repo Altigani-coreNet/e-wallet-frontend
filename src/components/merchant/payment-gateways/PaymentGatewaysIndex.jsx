@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { getPaymentGateways, updatePaymentGateway, togglePaymentGatewayStatus, setPaymentGatewayAsDefault, deletePaymentGateway } from '../../../services/paymentGatewaysService';
 
 const PaymentGatewaysIndex = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [paymentGateways, setPaymentGateways] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -14,17 +16,17 @@ const PaymentGatewaysIndex = () => {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        setTitle('Payment Providers');
+        setTitle(t('merchant.breadcrumbs.paymentProviders'));
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Payment Providers', path: '/merchant/payment-gateways', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.paymentProviders'), path: '/merchant/payment-gateways', active: true }
         ]);
         setActions(null);
         return () => {
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [setTitle, setBreadcrumbs, setActions]);
+    }, [setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     useEffect(() => {
         fetchPaymentGateways();

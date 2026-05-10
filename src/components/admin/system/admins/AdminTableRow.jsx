@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { deleteAdmin, changeAdminStatus } from '../../../../services/adminAdminsService';
 import { useCan } from '../../../../utils/permissions';
 
 const AdminTableRow = ({ admin, isSelected, onSelect, onRefresh }) => {
+    const { t } = useTranslation();
     const canEditAdmin = useCan('pos.admins.edit_admins');
     const canDeleteAdmin = useCan('pos.admins.delete_admins');
     const [showActions, setShowActions] = useState(false);
@@ -22,14 +24,14 @@ const AdminTableRow = ({ admin, isSelected, onSelect, onRefresh }) => {
     }, [showActions]);
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this admin?')) return;
+        if (!window.confirm(t('admin.adminsIndex.deleteConfirmSingle'))) return;
         const response = await deleteAdmin(admin.id);
-        response.success ? (toast.success('Admin deleted'), onRefresh()) : toast.error(response.error || 'Failed to delete');
+        response.success ? (toast.success(t('admin.adminsIndex.deleted')), onRefresh()) : toast.error(response.error || t('admin.adminsIndex.deleteFailed'));
     };
 
     const handleStatusChange = async () => {
         const response = await changeAdminStatus(admin.id);
-        response.success ? (toast.success('Status changed'), onRefresh()) : toast.error(response.error || 'Failed to change status');
+        response.success ? (toast.success(t('admin.adminsIndex.statusChanged')), onRefresh()) : toast.error(response.error || t('admin.adminsIndex.statusChangeFailed'));
     };
 
     return (
@@ -54,7 +56,7 @@ const AdminTableRow = ({ admin, isSelected, onSelect, onRefresh }) => {
                 </div>
             </td>
             <td>{admin.email}</td>
-            <td>{admin.phone || 'N/A'}</td>
+            <td>{admin.phone || t('admin.paymentLinksIndex.na')}</td>
             <td>
                 {admin.roles && Array.isArray(admin.roles) && admin.roles.length > 0 ? (
                     <div className="d-flex flex-wrap gap-1">
@@ -65,12 +67,12 @@ const AdminTableRow = ({ admin, isSelected, onSelect, onRefresh }) => {
                         ))}
                     </div>
                 ) : (
-                    <span className="text-muted">No roles</span>
+                    <span className="text-muted">{t('admin.adminsIndex.noRoles')}</span>
                 )}
             </td>
             <td>
                 <span className={`badge badge-light-${admin.custom_region ? 'success' : 'secondary'}`}>
-                    {admin.custom_region ? 'Yes' : 'No'}
+                    {admin.custom_region ? t('admin.common.yes') : t('admin.common.no')}
                 </span>
             </td>
             <td>
@@ -92,14 +94,14 @@ const AdminTableRow = ({ admin, isSelected, onSelect, onRefresh }) => {
                                 );
                             })}
                             {admin.regions.length > 3 && (
-                                <span className="badge badge-light">+{admin.regions.length - 3} more</span>
+                                <span className="badge badge-light">{t('admin.adminsIndex.moreCount', { count: admin.regions.length - 3 })}</span>
                             )}
                         </div>
                     ) : (
-                        <span className="text-muted">No region</span>
+                        <span className="text-muted">{t('admin.adminsIndex.noRegion')}</span>
                     )
                 ) : (
-                    <span className="badge badge-light-info">Any Region</span>
+                    <span className="badge badge-light-info">{t('admin.adminsIndex.anyRegion')}</span>
                 )}
             </td>
             <td>
@@ -107,7 +109,7 @@ const AdminTableRow = ({ admin, isSelected, onSelect, onRefresh }) => {
                     onClick={handleStatusChange}
                     className={`badge badge-light-${admin.status === 'active' ? 'success' : 'danger'} cursor-pointer border-0`}
                 >
-                    {admin.status === 'active' ? 'Active' : 'Inactive'}
+                    {admin.status === 'active' ? t('admin.common.active') : t('admin.common.inactive')}
                 </button>
             </td>
             <td>{new Date(admin.created_at).toLocaleDateString()}</td>
@@ -120,7 +122,7 @@ const AdminTableRow = ({ admin, isSelected, onSelect, onRefresh }) => {
                         onClick={() => setShowActions(!showActions)}
                         onBlur={() => setTimeout(() => setShowActions(false), 200)}
                     >
-                        Actions
+                        {t('admin.common.actions')}
                         <i className="ki-duotone ki-down fs-5 ms-1"></i>
                     </button>
                     {showActions && (
@@ -130,24 +132,24 @@ const AdminTableRow = ({ admin, isSelected, onSelect, onRefresh }) => {
                         >
                             <Link to={`/admin/system/admins/${admin.id}`} className="dropdown-item" onMouseDown={(e) => e.preventDefault()}>
                                 <i className="ki-duotone ki-eye fs-5 me-2"><span className="path1"></span><span className="path2"></span><span className="path3"></span></i>
-                                View
+                                {t('admin.common.view')}
                             </Link>
                             {canEditAdmin && (
                                 <Link to={`/admin/system/admins/${admin.id}/edit`} className="dropdown-item" onMouseDown={(e) => e.preventDefault()}>
                                     <i className="ki-duotone ki-pencil fs-5 me-2"><span className="path1"></span><span className="path2"></span></i>
-                                    Edit
+                                    {t('admin.common.edit')}
                                 </Link>
                             )}
                             <button onMouseDown={(e) => { e.preventDefault(); handleStatusChange(); }} className="dropdown-item">
                                 <i className="ki-duotone ki-toggle-on fs-5 me-2"><span className="path1"></span><span className="path2"></span></i>
-                                Toggle Status
+                                {t('admin.adminsIndex.toggleStatus')}
                             </button>
                             {canDeleteAdmin && (
                                 <>
                                     <div className="dropdown-divider"></div>
                                     <button onMouseDown={(e) => { e.preventDefault(); handleDelete(); }} className="dropdown-item text-danger">
                                         <i className="ki-duotone ki-trash fs-5 me-2"><span className="path1"></span><span className="path2"></span><span className="path3"></span><span className="path4"></span><span className="path5"></span></i>
-                                        Delete
+                                        {t('admin.common.delete')}
                                     </button>
                                 </>
                             )}

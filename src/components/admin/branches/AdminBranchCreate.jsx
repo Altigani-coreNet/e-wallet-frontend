@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -17,6 +18,7 @@ const debounce = (func, delay) => {
 
 const AdminBranchCreate = () => {
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
 
     const [formData, setFormData] = useState({
@@ -48,11 +50,11 @@ const AdminBranchCreate = () => {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        setTitle('Create Branch');
+        setTitle(t('admin.branchCreate.title'));
         setActions(null);
         fetchMerchants();
         // Don't load all countries initially - will load on dropdown open or search
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t]);
 
     useEffect(() => {
         if (formData.country_id) {
@@ -276,15 +278,15 @@ const AdminBranchCreate = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Branch created successfully!');
+                toast.success(t('admin.branchCreate.success'));
                 navigate('/admin/branches');
             }
         } catch (error) {
             if (error.response?.status === 422) {
                 setErrors(error.response.data.errors || {});
-                toast.error('Please fix the validation errors');
+                toast.error(t('admin.branchCreate.validationError'));
             } else {
-                toast.error(error.response?.data?.message || 'Failed to create branch');
+                toast.error(error.response?.data?.message || t('admin.branchCreate.failure'));
             }
         } finally {
             setLoading(false);
@@ -296,14 +298,14 @@ const AdminBranchCreate = () => {
             <div id="kt_content_container" className="container-xxl">
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title">Create New Branch</h3>
+                        <h3 className="card-title">{t('admin.branchCreate.title')}</h3>
                         <div className="card-toolbar">
                             <Link to="/admin/branches" className="btn btn-sm btn-light">
                                 <i className="ki-duotone ki-arrow-left fs-2">
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Back to Branches
+                                {t('admin.branchCreate.back')}
                             </Link>
                         </div>
                     </div>
@@ -313,7 +315,7 @@ const AdminBranchCreate = () => {
                             <div className="row">
                                 {/* Merchant */}
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold required">Merchant</label>
+                                    <label className="form-label fw-bold required">{t('admin.branchCreate.merchant')}</label>
                                     <div className="position-relative">
                                         <div 
                                             className={`form-control h-50px d-flex align-items-center justify-content-between ${errors.merchant_id ? 'is-invalid' : ''}`}
@@ -324,7 +326,7 @@ const AdminBranchCreate = () => {
                                                 {selectedMerchant ? (
                                                     <span className="text-gray-800">{selectedMerchant.business_name || selectedMerchant.name}</span>
                                                 ) : (
-                                                    <span className="text-muted">Select Merchant</span>
+                                                    <span className="text-muted">{t('admin.branchCreate.selectMerchant')}</span>
                                                 )}
                                             </div>
                                             <div className="d-flex align-items-center">
@@ -353,7 +355,7 @@ const AdminBranchCreate = () => {
                                                     <input 
                                                         type="text" 
                                                         className="form-control form-control-sm mb-2" 
-                                                        placeholder="Search merchants..."
+                                                        placeholder={t('admin.branchCreate.searchMerchants')}
                                                         value={merchantSearchTerm}
                                                         onChange={(e) => handleMerchantSearch(e.target.value)}
                                                         onClick={(e) => e.stopPropagation()}
@@ -372,7 +374,7 @@ const AdminBranchCreate = () => {
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <div className="p-3 text-muted text-center">No merchants found</div>
+                                                    <div className="p-3 text-muted text-center">{t('admin.branchCreate.noMerchants')}</div>
                                                 )}
                                             </div>
                                         )}
@@ -382,35 +384,35 @@ const AdminBranchCreate = () => {
 
                                 {/* Branch Name */}
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold required">Branch Name</label>
+                                    <label className="form-label fw-bold required">{t('admin.branchCreate.branchName')}</label>
                                     <input
                                         type="text"
                                         className={`form-control ${errors.name ? 'is-invalid' : ''}`}
                                         name="name"
                                         value={formData.name}
                                         onChange={handleInputChange}
-                                        placeholder="Enter branch name"
+                                        placeholder={t('admin.branchCreate.enterBranchName')}
                                     />
                                     {errors.name && <div className="invalid-feedback d-block">{errors.name}</div>}
                                 </div>
 
                                 {/* Address */}
                                 <div className="col-md-12 mb-7">
-                                    <label className="form-label fw-bold">Address</label>
+                                    <label className="form-label fw-bold">{t('admin.branchCreate.address')}</label>
                                     <textarea
                                         className={`form-control ${errors.address ? 'is-invalid' : ''}`}
                                         name="address"
                                         value={formData.address}
                                         onChange={handleInputChange}
                                         rows="3"
-                                        placeholder="Enter branch address"
+                                        placeholder={t('admin.branchCreate.enterBranchAddress')}
                                     ></textarea>
                                     {errors.address && <div className="invalid-feedback d-block">{errors.address}</div>}
                                 </div>
 
                                 {/* Country */}
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold required">Country</label>
+                                    <label className="form-label fw-bold required">{t('admin.branchCreate.country')}</label>
                                     <div className="position-relative">
                                         <div 
                                             className={`form-control h-50px d-flex align-items-center justify-content-between ${errors.country_id ? 'is-invalid' : ''}`}
@@ -422,15 +424,29 @@ const AdminBranchCreate = () => {
                                                     <>
                                                         <img 
                                                             src={`/flags/${selectedCountry.code?.toLowerCase() || 'placeholder'}.png`} 
-                                                            alt={selectedCountry.text || selectedCountry.name}
+                                                            alt={(() => {
+                                                                let name = selectedCountry.text || selectedCountry.name;
+                                                                if (typeof name === 'object' && name !== null) {
+                                                                    name = name[i18n.language] || name.en || name.ar || '';
+                                                                }
+                                                                return name;
+                                                            })()}
                                                             className="me-3"
                                                             style={{ width: '20px', height: '15px', objectFit: 'cover' }}
                                                             onError={(e) => { e.target.style.display = 'none'; }}
                                                         />
-                                                        <span className="text-gray-800">{selectedCountry.text || selectedCountry.name}</span>
+                                                        <span className="text-gray-800">
+                                                            {(() => {
+                                                                let name = selectedCountry.text || selectedCountry.name;
+                                                                if (typeof name === 'object' && name !== null) {
+                                                                    name = name[i18n.language] || name.en || name.ar || '';
+                                                                }
+                                                                return name;
+                                                            })()}
+                                                        </span>
                                                     </>
                                                 ) : (
-                                                    <span className="text-muted">Select Country</span>
+                                                    <span className="text-muted">{t('admin.branchCreate.selectCountry')}</span>
                                                 )}
                                             </div>
                                             <div className="d-flex align-items-center">
@@ -459,7 +475,7 @@ const AdminBranchCreate = () => {
                                                     <input 
                                                         type="text" 
                                                         className="form-control form-control-sm mb-2" 
-                                                        placeholder="Search countries..."
+                                                        placeholder={t('admin.branchCreate.searchCountries')}
                                                         value={countrySearchTerm}
                                                         onChange={(e) => handleCountrySearch(e.target.value)}
                                                         onClick={(e) => e.stopPropagation()}
@@ -467,25 +483,31 @@ const AdminBranchCreate = () => {
                                                     />
                                                 </div>
                                                 {filteredCountries.length > 0 ? (
-                                                    filteredCountries.map((country) => (
-                                                        <div 
-                                                            key={country.id}
-                                                            className="p-3 border-bottom cursor-pointer hover-bg-light d-flex align-items-center"
-                                                            onMouseDown={(e) => { e.preventDefault(); handleCountrySelect(country); }}
-                                                            style={{ cursor: 'pointer' }}
-                                                        >
-                                                            <img 
-                                                                src={`/flags/${country.code?.toLowerCase() || 'placeholder'}.png`} 
-                                                                alt={country.text || country.name}
-                                                                className="me-3"
-                                                                style={{ width: '20px', height: '15px', objectFit: 'cover' }}
-                                                                onError={(e) => { e.target.style.display = 'none'; }}
-                                                            />
-                                                            <div className="text-gray-800">{country.text || country.name}</div>
-                                                        </div>
-                                                    ))
+                                                    filteredCountries.map((country) => {
+                                                        let name = country.text || country.name;
+                                                        if (typeof name === 'object' && name !== null) {
+                                                            name = name[i18n.language] || name.en || name.ar || '';
+                                                        }
+                                                        return (
+                                                            <div 
+                                                                key={country.id}
+                                                                className="p-3 border-bottom cursor-pointer hover-bg-light d-flex align-items-center"
+                                                                onMouseDown={(e) => { e.preventDefault(); handleCountrySelect(country); }}
+                                                                style={{ cursor: 'pointer' }}
+                                                            >
+                                                                <img 
+                                                                    src={`/flags/${country.code?.toLowerCase() || 'placeholder'}.png`} 
+                                                                    alt={name}
+                                                                    className="me-3"
+                                                                    style={{ width: '20px', height: '15px', objectFit: 'cover' }}
+                                                                    onError={(e) => { e.target.style.display = 'none'; }}
+                                                                />
+                                                                <div className="text-gray-800">{name}</div>
+                                                            </div>
+                                                        );
+                                                    })
                                                 ) : (
-                                                    <div className="p-3 text-muted text-center">No countries found</div>
+                                                    <div className="p-3 text-muted text-center">{t('admin.branchCreate.noCountries')}</div>
                                                 )}
                                             </div>
                                         )}
@@ -495,7 +517,7 @@ const AdminBranchCreate = () => {
 
                                 {/* City */}
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold">City</label>
+                                    <label className="form-label fw-bold">{t('admin.branchCreate.city')}</label>
                                     <div className="position-relative">
                                         <div 
                                             className={`form-control h-50px d-flex align-items-center justify-content-between ${errors.city_id ? 'is-invalid' : ''} ${!formData.country_id ? 'bg-light' : ''}`}
@@ -504,9 +526,17 @@ const AdminBranchCreate = () => {
                                         >
                                             <div className="d-flex align-items-center">
                                                 {selectedCity ? (
-                                                    <span className="text-gray-800">{selectedCity.text || selectedCity.name}</span>
+                                                    <span className="text-gray-800">
+                                                        {(() => {
+                                                            let name = selectedCity.text || selectedCity.name;
+                                                            if (typeof name === 'object' && name !== null) {
+                                                                name = name[i18n.language] || name.en || name.ar || '';
+                                                            }
+                                                            return name;
+                                                        })()}
+                                                    </span>
                                                 ) : (
-                                                    <span className="text-muted">{formData.country_id ? 'Select City' : 'Select country first'}</span>
+                                                    <span className="text-muted">{formData.country_id ? t('admin.branchCreate.selectCity') : t('admin.branchCreate.selectCountryFirst')}</span>
                                                 )}
                                             </div>
                                             <div className="d-flex align-items-center">
@@ -535,7 +565,7 @@ const AdminBranchCreate = () => {
                                                     <input 
                                                         type="text" 
                                                         className="form-control form-control-sm mb-2" 
-                                                        placeholder="Search cities..."
+                                                        placeholder={t('admin.branchCreate.searchCities')}
                                                         value={citySearchTerm}
                                                         onChange={(e) => handleCitySearch(e.target.value)}
                                                         onClick={(e) => e.stopPropagation()}
@@ -543,18 +573,24 @@ const AdminBranchCreate = () => {
                                                     />
                                                 </div>
                                                 {filteredCities.length > 0 ? (
-                                                    filteredCities.map((city) => (
-                                                        <div 
-                                                            key={city.id}
-                                                            className="p-3 border-bottom cursor-pointer hover-bg-light"
-                                                            onMouseDown={(e) => { e.preventDefault(); handleCitySelect(city); }}
-                                                            style={{ cursor: 'pointer' }}
-                                                        >
-                                                            <div className="text-gray-800">{city.text || city.name}</div>
-                                                        </div>
-                                                    ))
+                                                    filteredCities.map((city) => {
+                                                        let name = city.text || city.name;
+                                                        if (typeof name === 'object' && name !== null) {
+                                                            name = name[i18n.language] || name.en || name.ar || '';
+                                                        }
+                                                        return (
+                                                            <div 
+                                                                key={city.id}
+                                                                className="p-3 border-bottom cursor-pointer hover-bg-light"
+                                                                onMouseDown={(e) => { e.preventDefault(); handleCitySelect(city); }}
+                                                                style={{ cursor: 'pointer' }}
+                                                            >
+                                                                <div className="text-gray-800">{name}</div>
+                                                            </div>
+                                                        );
+                                                    })
                                                 ) : (
-                                                    <div className="p-3 text-muted text-center">No cities found</div>
+                                                    <div className="p-3 text-muted text-center">{t('admin.branchCreate.noCities')}</div>
                                                 )}
                                             </div>
                                         )}
@@ -564,7 +600,7 @@ const AdminBranchCreate = () => {
 
                                 {/* Active Status */}
                                 <div className="col-md-6 mb-7">
-                                    <label className="form-label fw-bold">Active Status</label>
+                                    <label className="form-label fw-bold">{t('admin.branchCreate.activeStatus')}</label>
                                     <div className="form-check form-switch form-check-custom form-check-solid mt-2">
                                         <input
                                             className="form-check-input"
@@ -574,7 +610,7 @@ const AdminBranchCreate = () => {
                                             onChange={handleInputChange}
                                         />
                                         <label className="form-check-label">
-                                            {formData.is_active ? 'Active' : 'Inactive'}
+                                            {formData.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                         </label>
                                     </div>
                                 </div>
@@ -583,13 +619,13 @@ const AdminBranchCreate = () => {
 
                         <div className="card-footer d-flex justify-content-end py-6 px-9">
                             <Link to="/admin/branches" className="btn btn-light btn-active-light-primary me-2">
-                                Cancel
+                                {t('admin.common.cancel')}
                             </Link>
                             <button type="submit" className="btn btn-primary" disabled={loading}>
                                 {loading ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2"></span>
-                                        Creating...
+                                        {t('admin.branchCreate.creating')}
                                     </>
                                 ) : (
                                     <>
@@ -597,7 +633,7 @@ const AdminBranchCreate = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Create Branch
+                                        {t('admin.branchCreate.create')}
                                     </>
                                 )}
                             </button>

@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useBranchDetails } from '../../../services/branchesService';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import LoadingSpinner from '../../common/LoadingSpinner';
 
 const BranchView = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -18,12 +20,12 @@ const BranchView = () => {
     const branch = branchData?.data || branchData;
 
     useEffect(() => {
-        setTitle('Branch Details');
+        setTitle(t('merchant.breadcrumbs.branchDetails'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Branches', path: '/merchant/branches' },
-            { label: branch?.name || 'Branch Details', path: `/merchant/branches/${id}`, active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.branches'), path: '/merchant/branches' },
+            { label: branch?.name || t('merchant.breadcrumbs.branchDetails'), path: `/merchant/branches/${id}`, active: true }
         ]);
         
         setActions(
@@ -36,7 +38,7 @@ const BranchView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back to List
+                    {t('merchant.common.backToList')}
                 </button>
                 <Link
                     to={`/merchant/branches/${id}/edit`}
@@ -46,7 +48,7 @@ const BranchView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Edit Branch
+                    {t('merchant.breadcrumbs.editBranch')}
                 </Link>
             </>
         );
@@ -55,7 +57,7 @@ const BranchView = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions, navigate, id, branch?.name]);
+    }, [setTitle, setBreadcrumbs, setActions, navigate, id, branch?.name, t, i18n.language]);
 
     const getStatusBadge = (status) => {
         const statusColors = {

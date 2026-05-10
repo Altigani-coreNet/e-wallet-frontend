@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getWebhooks, deleteWebhook, toggleWebhook } from '../../../services/webhooksService';
 import Swal from 'sweetalert2';
 
 const WebhooksIndex = () => {
+    const { t } = useTranslation();
     const [webhooks, setWebhooks] = useState([]);
     const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
-
     useEffect(() => {
         fetchWebhooks();
     }, []);
@@ -18,13 +18,12 @@ const WebhooksIndex = () => {
             const response = await getWebhooks();
             console.log('Webhooks response:', response);
             
-            // Handle both response.status and response.success
             if (response.status || response.success) {
                 setWebhooks(response.data?.webhooks || []);
             }
         } catch (error) {
             console.error('Error fetching webhooks:', error);
-            Swal.fire('Error', 'Failed to load webhooks', 'error');
+            Swal.fire(t('merchant.common.error'), t('merchant.webhooks.loadFailed'), 'error');
         } finally {
             setLoading(false);
         }
@@ -34,47 +33,48 @@ const WebhooksIndex = () => {
         try {
             const response = await toggleWebhook(id);
             if (response.status || response.success) {
-                const message = response.data?.message || response.message || 'Webhook status updated';
-                Swal.fire('Success', message, 'success');
+                const message = response.data?.message || response.message || t('merchant.webhooks.statusUpdated');
+                Swal.fire(t('merchant.common.success'), message, 'success');
                 fetchWebhooks();
             }
         } catch (error) {
             console.error('Error toggling webhook:', error);
-            Swal.fire('Error', 'Failed to toggle webhook status', 'error');
+            Swal.fire(t('merchant.common.error'), t('merchant.webhooks.toggleFailed'), 'error');
         }
     };
 
     const handleDelete = async (id) => {
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: 'This will permanently delete the webhook endpoint and all its logs.',
+            title: t('merchant.common.areYouSure'),
+            text: t('merchant.webhooks.deleteConfirmText'),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonText: t('merchant.common.yesDelete'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (result.isConfirmed) {
             try {
                 const response = await deleteWebhook(id);
                 if (response.status || response.success) {
-                    const message = response.data?.message || response.message || 'Webhook deleted';
-                    Swal.fire('Deleted!', message, 'success');
+                    const message = response.data?.message || response.message || t('merchant.webhooks.deleteSuccess');
+                    Swal.fire(t('merchant.common.deleted'), message, 'success');
                     fetchWebhooks();
                 }
             } catch (error) {
                 console.error('Error deleting webhook:', error);
-                Swal.fire('Error', 'Failed to delete webhook', 'error');
+                Swal.fire(t('merchant.common.error'), t('merchant.webhooks.deleteFailed'), 'error');
             }
         }
     };
 
     const getStatusBadge = (is_active) => {
         return is_active ? (
-            <span className="badge badge-success">Active</span>
+            <span className="badge badge-success">{t('merchant.common.active')}</span>
         ) : (
-            <span className="badge badge-secondary">Inactive</span>
+            <span className="badge badge-secondary">{t('merchant.common.inactive')}</span>
         );
     };
 
@@ -82,7 +82,7 @@ const WebhooksIndex = () => {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ height: '400px' }}>
                 <div className="spinner-border text-primary" role="status">
-                    <span className="sr-only">Loading...</span>
+                    <span className="sr-only">{t('merchant.common.loading')}</span>
                 </div>
             </div>
         );
@@ -90,36 +90,34 @@ const WebhooksIndex = () => {
 
     return (
         <div className="container-fluid">
-            {/* Page Header */}
             <div className="row mb-4">
                 <div className="col-12">
                     <div className="d-flex justify-content-between align-items-center">
                         <div>
-                            <h2 className="mb-1">Webhooks</h2>
+                            <h2 className="mb-1">{t('merchant.webhooks.title')}</h2>
                             <p className="text-muted">
-                                Manage webhook endpoints to receive real-time notifications about events in your account
+                                {t('merchant.webhooks.pageSubtitle')}
                             </p>
                         </div>
                         <Link to="/merchant/webhooks/create" className="btn btn-primary">
                             <i className="fas fa-plus me-2"></i>
-                            Add Endpoint
+                            {t('merchant.webhooks.addEndpoint')}
                         </Link>
                     </div>
                 </div>
             </div>
 
-            {/* Webhooks List */}
             {webhooks.length === 0 ? (
                 <div className="card">
                     <div className="card-body text-center py-5">
                         <i className="fas fa-webhook fa-3x text-muted mb-3"></i>
-                        <h4>No webhooks configured</h4>
+                        <h4>{t('merchant.webhooks.emptyTitle')}</h4>
                         <p className="text-muted mb-4">
-                            Create your first webhook endpoint to start receiving real-time event notifications
+                            {t('merchant.webhooks.emptyHint')}
                         </p>
                         <Link to="/merchant/webhooks/create" className="btn btn-primary">
                             <i className="fas fa-plus me-2"></i>
-                            Add Endpoint
+                            {t('merchant.webhooks.addEndpoint')}
                         </Link>
                     </div>
                 </div>
@@ -135,19 +133,20 @@ const WebhooksIndex = () => {
                                                 <h5 className="mb-0 me-3">{webhook.name}</h5>
                                                 {getStatusBadge(webhook.is_active)}
                                             </div>
-                                            <p className="text-muted mb-2">{webhook.description || 'No description provided'}</p>
+                                            <p className="text-muted mb-2">{webhook.description || t('merchant.webhooks.noDescription')}</p>
                                             <div className="mb-3">
-                                                <small className="text-muted">Endpoint URL:</small>
+                                                <small className="text-muted">{t('merchant.webhooks.endpointUrl')}:</small>
                                                 <div className="d-flex align-items-center">
                                                     <code className="bg-light px-2 py-1 rounded">{webhook.endpoint_url}</code>
                                                     <button
+                                                        type="button"
                                                         className="btn btn-sm btn-link"
                                                         onClick={() => {
                                                             navigator.clipboard.writeText(webhook.endpoint_url);
                                                             Swal.fire({
                                                                 icon: 'success',
-                                                                title: 'Copied!',
-                                                                text: 'Endpoint URL copied to clipboard',
+                                                                title: t('merchant.webhooks.copiedTitle'),
+                                                                text: t('merchant.webhooks.copiedUrl'),
                                                                 timer: 1500,
                                                                 showConfirmButton: false
                                                             });
@@ -159,17 +158,17 @@ const WebhooksIndex = () => {
                                             </div>
                                             <div className="d-flex gap-3">
                                                 <div>
-                                                    <small className="text-muted">Subscribed Events:</small>
+                                                    <small className="text-muted">{t('merchant.webhooks.subscribedEvents')}:</small>
                                                     <br />
-                                                    <span className="badge badge-info">{webhook.events_count} events</span>
+                                                    <span className="badge badge-info">{t('merchant.webhooks.eventsCount', { count: webhook.events_count })}</span>
                                                 </div>
                                                 <div>
-                                                    <small className="text-muted">Success:</small>
+                                                    <small className="text-muted">{t('merchant.webhooks.successLabel')}:</small>
                                                     <br />
                                                     <span className="text-success fw-bold">{webhook.success_count}</span>
                                                 </div>
                                                 <div>
-                                                    <small className="text-muted">Failed:</small>
+                                                    <small className="text-muted">{t('merchant.webhooks.failedLabel')}:</small>
                                                     <br />
                                                     <span className="text-danger fw-bold">{webhook.failure_count}</span>
                                                 </div>
@@ -179,28 +178,30 @@ const WebhooksIndex = () => {
                                             <Link
                                                 to={`/merchant/webhooks/${webhook.id}`}
                                                 className="btn btn-sm btn-info"
-                                                title="View Details"
+                                                title={t('merchant.webhooks.viewDetails')}
                                             >
                                                 <i className="fas fa-eye"></i>
                                             </Link>
                                             <Link
                                                 to={`/merchant/webhooks/${webhook.id}/edit`}
                                                 className="btn btn-sm btn-primary"
-                                                title="Edit"
+                                                title={t('merchant.webhooks.edit')}
                                             >
                                                 <i className="fas fa-edit"></i>
                                             </Link>
                                             <button
+                                                type="button"
                                                 onClick={() => handleToggle(webhook.id)}
                                                 className={`btn btn-sm ${webhook.is_active ? 'btn-warning' : 'btn-success'}`}
-                                                title={webhook.is_active ? 'Disable' : 'Enable'}
+                                                title={webhook.is_active ? t('merchant.webhooks.disable') : t('merchant.webhooks.enable')}
                                             >
                                                 <i className={`fas fa-${webhook.is_active ? 'pause' : 'play'}`}></i>
                                             </button>
                                             <button
+                                                type="button"
                                                 onClick={() => handleDelete(webhook.id)}
                                                 className="btn btn-sm btn-danger"
-                                                title="Delete"
+                                                title={t('merchant.webhooks.delete')}
                                             >
                                                 <i className="fas fa-trash"></i>
                                             </button>
@@ -217,4 +218,3 @@ const WebhooksIndex = () => {
 };
 
 export default WebhooksIndex;
-

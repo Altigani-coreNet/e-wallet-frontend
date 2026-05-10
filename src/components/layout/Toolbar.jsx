@@ -1,15 +1,22 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useLocalePrefix } from '../../hooks/useLocalePrefix';
+import { stripLocalePrefix } from '../../i18n/localePaths';
 
 const Toolbar = ({ title, breadcrumbs, actions }) => {
+    const { t, i18n } = useTranslation();
+    const toolbarDir = i18n.dir();
     const location = useLocation();
-    
+    const p = useLocalePrefix();
+    const pathNoLocale = stripLocalePrefix(location.pathname);
+
     // Generate default breadcrumbs based on path if not provided
     const getDefaultBreadcrumbs = () => {
-        const paths = location.pathname.split('/').filter(Boolean);
+        const paths = pathNoLocale.split('/').filter(Boolean);
         return paths.map((path, index) => ({
             label: path.charAt(0).toUpperCase() + path.slice(1).replace('-', ' '),
-            path: '/' + paths.slice(0, index + 1).join('/'),
+            path: p(`/${paths.slice(0, index + 1).join('/')}`),
             active: index === paths.length - 1
         }));
     };
@@ -23,20 +30,34 @@ const Toolbar = ({ title, breadcrumbs, actions }) => {
         active: item.active !== undefined ? item.active : !(item.path || item.href)
     }));
 
+    const withLocaleLinks = normalizedBreadcrumbs.map((item) => {
+        const raw = item.path;
+        if (!raw) return item;
+        const stripped = stripLocalePrefix(raw);
+        if (stripped.startsWith('/merchant') || stripped.startsWith('/sales')) {
+            return { ...item, path: p(stripped) };
+        }
+        return item;
+    });
+
     // Always prepend "Home" as the first breadcrumb item
     const allBreadcrumbs = [
-        { label: 'Home', path: '/merchant/dashboard', active: false },
-        ...normalizedBreadcrumbs
+        { label: t('merchant.toolbar.home'), path: p('/merchant/dashboard'), active: false },
+        ...withLocaleLinks
     ];
 
     return (
-        <div id="kt_app_toolbar" className="app-toolbar py-3 py-lg-6">
-            <div id="kt_app_toolbar_container" className="app-container container-fluid d-flex flex-stack">
+        <div id="kt_app_toolbar" className="app-toolbar py-3 py-lg-6" dir={toolbarDir}>
+            <div
+                id="kt_app_toolbar_container"
+                className="app-container container-fluid d-flex flex-stack"
+                dir={toolbarDir}
+            >
                 {/* Page title */}
                 <div className="page-title d-flex flex-column justify-content-center flex-wrap me-3">
                     {/* Title */}
                     <h1 className="page-heading d-flex text-dark fw-bold fs-3 flex-column justify-content-center my-0">
-                        {title || 'Dashboard'}
+                        {title || t('merchant.toolbar.defaultTitle')}
                     </h1>
                     
                     {/* Breadcrumb - always show Home first, then other breadcrumbs */}

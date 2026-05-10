@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { deleteNotification, getNotifications, resendNotification } from '../../../services/adminNotificationsService';
 
@@ -11,6 +12,7 @@ const targetBadgeClass = (targetType) => {
 };
 
 const AdminNotificationsIndex = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
 
@@ -31,7 +33,7 @@ const AdminNotificationsIndex = () => {
     const [showFilters, setShowFilters] = useState(false);
 
     useEffect(() => {
-        setTitle('Notification Management');
+        setTitle(t('admin.pages.notificationsManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2">
                 <Link to="/admin/system/notifications/create" className="btn btn-sm fw-bold btn-primary">
@@ -39,13 +41,13 @@ const AdminNotificationsIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Add Notification
+                    {t('admin.common.addNotification')}
                 </Link>
             </div>,
         );
 
         return () => setActions(null);
-    }, [setActions, setTitle]);
+    }, [setActions, setTitle, t, i18n.language]);
 
     const fetchData = async () => {
         setLoading(true);
@@ -68,7 +70,7 @@ const AdminNotificationsIndex = () => {
                 last_page: payload?.last_page || 1,
             });
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Failed to load notifications');
+            toast.error(error?.response?.data?.message || t('admin.notificationsIndex.fetchFailed'));
         } finally {
             setLoading(false);
         }
@@ -81,32 +83,32 @@ const AdminNotificationsIndex = () => {
 
     const topicOptions = useMemo(
         () => [
-            { value: '', label: 'All Topics' },
-            { value: 'payments', label: 'Payments' },
-            { value: 'service_updates', label: 'Service Updates' },
-            { value: 'logs', label: 'Logs' },
-            { value: 'alert', label: 'Alert' },
+            { value: '', label: t('admin.notificationsIndex.allTopics') },
+            { value: 'payments', label: t('admin.notificationsIndex.topicPayments') },
+            { value: 'service_updates', label: t('admin.notificationsIndex.topicServiceUpdates') },
+            { value: 'logs', label: t('admin.notificationsIndex.topicLogs') },
+            { value: 'alert', label: t('admin.notificationsIndex.topicAlert') },
         ],
-        [],
+        [t],
     );
 
     const targetOptions = useMemo(
         () => [
-            { value: '', label: 'All Targets' },
-            { value: 'public', label: 'Public' },
-            { value: 'merchant', label: 'Merchant' },
-            { value: 'user', label: 'User' },
+            { value: '', label: t('admin.notificationsIndex.allTargets') },
+            { value: 'public', label: t('admin.notificationsIndex.targetPublic') },
+            { value: 'merchant', label: t('admin.notificationsIndex.targetMerchant') },
+            { value: 'user', label: t('admin.notificationsIndex.targetUser') },
         ],
-        [],
+        [t],
     );
 
     const adminOptions = useMemo(
         () => [
-            { value: '1', label: 'Admin Only' },
-            { value: '0', label: 'Non Admin' },
-            { value: 'all', label: 'All' },
+            { value: '1', label: t('admin.notificationsIndex.adminOnly') },
+            { value: '0', label: t('admin.notificationsIndex.nonAdmin') },
+            { value: 'all', label: t('admin.notificationsIndex.all') },
         ],
-        [],
+        [t],
     );
 
     const onSearchSubmit = () => {
@@ -115,22 +117,22 @@ const AdminNotificationsIndex = () => {
     };
 
     const onDelete = async (id) => {
-        if (!window.confirm('Delete this notification record?')) return;
+        if (!window.confirm(t('admin.notificationsIndex.deleteConfirm'))) return;
         try {
             await deleteNotification(id);
-            toast.success('Notification deleted');
+            toast.success(t('admin.notificationsIndex.deleted'));
             fetchData();
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Delete failed');
+            toast.error(error?.response?.data?.message || t('admin.notificationsIndex.deleteFailed'));
         }
     };
 
     const onResend = async (id) => {
         try {
             await resendNotification(id);
-            toast.success('Notification resent successfully');
+            toast.success(t('admin.notificationsIndex.resent'));
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Resend failed');
+            toast.error(error?.response?.data?.message || t('admin.notificationsIndex.resendFailed'));
         }
     };
 
@@ -150,9 +152,9 @@ const AdminNotificationsIndex = () => {
         <div className="d-flex flex-column gap-7">
             {showFilters && <div className="card">
                 <div className="card-header border-0 pt-6">
-                    <div className="card-title">
-                        <h3 className="fw-bold m-0">Filters</h3>
-                    </div>
+                        <div className="card-title">
+                            <h3 className="fw-bold m-0">{t('admin.common.filters')}</h3>
+                        </div>
                 </div>
                 <div className="card-body pt-2 pb-6">
                     <div className="row g-4">
@@ -165,7 +167,7 @@ const AdminNotificationsIndex = () => {
                                 <input
                                     type="text"
                                     className="form-control form-control-solid ps-13"
-                                    placeholder="Search title or description..."
+                                    placeholder={t('admin.notificationsIndex.searchPlaceholder')}
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
@@ -217,7 +219,7 @@ const AdminNotificationsIndex = () => {
 
                         <div className="col-12 col-xl-2">
                             <button className="btn btn-primary w-100" onClick={onSearchSubmit}>
-                                Search
+                                {t('admin.common.search')}
                             </button>
                         </div>
                     </div>
@@ -227,9 +229,9 @@ const AdminNotificationsIndex = () => {
             <div className="card">
                 <div className="card-header border-0 pt-6">
                     <div className="card-title d-flex justify-content-between align-items-center w-100 gap-3">
-                        <h3 className="fw-bold m-0">Notifications</h3>
+                        <h3 className="fw-bold m-0">{t('admin.notificationsIndex.notifications')}</h3>
                         <button className="btn btn-sm btn-light-primary" onClick={() => setShowFilters((prev) => !prev)}>
-                            {showFilters ? 'Hide Filters' : 'Show Filters'}
+                            {showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}
                         </button>
                     </div>
                 </div>
@@ -239,19 +241,19 @@ const AdminNotificationsIndex = () => {
                         <span className="spinner-border text-primary"></span>
                     </div>
                 ) : items.length === 0 ? (
-                    <div className="text-center py-10 text-gray-600 fs-5">No notifications found</div>
+                    <div className="text-center py-10 text-gray-600 fs-5">{t('admin.notificationsIndex.noNotificationsFound')}</div>
                 ) : (
                     <div className="table-responsive">
                         <table className="table align-middle table-row-dashed fs-6 gy-5">
                             <thead>
                                 <tr className="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
-                                    <th className="text-dark">Code</th>
-                                    <th className="text-dark">Topic</th>
-                                    <th className="text-dark">Type & Merchant/User</th>
-                                    <th className="text-dark">Is Admin</th>
-                                    <th className="text-dark">Title</th>
-                                    <th className="text-dark">Sent At</th>
-                                    <th className="text-end text-dark">Actions</th>
+                                    <th className="text-dark">{t('admin.notificationsIndex.colCode')}</th>
+                                    <th className="text-dark">{t('admin.notificationsIndex.colTopic')}</th>
+                                    <th className="text-dark">{t('admin.notificationsIndex.colTypeAndTarget')}</th>
+                                    <th className="text-dark">{t('admin.notificationsIndex.colIsAdmin')}</th>
+                                    <th className="text-dark">{t('admin.notificationsIndex.colTitle')}</th>
+                                    <th className="text-dark">{t('admin.notificationsIndex.colSentAt')}</th>
+                                    <th className="text-end text-dark">{t('admin.common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="text-gray-600 fw-semibold">
@@ -262,14 +264,14 @@ const AdminNotificationsIndex = () => {
                                         <td>
                                             <div className="d-flex flex-wrap align-items-center gap-2">
                                                 <span className={targetBadgeClass(item.target_type)}>
-                                                    {item.target_type}
+                                                    {t(`admin.notificationsIndex.targetType.${item.target_type}`) || item.target_type}
                                                 </span>
                                                 <span className="text-gray-800 fw-semibold">{getTargetEntityName(item)}</span>
                                             </div>
                                         </td>
                                         <td>
                                             <span className={`badge ${item.is_admin ? 'badge-light-primary' : 'badge-light-secondary'}`}>
-                                                {item.is_admin ? 'Yes' : 'No'}
+                                                {item.is_admin ? t('admin.common.yes') : t('admin.common.no')}
                                             </span>
                                         </td>
                                         <td>{item.title}</td>
@@ -278,7 +280,7 @@ const AdminNotificationsIndex = () => {
                                             <button
                                                 className="btn btn-icon btn-light-info btn-sm me-2"
                                                 onClick={() => onResend(item.id)}
-                                                title="Resend"
+                                                title={t('admin.common.resend')}
                                             >
                                                 <i className="ki-duotone ki-arrows-circle fs-4">
                                                     <span className="path1"></span>
@@ -288,6 +290,7 @@ const AdminNotificationsIndex = () => {
                                             <button
                                                 className="btn btn-icon btn-light-primary btn-sm me-2"
                                                 onClick={() => navigate(`/admin/system/notifications/${item.id}/edit`)}
+                                                title={t('admin.common.edit')}
                                             >
                                                 <i className="ki-duotone ki-pencil fs-4">
                                                     <span className="path1"></span>
@@ -297,6 +300,7 @@ const AdminNotificationsIndex = () => {
                                             <button
                                                 className="btn btn-icon btn-light-danger btn-sm"
                                                 onClick={() => onDelete(item.id)}
+                                                title={t('admin.common.delete')}
                                             >
                                                 <i className="ki-duotone ki-trash fs-4">
                                                     <span className="path1"></span>
@@ -317,17 +321,21 @@ const AdminNotificationsIndex = () => {
                 {!loading && items.length > 0 && (
                     <div className="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-4 pt-10">
                         <div className="fs-6 fw-semibold text-gray-700">
-                            Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} entries
+                            {t('admin.common.showingEntries', {
+                                from: ((pagination.current_page - 1) * pagination.per_page) + 1,
+                                to: Math.min(pagination.current_page * pagination.per_page, pagination.total),
+                                total: pagination.total,
+                            })}
                         </div>
                         <ul className="pagination mb-0">
                             <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}>
                                 <button className="page-link" onClick={() => setPagination((prev) => ({ ...prev, current_page: prev.current_page - 1 }))}>
-                                    Previous
+                                    {t('admin.common.previous')}
                                 </button>
                             </li>
                             <li className={`page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}`}>
                                 <button className="page-link" onClick={() => setPagination((prev) => ({ ...prev, current_page: prev.current_page + 1 }))}>
-                                    Next
+                                    {t('admin.common.next')}
                                 </button>
                             </li>
                         </ul>

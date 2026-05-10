@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -6,8 +7,13 @@ import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken, removeToken, getUser } from '../../../utils/api';
 import { useSidebar } from '../../../contexts/SidebarContext';
 import NotificationMenu from '../../layout/NotificationMenu';
+import LanguageSwitcher from '../../common/LanguageSwitcher';
+import { useLocalePrefix } from '../../../hooks/useLocalePrefix';
 
 const AdminHeader = () => {
+    const { t, i18n } = useTranslation();
+    const p = useLocalePrefix();
+    const isRtl = i18n.dir() === 'rtl';
     const navigate = useNavigate();
     const user = getUser();
     const { toggleSidebar } = useSidebar();
@@ -63,7 +69,7 @@ const AdminHeader = () => {
         } finally {
             removeToken();
             delete axios.defaults.headers.common['Authorization'];
-            toast.success('Logged out successfully');
+            toast.success(t('admin.header.logoutSuccess'));
             navigate('/admin/login');
         }
     };
@@ -76,18 +82,22 @@ const AdminHeader = () => {
         if (window.KTThemeMode) {
             window.KTThemeMode.init();
         }
-    }, []);
+    }, [i18n.language]);
 
     return (
-        <div id="kt_app_header" className="app-header" 
-             data-kt-sticky="true" 
-             data-kt-sticky-activate="{default: true, lg: true}" 
-             data-kt-sticky-name="app-header-minimize" 
-             data-kt-sticky-offset="{default: '200px', lg: '0'}" 
-             data-kt-sticky-animation="false">
+        <div
+            id="kt_app_header"
+            className="app-header"
+            dir={isRtl ? 'rtl' : 'ltr'}
+            data-kt-sticky="true"
+            data-kt-sticky-activate="{default: true, lg: true}"
+            data-kt-sticky-name="app-header-minimize"
+            data-kt-sticky-offset="{default: '200px', lg: '0'}"
+            data-kt-sticky-animation="false"
+        >
             <div className="app-container container-fluid d-flex align-items-stretch justify-content-between" id="kt_app_header_container">
                 {/* Begin::Sidebar mobile toggle */}
-                <div className="d-flex align-items-center d-lg-none ms-n3 me-1 me-md-2" title="Show sidebar menu">
+                <div className="d-flex align-items-center d-lg-none ms-n3 me-1 me-md-2" title={t('header.showSidebarMenu')}>
                     <button 
                         type="button" 
                         className="btn" 
@@ -106,12 +116,12 @@ const AdminHeader = () => {
                 {/* Begin::Mobile logo */}
                 <div className="d-flex align-items-center flex-grow-1 flex-lg-grow-0">
                     <Link to="/admin/dashboard" className="d-lg-none">
-                        <img alt="Logo" src="/faspay_logo_1.png" className="h-30px" />
+                        <img alt={t('admin.header.logoAlt')} src="/faspay_logo_1.png" className="h-30px" />
                     </Link>
                 </div>
                 {/* End::Mobile logo */}
 
-                {/* Begin::Header wrapper */}
+                {/* Begin::Header wrapper — RTL mirrors Dashboard vs icons; navbar uses dir=ltr for stable icon order */}
                 <div className="d-flex align-items-stretch justify-content-between flex-lg-grow-1" id="kt_app_header_wrapper">
                     {/* Begin::Menu wrapper */}
                     <div className="app-header-menu app-header-mobile-drawer align-items-stretch" 
@@ -130,7 +140,7 @@ const AdminHeader = () => {
                              data-kt-menu="true">
                             <div className="menu-item">
                                 <Link to="/admin/dashboard" className="menu-link">
-                                    <span className="menu-title">Dashboard</span>
+                                    <span className="menu-title">{t('admin.header.dashboard')}</span>
                                 </Link>
                             </div>
                         </div>
@@ -138,7 +148,11 @@ const AdminHeader = () => {
                     {/* End::Menu wrapper */}
 
                     {/* Begin::Navbar */}
-                    <div className="app-navbar flex-shrink-0">
+                    <div
+                        className="app-navbar flex-shrink-0 d-flex align-items-stretch"
+                        dir="ltr"
+                        style={{ flexDirection: isRtl ? 'row-reverse' : 'row' }}
+                    >
                        
                         {/* Begin::Search */}
                         <div className="app-navbar-item align-items-stretch ms-1 ms-md-4">
@@ -195,7 +209,7 @@ const AdminHeader = () => {
                                                 <span className="path10"></span>
                                             </i>
                                         </span>
-                                        <span className="menu-title">Light</span>
+                                        <span className="menu-title">{t('header.themeLight')}</span>
                                     </a>
                                 </div>
                                 <div className="menu-item px-3 my-0">
@@ -206,7 +220,7 @@ const AdminHeader = () => {
                                                 <span className="path2"></span>
                                             </i>
                                         </span>
-                                        <span className="menu-title">Dark</span>
+                                        <span className="menu-title">{t('header.themeDark')}</span>
                                     </a>
                                 </div>
                                 <div className="menu-item px-3 my-0">
@@ -219,7 +233,7 @@ const AdminHeader = () => {
                                                 <span className="path4"></span>
                                             </i>
                                         </span>
-                                        <span className="menu-title">System</span>
+                                        <span className="menu-title">{t('header.themeSystem')}</span>
                                     </a>
                                 </div>
                             </div>
@@ -247,7 +261,7 @@ const AdminHeader = () => {
                                         <div className="d-flex flex-column">
                                             <div className="fw-bold d-flex align-items-center fs-5">
                                                 {user?.name}
-                                                <span className="badge badge-light-danger fw-bold fs-8 px-2 py-1 ms-2">Admin</span>
+                                                <span className="badge badge-light-danger fw-bold fs-8 px-2 py-1 ms-2">{t('admin.header.adminBadge')}</span>
                                             </div>
                                             <a href="#" className="fw-semibold text-muted text-hover-primary fs-7">
                                                 {user?.email}
@@ -257,10 +271,13 @@ const AdminHeader = () => {
                                 </div>
                                 {/* Separator */}
                                 <div className="separator my-2"></div>
+
+                                <LanguageSwitcher variant="userMenu" />
+
                                 {/* Menu item - Merchant Dashboard */}
                                 <div className="menu-item px-5">
-                                    <Link to="/merchant/dashboard" className="menu-link px-5">
-                                        Switch to Merchant
+                                    <Link to={p('/merchant/dashboard')} className="menu-link px-5">
+                                        {t('admin.header.switchToMerchant')}
                                     </Link>
                                 </div>
                                 {/* Separator */}
@@ -268,7 +285,7 @@ const AdminHeader = () => {
                                 {/* Menu item - Sign out */}
                                 <div className="menu-item px-5">
                                     <a onClick={handleLogout} className="menu-link px-5" style={{ cursor: 'pointer' }}>
-                                        Sign Out
+                                        {t('admin.header.signOut')}
                                     </a>
                                 </div>
                             </div>

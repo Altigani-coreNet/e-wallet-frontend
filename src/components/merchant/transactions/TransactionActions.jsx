@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCan } from '../../../utils/permissions';
 
 const TransactionActions = ({ transaction, onView }) => {
+    const { t } = useTranslation();
     const canView = useCan('pos.transactions.view_transactions');
     if (!canView) return null;
 
@@ -9,14 +11,14 @@ const TransactionActions = ({ transaction, onView }) => {
         <button
             className="btn btn-sm btn-light btn-active-light-primary"
             onClick={() => onView(transaction)}
-            title="View Details"
+            title={t('merchant.common.viewDetails')}
         >
             <i className="ki-duotone ki-eye fs-5 me-2">
                 <span className="path1"></span>
                 <span className="path2"></span>
                 <span className="path3"></span>
             </i>
-            Transaction Details
+            {t('merchant.transactions.viewDetailsButton')}
         </button>
     );
 };

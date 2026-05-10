@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { deletePaymentGateway, togglePaymentGatewayStatus } from '../../../services/adminPaymentGatewaysService';
 import { useCan } from '../../../utils/permissions';
 
 const PaymentGatewayTableRow = ({ paymentGateway, isSelected, onSelect, onRefresh }) => {
+    const { t } = useTranslation();
     const canEdit = useCan('pos.roles.edit_roles'); // Using similar permission for now
     const canDelete = useCan('pos.roles.delete_roles'); // Using similar permission for now
     const [showActions, setShowActions] = useState(false);
@@ -22,21 +24,21 @@ const PaymentGatewayTableRow = ({ paymentGateway, isSelected, onSelect, onRefres
     }, [showActions]);
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this payment gateway?')) {
+        if (!window.confirm(t('admin.paymentGatewaysIndex.deleteConfirm'))) {
             return;
         }
 
         try {
             const response = await deletePaymentGateway(paymentGateway.id);
             if (response.success) {
-                toast.success('Payment gateway deleted successfully');
+                toast.success(t('admin.paymentGatewaysIndex.deleteSuccess'));
                 onRefresh();
             } else {
-                toast.error(response.error || 'Failed to delete payment gateway');
+                toast.error(response.error || t('admin.paymentGatewaysIndex.deleteFailed'));
             }
         } catch (error) {
             console.error('Error deleting payment gateway:', error);
-            toast.error('Failed to delete payment gateway');
+            toast.error(t('admin.paymentGatewaysIndex.deleteFailed'));
         }
     };
 
@@ -47,14 +49,14 @@ const PaymentGatewayTableRow = ({ paymentGateway, isSelected, onSelect, onRefres
         try {
             const response = await togglePaymentGatewayStatus(paymentGateway.id, newStatus);
             if (response.success) {
-                toast.success('Payment gateway status updated successfully');
+                toast.success(t('admin.paymentGatewaysIndex.statusUpdateSuccess'));
                 onRefresh();
             } else {
-                toast.error(response.error || 'Failed to update status');
+                toast.error(response.error || t('admin.paymentGatewaysIndex.statusUpdateFailed'));
             }
         } catch (error) {
             console.error('Error toggling status:', error);
-            toast.error('Failed to update status');
+            toast.error(t('admin.paymentGatewaysIndex.statusUpdateFailed'));
         }
     };
 
@@ -115,7 +117,7 @@ const PaymentGatewayTableRow = ({ paymentGateway, isSelected, onSelect, onRefres
                         onClick={() => setShowActions(!showActions)}
                         onBlur={() => setTimeout(() => setShowActions(false), 200)}
                     >
-                        Actions
+                        {t('admin.common.actions')}
                         <i className="ki-duotone ki-down fs-5 ms-1"></i>
                     </button>
                     {showActions && (
@@ -139,7 +141,7 @@ const PaymentGatewayTableRow = ({ paymentGateway, isSelected, onSelect, onRefres
                                     <span className="path2"></span>
                                     <span className="path3"></span>
                                 </i>
-                                View
+                                {t('admin.paymentGatewaysIndex.view')}
                             </Link>
                             
                             {canEdit && (
@@ -152,7 +154,7 @@ const PaymentGatewayTableRow = ({ paymentGateway, isSelected, onSelect, onRefres
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Edit
+                                    {t('admin.paymentGatewaysIndex.edit')}
                                 </Link>
                             )}
                             
@@ -171,7 +173,7 @@ const PaymentGatewayTableRow = ({ paymentGateway, isSelected, onSelect, onRefres
                                             <span className="path4"></span>
                                             <span className="path5"></span>
                                         </i>
-                                        Delete
+                                        {t('admin.paymentGatewaysIndex.delete')}
                                     </button>
                                 </>
                             )}

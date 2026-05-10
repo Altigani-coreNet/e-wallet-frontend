@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -12,6 +13,7 @@ import UserGroupTableSkeleton from './UserGroupTableSkeleton';
 import BulkActionBar from '../../common/BulkActionBar';
 
 const AdminUserGroupsIndex = () => {
+    const { t, i18n } = useTranslation();
     const location = useLocation();
     const { setTitle, setActions } = useToolbar();
     const canCreateUserGroup = useCan('pos.user_groups.create_users_groups');
@@ -36,7 +38,7 @@ const AdminUserGroupsIndex = () => {
     const [searchInput, setSearchInput] = useState('');
 
     useEffect(() => {
-        setTitle('User Groups Management');
+        setTitle(t('admin.pages.userGroupsManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 {/* Toggle Filters Button */}
@@ -49,7 +51,7 @@ const AdminUserGroupsIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Toggle Filters
+                    {t('admin.common.toggleFilters')}
                 </button>
 
                 {/* Export Button */}
@@ -62,7 +64,7 @@ const AdminUserGroupsIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Export
+                    {t('admin.common.export')}
                 </button>
 
                 {/* Add User Group Button */}
@@ -72,13 +74,13 @@ const AdminUserGroupsIndex = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Add User Group
+                        {t('admin.common.addUserGroup')}
                     </Link>
                 )}
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters]);
+    }, [setTitle, setActions, showFilters, t, i18n.language]);
 
     // Debounced search effect - updates filters
     useEffect(() => {
@@ -133,7 +135,7 @@ const AdminUserGroupsIndex = () => {
                 });
             }
         } catch (error) {
-            toast.error('Failed to load user groups');
+                toast.error(t('admin.userGroupsIndex.fetchFailed'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -153,7 +155,7 @@ const AdminUserGroupsIndex = () => {
                 const { data, filename } = response.data.data;
                 
                 if (!data || data.length === 0) {
-                    toast.error('No data to export');
+                    toast.error(t('admin.userGroupsIndex.exportNoData'));
                     return;
                 }
 
@@ -183,12 +185,12 @@ const AdminUserGroupsIndex = () => {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(link.href);
                 
-                toast.success('Export successful!');
+                toast.success(t('admin.userGroupsIndex.exportSuccess'));
             } else {
-                toast.error('No data to export');
+                toast.error(t('admin.userGroupsIndex.exportNoData'));
             }
         } catch (error) {
-            toast.error('Export failed');
+            toast.error(t('admin.userGroupsIndex.exportFailed'));
             console.error(error);
         }
     };
@@ -234,7 +236,7 @@ const AdminUserGroupsIndex = () => {
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) return;
 
-        if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} user group(s)?`)) {
+        if (!window.confirm(t('admin.userGroupsIndex.bulkDeleteConfirm', { count: selectedIds.length }))) {
             return;
         }
 
@@ -254,16 +256,16 @@ const AdminUserGroupsIndex = () => {
                     total: prev.total - selectedIds.length
                 }));
                 setSelectedIds([]);
-                toast.success(`${selectedIds.length} user group(s) deleted successfully`);
+                toast.success(t('admin.userGroupsIndex.bulkDeleted', { count: selectedIds.length }));
             }
         } catch (error) {
-            toast.error('Failed to delete user groups');
+            toast.error(t('admin.userGroupsIndex.deleteFailed'));
             console.error(error);
         }
     };
 
     const handleActivate = async (id) => {
-        if (!window.confirm('Are you sure you want to activate this user group?')) {
+        if (!window.confirm(t('admin.userGroupsIndex.activateConfirm'))) {
             return;
         }
 
@@ -280,16 +282,16 @@ const AdminUserGroupsIndex = () => {
                 setUserGroups(userGroups.map(group => 
                     group.id === id ? { ...group, is_active: true } : group
                 ));
-                toast.success('User group activated successfully');
+                toast.success(t('admin.userGroupsIndex.activated'));
             }
         } catch (error) {
-            toast.error('Failed to activate user group');
+            toast.error(t('admin.userGroupsIndex.activateFailed'));
             console.error(error);
         }
     };
 
     const handleDeactivate = async (id) => {
-        if (!window.confirm('Are you sure you want to deactivate this user group?')) {
+        if (!window.confirm(t('admin.userGroupsIndex.deactivateConfirm'))) {
             return;
         }
 
@@ -306,16 +308,16 @@ const AdminUserGroupsIndex = () => {
                 setUserGroups(userGroups.map(group => 
                     group.id === id ? { ...group, is_active: false } : group
                 ));
-                toast.success('User group deactivated successfully');
+                toast.success(t('admin.userGroupsIndex.deactivated'));
             }
         } catch (error) {
-            toast.error('Failed to deactivate user group');
+            toast.error(t('admin.userGroupsIndex.deactivateFailed'));
             console.error(error);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this user group?')) {
+        if (!window.confirm(t('admin.userGroupsIndex.deleteOneConfirm'))) {
             return;
         }
 
@@ -333,10 +335,10 @@ const AdminUserGroupsIndex = () => {
                     ...prev,
                     total: prev.total - 1
                 }));
-                toast.success('User group deleted successfully');
+                toast.success(t('admin.userGroupsIndex.deleted'));
             }
         } catch (error) {
-            toast.error('Failed to delete user group');
+            toast.error(t('admin.userGroupsIndex.deleteFailed'));
             console.error(error);
         }
     };
@@ -368,7 +370,7 @@ const AdminUserGroupsIndex = () => {
                                     <input
                                         type="text"
                                         className="form-control form-control-solid ps-13"
-                                        placeholder="Quick search user groups..."
+                                        placeholder={t('admin.userGroupsIndex.searchPlaceholder')}
                                         value={searchInput}
                                         onChange={(e) => setSearchInput(e.target.value)}
                                         style={{ paddingLeft: '3rem', fontSize: '1rem', paddingTop: '0.75rem', paddingBottom: '0.75rem' }}
@@ -421,15 +423,15 @@ const AdminUserGroupsIndex = () => {
                                                         />
                                                     </div>
                                                 </th>
-                                                <th className="text-dark">ID</th>
-                                                <th className="min-w-200px text-dark">Group Info</th>
-                                                <th className="min-w-150px text-dark">Merchant</th>
-                                                <th className="text-dark">Branch</th>
-                                                <th className="text-dark">Country</th>
-                                                <th className="text-dark">Users</th>
-                                                <th className="text-dark">Status</th>
-                                                <th className="text-dark">Created At</th>
-                                                <th className="text-end text-dark">Actions</th>
+                                                <th className="text-dark">{t('admin.common.id')}</th>
+                                                <th className="min-w-200px text-dark">{t('admin.userGroupsIndex.colGroupInfo')}</th>
+                                                <th className="min-w-150px text-dark">{t('admin.userGroupsIndex.colMerchant')}</th>
+                                                <th className="text-dark">{t('admin.userGroupsIndex.colBranch')}</th>
+                                                <th className="text-dark">{t('admin.userGroupsIndex.colCountry')}</th>
+                                                <th className="text-dark">{t('admin.userGroupsIndex.colUsers')}</th>
+                                                <th className="text-dark">{t('admin.common.status')}</th>
+                                                <th className="text-dark">{t('admin.common.createdAt')}</th>
+                                                <th className="text-end text-dark">{t('admin.common.actions')}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="text-gray-600 fw-semibold">
@@ -454,7 +456,11 @@ const AdminUserGroupsIndex = () => {
                             {!loading && userGroups.length > 0 && (
                                 <div className="d-flex flex-stack flex-wrap pt-10">
                                     <div className="fs-6 fw-semibold text-gray-700">
-                                        Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} entries
+                                        {t('admin.common.showingEntries', {
+                                            from: ((pagination.current_page - 1) * pagination.per_page) + 1,
+                                            to: Math.min(pagination.current_page * pagination.per_page, pagination.total),
+                                            total: pagination.total
+                                        })}
                                     </div>
                                     <ul className="pagination">
                                         <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}>
@@ -463,7 +469,7 @@ const AdminUserGroupsIndex = () => {
                                                 onClick={() => setPagination({ ...pagination, current_page: pagination.current_page - 1 })}
                                                 disabled={pagination.current_page === 1}
                                             >
-                                                Previous
+                                                {t('admin.common.previous')}
                                             </button>
                                         </li>
                                         {[...Array(pagination.last_page)].map((_, idx) => {
@@ -497,7 +503,7 @@ const AdminUserGroupsIndex = () => {
                                                 onClick={() => setPagination({ ...pagination, current_page: pagination.current_page + 1 })}
                                                 disabled={pagination.current_page === pagination.last_page}
                                             >
-                                                Next
+                                                {t('admin.common.next')}
                                             </button>
                                         </li>
                                     </ul>
@@ -507,7 +513,7 @@ const AdminUserGroupsIndex = () => {
                             {/* No Results */}
                             {!loading && userGroups.length === 0 && (
                                 <div className="text-center py-10">
-                                    <p className="text-gray-600 fs-4">No user groups found</p>
+                                    <p className="text-gray-600 fs-4">{t('admin.userGroupsIndex.noUserGroupsFound')}</p>
                                 </div>
                             )}
                         </div>

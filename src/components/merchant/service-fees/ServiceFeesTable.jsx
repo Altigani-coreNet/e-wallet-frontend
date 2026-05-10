@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import ServiceFeeTableRow from './ServiceFeeTableRow';
 import Pagination from '../../common/Pagination';
 
@@ -8,6 +9,7 @@ const ServiceFeesTable = ({
     onPageChange,
     onPerPageChange 
 }) => {
+    const { t } = useTranslation();
     const safeFees = Array.isArray(serviceFees) ? serviceFees : [];
 
     return (
@@ -16,12 +18,12 @@ const ServiceFeesTable = ({
                 <table className="table align-middle table-row-dashed fs-6 gy-5" id="service-fees-table">
                     <thead>
                         <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                            <th className="text-dark">ID</th>
-                            <th className="min-w-200px text-dark">Name</th>
-                            <th className="text-dark">Type</th>
-                            <th className="text-dark">Fees</th>
-                            <th className="text-dark">Description</th>
-                            <th className="text-dark">Created At</th>
+                            <th className="text-dark">{t('merchant.serviceFees.table.id')}</th>
+                            <th className="min-w-200px text-dark">{t('merchant.serviceFees.table.name')}</th>
+                            <th className="text-dark">{t('merchant.serviceFees.table.type')}</th>
+                            <th className="text-dark">{t('merchant.serviceFees.table.fees')}</th>
+                            <th className="text-dark">{t('merchant.serviceFees.table.description')}</th>
+                            <th className="text-dark">{t('merchant.serviceFees.table.createdAt')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -33,8 +35,8 @@ const ServiceFeesTable = ({
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        <span className="text-gray-600 fs-5">No service fees found</span>
-                                        <span className="text-gray-400 fs-7 mt-2">Try adjusting your filters</span>
+                                        <span className="text-gray-600 fs-5">{t('merchant.serviceFees.emptyTitle')}</span>
+                                        <span className="text-gray-400 fs-7 mt-2">{t('merchant.serviceFees.emptyHint')}</span>
                                     </div>
                                 </td>
                             </tr>

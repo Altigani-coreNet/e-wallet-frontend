@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import TerminalsTable from './TerminalsTable';
@@ -13,6 +14,7 @@ import { toast } from 'react-toastify';
 import { useCan, canExport } from '../../../utils/permissions';
 
 const TerminalsIndex = ({ merchantId: propMerchantId }) => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { user, merchant } = useAuthStore();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -107,8 +109,8 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
     const handleRefresh = useCallback(async () => {
         queryClient.invalidateQueries({ queryKey: ['terminals'] });
         await refetchTerminals();
-        toast.success('Data refreshed successfully');
-    }, [queryClient, refetchTerminals]);
+        toast.success(t('merchant.transactions.refreshSuccess'));
+    }, [queryClient, refetchTerminals, t]);
 
     // Handle export
     const handleExport = useCallback(async () => {
@@ -126,28 +128,28 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
             link.remove();
             window.URL.revokeObjectURL(url);
             
-            toast.success('Export completed successfully');
+            toast.success(t('merchant.transactions.exportSuccess'));
         } catch (error) {
             console.error('Export error:', error);
-            toast.error('Failed to export terminals');
+            toast.error(t('merchant.terminals.exportFailed'));
         } finally {
             setExportLoading(false);
         }
-    }, [merchantId, filters]);
+    }, [merchantId, filters, t]);
 
     // Handle bulk delete
     const handleBulkDelete = useCallback(async () => {
         if (selectedIds.length === 0) return;
 
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete ${selectedIds.length} terminal(s). This action cannot be undone!`,
+            title: t('merchant.common.areYouSure'),
+            text: t('merchant.terminals.bulkDeleteText', { count: selectedIds.length }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete them!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('merchant.common.yesDeleteThem'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -156,8 +158,8 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
             const response = await bulkDeleteTerminals(selectedIds);
             if (response.success) {
                 Swal.fire({
-                    title: 'Deleted!',
-                    text: 'Terminals have been deleted successfully.',
+                    title: t('merchant.common.deleted'),
+                    text: t('merchant.terminals.deletedSuccess'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
@@ -167,63 +169,61 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
                 await refetchTerminals();
             } else {
                 Swal.fire({
-                    title: 'Error!',
-                    text: response.error || 'Failed to delete terminals',
+                    title: t('merchant.common.error'),
+                    text: response.error || t('merchant.terminals.deleteFailed'),
                     icon: 'error',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: t('merchant.common.ok')
                 });
             }
         } catch (error) {
             console.error('Error deleting terminals:', error);
             Swal.fire({
-                title: 'Error!',
-                text: 'An error occurred while deleting terminals',
+                title: t('merchant.common.error'),
+                text: t('merchant.terminals.deleteError'),
                 icon: 'error',
-                confirmButtonText: 'OK'
+                confirmButtonText: t('merchant.common.ok')
             });
         }
-    }, [selectedIds, queryClient, refetchTerminals]);
+    }, [selectedIds, queryClient, refetchTerminals, t]);
 
     // Set toolbar title, breadcrumbs and actions
     useEffect(() => {
-        setTitle('Terminals');
+        setTitle(t('merchant.breadcrumbs.terminals'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Terminals', path: '/merchant/terminals' },
-            { label: 'Terminals List', path: '/merchant/terminals', active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.terminals'), path: '/merchant/terminals' },
+            { label: t('merchant.breadcrumbs.terminalsList'), path: '/merchant/terminals', active: true }
         ]);
         
         setActions(
             <>
-                {/* Filter – icon only on small, icon + text on large */}
                 <button
                     className="btn btn-sm btn-flex btn-secondary fw-bold"
                     onClick={() => setShowFilters(!showFilters)}
-                    aria-label="Toggle filters"
+                    aria-label={t('merchant.common.toggleFilters')}
                 >
                     <i className="ki-duotone ki-filter fs-6 text-muted me-0 me-lg-1">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
                     <span className="d-none d-lg-inline ms-lg-1">
-                        Filter
+                        {t('merchant.common.filter')}
                     </span>
                 </button>
 
-                {/* Refresh – icon only on small, icon + text on large */}
                 <button
                     className="btn btn-sm btn-flex btn-light fw-bold"
                     onClick={handleRefresh}
                     disabled={terminalsLoading}
-                    aria-label="Refresh terminals"
+                    aria-label={t('merchant.common.refresh')}
                 >
                     <i className="ki-duotone ki-arrows-circle fs-6 text-muted me-0 me-lg-1">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
                     <span className="d-none d-lg-inline ms-lg-1">
-                        Refresh
+                        {t('merchant.common.refresh')}
                     </span>
                 </button>
 
@@ -231,7 +231,7 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
                     <button
                         className="btn btn-sm fw-bold btn-danger"
                         onClick={handleBulkDelete}
-                        aria-label={`Delete selected terminals (${selectedIds.length})`}
+                        aria-label={t('merchant.terminals.deleteSelected', { count: selectedIds.length })}
                     >
                         <i className="ki-duotone ki-trash fs-3 me-0 me-lg-2">
                             <span className="path1"></span>
@@ -241,7 +241,7 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
                             <span className="path5"></span>
                         </i>
                         <span className="d-none d-lg-inline">
-                            Delete Selected ({selectedIds.length})
+                            {t('merchant.terminals.deleteSelected', { count: selectedIds.length })}
                         </span>
                     </button>
                 )}
@@ -256,7 +256,7 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Export
+                        {t('merchant.transactions.export')}
                     </button>
                 )}
 
@@ -268,7 +268,7 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Import
+                    {t('merchant.terminals.import')}
                 </button>
 
                 {canCreate && (
@@ -280,7 +280,7 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Add Terminal
+                        {t('merchant.terminals.addTerminal')}
                     </Link>
                 )}
             </>
@@ -290,7 +290,7 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [showFilters, terminalsLoading, exportLoading, selectedIds.length, handleRefresh, handleExport, handleBulkDelete, setTitle, setBreadcrumbs, setActions]);
+    }, [showFilters, terminalsLoading, exportLoading, selectedIds.length, handleRefresh, handleExport, handleBulkDelete, setTitle, setBreadcrumbs, setActions, t, i18n.language, canCreate, canDelete]);
 
     // Handle page change
     const handlePageChange = (page) => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
@@ -52,6 +53,7 @@ const getSymbolTranslations = (currency) => {
 };
 
 const AdminCurrenciesIndex = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const canCreateCurrency = useCan('pos.currencies.create_currencies');
     const [currencies, setCurrencies] = useState([]);
@@ -66,7 +68,7 @@ const AdminCurrenciesIndex = () => {
     const [filters, setFilters] = useState({ date_from: '', date_to: '' });
 
     useEffect(() => {
-        setTitle('Currencies Management');
+        setTitle(t('admin.pages.currenciesManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button 
@@ -81,7 +83,7 @@ const AdminCurrenciesIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">{showFilters ? 'Hide' : 'Show'} Filters</span>
+                    <span className="d-none d-md-inline ms-1">{showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}</span>
                 </button>
                 {canCreateCurrency && (
                     <Link to="/admin/settings/currencies/create" className="btn btn-sm fw-bold btn-primary">
@@ -89,13 +91,13 @@ const AdminCurrenciesIndex = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        <span className="d-none d-md-inline ms-1">Add Currency</span>
+                        <span className="d-none d-md-inline ms-1">{t('admin.common.add')} {t('admin.common.currency')}</span>
                     </Link>
                 )}
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters]);
+    }, [setTitle, setActions, showFilters, t, i18n.language]);
 
     useEffect(() => { fetchCurrencies(); }, [pagination.current_page]);
     useEffect(() => {
@@ -133,12 +135,12 @@ const AdminCurrenciesIndex = () => {
                     }));
                 }
             } else {
-                toast.error(response.error || 'Failed to fetch currencies');
+                toast.error(response.error || t('admin.currenciesIndex.fetchFailed'));
                 setCurrencies([]);
             }
         } catch (error) {
             console.error('Fetch error:', error);
-            toast.error('Failed to fetch currencies');
+            toast.error(t('admin.currenciesIndex.fetchFailed'));
             setCurrencies([]);
         } finally {
             setLoading(false);
@@ -147,19 +149,19 @@ const AdminCurrenciesIndex = () => {
 
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) {
-            toast.warning('Please select currencies to delete');
+            toast.warning(t('admin.common.pleaseSelectToDelete'));
             return;
         }
         
-        if (!window.confirm(`Delete ${selectedIds.length} currency(s)?`)) return;
+        if (!window.confirm(t('admin.currenciesIndex.deleteConfirm', { count: selectedIds.length }))) return;
         
         const response = await bulkDeleteCurrencies(selectedIds);
         if (response.success) {
-            toast.success('Currencies deleted successfully');
+            toast.success(t('admin.currenciesIndex.deleted'));
             setSelectedIds([]);
             fetchCurrencies();
         } else {
-            toast.error(response.error || 'Failed to delete currencies');
+            toast.error(response.error || t('admin.currenciesIndex.deleteFailed'));
         }
     };
 
@@ -199,7 +201,7 @@ const AdminCurrenciesIndex = () => {
                                 <input 
                                     type="text" 
                                     className="form-control form-control-solid w-250px ps-13" 
-                                    placeholder="Search Currencies"
+                                    placeholder={t('admin.currenciesIndex.searchPlaceholder')}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
@@ -221,15 +223,15 @@ const AdminCurrenciesIndex = () => {
                                             />
                                         </div>
                                     </th>
-                                    <th>ID</th>
-                                    <th className="min-w-125px">Country</th>
-                                    <th className="min-w-125px">Name</th>
-                                    <th>Symbol (EN)</th>
-                                    <th>Symbol (AR)</th>
-                                    <th>Currency Code (EN)</th>
-                                    <th>Currency Code (AR)</th>
-                                    <th>Created At</th>
-                                    <th className="text-end min-w-100px">Actions</th>
+                                    <th>{t('admin.common.id')}</th>
+                                    <th className="min-w-125px">{t('admin.table.country')}</th>
+                                    <th className="min-w-125px">{t('admin.common.name')}</th>
+                                    <th>{t('admin.common.symbolEn')}</th>
+                                    <th>{t('admin.common.symbolAr')}</th>
+                                    <th>{t('admin.common.currencyCodeEn')}</th>
+                                    <th>{t('admin.common.currencyCodeAr')}</th>
+                                    <th>{t('admin.common.createdAt')}</th>
+                                    <th className="text-end min-w-100px">{t('admin.common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="fw-semibold text-gray-600">
@@ -252,7 +254,7 @@ const AdminCurrenciesIndex = () => {
                                     </>
                                 ) : currencies.length === 0 ? (
                                     <tr>
-                                        <td colSpan="10" className="text-center py-5">No currencies found</td>
+                                        <td colSpan="10" className="text-center py-5">{t('admin.common.noData')}</td>
                                     </tr>
                                 ) : (
                                     currencies.map(currency => (
@@ -276,7 +278,7 @@ const AdminCurrenciesIndex = () => {
                             <div className="row">
                                 <div className="col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start">
                                     <div className="dataTables_length">
-                                        Showing page {pagination.current_page} of {pagination.last_page}
+                                        {t('admin.common.showingPage', { current: pagination.current_page, total: pagination.last_page })}
                                     </div>
                                 </div>
                                 <div className="col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end">

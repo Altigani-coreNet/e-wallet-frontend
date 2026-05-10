@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import {
     exportAdminPaymentLinks,
@@ -21,6 +22,7 @@ const initialFilters = {
 };
 
 const AdminPaymentLinksIndex = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const {
         merchantsMap,
@@ -52,13 +54,13 @@ const AdminPaymentLinksIndex = () => {
             if (contentType.includes('application/json')) {
                 const text = await blob.text();
                 const payload = JSON.parse(text);
-                const message = payload?.message || 'No payment links to export.';
+                const message = payload?.message || t('admin.paymentLinksIndex.noLinksToExport');
                 toast.info(message);
                 return;
             }
 
             if (!blob || typeof blob.size === 'number' && blob.size === 0) {
-                toast.info('No payment links to export.');
+                toast.info(t('admin.paymentLinksIndex.noLinksToExport'));
                 return;
             }
 
@@ -70,15 +72,15 @@ const AdminPaymentLinksIndex = () => {
             a.click();
             window.URL.revokeObjectURL(downloadUrl);
             document.body.removeChild(a);
-            toast.success('Payment links exported successfully');
+            toast.success(t('admin.paymentLinksIndex.exportSuccess'));
         } catch (error) {
             console.error('Error exporting payment links:', error);
-            toast.error('Failed to export payment links');
+            toast.error(t('admin.paymentLinksIndex.exportFailed'));
         }
-    }, [appliedFilters, pagination.current_page, pagination.per_page]);
+    }, [appliedFilters, pagination.current_page, pagination.per_page, t]);
 
     useEffect(() => {
-        setTitle('Payment Links');
+        setTitle(t('admin.paymentLinksIndex.paymentLinks'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button
@@ -89,7 +91,7 @@ const AdminPaymentLinksIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    {showFilters ? 'Hide Filters' : 'Show Filters'}
+                    {showFilters ? t('admin.paymentLinksIndex.hideFilters') : t('admin.paymentLinksIndex.showFilters')}
                 </button>
                 <button
                     className="btn btn-sm btn-flex btn-light-primary fw-bold"
@@ -99,7 +101,7 @@ const AdminPaymentLinksIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Export
+                    {t('admin.paymentLinksIndex.export')}
                 </button>
             </div>
         );
@@ -107,7 +109,7 @@ const AdminPaymentLinksIndex = () => {
         return () => {
             setActions(null);
         };
-    }, [setTitle, setActions, showFilters, handleExport]);
+    }, [setTitle, setActions, showFilters, handleExport, t]);
 
     const listParams = useMemo(() => ({
         page: pagination.current_page,
@@ -136,7 +138,7 @@ const AdminPaymentLinksIndex = () => {
         if (!paymentLinksResponse) return;
 
         if (paymentLinksResponse.success === false || paymentLinksResponse.status === false) {
-            const message = paymentLinksResponse.message || paymentLinksResponse.error || paymentLinksResponse.data?.message || 'Failed to load payment links';
+            const message = paymentLinksResponse.message || paymentLinksResponse.error || paymentLinksResponse.data?.message || t('admin.paymentLinksIndex.loadFailed');
             toast.error(message);
             return;
         }
@@ -164,19 +166,19 @@ const AdminPaymentLinksIndex = () => {
                 last_page: meta.last_page ?? prev.last_page,
             }));
         }
-    }, [paymentLinksResponse]);
+    }, [paymentLinksResponse, t]);
 
     useEffect(() => {
         if (!paymentLinksError) return;
-        const message = paymentLinksError?.response?.data?.message || paymentLinksError.message || 'Failed to load payment links';
+        const message = paymentLinksError?.response?.data?.message || paymentLinksError.message || t('admin.paymentLinksIndex.loadFailed');
         toast.error(message);
-    }, [paymentLinksError]);
+    }, [paymentLinksError, t]);
 
     useEffect(() => {
         if (!statisticsError) return;
-        const message = statisticsError?.response?.data?.message || statisticsError.message || 'Failed to load payment link statistics';
+        const message = statisticsError?.response?.data?.message || statisticsError.message || t('admin.paymentLinksIndex.statsLoadFailed');
         toast.error(message);
-    }, [statisticsError]);
+    }, [statisticsError, t]);
 
     const paymentLinks = useMemo(() => {
         if (!paymentLinksResponse) return [];
@@ -246,7 +248,7 @@ const AdminPaymentLinksIndex = () => {
             <div className="card">
                 <div className="card-header border-0 pt-6">
                     <div className="card-title">
-                        <h3 className="card-label">Payment Links</h3>
+                        <h3 className="card-label">{t('admin.paymentLinksIndex.paymentLinks')}</h3>
                     </div>
                 </div>
                 <div className="card-body pt-0">

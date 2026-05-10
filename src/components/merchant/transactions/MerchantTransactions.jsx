@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import Swal from 'sweetalert2';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import TransactionFilters from './TransactionFilters';
@@ -13,21 +14,25 @@ import useAuthStore from '../../../stores/authStore';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { toast } from 'react-toastify';
 import { canExport } from '../../../utils/permissions';
+import { getTransactionStatusLabel } from '../../../utils/transactionStatusHelpers';
 
 /** Matches API CountryResource: `name` may be a string or { en, ar }. */
-function formatCountryNameLabel(country) {
+function formatCountryNameLabel(country, lang) {
     if (!country?.name && country?.name !== '') return '';
     const n = country.name;
     if (typeof n === 'string') return n;
-    if (n && typeof n === 'object') return n.en || n.ar || '';
+    if (n && typeof n === 'object') {
+        if (lang === 'ar') return n.ar || n.en || '';
+        return n.en || n.ar || '';
+    }
     return '';
 }
 
 const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }) => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { user, merchant } = useAuthStore();
-    const can = useAuthStore(state => state.can);
     const { setTitle, setActions } = useToolbar();
     
     // Get merchantId from props, store, or localStorage
@@ -93,14 +98,14 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
             } catch (err) {
                 console.error('Error fetching transactions:', err);
                 setError(err.message);
-                toast.error('Failed to load transactions');
+                toast.error(t('merchant.transactions.loadFailed'));
             } finally {
                 setTransactionsLoading(false);
             }
         };
 
         loadTransactions();
-    }, [merchantId, currentPage, perPage, filters.search, filters.status, filters.payment_type, filters.terminal_id, filters.start_date, filters.end_date, filters.type, sortBy, sortOrder]);
+    }, [merchantId, currentPage, perPage, filters.search, filters.status, filters.payment_type, filters.terminal_id, filters.start_date, filters.end_date, filters.type, sortBy, sortOrder, t]);
 
     // Fetch statistics when dependencies change (only if no type filter)
     useEffect(() => {
@@ -142,26 +147,26 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                 setStatisticsLoading(false);
             }
 
-            toast.success('Data refreshed successfully');
+            toast.success(t('merchant.transactions.refreshSuccess'));
         } catch (error) {
             console.error('Error refreshing data:', error);
-            toast.error('Failed to refresh data');
+            toast.error(t('merchant.transactions.refreshFailed'));
             setTransactionsLoading(false);
             setStatisticsLoading(false);
         }
-    }, [merchantId, currentPage, perPage, filters, sortBy, sortOrder]);
+    }, [merchantId, currentPage, perPage, filters, sortBy, sortOrder, t]);
 
     // Handle export
     const handleExport = useCallback(async () => {
         const result = await Swal.fire({
-            title: 'Export Transactions',
-            text: 'Export transactions with current filters applied?',
+            title: t('merchant.transactions.exportTitle'),
+            text: t('merchant.transactions.exportConfirm'),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#28a745',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Export',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('merchant.transactions.export'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (!result.isConfirmed) {
@@ -182,30 +187,31 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
             link.remove();
             window.URL.revokeObjectURL(url);
             
-            toast.success('Export completed successfully');
+            toast.success(t('merchant.transactions.exportSuccess'));
         } catch (error) {
             console.error('Export error:', error);
-            toast.error('Failed to export transactions');
+            toast.error(t('merchant.transactions.exportFailed'));
         } finally {
             setExportLoading(false);
         }
-    }, [merchantId, filters]);
+    }, [merchantId, filters, t]);
 
     // Set toolbar title and actions
     useEffect(() => {
-        setTitle('Transactions');
+        setTitle(t('merchant.transactions.title'));
         
         setActions(
             <>
                 <button
                     className="btn btn-sm btn-flex btn-secondary fw-bold"
                     onClick={() => setShowFilters(!showFilters)}
+                    aria-label={showFilters ? t('merchant.common.hideFilters') : t('merchant.common.showFilters')}
                 >
                     <i className="ki-duotone ki-filter fs-6 text-muted me-1">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Filter
+                    {showFilters ? t('merchant.common.hideFilters') : t('merchant.common.showFilters')}
                 </button>
 
                 <button
@@ -217,7 +223,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Refresh
+                    {t('merchant.common.refresh')}
                 </button>
 
                 {canExport('transactions') && (
@@ -230,7 +236,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Export
+                        {t('merchant.transactions.export')}
                     </button>
                 )}
             </>
@@ -239,7 +245,18 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
         return () => {
             setActions(null);
         };
-    }, [showFilters, transactionsLoading, statisticsLoading, exportLoading, handleRefresh, handleExport, setTitle, setActions]);
+    }, [
+        showFilters,
+        transactionsLoading,
+        statisticsLoading,
+        exportLoading,
+        handleRefresh,
+        handleExport,
+        setTitle,
+        setActions,
+        t,
+        i18n.language,
+    ]);
 
     // Handle page change
     const handlePageChange = (page) => {
@@ -330,9 +347,10 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
 
     const formatTableAmount = (value) => {
         const numeric = Number(value ?? 0);
+        const loc = i18n.language === 'ar' ? 'ar' : undefined;
         return Number.isNaN(numeric)
             ? '0.00'
-            : numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            : numeric.toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     // Generate pagination numbers
@@ -399,8 +417,10 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
             {/* Toolbar - Top */}
             <div className="d-flex flex-wrap flex-stack mb-6">
                 <h3 className="fw-bolder my-2">
-                    Transactions
-                    <span className="fs-6 text-gray-400 fw-bold ms-1">({totalRows} total)</span>
+                    {t('merchant.transactions.title')}
+                    <span className="fs-6 text-gray-400 fw-bold ms-1">
+                        {t('merchant.transactions.totalCount', { count: totalRows })}
+                    </span>
                 </h3>
             </div>
 
@@ -424,8 +444,12 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                 <span className="path3"></span>
                             </i>
                             <div className="d-flex flex-column">
-                                <h4 className="mb-1 text-capitalize">{filters.type} Transactions</h4>
-                                <span>Showing transactions with type: {filters.type}</span>
+                                <h4 className="mb-1 text-capitalize">
+                                    {t('merchant.transactions.typeBannerTitle', { type: filters.type })}
+                                </h4>
+                                <span>
+                                    {t('merchant.transactions.typeBannerSubtitle', { type: filters.type })}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -470,16 +494,16 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                         <table className="table align-top table-row-dashed fs-7 gy-5" id="transactions-table">
                             <thead>
                                 <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                    <th className="text-dark">Country</th>
-                                    <th className="text-dark">User</th>
-                                    <th className="text-dark">Payment Method</th>
+                                    <th className="text-dark">{t('merchant.transactions.colCountry')}</th>
+                                    <th className="text-dark">{t('merchant.transactions.colUser')}</th>
+                                    <th className="text-dark">{t('merchant.transactions.colPaymentMethod')}</th>
                                     <th
                                         className="text-dark cursor-pointer fs-8"
                                         onClick={() => handleSort('transaction_id')}
                                         style={{ cursor: 'pointer' }}
                                     >
                                         <span className="d-inline-flex align-items-center flex-nowrap gap-1">
-                                            Transaction ID
+                                            {t('merchant.transactions.colTransactionId')}
                                             {getSortIcon('transaction_id')}
                                         </span>
                                     </th>
@@ -489,7 +513,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                         style={{ cursor: 'pointer' }}
                                     >
                                         <span className="d-inline-flex align-items-center flex-nowrap gap-1">
-                                            Date and Time
+                                            {t('merchant.transactions.colDateTime')}
                                             {getSortIcon('created_at')}
                                         </span>
                                     </th>
@@ -499,7 +523,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                         style={{ cursor: 'pointer' }}
                                     >
                                         <span className="d-inline-flex align-items-center flex-nowrap gap-1">
-                                            Amount
+                                            {t('merchant.transactions.colAmount')}
                                             {getSortIcon('amount')}
                                         </span>
                                     </th>
@@ -509,11 +533,11 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                         style={{ cursor: 'pointer' }}
                                     >
                                         <span className="d-inline-flex align-items-center flex-nowrap gap-1">
-                                            Status
+                                            {t('merchant.transactions.colStatus')}
                                             {getSortIcon('status')}
                                         </span>
                                     </th>
-                                    <th className="text-center text-dark">Action</th>
+                                    <th className="text-center text-dark">{t('merchant.transactions.colAction')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -539,27 +563,40 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                                     <span className="path1"></span>
                                                     <span className="path2"></span>
                                                 </i>
-                                                <p className="fw-bold">No transactions found</p>
+                                                <p className="fw-bold">{t('merchant.transactions.noTransactionsFound')}</p>
                                             </div>
                                         </td>
                                     </tr>
                                 ) : (
                                     transactions.map((transaction) => (
                                         <tr key={transaction.id}>
-                                            <td>{formatCountryNameLabel(transaction.country) || 'N/A'}</td>
-                                            <td>{transaction.user_name || transaction.user?.name || 'N/A'}</td>
+                                            <td>
+                                                {formatCountryNameLabel(transaction.country, i18n.language) ||
+                                                    t('merchant.common.na')}
+                                            </td>
+                                            <td>
+                                                {transaction.user_name ||
+                                                    transaction.user?.name ||
+                                                    t('merchant.common.na')}
+                                            </td>
                                             <td>
                                                 {transaction.method ||
                                                     transaction.payment_method?.card_type ||
                                                     transaction.paymentMethod?.card_type ||
                                                     transaction.payment_type ||
-                                                    'N/A'}
+                                                    t('merchant.common.na')}
                                             </td>
-                                            <td className="fs-8">{transaction.transaction_id || transaction.id || 'N/A'}</td>
+                                            <td className="fs-8">
+                                                {transaction.transaction_id ||
+                                                    transaction.id ||
+                                                    t('merchant.common.na')}
+                                            </td>
                                             <td>
                                                 {transaction.created_at
-                                                    ? new Date(transaction.created_at).toLocaleString()
-                                                    : 'N/A'}
+                                                    ? new Date(transaction.created_at).toLocaleString(
+                                                          i18n.language === 'ar' ? 'ar' : undefined
+                                                      )
+                                                    : t('merchant.common.na')}
                                             </td>
                                             <td>
                                                 {transaction.currency_symbol || '$'}
@@ -567,7 +604,8 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                             </td>
                                             <td>
                                                 <span className={`badge ${getStatusBadgeClass(transaction.status)}`}>
-                                                    {transaction.status || 'N/A'}
+                                                    {getTransactionStatusLabel(transaction.status, t) ||
+                                                        t('merchant.common.na')}
                                                 </span>
                                             </td>
                                             <td className="text-center">
@@ -589,7 +627,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                             <div className="col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start">
                                 <div className="dataTables_length">
                                     <label className="d-flex align-items-center">
-                                        <span className="me-2">Show</span>
+                                        <span className="me-2">{t('merchant.common.show')}</span>
                                         <select 
                                             className="form-select form-select-sm" 
                                             value={perPage}
@@ -601,12 +639,16 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                             <option value="50">50</option>
                                             <option value="100">100</option>
                                         </select>
-                                        <span className="ms-2">entries</span>
+                                        <span className="ms-2">{t('merchant.transactions.paginationEntries')}</span>
                                     </label>
                                 </div>
                                 <div className="ms-5">
                                     <span className="text-muted">
-                                        Showing {((currentPage - 1) * perPage) + 1} to {Math.min(currentPage * perPage, totalRows)} of {totalRows} entries
+                                        {t('merchant.transactions.paginationShowing', {
+                                            from: (currentPage - 1) * perPage + 1,
+                                            to: Math.min(currentPage * perPage, totalRows),
+                                            total: totalRows,
+                                        })}
                                     </span>
                                 </div>
                             </div>
@@ -619,7 +661,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                                 onClick={() => handlePageChange(currentPage - 1)}
                                                 disabled={currentPage === 1}
                                             >
-                                                Previous
+                                                {t('merchant.common.previous')}
                                             </button>
                                         </li>
                                         {getPaginationNumbers().map((page, index) => (
@@ -644,7 +686,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                                 onClick={() => handlePageChange(currentPage + 1)}
                                                 disabled={currentPage === lastPage}
                                             >
-                                                Next
+                                                {t('merchant.common.next')}
                                             </button>
                                         </li>
                                     </ul>

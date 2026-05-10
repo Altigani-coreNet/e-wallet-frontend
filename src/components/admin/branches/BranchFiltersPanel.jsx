@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import MerchantCountryFilterFields from '../../common/filters/MerchantCountryFilterFields';
 
 const BranchFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilters, onApply }) => {
+    const { t } = useTranslation();
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         onFilterChange({ ...filters, [name]: value });
@@ -22,7 +24,7 @@ const BranchFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilters
             {/* Card header */}
             <div className="card-header border-0 pt-6">
                 <div className="card-title">
-                    <h3 className="fw-bold m-0">Filters</h3>
+                    <h3 className="fw-bold m-0">{t('admin.branchesIndex.filters')}</h3>
                 </div>
                 <div className="card-toolbar">
                     <button
@@ -34,7 +36,7 @@ const BranchFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilters
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Clear Filters
+                        {t('admin.branchesIndex.clearFilters')}
                     </button>
                 </div>
             </div>
@@ -44,32 +46,32 @@ const BranchFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilters
                 <div className="row g-4">
                     {/* Search */}
                     <div className="col-md-3">
-                        <label className="form-label fw-bold">Search</label>
+                        <label className="form-label fw-bold">{t('admin.branchesIndex.search')}</label>
                         <input
                             type="text"
                             className="form-control"
                             name="search"
                             value={filters.search || ''}
                             onChange={handleInputChange}
-                            placeholder="Search by name, address, merchant..."
+                            placeholder={t('admin.branchesIndex.searchPlaceholder')}
                             onKeyPress={(e) => e.key === 'Enter' && onApply()}
                         />
                     </div>
 
                     {/* Status Filter */}
                     <div className="col-md-3">
-                        <label className="form-label fw-bold">Status</label>
+                        <label className="form-label fw-bold">{t('admin.branchesIndex.status')}</label>
                         <select
                             className="form-select"
                             name="status"
                             value={filters.status || ''}
                             onChange={handleInputChange}
                         >
-                            <option value="">All Statuses</option>
-                            <option value="pending">Pending</option>
-                            <option value="approved">Approved</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="suspended">Suspended</option>
+                            <option value="">{t('admin.branchesIndex.allStatuses')}</option>
+                            <option value="pending">{t('admin.common.pending')}</option>
+                            <option value="approved">{t('admin.common.approved')}</option>
+                            <option value="rejected">{t('admin.common.rejected')}</option>
+                            <option value="suspended">{t('admin.common.suspended')}</option>
                         </select>
                     </div>
 
@@ -78,13 +80,13 @@ const BranchFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilters
                         countryValue={filters.country_id}
                         onMerchantChange={handleMerchantChange}
                         onCountryChange={handleCountryChange}
-                        merchantPlaceholder="All Merchants"
-                        countryPlaceholder="All Countries"
+                        merchantPlaceholder={t('admin.branchesIndex.allMerchants')}
+                        countryPlaceholder={t('admin.branchesIndex.allCountries')}
                     />
 
                     {/* Date From */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold">Created Date From</label>
+                        <label className="form-label fw-bold">{t('admin.branchesIndex.dateFrom')}</label>
                         <input
                             type="date"
                             className="form-control"
@@ -96,7 +98,7 @@ const BranchFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilters
 
                     {/* Date To */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold">Created Date To</label>
+                        <label className="form-label fw-bold">{t('admin.branchesIndex.dateTo')}</label>
                         <input
                             type="date"
                             className="form-control"
@@ -119,7 +121,7 @@ const BranchFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilters
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Apply Filters
+                            {t('admin.branchesIndex.applyFilters')}
                         </button>
                     </div>
                 </div>

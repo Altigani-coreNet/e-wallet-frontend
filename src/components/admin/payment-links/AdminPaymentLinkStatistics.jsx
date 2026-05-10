@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const AdminPaymentLinkStatistics = ({ statistics, loading }) => {
+    const { t } = useTranslation();
     if (loading) {
         return (
             <div className="row g-5 g-xl-8 mb-5">
@@ -26,17 +28,17 @@ const AdminPaymentLinkStatistics = ({ statistics, loading }) => {
 
     const stats = [
         {
-            label: 'Total Payment Links',
+            label: t('admin.paymentLinksIndex.totalLinks'),
             value: statistics.total || 0,
             bgClass: 'bg-light-dark',
         },
         {
-            label: 'Completed',
+            label: t('admin.paymentLinksIndex.completed'),
             value: statistics.completed || 0,
             bgClass: 'bg-light-success',
         },
         {
-            label: 'Expired',
+            label: t('admin.paymentLinksIndex.expired'),
             value: statistics.expired || 0,
             bgClass: 'bg-light-warning',
         },

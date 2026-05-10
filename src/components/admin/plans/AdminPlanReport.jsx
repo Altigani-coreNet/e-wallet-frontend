@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import PlanFiltersPanel from './PlanFiltersPanel';
 
 const AdminPlanReport = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const [loading, setLoading] = useState(true);
     const [reportData, setReportData] = useState(null);
@@ -20,10 +22,10 @@ const AdminPlanReport = () => {
     });
 
     useEffect(() => {
-        setTitle('Plans Report');
+        setTitle(t('admin.planReport.plansReport'));
         setActions(null);
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t]);
 
     useEffect(() => {
         fetchReport();
@@ -43,7 +45,7 @@ const AdminPlanReport = () => {
                 setReportData(response.data.data);
             }
         } catch (error) {
-            toast.error('Failed to load report');
+            toast.error(t('admin.planReport.failedToLoad'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -52,11 +54,22 @@ const AdminPlanReport = () => {
 
     const handleExport = () => {
         if (!reportData || !reportData.plans || reportData.plans.length === 0) {
-            toast.warning('No data to export');
+            toast.warning(t('admin.planReport.noDataToExport'));
             return;
         }
 
-        const headers = ['Name', 'Description', 'Plan Type', 'Price', 'Discounted Price', 'Has Discount', 'Status', 'Product Counts', 'Shop Counts', 'Created At'];
+        const headers = [
+            t('admin.plansIndex.name'),
+            t('admin.plansIndex.description'),
+            t('admin.plansIndex.planType'),
+            t('admin.plansIndex.price'),
+            t('admin.plansIndex.discountedPrice'),
+            t('admin.plansIndex.hasDiscount'),
+            t('admin.plansIndex.status'),
+            t('admin.planReport.productCounts'),
+            t('admin.planReport.shopCounts'),
+            t('admin.plansIndex.createdAt')
+        ];
         let csvContent = headers.join(',') + '\n';
         
         reportData.plans.forEach(plan => {
@@ -66,8 +79,8 @@ const AdminPlanReport = () => {
                 plan.plan_type?.value || plan.plan_type || '',
                 plan.price || '0',
                 plan.current_price || '',
-                plan.has_discount ? 'Yes' : 'No',
-                plan.status ? 'Active' : 'Inactive',
+                plan.has_discount ? t('admin.plansIndex.yes') : t('admin.plansIndex.no'),
+                plan.status ? t('admin.plansIndex.active') : t('admin.plansIndex.inactive'),
                 plan.product_counts || '',
                 plan.shop_counts || '',
                 plan.created_at || ''
@@ -84,7 +97,7 @@ const AdminPlanReport = () => {
         document.body.removeChild(link);
         URL.revokeObjectURL(link.href);
         
-        toast.success('Report exported successfully');
+        toast.success(t('admin.planReport.exportSuccess'));
     };
 
     if (loading) {
@@ -94,7 +107,7 @@ const AdminPlanReport = () => {
                     <div className="card">
                         <div className="card-body text-center py-10">
                             <div className="spinner-border text-primary" role="status">
-                                <span className="visually-hidden">Loading...</span>
+                                <span className="visually-hidden">{t('admin.common.loading')}</span>
                             </div>
                         </div>
                     </div>
@@ -120,7 +133,7 @@ const AdminPlanReport = () => {
                                     <div className="card-body">
                                         <div className="d-flex align-items-center">
                                             <div className="flex-grow-1">
-                                                <span className="text-gray-500 fw-bold fs-6">Total Plans</span>
+                                                <span className="text-gray-500 fw-bold fs-6">{t('admin.planReport.totalPlans')}</span>
                                                 <div className="text-gray-800 fw-bold fs-2hx">{reportData.statistics.total_plans}</div>
                                             </div>
                                         </div>
@@ -132,7 +145,7 @@ const AdminPlanReport = () => {
                                     <div className="card-body">
                                         <div className="d-flex align-items-center">
                                             <div className="flex-grow-1">
-                                                <span className="text-gray-500 fw-bold fs-6">Active Plans</span>
+                                                <span className="text-gray-500 fw-bold fs-6">{t('admin.planReport.activePlans')}</span>
                                                 <div className="text-gray-800 fw-bold fs-2hx">{reportData.statistics.active_plans}</div>
                                             </div>
                                         </div>
@@ -144,7 +157,7 @@ const AdminPlanReport = () => {
                                     <div className="card-body">
                                         <div className="d-flex align-items-center">
                                             <div className="flex-grow-1">
-                                                <span className="text-gray-500 fw-bold fs-6">Inactive Plans</span>
+                                                <span className="text-gray-500 fw-bold fs-6">{t('admin.planReport.inactivePlans')}</span>
                                                 <div className="text-gray-800 fw-bold fs-2hx">{reportData.statistics.inactive_plans}</div>
                                             </div>
                                         </div>
@@ -156,7 +169,7 @@ const AdminPlanReport = () => {
                                     <div className="card-body">
                                         <div className="d-flex align-items-center">
                                             <div className="flex-grow-1">
-                                                <span className="text-gray-500 fw-bold fs-6">Plans with Discount</span>
+                                                <span className="text-gray-500 fw-bold fs-6">{t('admin.planReport.plansWithDiscount')}</span>
                                                 <div className="text-gray-800 fw-bold fs-2hx">{reportData.statistics.plans_with_discount}</div>
                                             </div>
                                         </div>
@@ -170,7 +183,7 @@ const AdminPlanReport = () => {
                 <div className="card">
                     <div className="card-header border-0 pt-6">
                         <div className="card-title">
-                            <h3>Plans Report</h3>
+                            <h3>{t('admin.planReport.plansReport')}</h3>
                         </div>
                         <div className="card-toolbar">
                             <button
@@ -182,7 +195,7 @@ const AdminPlanReport = () => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Export Report
+                                {t('admin.planReport.exportReport')}
                             </button>
                         </div>
                     </div>
@@ -191,16 +204,16 @@ const AdminPlanReport = () => {
                             <table className="table align-middle table-row-dashed fs-6 gy-5">
                                 <thead>
                                     <tr className="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                        <th>Name</th>
-                                        <th>Description</th>
-                                        <th>Plan Type</th>
-                                        <th>Price</th>
-                                        <th>Discounted Price</th>
-                                        <th>Has Discount</th>
-                                        <th>Status</th>
-                                        <th>Product Counts</th>
-                                        <th>Shop Counts</th>
-                                        <th>Created At</th>
+                                        <th>{t('admin.plansIndex.name')}</th>
+                                        <th>{t('admin.plansIndex.description')}</th>
+                                        <th>{t('admin.plansIndex.planType')}</th>
+                                        <th>{t('admin.plansIndex.price')}</th>
+                                        <th>{t('admin.plansIndex.discountedPrice')}</th>
+                                        <th>{t('admin.plansIndex.hasDiscount')}</th>
+                                        <th>{t('admin.plansIndex.status')}</th>
+                                        <th>{t('admin.planReport.productCounts')}</th>
+                                        <th>{t('admin.planReport.shopCounts')}</th>
+                                        <th>{t('admin.plansIndex.createdAt')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="text-gray-600 fw-semibold">
@@ -218,16 +231,16 @@ const AdminPlanReport = () => {
                                                 <td>{plan.current_price ? parseFloat(plan.current_price).toFixed(2) : '-'}</td>
                                                 <td>
                                                     {plan.has_discount ? (
-                                                        <span className="badge badge-success">Yes</span>
+                                                        <span className="badge badge-success">{t('admin.plansIndex.yes')}</span>
                                                     ) : (
-                                                        <span className="badge badge-secondary">No</span>
+                                                        <span className="badge badge-secondary">{t('admin.plansIndex.no')}</span>
                                                     )}
                                                 </td>
                                                 <td>
                                                     {plan.status ? (
-                                                        <span className="badge badge-success">Active</span>
+                                                        <span className="badge badge-success">{t('admin.plansIndex.active')}</span>
                                                     ) : (
-                                                        <span className="badge badge-danger">Inactive</span>
+                                                        <span className="badge badge-danger">{t('admin.plansIndex.inactive')}</span>
                                                     )}
                                                 </td>
                                                 <td>{plan.product_counts || '-'}</td>
@@ -238,7 +251,7 @@ const AdminPlanReport = () => {
                                     ) : (
                                         <tr>
                                             <td colSpan="10" className="text-center py-10">
-                                                No plans found
+                                                {t('admin.plansIndex.noPlansFound')}
                                             </td>
                                         </tr>
                                     )}

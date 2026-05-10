@@ -3,6 +3,40 @@ import { APP_CONFIG } from './constants';
 import { isSoftPosAdminJwtRoute } from './softposAdminRoutes';
 import { showApiWarningToast } from './apiWarnings';
 
+/** Same key as `lookupLocalStorage` in `src/i18n/config.js` */
+const I18NEXT_LNG_STORAGE_KEY = 'i18nextLng';
+
+/**
+ * RFC 7231-style Accept-Language from the active UI locale (browser i18next storage).
+ */
+function getAcceptLanguageHeaderValue() {
+    let raw = 'en';
+    try {
+        raw = localStorage.getItem(I18NEXT_LNG_STORAGE_KEY) || 'en';
+    } catch {
+        /* private mode / no storage */
+    }
+    const base = String(raw).split(/[-_]/)[0].toLowerCase();
+    const primary = base === 'ar' ? 'ar' : 'en';
+    const secondary = primary === 'ar' ? 'en' : 'ar';
+    return `${primary},${secondary};q=0.9`;
+}
+
+/**
+ * @param {import('axios').InternalAxiosRequestConfig} config
+ */
+function applyAcceptLanguageHeader(config) {
+    const value = getAcceptLanguageHeaderValue();
+    if (!config.headers) {
+        config.headers = {};
+    }
+    if (typeof config.headers.set === 'function') {
+        config.headers.set('Accept-Language', value);
+    } else {
+        config.headers['Accept-Language'] = value;
+    }
+}
+
 /**
  * Controls whether `apiClient` treats HTTP 401 as “session dead” (clear token + `unauthorized` → login redirect).
  * Set `redirectOn401` to `true` for normal production behavior; keep `false` while debugging or when some routes return 401 without invalidating the session.
@@ -193,6 +227,7 @@ const getHeaders = (url = '') => {
     const headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Accept-Language': getAcceptLanguageHeaderValue(),
     };
 
     if (token) {
@@ -236,6 +271,8 @@ const apiClient = axios.create();
 // Request interceptor to add auth token and regions
 apiClient.interceptors.request.use(
     (config) => {
+        applyAcceptLanguageHeader(config);
+
         const token = getToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;

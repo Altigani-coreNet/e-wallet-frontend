@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { getUser, changeUserStatus, deleteUser } from '../../../services/usersService';
@@ -10,6 +11,7 @@ import UserUserGroupsTab from '../../users/view/UserUserGroupsTab';
 import UserTransactionsTab from '../../users/view/UserTransactionsTab';
 
 const MerchantUserView = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
@@ -19,12 +21,12 @@ const MerchantUserView = () => {
     const [collections, setCollections] = useState({
         user_groups: [],
     });
-    const [tabs, setTabs] = useState([{ key: 'overview', label: 'Overview' }]);
+    const [tabs, setTabs] = useState(() => [{ key: 'overview', label: t('merchant.users.view.overview') }]);
     const [activeTab, setActiveTab] = useState('overview');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setTitle('User Details');
+        setTitle(t('merchant.users.view.title'));
         setActions(
             <div className="d-flex align-items-center gap-2">
                 <Link to={`/merchant/users/${id}/edit`} className="btn btn-sm btn-primary">
@@ -32,20 +34,20 @@ const MerchantUserView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Edit User
+                    {t('merchant.users.view.editUser')}
                 </Link>
                 <Link to="/merchant/users" className="btn btn-sm btn-light">
                     <i className="ki-duotone ki-arrow-left fs-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back
+                    {t('merchant.common.back')}
                 </Link>
             </div>
         );
 
         return () => setActions(null);
-    }, [id, setTitle, setActions]);
+    }, [id, setTitle, setActions, t, i18n.language]);
 
     const fetchUser = async () => {
         setLoading(true);
@@ -80,23 +82,16 @@ const MerchantUserView = () => {
                         user_groups: userGroups,
                     });
 
-                    const computedTabs = [
-                        { key: 'overview', label: 'Overview' },
-                        ...(userGroups.length ? [{ key: 'user_groups', label: 'User Groups' }] : []),
-                        { key: 'transactions', label: 'Transactions' },
-                    ];
-
-                    setTabs(computedTabs);
                     setActiveTab('overview');
                 } else {
                     setUser(null);
                 }
             } else {
-                toast.error(response.error || 'Failed to fetch user details');
+                toast.error(response.error || t('merchant.users.view.fetchFailed'));
             }
         } catch (error) {
             console.error('Failed to fetch user', error);
-            toast.error('Failed to load user details');
+            toast.error(t('merchant.users.view.loadFailed'));
         } finally {
             setLoading(false);
         }
@@ -106,6 +101,21 @@ const MerchantUserView = () => {
         fetchUser();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
+
+    useEffect(() => {
+        if (!user) {
+            setTabs([{ key: 'overview', label: t('merchant.users.view.overview') }]);
+            return;
+        }
+        const userGroups = user.user_groups ?? [];
+        setTabs([
+            { key: 'overview', label: t('merchant.users.view.overview') },
+            ...(userGroups.length
+                ? [{ key: 'user_groups', label: t('merchant.users.view.userGroups') }]
+                : []),
+            { key: 'transactions', label: t('merchant.users.view.transactions') },
+        ]);
+    }, [user, t, i18n.language]);
 
     const handleStatusToggle = async () => {
         if (!user) return;
@@ -118,33 +128,33 @@ const MerchantUserView = () => {
             const response = await changeUserStatus(id, newStatus);
 
             if (response.success) {
-                toast.success('User status updated successfully');
+                toast.success(t('merchant.users.view.statusUpdated'));
                 fetchUser();
             } else {
-                toast.error(response.error || 'Failed to update user status');
+                toast.error(response.error || t('merchant.users.view.statusUpdateFailed'));
             }
         } catch (error) {
             console.error('Failed to update user status', error);
-            toast.error('Failed to update user status');
+            toast.error(t('merchant.users.view.statusUpdateFailed'));
         }
     };
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+        if (!window.confirm(t('merchant.users.view.deleteConfirm'))) {
             return;
         }
 
         try {
             const response = await deleteUser(id);
             if (response.success) {
-                toast.success('User deleted successfully');
+                toast.success(t('merchant.users.view.deletedSuccess'));
                 navigate('/merchant/users');
             } else {
-                toast.error(response.error || 'Failed to delete user');
+                toast.error(response.error || t('merchant.users.view.deleteFailed'));
             }
         } catch (error) {
             console.error('Failed to delete user', error);
-            toast.error('Failed to delete user');
+            toast.error(t('merchant.users.view.deleteFailed'));
         }
     };
 
@@ -153,10 +163,10 @@ const MerchantUserView = () => {
 
     const statsConfig = useMemo(
         () => [
-            { key: 'user_groups', label: 'User Groups', icon: 'ki-people' },
-            { key: 'total_terminals', label: 'Terminals', icon: 'ki-devices-2' },
+            { key: 'user_groups', label: t('merchant.users.view.userGroups'), icon: 'ki-people' },
+            { key: 'total_terminals', label: t('merchant.users.view.terminals'), icon: 'ki-devices-2' },
         ],
-        []
+        [t, i18n.language]
     );
 
     const renderTabContent = () => {
@@ -193,9 +203,9 @@ const MerchantUserView = () => {
     if (!user) {
         return (
             <div className="text-center py-10">
-                <p className="text-muted">User not found</p>
+                <p className="text-muted">{t('merchant.users.view.notFound')}</p>
                 <Link to="/merchant/users" className="btn btn-primary mt-3">
-                    Back to Users
+                    {t('merchant.common.backToUsers')}
                 </Link>
             </div>
         );
@@ -219,7 +229,7 @@ const MerchantUserView = () => {
                         <div className="card mb-5">
                             <div className="card-header border-0">
                                 <div className="card-title m-0">
-                                    <h3 className="fw-bolder m-0">Quick Actions</h3>
+                                    <h3 className="fw-bolder m-0">{t('merchant.users.view.quickActions')}</h3>
                                 </div>
                             </div>
                             <div className="card-body border-top p-9">
@@ -229,7 +239,7 @@ const MerchantUserView = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Edit User
+                                        {t('merchant.users.view.editUser')}
                                     </Link>
                                     <button
                                         className={`btn btn-${isActive ? 'warning' : 'success'}`}
@@ -239,7 +249,9 @@ const MerchantUserView = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        {isActive ? 'Deactivate User' : 'Activate User'}
+                                        {isActive
+                                            ? t('merchant.users.view.deactivateUser')
+                                            : t('merchant.users.view.activateUser')}
                                     </button>
                                     <button className="btn btn-danger" onClick={handleDelete}>
                                         <i className="ki-duotone ki-trash fs-3 me-2">
@@ -249,7 +261,7 @@ const MerchantUserView = () => {
                                             <span className="path4"></span>
                                             <span className="path5"></span>
                                         </i>
-                                        Delete User
+                                        {t('merchant.users.view.deleteUser')}
                                     </button>
                                 </div>
 
@@ -257,30 +269,36 @@ const MerchantUserView = () => {
 
                                 <div className="d-flex flex-column gap-3 text-gray-600 fs-7">
                                     <div className="d-flex justify-content-between">
-                                        <span>User ID</span>
+                                        <span>{t('merchant.users.view.userId')}</span>
                                         <span className="fw-bold text-gray-900">{user.id}</span>
                                     </div>
                                     {user.branch_id && (
                                         <div className="d-flex justify-content-between">
-                                            <span>Branch ID</span>
+                                            <span>{t('merchant.users.view.branchId')}</span>
                                             <span className="fw-bold text-gray-900">{user.branch_id}</span>
                                         </div>
                                     )}
                                     <div className="d-flex justify-content-between">
-                                        <span>Module</span>
-                                        <span className="fw-bold text-gray-900">{user.module || 'N/A'}</span>
+                                        <span>{t('merchant.users.view.module')}</span>
+                                        <span className="fw-bold text-gray-900">
+                                            {user.module || t('merchant.common.na')}
+                                        </span>
                                     </div>
                                     <div className="d-flex justify-content-between">
-                                        <span>Created At</span>
+                                        <span>{t('merchant.users.view.createdAt')}</span>
                                         <span className="fw-bold text-gray-900">
-                                            {new Date(user.created_at).toLocaleString()}
+                                            {new Date(user.created_at).toLocaleString(
+                                                i18n.language === 'ar' ? 'ar' : undefined
+                                            )}
                                         </span>
                                     </div>
                                     {user.updated_at && (
                                         <div className="d-flex justify-content-between">
-                                            <span>Last Updated</span>
+                                            <span>{t('merchant.users.view.lastUpdated')}</span>
                                             <span className="fw-bold text-gray-900">
-                                                {new Date(user.updated_at).toLocaleString()}
+                                                {new Date(user.updated_at).toLocaleString(
+                                                    i18n.language === 'ar' ? 'ar' : undefined
+                                                )}
                                             </span>
                                         </div>
                                     )}
@@ -290,7 +308,7 @@ const MerchantUserView = () => {
                                     <>
                                         <div className="separator my-7"></div>
                                         <div>
-                                            <h4 className="fw-bold mb-4">Roles</h4>
+                                            <h4 className="fw-bold mb-4">{t('merchant.users.view.roles')}</h4>
                                             <div className="d-flex flex-wrap gap-2">
                                                 {user.roles.map((role) => (
                                                     <span key={role.id || role.name} className="badge badge-light-info">

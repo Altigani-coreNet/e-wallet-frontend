@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { sendPaymentLink } from '../../../services/paymentLinksService';
-import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 
 const SendModal = ({ show, paymentLink, onClose, onSuccess }) => {
+    const { t } = useTranslation();
     const [sendOptions, setSendOptions] = useState({
         send_email: false,
         send_whatsapp: false,
@@ -22,7 +23,7 @@ const SendModal = ({ show, paymentLink, onClose, onSuccess }) => {
         e.preventDefault();
         
         if (!sendOptions.send_email && !sendOptions.send_whatsapp && !sendOptions.send_sms) {
-            Swal.fire('Error!', 'Please select at least one option.', 'error');
+            Swal.fire(t('merchant.common.error'), t('merchant.paymentLinks.modals.selectChannelError'), 'error');
             return;
         }
 
@@ -31,18 +32,18 @@ const SendModal = ({ show, paymentLink, onClose, onSuccess }) => {
             const response = await sendPaymentLink(paymentLink.id, sendOptions);
             if (response.success) {
                 await Swal.fire({
-                    title: 'Success!',
-                    text: response.message || 'Payment link sent successfully.',
+                    title: t('merchant.paymentLinks.createSuccessTitle'),
+                    text: response.message || t('merchant.paymentLinks.modals.sendSuccess'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
                 });
                 onSuccess();
             } else {
-                Swal.fire('Error!', response.error || 'Failed to send payment link.', 'error');
+                Swal.fire(t('merchant.common.error'), response.error || t('merchant.paymentLinks.modals.sendFailed'), 'error');
             }
         } catch (error) {
-            Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+            Swal.fire(t('merchant.common.error'), t('merchant.paymentLinks.unexpectedError'), 'error');
         } finally {
             setLoading(false);
         }
@@ -59,7 +60,7 @@ const SendModal = ({ show, paymentLink, onClose, onSuccess }) => {
                     <div className="modal-content">
                         <form onSubmit={handleSubmit}>
                             <div className="modal-header">
-                                <h5 className="modal-title">Send Payment Link</h5>
+                                <h5 className="modal-title">{t('merchant.paymentLinks.modals.sendTitle')}</h5>
                                 <button
                                     type="button"
                                     className="btn-close"
@@ -69,7 +70,7 @@ const SendModal = ({ show, paymentLink, onClose, onSuccess }) => {
                             </div>
                             <div className="modal-body">
                                 <div className="mb-4">
-                                    <label className="form-label">Send via:</label>
+                                    <label className="form-label">{t('merchant.paymentLinks.modals.sendVia')}</label>
                                     
                                     <div className="form-check mb-2">
                                         <input
@@ -80,7 +81,7 @@ const SendModal = ({ show, paymentLink, onClose, onSuccess }) => {
                                             onChange={() => handleCheckboxChange('send_email')}
                                         />
                                         <label className="form-check-label" htmlFor="send-email">
-                                            Email
+                                            {t('merchant.paymentLinks.modals.email')}
                                         </label>
                                     </div>
 
@@ -93,7 +94,7 @@ const SendModal = ({ show, paymentLink, onClose, onSuccess }) => {
                                             onChange={() => handleCheckboxChange('send_whatsapp')}
                                         />
                                         <label className="form-check-label" htmlFor="send-whatsapp">
-                                            WhatsApp
+                                            {t('merchant.paymentLinks.modals.whatsapp')}
                                         </label>
                                     </div>
 
@@ -106,13 +107,13 @@ const SendModal = ({ show, paymentLink, onClose, onSuccess }) => {
                                             onChange={() => handleCheckboxChange('send_sms')}
                                         />
                                         <label className="form-check-label" htmlFor="send-sms">
-                                            SMS
+                                            {t('merchant.paymentLinks.modals.sms')}
                                         </label>
                                     </div>
                                 </div>
 
                                 <div className="alert alert-info">
-                                    <strong>Payment Link URL:</strong>
+                                    <strong>{t('merchant.paymentLinks.modals.paymentLinkUrl')}</strong>
                                     <div className="mt-2">
                                         <input
                                             type="text"
@@ -125,15 +126,15 @@ const SendModal = ({ show, paymentLink, onClose, onSuccess }) => {
 
                                 {paymentLink.customer_name && (
                                     <div className="alert alert-light">
-                                        <strong>Customer:</strong> {paymentLink.customer_name}
+                                        <strong>{t('merchant.paymentLinks.modals.customer')}</strong> {paymentLink.customer_name}
                                         {paymentLink.customer_email && (
                                             <div className="text-muted fs-7">
-                                                Email: {paymentLink.customer_email}
+                                                {t('merchant.paymentLinks.modals.emailField')} {paymentLink.customer_email}
                                             </div>
                                         )}
                                         {paymentLink.customer_phone && (
                                             <div className="text-muted fs-7">
-                                                Phone: {paymentLink.customer_phone}
+                                                {t('merchant.paymentLinks.modals.phoneField')} {paymentLink.customer_phone}
                                             </div>
                                         )}
                                     </div>
@@ -146,7 +147,7 @@ const SendModal = ({ show, paymentLink, onClose, onSuccess }) => {
                                     onClick={onClose}
                                     disabled={loading}
                                 >
-                                    Cancel
+                                    {t('merchant.paymentLinks.form.cancel')}
                                 </button>
                                 <button
                                     type="submit"
@@ -156,10 +157,10 @@ const SendModal = ({ show, paymentLink, onClose, onSuccess }) => {
                                     {loading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Sending...
+                                            {t('merchant.paymentLinks.modals.sending')}
                                         </>
                                     ) : (
-                                        'Send'
+                                        t('merchant.paymentLinks.row.send')
                                     )}
                                 </button>
                             </div>
@@ -173,4 +174,3 @@ const SendModal = ({ show, paymentLink, onClose, onSuccess }) => {
 };
 
 export default SendModal;
-

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { getAdmin, updateAdmin } from '../../../../services/adminAdminsService';
@@ -17,6 +18,7 @@ const debounce = (func, delay) => {
 
 const AdminAdminEdit = () => {
     const { id } = useParams();
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -49,10 +51,10 @@ const AdminAdminEdit = () => {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        setTitle('Edit Admin');
+        setTitle(t('admin.adminEdit.title'));
         setActions(null);
         fetchData();
-    }, [id, setTitle, setActions]);
+    }, [id, setTitle, setActions, t]);
 
     const fetchData = async () => {
         const [adminRes, rolesRes, countriesRes] = await Promise.all([
@@ -64,7 +66,7 @@ const AdminAdminEdit = () => {
         if (adminRes.success) {
             const adminData = adminRes.data;
             if (!adminData) {
-                toast.error('Invalid admin data received');
+                toast.error(t('admin.adminEdit.invalidData'));
                 return;
             }
             setFormData({
@@ -91,10 +93,10 @@ const AdminAdminEdit = () => {
                 let displayText = adminData.country.name || adminData.country.text;
                 try {
                     if (typeof displayText === 'object') {
-                        displayText = displayText.en || displayText.ar;
+                        displayText = displayText[i18n.language] || displayText.en || displayText.ar;
                     } else if (typeof displayText === 'string' && displayText.startsWith('{')) {
                         const parsed = JSON.parse(displayText);
-                        displayText = parsed.en || parsed.ar || displayText;
+                        displayText = parsed[i18n.language] || parsed.en || parsed.ar || displayText;
                     }
                 } catch (e) {}
                 setCountrySearchTerm(displayText);
@@ -161,12 +163,12 @@ const AdminAdminEdit = () => {
         let displayText = country.text || country.name;
         // text is an object: {ar: "...", en: "..."}
         if (typeof displayText === 'object' && displayText !== null) {
-            displayText = displayText.en || displayText.ar || '';
+            displayText = displayText[i18n.language] || displayText.en || displayText.ar || '';
         } else if (typeof displayText === 'string' && displayText.startsWith('{')) {
             // Fallback for JSON string
             try {
                 const parsed = JSON.parse(displayText);
-                displayText = parsed.en || parsed.ar || displayText;
+                displayText = parsed[i18n.language] || parsed.en || parsed.ar || displayText;
             } catch (e) {}
         }
         setCountrySearchTerm(displayText);
@@ -249,15 +251,15 @@ const AdminAdminEdit = () => {
 
             const response = await updateAdmin(id, submitData);
             if (response.success) {
-                toast.success('Admin updated successfully');
+                toast.success(t('admin.adminEdit.success'));
                 navigate('/admin/system/admins');
             } else {
                 if (response.errors) setErrors(response.errors);
-                toast.error(response.error || 'Failed to update admin');
+                toast.error(response.error || t('admin.adminEdit.failed'));
             }
         } catch (error) {
             console.error('Error updating admin:', error);
-            toast.error('Failed to update admin');
+            toast.error(t('admin.adminEdit.failed'));
         } finally {
             setLoading(false);
         }
@@ -335,7 +337,7 @@ const AdminAdminEdit = () => {
                                                 <span className="text-gray-800">{countrySearchTerm}</span>
                                             </>
                                         ) : (
-                                            <span className="text-muted">Select Country</span>
+                                            <span className="text-muted">{t('admin.adminCreate.selectCountry')}</span>
                                         )}
                                     </div>
                                     <div className="d-flex align-items-center">
@@ -364,7 +366,7 @@ const AdminAdminEdit = () => {
                                             <input 
                                                 type="text" 
                                                 className="form-control form-control-sm mb-2" 
-                                                placeholder="Search countries..."
+                                                placeholder={t('admin.adminCreate.searchCountries')}
                                                 value={countrySearchTerm}
                                                 onChange={(e) => handleCountrySearch(e.target.value)}
                                                 onClick={(e) => e.stopPropagation()}
@@ -376,11 +378,11 @@ const AdminAdminEdit = () => {
                                                 let displayText = country.text || country.name;
                                                 // text is an object: {ar: "...", en: "..."}
                                                 if (typeof displayText === 'object' && displayText !== null) {
-                                                    displayText = displayText.en || displayText.ar || '';
+                                                    displayText = displayText[i18n.language] || displayText.en || displayText.ar || '';
                                                 } else if (typeof displayText === 'string' && displayText.startsWith('{')) {
                                                     try {
                                                         const parsed = JSON.parse(displayText);
-                                                        displayText = parsed.en || parsed.ar || displayText;
+                                                        displayText = parsed[i18n.language] || parsed.en || parsed.ar || displayText;
                                                     } catch (e) {}
                                                 }
                                                 return (
@@ -402,7 +404,7 @@ const AdminAdminEdit = () => {
                                                 );
                                             })
                                         ) : (
-                                            <div className="p-3 text-muted text-center">No countries found</div>
+                                            <div className="p-3 text-muted text-center">{t('admin.adminCreate.noCountries')}</div>
                                         )}
                                     </div>
                                 )}
@@ -411,7 +413,7 @@ const AdminAdminEdit = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Password (leave blank to keep current)</label>
+                            <label className="form-label">{t('admin.adminEdit.passwordHelp')}</label>
                             <input
                                 type="password"
                                 className={`form-control ${errors.password ? 'is-invalid' : ''}`}
@@ -422,7 +424,7 @@ const AdminAdminEdit = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Confirm Password</label>
+                            <label className="form-label">{t('admin.adminCreate.confirmPassword')}</label>
                             <input
                                 type="password"
                                 className={`form-control ${errors.password_confirmation ? 'is-invalid' : ''}`}
@@ -432,7 +434,7 @@ const AdminAdminEdit = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Profile Image</label>
+                            <label className="form-label">{t('admin.adminCreate.profileImage')}</label>
                             <input
                                 type="file"
                                 className="form-control"
@@ -447,19 +449,19 @@ const AdminAdminEdit = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Status</label>
+                            <label className="form-label required">{t('admin.adminCreate.status')}</label>
                             <select
                                 className="form-select"
                                 value={formData.status}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                             >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option value="active">{t('admin.common.active')}</option>
+                                <option value="inactive">{t('admin.common.inactive')}</option>
                             </select>
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Custom Region</label>
+                            <label className="form-label">{t('admin.adminCreate.customRegion')}</label>
                             <div className="form-check form-switch form-check-custom form-check-solid">
                                 <input
                                     className="form-check-input"
@@ -476,14 +478,14 @@ const AdminAdminEdit = () => {
                                     }}
                                 />
                                 <label className="form-check-label ms-2" htmlFor="custom_region_toggle">
-                                    Enable custom regions
+                                    {t('admin.adminCreate.enableCustomRegions')}
                                 </label>
                             </div>
                         </div>
 
                         {formData.custom_region && (
                             <div className="col-12 mb-5">
-                                <label className="form-label">Regions</label>
+                                <label className="form-label">{t('admin.adminCreate.regions')}</label>
                                 <div className="position-relative">
                                     <div 
                                         className="form-control min-h-50px d-flex align-items-center justify-content-between"
@@ -496,12 +498,12 @@ const AdminAdminEdit = () => {
                                                     let displayText = region.text || region.name;
                                                     // text is an object: {ar: "...", en: "..."}
                                                     if (typeof displayText === 'object' && displayText !== null) {
-                                                        displayText = displayText.en || displayText.ar || '';
+                                                        displayText = displayText[i18n.language] || displayText.en || displayText.ar || '';
                                                     } else if (typeof displayText === 'string' && displayText.startsWith('{')) {
                                                         // Fallback for JSON string
                                                         try {
                                                             const parsed = JSON.parse(displayText);
-                                                            displayText = parsed.en || parsed.ar || displayText;
+                                                            displayText = parsed[i18n.language] || parsed.en || parsed.ar || displayText;
                                                         } catch (e) {}
                                                     }
                                                     return (
@@ -522,7 +524,7 @@ const AdminAdminEdit = () => {
                                                     );
                                                 })
                                             ) : (
-                                                <span className="text-muted">Select regions</span>
+                                                <span className="text-muted">{t('admin.adminCreate.selectRegions')}</span>
                                             )}
                                         </div>
                                         <i className={`ki-duotone ki-down fs-2 ${showRegionList ? 'rotate-180' : ''}`}>
@@ -537,7 +539,7 @@ const AdminAdminEdit = () => {
                                                 <input 
                                                     type="text" 
                                                     className="form-control form-control-sm mb-2" 
-                                                    placeholder="Search regions..."
+                                                    placeholder={t('admin.adminCreate.searchRegions')}
                                                     value={regionSearchTerm}
                                                     onChange={(e) => handleRegionSearch(e.target.value)}
                                                     onClick={(e) => e.stopPropagation()}
@@ -549,12 +551,12 @@ const AdminAdminEdit = () => {
                                                     let displayText = country.text || country.name;
                                                     // text is an object: {ar: "...", en: "..."}
                                                     if (typeof displayText === 'object' && displayText !== null) {
-                                                        displayText = displayText.en || displayText.ar || '';
+                                                        displayText = displayText[i18n.language] || displayText.en || displayText.ar || '';
                                                     } else if (typeof displayText === 'string' && displayText.startsWith('{')) {
                                                         // Fallback for JSON string
                                                         try {
                                                             const parsed = JSON.parse(displayText);
-                                                            displayText = parsed.en || parsed.ar || displayText;
+                                                            displayText = parsed[i18n.language] || parsed.en || parsed.ar || displayText;
                                                         } catch (e) {}
                                                     }
                                                     const isSelected = selectedRegions.some(r => r.id === country.id);
@@ -576,7 +578,7 @@ const AdminAdminEdit = () => {
                                                     );
                                                 })
                                             ) : (
-                                                <div className="p-3 text-muted text-center">No regions found</div>
+                                                <div className="p-3 text-muted text-center">{t('admin.adminCreate.noRegions')}</div>
                                             )}
                                         </div>
                                     )}
@@ -585,7 +587,7 @@ const AdminAdminEdit = () => {
                         )}
 
                         <div className="col-12 mb-5">
-                            <label className="form-label">Roles</label>
+                            <label className="form-label">{t('admin.adminCreate.roles')}</label>
                             <div className="row">
                                 {roles.map(role => (
                                     <div key={role.id} className="col-md-4 mb-2">
@@ -614,10 +616,10 @@ const AdminAdminEdit = () => {
                         className="btn btn-light"
                         onClick={() => navigate('/admin/system/admins')}
                     >
-                        Cancel
+                        {t('admin.common.cancel')}
                     </button>
                     <button type="submit" className="btn btn-primary" disabled={loading}>
-                        {loading ? 'Updating...' : 'Update Admin'}
+                        {loading ? t('admin.adminEdit.updating') : t('admin.adminEdit.title')}
                     </button>
                 </div>
             </form>

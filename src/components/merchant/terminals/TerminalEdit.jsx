@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTerminalDetails, updateTerminal } from '../../../services/terminalsService';
 import { useQueryClient } from '@tanstack/react-query';
@@ -8,6 +9,7 @@ import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import Swal from 'sweetalert2';
 
 const TerminalEdit = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -24,12 +26,12 @@ const TerminalEdit = () => {
     const terminal = terminalData?.data || terminalData;
 
     useEffect(() => {
-        setTitle('Edit Terminal');
+        setTitle(t('merchant.breadcrumbs.editTerminal'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/merchant/dashboard' },
-            { label: 'Terminals', path: '/merchant/terminals' },
-            { label: terminal?.name || 'Edit Terminal', path: `/merchant/terminals/${id}/edit`, active: true }
+            { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
+            { label: t('merchant.breadcrumbs.terminals'), path: '/merchant/terminals' },
+            { label: terminal?.name || t('merchant.breadcrumbs.editTerminal'), path: `/merchant/terminals/${id}/edit`, active: true }
         ]);
         
         setActions(
@@ -41,7 +43,7 @@ const TerminalEdit = () => {
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back to View
+                {t('merchant.common.backToView')}
             </button>
         );
 
@@ -49,7 +51,7 @@ const TerminalEdit = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions, navigate, id, terminal?.name]);
+    }, [setTitle, setBreadcrumbs, setActions, navigate, id, terminal?.name, t, i18n.language]);
 
     const handleSubmit = async (formData) => {
         setUpdating(true);

@@ -1,6 +1,35 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const Overview = ({ user, merchant, merchantCompletion, logs, onEditClick }) => {
+    const { t, i18n } = useTranslation();
+
+    const formatDateTime = useCallback(
+        (value) => {
+            if (!value) return t('merchant.profile.na');
+            const loc = (i18n.language || 'en').toLowerCase().startsWith('ar') ? 'ar-SA' : 'en-US';
+            return new Date(value).toLocaleDateString(loc, {
+                month: 'short',
+                day: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+        },
+        [i18n.language, t]
+    );
+
+    const merchantStatusLabel = (status) => {
+        const key = {
+            pending: 'merchant.profile.statusPending',
+            approved: 'merchant.profile.statusApproved',
+            rejected: 'merchant.profile.statusRejected',
+            suspended: 'merchant.profile.statusSuspended',
+            viewed: 'merchant.profile.statusViewed',
+            requesting_updated: 'merchant.profile.statusRequestingUpdated',
+        }[status];
+        return key ? t(key) : t('merchant.profile.statusPending');
+    };
     useEffect(() => {
         console.log('=== Overview Component Props ===');
         console.log('User:', user);
@@ -29,7 +58,7 @@ const Overview = ({ user, merchant, merchantCompletion, logs, onEditClick }) => 
                 <div className="card mb-5 mb-xl-10" id="kt_merchant_basic_details">
                     <div className="card-header cursor-pointer">
                         <div className="card-title m-0">
-                            <h3 className="fw-bolder m-0">Basic Information</h3>
+                            <h3 className="fw-bolder m-0">{t('merchant.profile.basicInformation')}</h3>
                         </div>
                         <div className="card-toolbar">
                             <button 
@@ -40,44 +69,44 @@ const Overview = ({ user, merchant, merchantCompletion, logs, onEditClick }) => 
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Edit
+                                {t('merchant.profile.edit')}
                             </button>
                         </div>
                     </div>
                     
                     <div className="card-body p-9">
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Business Name</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.businessName')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-bolder fs-6 text-gray-800">
-                                    {merchant?.name || 'N/A'}
+                                    {merchant?.name || t('merchant.profile.na')}
                                 </span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Owner Name</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.ownerName')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-bolder fs-6 text-gray-800">
-                                    {merchant?.owner_name || 'N/A'}
+                                    {merchant?.owner_name || t('merchant.profile.na')}
                                 </span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Merchant Email</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.fieldMerchantEmail')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-bolder fs-6 text-gray-800">
-                                    {merchant?.email || 'N/A'}
+                                    {merchant?.email || t('merchant.profile.na')}
                                 </span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Merchant Phone</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.fieldMerchantPhone')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-bolder fs-6 text-gray-800">
-                                    {merchant?.phone || 'N/A'}
+                                    {merchant?.phone || t('merchant.profile.na')}
                                 </span>
                             </div>
                         </div>
@@ -92,19 +121,19 @@ const Overview = ({ user, merchant, merchantCompletion, logs, onEditClick }) => 
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Merchant Code</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.merchantCode')}</label>
                             <div className="col-lg-8">
                                 <span className="badge badge-light-primary fs-6">
-                                    {merchant?.merchant_code || 'N/A'}
+                                    {merchant?.merchant_code || t('merchant.profile.na')}
                                 </span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Merchant Address</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.fieldMerchantAddress')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-bolder fs-6 text-gray-800">
-                                    {merchant?.address || 'N/A'}
+                                    {merchant?.address || t('merchant.profile.na')}
                                 </span>
                             </div>
                         </div>
@@ -123,16 +152,10 @@ const Overview = ({ user, merchant, merchantCompletion, logs, onEditClick }) => 
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Created Date</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.createdDate')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-bolder fs-6 text-gray-800">
-                                    {merchant?.created_at ? new Date(merchant.created_at).toLocaleDateString('en-US', { 
-                                        month: 'short', 
-                                        day: '2-digit', 
-                                        year: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                    }) : 'N/A'}
+                                    {formatDateTime(merchant?.created_at)}
                                 </span>
                             </div>
                         </div>
@@ -147,67 +170,61 @@ const Overview = ({ user, merchant, merchantCompletion, logs, onEditClick }) => 
                         <div className="card mb-5 mb-xl-10" id="kt_merchant_user_details">
                             <div className="card-header cursor-pointer">
                                 <div className="card-title m-0">
-                                    <h3 className="fw-bolder m-0">Associated User Account</h3>
+                                    <h3 className="fw-bolder m-0">{t('merchant.profile.associatedUserAccount')}</h3>
                                 </div>
                             </div>
                             
                             <div className="card-body p-9">
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-bold text-muted">Full Name</label>
+                                    <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.fullName')}</label>
                                     <div className="col-lg-8">
                                         <span className="fw-bolder fs-6 text-gray-800">
-                                            {user.name || 'N/A'}
+                                            {user.name || t('merchant.profile.na')}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-bold text-muted">Username</label>
+                                    <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.username')}</label>
                                     <div className="col-lg-8">
                                         <span className="fw-bolder fs-6 text-gray-800">
-                                            {user.user_name || 'N/A'}
+                                            {user.user_name || t('merchant.profile.na')}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-bold text-muted">User Email</label>
+                                    <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.userAccountEmail')}</label>
                                     <div className="col-lg-8">
                                         <span className="fw-bolder fs-6 text-gray-800">
-                                            {user.email || 'N/A'}
+                                            {user.email || t('merchant.profile.na')}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-bold text-muted">User Phone</label>
+                                    <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.userAccountPhone')}</label>
                                     <div className="col-lg-8">
                                         <span className="fw-bolder fs-6 text-gray-800">
-                                            {user.phone || 'N/A'}
+                                            {user.phone || t('merchant.profile.na')}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-bold text-muted">User Status</label>
+                                    <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.userStatus')}</label>
                                     <div className="col-lg-8">
                                         <span className={`badge badge-light-${user.is_approved ? 'success' : 'danger'}`}>
-                                            {user.is_approved ? 'Active' : 'Inactive'}
+                                            {user.is_approved ? t('merchant.profile.active') : t('merchant.profile.inactive')}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-bold text-muted">User Created</label>
+                                    <label className="col-lg-4 fw-bold text-muted">{t('merchant.profile.userCreated')}</label>
                                     <div className="col-lg-8">
                                         <span className="fw-bolder fs-6 text-gray-800">
-                                            {user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { 
-                                                month: 'short', 
-                                                day: '2-digit', 
-                                                year: 'numeric',
-                                                hour: '2-digit',
-                                                minute: '2-digit'
-                                            }) : 'N/A'}
+                                            {formatDateTime(user.created_at)}
                                         </span>
                                     </div>
                                 </div>
@@ -220,9 +237,9 @@ const Overview = ({ user, merchant, merchantCompletion, logs, onEditClick }) => 
                         <div className="card card-xl-stretch mb-xl-10">
                             <div className="card-header align-items-center border-0 mt-4">
                                 <h3 className="card-title align-items-start flex-column">
-                                    <span className="fw-bolder mb-2 text-dark">Events</span>
+                                    <span className="fw-bolder mb-2 text-dark">{t('merchant.profile.eventsCardTitle')}</span>
                                     <span className="text-muted fw-bold fs-7">
-                                        {logs?.length || 0} recent activities
+                                        {logs?.length || 0} {t('merchant.profile.recentActivities')}
                                     </span>
                                 </h3>
                             </div>
@@ -239,7 +256,7 @@ const Overview = ({ user, merchant, merchantCompletion, logs, onEditClick }) => 
                                         logs.map((event, index) => (
                                             <div key={index} className="timeline-item">
                                                 <div className="timeline-label fw-bolder text-gray-800 fs-6" style={{ width: '100px' }}>
-                                                    {event.time || 'N/A'}
+                                                    {event.time || t('merchant.profile.na')}
                                                 </div>
                                                 
                                                 <div className="timeline-badge">
@@ -253,7 +270,7 @@ const Overview = ({ user, merchant, merchantCompletion, logs, onEditClick }) => 
                                         ))
                                     ) : (
                                         <div className="text-center text-muted py-5">
-                                            No recent events
+                                            {t('merchant.profile.noRecentEvents')}
                                         </div>
                                     )}
                                 </div>
@@ -276,8 +293,8 @@ const Overview = ({ user, merchant, merchantCompletion, logs, onEditClick }) => 
                                 </i>
                                 
                                 <div className="d-flex flex-column">
-                                    <h4 className="mb-1 text-warning">No User Account Associated</h4>
-                                    <span>This merchant does not have an associated user account.</span>
+                                    <h4 className="mb-1 text-warning">{t('merchant.profile.noUserTitle')}</h4>
+                                    <span>{t('merchant.profile.noUserDesc')}</span>
                                 </div>
                             </div>
                         </div>
