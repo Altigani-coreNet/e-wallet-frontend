@@ -20,7 +20,7 @@ const linkErrMessage = (res, t) => {
  * Legacy `/payments/error` without uuid still renders a generic message.
  */
 const PaymentError = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { lang, uuid } = useParams();
     const [loading, setLoading] = useState(!!uuid?.trim());
@@ -96,32 +96,43 @@ const PaymentError = () => {
     const homePath = lang ? `/${lang}` : '/';
     const checkoutPath = lang && uuidTrim ? `/${lang}/payments/${uuidTrim}` : '/';
 
+    const resultPageClass = useMemo(
+        () => `pe-page pe-result-page${(i18n.language || '').toLowerCase().startsWith('ar') ? ' pe-result-page--ar' : ''}`,
+        [i18n.language],
+    );
+
     if (loading) {
         return (
             <div className="pl-page">
-                <PaymentCheckoutHeader onBack={() => navigate(-1)} />
+                <div className="pe-no-print">
+                    <PaymentCheckoutHeader onBack={() => navigate(-1)} />
+                </div>
                 <main className="pl-main pl-main--result pe-result-layout">
-                    <div className="pe-page pe-result-page">
-                        <div className="pe-card pe-card--loading" style={{ textAlign: 'center' }}>
-                            <Loader2 size={40} className="pe-loading-spin" style={{ marginBottom: 16 }} />
-                            <p style={{ margin: 0, color: '#6b7280' }}>{t('paymentCheckout.errorPage.loading')}</p>
+                    <div className={resultPageClass}>
+                        <div className="pe-card pe-card--loading">
+                            <Loader2 className="pe-loading-spin pe-loading-spinner" aria-hidden />
+                            <p className="pe-loading-caption">{t('paymentCheckout.errorPage.loading')}</p>
                         </div>
                     </div>
                 </main>
-                <PaymentCheckoutFooter onCancel={() => navigate(checkoutPath)} />
+                <div className="pe-no-print">
+                    <PaymentCheckoutFooter onCancel={() => navigate(checkoutPath)} />
+                </div>
             </div>
         );
     }
 
     return (
         <div className="pl-page">
-            <PaymentCheckoutHeader onBack={() => navigate(-1)} />
+            <div className="pe-no-print">
+                <PaymentCheckoutHeader onBack={() => navigate(-1)} />
+            </div>
             <main className="pl-main pl-main--result pe-result-layout">
-                <div className="pe-page pe-result-page">
+                <div className={resultPageClass}>
                     <div className="pe-card">
                         <div className="pe-header">
                             <div className="pe-error-icon">
-                                <CircleAlert size={52} strokeWidth={2.5} />
+                                <CircleAlert strokeWidth={2.5} />
                             </div>
                             <div className="pe-header-text">
                                 {isAlreadyPaid ? (
@@ -182,7 +193,7 @@ const PaymentError = () => {
                         <div className={`pe-actions${isAlreadyPaid ? ' pe-actions--single' : ''}`}>
                             {isAlreadyPaid ? (
                                 <Link className="pe-btn pe-btn-primary" to={homePath}>
-                                    <Home size={16} />
+                                    <Home />
                                     {t('paymentCheckout.errorPage.backToHome')}
                                 </Link>
                             ) : (
@@ -192,11 +203,11 @@ const PaymentError = () => {
                                         className="pe-btn pe-btn-light"
                                         onClick={() => (uuidTrim ? navigate(checkoutPath) : navigate(-1))}
                                     >
-                                        <RotateCcw size={16} />
+                                        <RotateCcw />
                                         {t('paymentCheckout.errorPage.tryAgain')}
                                     </button>
                                     <Link className="pe-btn pe-btn-primary" to={homePath}>
-                                        <Home size={16} />
+                                        <Home />
                                         {t('paymentCheckout.errorPage.backToHome')}
                                     </Link>
                                 </>
@@ -205,7 +216,9 @@ const PaymentError = () => {
                     </div>
                 </div>
             </main>
-            <PaymentCheckoutFooter onCancel={() => navigate(checkoutPath)} />
+            <div className="pe-no-print">
+                <PaymentCheckoutFooter onCancel={() => navigate(checkoutPath)} />
+            </div>
         </div>
     );
 };
