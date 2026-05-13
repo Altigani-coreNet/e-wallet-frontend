@@ -76,12 +76,21 @@ const PaymentSuccess = () => {
         if (typeof window === 'undefined') return undefined;
         const resizeQr = () => {
             const w = window.innerWidth;
-            if (w < 360) setQrSize(118);
-            else if (w < 420) setQrSize(128);
-            else if (w < 520) setQrSize(140);
-            else if (w >= 1200) setQrSize(130);
-            else if (w >= 901) setQrSize(136);
-            else setQrSize(146);
+            const h = window.innerHeight;
+
+            let size;
+            if (w < 360) size = 118;
+            else if (w < 420) size = 128;
+            else if (w < 520) size = 140;
+            else if (w >= 1200) size = 130;
+            else if (w >= 901) size = 136;
+            else size = 146;
+
+            if (h <= 600) size = Math.min(size, 96);
+            else if (h <= 720) size = Math.min(size, 110);
+            else if (h <= 900) size = Math.min(size, 122);
+
+            setQrSize(size);
         };
         resizeQr();
         window.addEventListener('resize', resizeQr);

@@ -754,3 +754,364 @@ main.pl-main.pl-main--result.ps-success-layout {
         display: none !important;
     }
 }
+
+/* ============================================================
+   HEIGHT-BASED BREAKPOINTS
+   Goal: no overflow at viewport heights ≥ 600 px.
+   Three bands: 721–900 px │ 601–720 px │ ≤ 600 px
+   ============================================================ */
+
+/* --- 721 px – 900 px tall -----------------------------------*/
+@media (max-height: 900px) {
+    main.pl-main.pl-main--result.ps-success-layout {
+        padding: 8px 18px 10px;
+    }
+
+    .ps-page.ps-success-page {
+        --ps-font-base:     12.5px;
+        --ps-font-label:    11px;
+        --ps-font-title:    14px;
+        --ps-font-hero-amt: 22px;
+        --ps-space-card:    10px;
+        --ps-space-gap:     8px;
+        --ps-radius:        12px;
+        padding: 5px 5px 8px;
+    }
+
+    .ps-panel-check {
+        width: 38px;
+        height: 38px;
+        margin-bottom: 7px;
+    }
+    .ps-panel-check svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    .ps-kv-row {
+        padding: 5px 0;
+    }
+    .ps-kv--compact .ps-kv-row {
+        padding: 4px 0;
+    }
+
+    .ps-subheading {
+        font-size: 12.5px;
+        margin-bottom: 5px;
+    }
+    .ps-subheading--tx {
+        margin-top: 5px;
+    }
+
+    .ps-qr-section {
+        margin-bottom: 8px;
+    }
+    .ps-qr-wrap {
+        max-width: 160px;
+        padding: 7px;
+    }
+    .ps-qr-instruction {
+        font-size: 10.5px;
+    }
+
+    .ps-hero-card {
+        min-height: min(190px, 28vh);
+        padding: 12px 12px 14px;
+    }
+    .ps-hero-badge {
+        width: 74px;
+        height: 74px;
+        margin-bottom: 8px;
+    }
+    .ps-hero-check-wrap svg {
+        width: 28px;
+        height: 28px;
+    }
+    .ps-hero-status {
+        font-size: 14px;
+    }
+
+    .ps-hero-actions {
+        gap: 7px;
+    }
+    .ps-hero-actions-row {
+        gap: 7px;
+    }
+
+    .ps-btn-outline {
+        min-height: 38px;
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+    .ps-btn-outline svg {
+        width: 15px;
+        height: 15px;
+    }
+    .ps-btn-solid {
+        min-height: 42px;
+        padding: 9px 12px;
+        font-size: 13px;
+    }
+
+    .ps-skeleton-card--hero {
+        min-height: min(190px, 28vh);
+    }
+}
+
+/* --- 601 px – 720 px tall -----------------------------------*/
+@media (max-height: 720px) {
+    main.pl-main.pl-main--result.ps-success-layout {
+        padding: 5px 14px 8px;
+    }
+
+    .ps-page.ps-success-page {
+        --ps-font-base:     11.5px;
+        --ps-font-label:    10.5px;
+        --ps-font-title:    13px;
+        --ps-font-hero-amt: 18px;
+        --ps-space-card:    7px;
+        --ps-space-gap:     6px;
+        --ps-radius:        10px;
+        padding: 3px 3px 6px;
+    }
+
+    .ps-panel-check {
+        width: 32px;
+        height: 32px;
+        margin-bottom: 5px;
+    }
+    .ps-panel-check svg {
+        width: 18px;
+        height: 18px;
+    }
+    .ps-panel-title {
+        margin-bottom: 7px;
+    }
+
+    .ps-kv-row {
+        padding: 4px 0;
+    }
+    .ps-kv--compact .ps-kv-row {
+        padding: 3px 0;
+    }
+    .ps-kv--compact dt,
+    .ps-kv--compact dd {
+        font-size: 10px;
+    }
+
+    .ps-subheading {
+        font-size: 11.5px;
+        margin-bottom: 4px;
+    }
+    .ps-subheading--tx {
+        margin-top: 4px;
+    }
+
+    .ps-qr-section {
+        margin-bottom: 6px;
+    }
+    .ps-qr-wrap {
+        max-width: 130px;
+        padding: 5px;
+        margin-bottom: 5px;
+    }
+    .ps-qr-instruction {
+        font-size: 10px;
+        margin-bottom: 3px;
+    }
+    .ps-qr-link {
+        font-size: 10.5px;
+    }
+
+    .ps-hero-card {
+        min-height: min(150px, 24vh);
+        padding: 10px 10px 11px;
+    }
+    .ps-hero-badge {
+        width: 58px;
+        height: 58px;
+        margin-bottom: 6px;
+    }
+    .ps-hero-check-wrap svg {
+        width: 22px;
+        height: 22px;
+    }
+    .ps-hero-amount {
+        margin-bottom: 4px;
+    }
+    .ps-hero-status {
+        font-size: 12.5px;
+    }
+
+    .ps-hero-actions {
+        gap: 6px;
+    }
+    .ps-hero-actions-row {
+        gap: 6px;
+    }
+
+    .ps-btn-outline {
+        min-height: 32px;
+        padding: 6px 8px;
+        font-size: 11.5px;
+        gap: 5px;
+    }
+    .ps-btn-outline svg {
+        width: 14px;
+        height: 14px;
+    }
+    .ps-btn-solid {
+        min-height: 34px;
+        padding: 7px 10px;
+        font-size: 12px;
+    }
+    .ps-btn-solid svg {
+        width: 15px;
+        height: 15px;
+    }
+
+    .ps-skeleton-card--hero {
+        min-height: min(150px, 24vh);
+    }
+    .ps-skeleton-burst {
+        width: 60px;
+        height: 60px;
+    }
+    .ps-skeleton-amount {
+        height: 22px;
+    }
+}
+
+/* --- ≤ 600 px tall ------------------------------------------*/
+@media (max-height: 600px) {
+    main.pl-main.pl-main--result.ps-success-layout {
+        padding: 3px 12px 6px;
+    }
+
+    .ps-page.ps-success-page {
+        --ps-font-base:     11px;
+        --ps-font-label:    10px;
+        --ps-font-title:    12px;
+        --ps-font-hero-amt: 16px;
+        --ps-space-card:    6px;
+        --ps-space-gap:     5px;
+        --ps-radius:        8px;
+        padding: 2px 2px 4px;
+    }
+
+    .ps-panel-check {
+        width: 28px;
+        height: 28px;
+        margin-bottom: 4px;
+    }
+    .ps-panel-check svg {
+        width: 15px;
+        height: 15px;
+    }
+    .ps-panel-title {
+        font-size: 12px;
+        margin-bottom: 5px;
+    }
+
+    .ps-kv-row {
+        padding: 3px 0;
+    }
+    .ps-kv--compact .ps-kv-row {
+        padding: 2px 0;
+    }
+    .ps-kv--compact dt,
+    .ps-kv--compact dd {
+        font-size: 9.5px;
+    }
+    .ps-kv-dd--amount {
+        font-size: 12px !important;
+    }
+
+    .ps-subheading {
+        font-size: 11px;
+        margin-bottom: 3px;
+    }
+    .ps-subheading--tx {
+        margin-top: 3px;
+    }
+
+    .ps-qr-section {
+        margin-bottom: 4px;
+    }
+    .ps-qr-wrap {
+        max-width: 108px;
+        padding: 4px;
+        margin-bottom: 4px;
+        border-radius: 8px;
+    }
+    .ps-qr-instruction {
+        font-size: 9.5px;
+        margin-bottom: 2px;
+    }
+    .ps-qr-link {
+        font-size: 10px;
+    }
+
+    .ps-hero-card {
+        min-height: min(116px, 22vh);
+        padding: 8px 8px 9px;
+    }
+    .ps-hero-badge {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 4px;
+    }
+    .ps-hero-check-wrap svg {
+        width: 17px;
+        height: 17px;
+    }
+    .ps-hero-amount {
+        margin-bottom: 3px;
+    }
+    .ps-hero-status {
+        font-size: 11.5px;
+    }
+
+    .ps-hero-actions {
+        gap: 5px;
+    }
+    .ps-hero-actions-row {
+        gap: 5px;
+    }
+
+    .ps-btn-outline {
+        min-height: 28px;
+        padding: 5px 7px;
+        font-size: 11px;
+        gap: 4px;
+        border-radius: 7px;
+    }
+    .ps-btn-outline svg {
+        width: 13px;
+        height: 13px;
+    }
+    .ps-btn-solid {
+        min-height: 30px;
+        padding: 5px 8px;
+        font-size: 11.5px;
+        border-radius: 7px;
+    }
+    .ps-btn-solid svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .ps-skeleton-card--hero {
+        min-height: min(116px, 22vh);
+    }
+    .ps-skeleton-burst {
+        width: 48px;
+        height: 48px;
+    }
+    .ps-skeleton-amount {
+        height: 18px;
+    }
+    .ps-skeleton-line--status {
+        height: 13px;
+    }
+}
