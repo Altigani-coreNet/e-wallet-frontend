@@ -87,11 +87,11 @@ export const PaymentCheckoutHeader = ({ onBack }) => {
     );
 };
 
-/** Same footer as the payment checkout page — wide: cancel | powered-by | domain; narrow: flex row (checkout may hide cancel). */
-export const PaymentCheckoutFooter = ({ onCancel, checkoutMovesCancelBelowPay }) => {
+/** Same footer as the payment checkout page — wide: cancel | powered-by | domain; ≤640px: cancel hidden (see CSS), powered + domain only. */
+export const PaymentCheckoutFooter = ({ onCancel }) => {
     const { t } = useTranslation();
     return (
-        <footer className={`pl-footer${checkoutMovesCancelBelowPay ? ' pl-footer--checkout' : ''}`}>
+        <footer className="pl-footer">
             <button
                 type="button"
                 className="pl-cancel-btn pl-footer-cancel"

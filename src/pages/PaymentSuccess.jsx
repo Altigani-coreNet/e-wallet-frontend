@@ -5,7 +5,7 @@ import { Check, CheckCircle2, Home, Printer, Share2 } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { apiGet } from '../utils/apiUtils';
 import { SOFTPOS_API_BASE } from '../utils/constants';
-import { PaymentCheckoutHeader } from '../components/payment-links/PaymentCheckoutChrome';
+import { PaymentCheckoutFooter, PaymentCheckoutHeader } from '../components/payment-links/PaymentCheckoutChrome';
 import '../components/payment-links/PaymentLinkRedirect.css';
 import './PaymentSuccess.css';
 
@@ -24,13 +24,18 @@ const PaymentSuccess = () => {
     const { t, i18n } = useTranslation();
     const burstGradId = useId().replace(/:/g, 'psg');
     const navigate = useNavigate();
-    const { uuid } = useParams();
+    const { lang, uuid } = useParams();
 
     const [loading, setLoading] = useState(true);
     const [receipt, setReceipt] = useState(null);
     const [loadError, setLoadError] = useState(null);
     const [qrSize, setQrSize] = useState(152);
     const uuidTrim = uuid ? String(uuid).trim() : '';
+
+    const checkoutPath = useMemo(
+        () => (lang && uuidTrim ? `/${lang}/payments/${uuidTrim}` : '/'),
+        [lang, uuidTrim],
+    );
 
     const successPageClass = useMemo(
         () => `ps-page ps-success-page${(i18n.language || '').toLowerCase().startsWith('ar') ? ' ps-page--ar' : ''}`,
@@ -250,6 +255,9 @@ const PaymentSuccess = () => {
                         </div>
                     </div>
                 </main>
+                <div className="ps-no-print">
+                    <PaymentCheckoutFooter onCancel={() => navigate(checkoutPath)} />
+                </div>
             </div>
         );
     }
@@ -396,6 +404,9 @@ const PaymentSuccess = () => {
                     </div>
                 </div>
             </main>
+            <div className="ps-no-print">
+                <PaymentCheckoutFooter onCancel={() => navigate(checkoutPath)} />
+            </div>
         </div>
     );
 };

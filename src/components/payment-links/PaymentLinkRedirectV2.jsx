@@ -651,10 +651,7 @@ const CheckoutPage = ({
                 </div>
             </main>
 
-            <PaymentCheckoutFooter
-                onCancel={() => navigate(cancelReturnPath)}
-                checkoutMovesCancelBelowPay
-            />
+            <PaymentCheckoutFooter onCancel={() => navigate(cancelReturnPath)} />
         </div>
     );
 };

@@ -855,7 +855,7 @@ body.app-i18n-rtl .pl-page {
   color: #9ca3af;
 }
 
-/* Footer: small screens — cancel full width; Powered + domain one flex row */
+/* Footer: small screens — hide cancel; powered + domain on one row */
 @media (max-width: 640px) {
   .pl-footer {
     display: flex;
@@ -869,34 +869,20 @@ body.app-i18n-rtl .pl-page {
   }
 
   .pl-footer-cancel {
-    flex: 1 0 100%;
-    order: 1;
+    display: none;
   }
 
   .pl-footer-powered {
     flex: 1 1 auto;
     min-width: 0;
     justify-content: flex-start;
-    order: 2;
+    order: 1;
     white-space: normal;
   }
 
   .pl-footer-domain {
     flex: 0 0 auto;
     margin-left: auto;
-    order: 3;
-  }
-
-  .pl-footer--checkout .pl-footer-cancel {
-    display: none;
-  }
-
-  /* Only powered + domain: share one row (cancel removed from flow) */
-  .pl-footer--checkout .pl-footer-powered {
-    order: 1;
-  }
-
-  .pl-footer--checkout .pl-footer-domain {
     order: 2;
   }
 }
