@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
@@ -21,6 +22,7 @@ const resolveAuthAssetUrl = (path) => {
 const AdminMerchantView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const [merchant, setMerchant] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -45,7 +47,7 @@ const AdminMerchantView = () => {
     }, [merchant?.logo]);
 
     useEffect(() => {
-        setTitle('Merchant Details');
+        setTitle(t('admin.merchantsUI.detailTitle'));
         setActions(
             <div className="d-flex align-items-center gap-2">
                 <Link to="/admin/merchants" className="btn btn-sm btn-light">
@@ -53,19 +55,19 @@ const AdminMerchantView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back
+                    {t('admin.merchantsUI.back')}
                 </Link>
                 <Link to={`/admin/merchants/${id}/edit`} className="btn btn-sm btn-primary">
                     <i className="ki-duotone ki-pencil fs-4 me-1">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Edit
+                    {t('admin.common.edit')}
                 </Link>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, id]);
+    }, [setTitle, setActions, id, t, i18n.language]);
 
     useEffect(() => {
         fetchMerchant();
@@ -88,7 +90,7 @@ const AdminMerchantView = () => {
         if (hasProfile) {
             completion += pointsPerItem;
         } else {
-            missing.push('Complete your business profile information.');
+            missing.push(t('admin.merchantsUI.profileMissing.completeProfile'));
         }
 
         // 2. Required documents
@@ -96,16 +98,16 @@ const AdminMerchantView = () => {
         if (attachmentsCount >= 4) {
             completion += pointsPerItem;
         } else {
-            missing.push(`Upload required documents (${4 - attachmentsCount} missing).`);
+            missing.push(t('admin.merchantsUI.profileMissing.uploadDocs', { count: 4 - attachmentsCount }));
         }
 
         // 3. Account approval
         if (merchant.status === 'approved') {
             completion += pointsPerItem;
         } else if (merchant.status === 'rejected') {
-            missing.push('Account approval was rejected.');
+            missing.push(t('admin.merchantsUI.profileMissing.accountRejected'));
         } else {
-            missing.push('Account is pending approval.');
+            missing.push(t('admin.merchantsUI.profileMissing.accountPending'));
         }
 
         // 4. Has users
@@ -113,7 +115,7 @@ const AdminMerchantView = () => {
         if (usersCount > 0) {
             completion += pointsPerItem;
         } else {
-            missing.push('Add at least one user to your account.');
+            missing.push(t('admin.merchantsUI.profileMissing.addUser'));
         }
 
         // 5. Has terminals
@@ -121,7 +123,7 @@ const AdminMerchantView = () => {
         if (terminalsCount > 0) {
             completion += pointsPerItem;
         } else {
-            missing.push('Add at least one terminal to your account.');
+            missing.push(t('admin.merchantsUI.profileMissing.addTerminal'));
         }
 
         return {
@@ -151,7 +153,7 @@ const AdminMerchantView = () => {
                 setTabData(prev => ({ ...prev, events: merchantData?.events || [] }));
             }
         } catch (error) {
-            toast.error('Failed to load merchant details');
+            toast.error(t('admin.merchantsUI.loadDetailsFailed'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -233,13 +235,13 @@ const AdminMerchantView = () => {
     };
 
     const getCountryName = (merchant) => {
-        if (!merchant) return 'N/A';
-        return merchant.country_name || merchant.country?.name?.en || merchant.country?.name || 'N/A';
+        if (!merchant) return t('admin.common.na');
+        return merchant.country_name || merchant.country?.name?.en || merchant.country?.name || t('admin.common.na');
     };
 
     const getCityName = (merchant) => {
-        if (!merchant) return 'N/A';
-        return merchant.city_name || merchant.city?.name?.en || merchant.city?.name || 'N/A';
+        if (!merchant) return t('admin.common.na');
+        return merchant.city_name || merchant.city?.name?.en || merchant.city?.name || t('admin.common.na');
     };
 
     const fetchScopes = async () => {
@@ -263,7 +265,7 @@ const AdminMerchantView = () => {
     };
 
     const formatAttachmentName = (name) => {
-        if (!name) return 'Document';
+        if (!name) return t('admin.merchantsUI.document');
         // Replace underscores with spaces and capitalize each word
         return name
             .replace(/_/g, ' ')
@@ -273,18 +275,18 @@ const AdminMerchantView = () => {
 
     const handleApprove = async () => {
         const result = await Swal.fire({
-            title: 'Approve Merchant',
-            text: 'Are you sure you want to approve this merchant?',
+            title: t('admin.merchantsUI.swal.approveMerchant'),
+            text: t('admin.merchantsIndex.approveText'),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#50cd89',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, approve it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('admin.merchantsUI.swal.yesApprove'),
+            cancelButtonText: t('admin.merchantsIndex.cancel')
         });
 
         if (!result.isConfirmed) return;
-        
+
         try {
             const token = getToken();
             const response = await axios.post(
@@ -295,35 +297,35 @@ const AdminMerchantView = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                Swal.fire('Approved!', 'Merchant has been approved successfully.', 'success');
+                Swal.fire(t('admin.merchantsUI.swal.approvedTitle'), t('admin.merchantsIndex.approveSuccess'), 'success');
                 fetchMerchant();
             } else {
-                Swal.fire('Error!', 'Failed to approve merchant', 'error');
+                Swal.fire(t('admin.merchantsUI.swal.errorTitle'), t('admin.merchantsUI.swal.failedApprove'), 'error');
             }
         } catch (error) {
-            Swal.fire('Error!', error.response?.data?.message || 'Failed to approve merchant', 'error');
+            Swal.fire(t('admin.merchantsUI.swal.errorTitle'), error.response?.data?.message || t('admin.merchantsUI.swal.failedApprove'), 'error');
         }
     };
 
     const handleReject = async () => {
         const result = await Swal.fire({
-            title: 'Reject Merchant',
+            title: t('admin.merchantsUI.swal.rejectMerchant'),
             input: 'textarea',
-            inputLabel: 'Rejection Reason',
-            inputPlaceholder: 'Please enter the reason for rejecting this merchant (minimum 10 characters)',
+            inputLabel: t('admin.merchantsUI.swal.rejectionReasonLabel'),
+            inputPlaceholder: t('admin.merchantsUI.swal.rejectionPlaceholder'),
             inputValue: '',
             inputAttributes: {
-                'aria-label': 'Rejection reason',
+                'aria-label': t('admin.merchantsUI.swal.rejectionAria'),
                 minlength: 10
             },
             inputValidator: (value) => {
                 if (!value || value.trim().length < 10) {
-                    return 'Rejection reason must be at least 10 characters';
+                    return t('admin.merchantsUI.swal.rejectionMinError');
                 }
             },
             showCancelButton: true,
-            confirmButtonText: 'Reject',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.common.reject'),
+            cancelButtonText: t('admin.merchantsIndex.cancel'),
             confirmButtonColor: '#f1416c',
             cancelButtonColor: '#3085d6',
             focusConfirm: false,
@@ -333,7 +335,7 @@ const AdminMerchantView = () => {
 
         const reason = result.value.trim();
         if (reason.length < 10) {
-            Swal.fire('Error!', 'Rejection reason must be at least 10 characters', 'error');
+            Swal.fire(t('admin.merchantsUI.swal.errorTitle'), t('admin.merchantsUI.swal.rejectionMinError'), 'error');
             return;
         }
 
@@ -347,35 +349,35 @@ const AdminMerchantView = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                Swal.fire('Rejected!', 'Merchant has been rejected successfully.', 'success');
+                Swal.fire(t('admin.merchantsUI.swal.rejectedTitle'), t('admin.merchantsIndex.rejectSuccess'), 'success');
                 fetchMerchant();
             } else {
-                Swal.fire('Error!', 'Failed to reject merchant', 'error');
+                Swal.fire(t('admin.merchantsUI.swal.errorTitle'), t('admin.merchantsUI.swal.failedReject'), 'error');
             }
         } catch (error) {
-            Swal.fire('Error!', error.response?.data?.message || 'Failed to reject merchant', 'error');
+            Swal.fire(t('admin.merchantsUI.swal.errorTitle'), error.response?.data?.message || t('admin.merchantsUI.swal.failedReject'), 'error');
         }
     };
 
     const handleSuspend = async () => {
         const result = await Swal.fire({
-            title: 'Suspend Merchant',
+            title: t('admin.merchantsUI.swal.suspendMerchant'),
             input: 'textarea',
-            inputLabel: 'Suspension Reason',
-            inputPlaceholder: 'Please enter the reason for suspending this merchant (minimum 10 characters)',
+            inputLabel: t('admin.merchantsUI.swal.suspensionReasonLabel'),
+            inputPlaceholder: t('admin.merchantsUI.swal.suspensionPlaceholder'),
             inputValue: '',
             inputAttributes: {
-                'aria-label': 'Suspension reason',
+                'aria-label': t('admin.merchantsUI.swal.suspensionAria'),
                 minlength: 10
             },
             inputValidator: (value) => {
                 if (!value || value.trim().length < 10) {
-                    return 'Suspension reason must be at least 10 characters';
+                    return t('admin.merchantsUI.swal.suspensionMinError');
                 }
             },
             showCancelButton: true,
-            confirmButtonText: 'Suspend',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.common.suspend'),
+            cancelButtonText: t('admin.merchantsIndex.cancel'),
             confirmButtonColor: '#ffc700',
             cancelButtonColor: '#3085d6',
             focusConfirm: false,
@@ -385,7 +387,7 @@ const AdminMerchantView = () => {
 
         const reason = result.value.trim();
         if (reason.length < 10) {
-            Swal.fire('Error!', 'Suspension reason must be at least 10 characters', 'error');
+            Swal.fire(t('admin.merchantsUI.swal.errorTitle'), t('admin.merchantsUI.swal.suspensionMinError'), 'error');
             return;
         }
 
@@ -399,26 +401,26 @@ const AdminMerchantView = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                Swal.fire('Suspended!', 'Merchant has been suspended successfully.', 'success');
+                Swal.fire(t('admin.merchantsUI.swal.suspendedTitle'), t('admin.merchantsIndex.suspendSuccess'), 'success');
                 fetchMerchant();
             } else {
-                Swal.fire('Error!', 'Failed to suspend merchant', 'error');
+                Swal.fire(t('admin.merchantsUI.swal.errorTitle'), t('admin.merchantsUI.swal.failedSuspend'), 'error');
             }
         } catch (error) {
-            Swal.fire('Error!', error.response?.data?.message || 'Failed to suspend merchant', 'error');
+            Swal.fire(t('admin.merchantsUI.swal.errorTitle'), error.response?.data?.message || t('admin.merchantsUI.swal.failedSuspend'), 'error');
         }
     };
 
     const handleUnsuspend = async () => {
         const result = await Swal.fire({
-            title: 'Unsuspend Merchant',
-            text: 'Are you sure you want to unsuspend this merchant?',
+            title: t('admin.merchantsUI.swal.unsuspendMerchant'),
+            text: t('admin.merchantsUI.swal.unsuspendConfirm'),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#50cd89',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, unsuspend it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('admin.merchantsUI.swal.yesUnsuspend'),
+            cancelButtonText: t('admin.merchantsIndex.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -433,26 +435,26 @@ const AdminMerchantView = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                Swal.fire('Unsuspended!', 'Merchant has been unsuspended successfully.', 'success');
+                Swal.fire(t('admin.merchantsUI.swal.unsuspendedTitle'), t('admin.merchantsIndex.unsuspendSuccess'), 'success');
                 fetchMerchant();
             } else {
-                Swal.fire('Error!', 'Failed to unsuspend merchant', 'error');
+                Swal.fire(t('admin.merchantsUI.swal.errorTitle'), t('admin.merchantsUI.swal.failedUnsuspend'), 'error');
             }
         } catch (error) {
-            Swal.fire('Error!', error.response?.data?.message || 'Failed to unsuspend merchant', 'error');
+            Swal.fire(t('admin.merchantsUI.swal.errorTitle'), error.response?.data?.message || t('admin.merchantsUI.swal.failedUnsuspend'), 'error');
         }
     };
 
     const handleDelete = async () => {
         const result = await Swal.fire({
-            title: 'Delete Merchant',
-            text: 'Are you sure you want to delete this merchant? This action cannot be undone!',
+            title: t('admin.merchantsUI.swal.deleteMerchant'),
+            text: t('admin.merchantsUI.swal.deleteMerchantText'),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#f1416c',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('admin.merchantsUI.swal.yesDeleteIt'),
+            cancelButtonText: t('admin.merchantsIndex.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -466,31 +468,31 @@ const AdminMerchantView = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                Swal.fire('Deleted!', 'Merchant has been deleted successfully.', 'success');
+                Swal.fire(t('admin.merchantsUI.swal.deletedTitle'), t('admin.merchantsIndex.deleteOneSuccess'), 'success');
                 navigate('/admin/merchants');
             } else {
-                Swal.fire('Error!', 'Failed to delete merchant', 'error');
+                Swal.fire(t('admin.merchantsUI.swal.errorTitle'), t('admin.merchantsUI.swal.failedDelete'), 'error');
             }
         } catch (error) {
-            Swal.fire('Error!', error.response?.data?.message || 'Failed to delete merchant', 'error');
+            Swal.fire(t('admin.merchantsUI.swal.errorTitle'), error.response?.data?.message || t('admin.merchantsUI.swal.failedDelete'), 'error');
         }
     };
 
     const handleResetPassword = async () => {
         if (!merchant.user_id && !merchant.user?.id) {
-            Swal.fire('Error!', 'This merchant does not have an associated user account', 'error');
+            Swal.fire(t('admin.merchantsUI.swal.errorTitle'), t('admin.merchantsIndex.noUserForReset'), 'error');
             return;
         }
 
         const result = await Swal.fire({
-            title: 'Reset Password?',
-            text: `Are you sure you want to send a password reset link to ${merchant.user?.email || merchant.email}?`,
+            title: t('admin.merchantsUI.resetPasswordTitle'),
+            text: t('admin.merchantsUI.resetPasswordText', { email: merchant.user?.email || merchant.email }),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, send reset link',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('admin.merchantsUI.yesSendReset'),
+            cancelButtonText: t('admin.merchantsIndex.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -506,12 +508,12 @@ const AdminMerchantView = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                Swal.fire('Success!', response.data.data?.message || 'Password reset link sent successfully', 'success');
+                Swal.fire(t('admin.merchantsUI.swal.successTitle'), response.data.data?.message || t('admin.merchantsIndex.resetSuccessDefault'), 'success');
             } else {
-                Swal.fire('Error!', response.data.message || 'Failed to send reset password link', 'error');
+                Swal.fire(t('admin.merchantsUI.swal.errorTitle'), response.data.message || t('admin.merchantsIndex.resetFailed'), 'error');
             }
         } catch (error) {
-            Swal.fire('Error!', error.response?.data?.message || 'Failed to send reset password link', 'error');
+            Swal.fire(t('admin.merchantsUI.swal.errorTitle'), error.response?.data?.message || t('admin.merchantsIndex.resetFailed'), 'error');
         }
     };
 
@@ -524,7 +526,7 @@ const AdminMerchantView = () => {
                 // If no ID, try to download directly from URL
                 const link = document.createElement('a');
                 link.href = resolveAuthAssetUrl(attachment.url || attachment.path || attachment.attachment_url);
-                link.download = attachment.file_name || attachment.title || 'attachment';
+                link.download = attachment.file_name || attachment.title || t('admin.merchantsUI.document');
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
@@ -541,7 +543,7 @@ const AdminMerchantView = () => {
             );
 
             // Get filename from Content-Disposition header or use attachment name
-            let filename = attachment.file_name || attachment.title || 'attachment';
+            let filename = attachment.file_name || attachment.title || t('admin.merchantsUI.document');
             const contentDisposition = response.headers['content-disposition'];
             if (contentDisposition) {
                 const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
@@ -560,24 +562,24 @@ const AdminMerchantView = () => {
             link.remove();
             window.URL.revokeObjectURL(url);
             
-            toast.success('Attachment downloaded successfully');
+            toast.success(t('admin.merchantsUI.attachmentDownloadSuccess'));
         } catch (error) {
-            toast.error('Failed to download attachment');
+            toast.error(t('admin.merchantsUI.attachmentDownloadFailed'));
             console.error(error);
         }
     };
 
     const handleDeleteAttachment = async (attachment) => {
-        const attachmentName = attachment.title || attachment.file_name || attachment.url_type || 'this attachment';
+        const attachmentName = attachment.title || attachment.file_name || attachment.url_type || t('admin.merchantsUI.document');
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `If you delete ${attachmentName}, it will not work with you anymore. This action cannot be undone!`,
+            title: t('admin.merchantsUI.swal.areYouSure'),
+            text: t('admin.merchantsUI.swal.deleteAttachmentText', { name: attachmentName }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('admin.merchantsUI.swal.yesDeleteIt'),
+            cancelButtonText: t('admin.merchantsIndex.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -588,7 +590,7 @@ const AdminMerchantView = () => {
             const attachmentUrl = resolveAuthAssetUrl(attachment.url || attachment.path || attachment.attachment_url);
 
             if (!attachmentId && !attachmentUrl) {
-                toast.error('Cannot delete attachment: missing ID or URL');
+                toast.error(t('admin.merchantsUI.cannotDeleteAttachment'));
                 return;
             }
 
@@ -612,14 +614,14 @@ const AdminMerchantView = () => {
 
             const isSuccess = response.data.status || response.data.success;
             if (isSuccess) {
-                Swal.fire('Deleted!', 'Attachment has been deleted successfully.', 'success');
+                Swal.fire(t('admin.merchantsUI.swal.deletedTitle'), t('admin.merchantsUI.swal.attachmentDeleted'), 'success');
                 // Refresh attachments
                 fetchTabData('attachments');
             } else {
-                Swal.fire('Error!', response.data.message || 'Failed to delete attachment', 'error');
+                Swal.fire(t('admin.merchantsUI.swal.errorTitle'), response.data.message || t('admin.merchantsUI.swal.failedDeleteAttachment'), 'error');
             }
         } catch (error) {
-            Swal.fire('Error!', error.response?.data?.message || 'Failed to delete attachment', 'error');
+            Swal.fire(t('admin.merchantsUI.swal.errorTitle'), error.response?.data?.message || t('admin.merchantsUI.swal.failedDeleteAttachment'), 'error');
             console.error(error);
         }
     };
@@ -649,8 +651,8 @@ const AdminMerchantView = () => {
     if (!merchant) {
         return (
             <div className="alert alert-danger">
-                <h4>Merchant not found</h4>
-                <Link to="/admin/merchants" className="btn btn-sm btn-light mt-3">Back to Merchants</Link>
+                <h4>{t('admin.merchantsUI.notFound')}</h4>
+                <Link to="/admin/merchants" className="btn btn-sm btn-light mt-3">{t('admin.merchantsUI.backToMerchants')}</Link>
             </div>
         );
     }
@@ -761,12 +763,12 @@ const AdminMerchantView = () => {
                                                         <>
                                                             <div className="menu-item px-3">
                                                                 <button onMouseDown={(e) => { e.preventDefault(); handleApprove(); }} className="menu-link px-3 bg-light-success text-success w-100 text-start border-0" style={{ background: 'none' }}>
-                                                                    Approve
+                                                                    {t('admin.common.approve')}
                                                                 </button>
                                                             </div>
                                                             <div className="menu-item px-3">
                                                                 <button onMouseDown={(e) => { e.preventDefault(); handleReject(); }} className="menu-link px-3 bg-light-danger text-danger w-100 text-start border-0" style={{ background: 'none' }}>
-                                                                    Reject
+                                                                    {t('admin.common.reject')}
                                                                 </button>
                                                             </div>
                                                         </>
@@ -775,7 +777,7 @@ const AdminMerchantView = () => {
                                                     {(merchant.status === 'approved' || merchant.status === 'viewed' || merchant.status === 'rejected') && merchant.status !== 'suspended' && (
                                                         <div className="menu-item px-3">
                                                             <button onMouseDown={(e) => { e.preventDefault(); handleSuspend(); }} className="menu-link px-3 text-warning w-100 text-start border-0" style={{ background: 'none' }}>
-                                                                Suspend
+                                                                {t('admin.common.suspend')}
                                                             </button>
                                                         </div>
                                                     )}
@@ -784,12 +786,12 @@ const AdminMerchantView = () => {
                                                         <>
                                                             <div className="menu-item px-3">
                                                                 <button onMouseDown={(e) => { e.preventDefault(); handleUnsuspend(); }} className="menu-link px-3 text-success w-100 text-start border-0" style={{ background: 'none' }}>
-                                                                    Unsuspend
+                                                                    {t('admin.common.unsuspend')}
                                                                 </button>
                                                             </div>
                                                             <div className="menu-item px-3">
                                                                 <button onMouseDown={(e) => { e.preventDefault(); handleApprove(); }} className="menu-link px-3 text-success w-100 text-start border-0" style={{ background: 'none' }}>
-                                                                    Approve
+                                                                    {t('admin.common.approve')}
                                                                 </button>
                                                             </div>
                                                         </>
@@ -798,14 +800,14 @@ const AdminMerchantView = () => {
                                                     {(merchant.user_id || merchant.user?.id) && (
                                                         <div className="menu-item px-3">
                                                             <button onMouseDown={(e) => { e.preventDefault(); handleResetPassword(); }} className="menu-link px-3 text-primary w-100 text-start border-0" style={{ background: 'none' }}>
-                                                                Reset Password
+                                                                {t('admin.merchantsUI.resetPasswordAction')}
                                                             </button>
                                                         </div>
                                                     )}
 
                                                     <div className="menu-item px-3">
                                                         <button onMouseDown={(e) => { e.preventDefault(); handleDelete(); }} className="menu-link px-3 text-danger w-100 text-start border-0" style={{ background: 'none' }}>
-                                                            Delete
+                                                            {t('admin.common.delete')}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -829,7 +831,7 @@ const AdminMerchantView = () => {
                                                     </span>
                                                     <div className="fs-2 fw-bolder">{branchesCount}</div>
                                                 </div>
-                                                <div className="fw-bold fs-6 text-gray-400">Branches</div>
+                                                <div className="fw-bold fs-6 text-gray-400">{t('admin.merchantsUI.statsBranches')}</div>
                                             </div>
 
                                             {/* Terminals */}
@@ -843,7 +845,7 @@ const AdminMerchantView = () => {
                                                     </span>
                                                     <div className="fs-2 fw-bolder">{terminalsCount}</div>
                                                 </div>
-                                                <div className="fw-bold fs-6 text-gray-400">Terminals</div>
+                                                <div className="fw-bold fs-6 text-gray-400">{t('admin.merchantsUI.statsTerminals')}</div>
                                             </div>
 
                                             {/* Users */}
@@ -857,7 +859,7 @@ const AdminMerchantView = () => {
                                                     </span>
                                                     <div className="fs-2 fw-bolder">{usersCount}</div>
                                                 </div>
-                                                <div className="fw-bold fs-6 text-gray-400">Users</div>
+                                                <div className="fw-bold fs-6 text-gray-400">{t('admin.merchantsUI.statsUsers')}</div>
                                             </div>
 
                                             {/* Transactions */}
@@ -870,7 +872,7 @@ const AdminMerchantView = () => {
                                                     </span>
                                                     <div className="fs-2 fw-bolder">{transactionsCount}</div>
                                                 </div>
-                                                <div className="fw-bold fs-6 text-gray-400">Transactions</div>
+                                                <div className="fw-bold fs-6 text-gray-400">{t('admin.merchantsUI.statsTransactions')}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -883,7 +885,7 @@ const AdminMerchantView = () => {
                                             data-bs-toggle="tooltip"
                                             title={profileCompletion.missing.join('\n')}
                                         >
-                                            <span className="fw-bold fs-6 text-gray-400">Profile Completion</span>
+                                            <span className="fw-bold fs-6 text-gray-400">{t('admin.merchantsUI.profileCompletion')}</span>
                                             <span className="fw-bolder fs-6">{profileCompletion.completion}%</span>
                                         </div>
                                         <div className="h-5px mx-3 w-100 bg-light mb-3">
@@ -901,7 +903,7 @@ const AdminMerchantView = () => {
                                         <div className="text-center w-100">
                                             <button type="button" className={`btn btn-sm ${getStatusBadgeClass(merchant.status)} px-9 py-4`}>
                                                 <span className="indicator-label">
-                                                    {merchant.status ? merchant.status.charAt(0).toUpperCase() + merchant.status.slice(1) : 'N/A'}
+                                                    {merchant.status ? merchant.status.charAt(0).toUpperCase() + merchant.status.slice(1) : t('admin.common.na')}
                                                 </span>
                                             </button>
                                         </div>
@@ -913,29 +915,29 @@ const AdminMerchantView = () => {
                         {/* Tabs */}
                         <ul className="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6">
                             <li className="nav-item mt-2">
-                                <a className={`nav-link text-active-primary ms-0 me-6 py-5 ${activeTab === 'overview' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('overview'); }}>Overview</a>
+                                <a className={`nav-link text-active-primary ms-0 me-6 py-5 ${activeTab === 'overview' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('overview'); }}>{t('admin.merchantsUI.tabOverview')}</a>
                             </li>
                             <li className="nav-item mt-2">
-                                <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'events' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('events'); }}>Events</a>
+                                <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'events' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('events'); }}>{t('admin.merchantsUI.tabEvents')}</a>
                             </li>
                             <li className="nav-item mt-2">
-                                <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'transactions' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('transactions'); }}>Transactions</a>
+                                <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'transactions' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('transactions'); }}>{t('admin.merchantsUI.tabTransactions')}</a>
                             </li>
                             <li className="nav-item mt-2">
-                                <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'users' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('users'); }}>Users</a>
+                                <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'users' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('users'); }}>{t('admin.merchantsUI.tabUsers')}</a>
                             </li>
                             <li className="nav-item mt-2">
-                                <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'terminals' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('terminals'); }}>Terminals</a>
+                                <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'terminals' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('terminals'); }}>{t('admin.merchantsUI.tabTerminals')}</a>
                             </li>
                             <li className="nav-item mt-2">
-                                <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'branches' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('branches'); }}>Branches</a>
+                                <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'branches' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('branches'); }}>{t('admin.merchantsUI.tabBranches')}</a>
                             </li>
                             <li className="nav-item mt-2">
-                                <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'attachments' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('attachments'); }}>Attachments</a>
+                                <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'attachments' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('attachments'); }}>{t('admin.merchantsUI.tabAttachments')}</a>
                             </li>
                             <li className="nav-item mt-2">
                                 <a className={`nav-link text-active-primary me-6 py-5 ${activeTab === 'change-requests' ? 'active' : ''}`} href="#" onClick={(e) => { e.preventDefault(); setActiveTab('change-requests'); }}>
-                                    Change Requests
+                                    {t('admin.merchantsUI.tabChangeRequests')}
                                     {pendingChangeRequests > 0 && (
                                         <span className="badge badge-danger ms-2">{pendingChangeRequests}</span>
                                     )}
@@ -954,8 +956,8 @@ const AdminMerchantView = () => {
                             <span className="path3"></span>
                         </i>
                         <div className="d-flex flex-column">
-                            <h4 className="mb-1 text-warning">Pending Change Requests</h4>
-                            <span>This merchant has {pendingChangeRequests} pending change request{pendingChangeRequests > 1 ? 's' : ''} that need review.</span>
+                            <h4 className="mb-1 text-warning">{t('admin.merchantsUI.pendingChangeRequestsTitle')}</h4>
+                            <span>{t('admin.merchantsUI.pendingChangeRequestsBanner', { count: pendingChangeRequests })}</span>
                             <div className="mt-2">
                                 <button 
                                     onClick={(e) => { e.preventDefault(); setActiveTab('change-requests'); }} 
@@ -966,7 +968,7 @@ const AdminMerchantView = () => {
                                         <span className="path2"></span>
                                         <span className="path3"></span>
                                     </i>
-                                    Review Changes
+                                    {t('admin.merchantsUI.reviewChanges')}
                                 </button>
                             </div>
                         </div>
@@ -982,41 +984,41 @@ const AdminMerchantView = () => {
                                 <div className="card mb-5 mb-xl-10">
                                     <div className="card-header cursor-pointer">
                                         <div className="card-title m-0">
-                                            <h3 className="fw-bolder m-0">Basic Information</h3>
+                                            <h3 className="fw-bolder m-0">{t('admin.merchantsUI.basicInformation')}</h3>
                                         </div>
                                     </div>
 
                                     <div className="card-body p-9">
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">Business Name</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelBusinessName')}</label>
                                             <div className="col-lg-8">
-                                                <span className="fs-6 text-gray-800">{merchant.business_name || merchant.name || 'N/A'}</span>
+                                                <span className="fs-6 text-gray-800">{merchant.business_name || merchant.name || t('admin.common.na')}</span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">Owner Name</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelOwnerName')}</label>
                                             <div className="col-lg-8">
-                                                <span className="fs-6 text-gray-800">{merchant.owner_name || 'N/A'}</span>
+                                                <span className="fs-6 text-gray-800">{merchant.owner_name || t('admin.common.na')}</span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">Email</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelEmail')}</label>
                                             <div className="col-lg-8">
                                                 <span className="text-gray-800 fs-6">{merchant.email}</span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">Phone</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelPhone')}</label>
                                             <div className="col-lg-8">
                                                 <span className="fs-6 text-gray-800">{merchant.phone}</span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">Business Type</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelBusinessType')}</label>
                                             <div className="col-lg-8">
                                                 <span className="fs-6 text-gray-800">
                                                     {merchant.business_type ? merchant.business_type.charAt(0).toUpperCase() + merchant.business_type.slice(1) : 'N/A'}
@@ -1025,54 +1027,54 @@ const AdminMerchantView = () => {
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">Plan</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelPlan')}</label>
                                             <div className="col-lg-8">
                                                 {merchant.plan ? (
                                                     <span className="badge badge-light-info fs-6 px-3 py-2">
-                                                        {merchant.plan.name || merchant.plan.text || 'N/A'}
+                                                        {merchant.plan.name || merchant.plan.text || t('admin.common.na')}
                                                         {merchant.plan.price && (
                                                             <span className="ms-2">
-                                                                - ${parseFloat(merchant.plan.price).toFixed(2)} / {merchant.plan.plan_type || 'Monthly'}
+                                                                - ${parseFloat(merchant.plan.price).toFixed(2)}{t('admin.merchantsUI.planPriceSuffix', { type: merchant.plan.plan_type || t('admin.merchantsUI.monthly') })}
                                                             </span>
                                                         )}
                                                     </span>
                                                 ) : (
-                                                    <span className="fs-6 text-gray-800">No Plan Assigned</span>
+                                                    <span className="fs-6 text-gray-800">{t('admin.merchantsUI.noPlanAssigned')}</span>
                                                 )}
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">Address</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelAddress')}</label>
                                             <div className="col-lg-8">
-                                                <span className="fs-6 text-gray-800">{merchant.address || 'N/A'}</span>
+                                                <span className="fs-6 text-gray-800">{merchant.address || t('admin.common.na')}</span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">Country</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelCountry')}</label>
                                             <div className="col-lg-8">
                                                 <span className="fs-6 text-gray-800">{getCountryName(merchant)}</span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">City</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelCity')}</label>
                                             <div className="col-lg-8">
                                                 <span className="fs-6 text-gray-800">{getCityName(merchant)}</span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">Merchant Code</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelMerchantCode')}</label>
                                             <div className="col-lg-8">
-                                                <span className="fs-6 text-gray-800">{merchant.merchant_code || 'N/A'}</span>
+                                                <span className="fs-6 text-gray-800">{merchant.merchant_code || t('admin.common.na')}</span>
                                             </div>
                                         </div>
 
                                         {merchant.trade_license_number && (
                                             <div className="row mb-7">
-                                                <label className="col-lg-4 fw-bold text-muted">Trade License Number</label>
+                                                <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelTradeLicenseNumber')}</label>
                                                 <div className="col-lg-8">
                                                     <span className="fs-6 text-gray-800">{merchant.trade_license_number}</span>
                                                 </div>
@@ -1080,14 +1082,14 @@ const AdminMerchantView = () => {
                                         )}
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">Tax Number</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelTaxNumber')}</label>
                                             <div className="col-lg-8">
-                                                <span className="fs-6 text-gray-800">{merchant.tax_number || 'N/A'}</span>
+                                                <span className="fs-6 text-gray-800">{merchant.tax_number || t('admin.common.na')}</span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">Scopes</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelScopes')}</label>
                                             <div className="col-lg-8">
                                                 {merchant.scopes && Array.isArray(merchant.scopes) && merchant.scopes.length > 0 ? (
                                                     <div className="d-flex flex-wrap gap-2">
@@ -1105,7 +1107,7 @@ const AdminMerchantView = () => {
                                                         ))}
                                                     </div>
                                                 ) : (
-                                                    <span className="fs-6 text-muted">No scopes assigned</span>
+                                                    <span className="fs-6 text-muted">{t('admin.merchantsUI.noScopesAssigned')}</span>
                                                 )}
                                             </div>
                                         </div>
@@ -1122,52 +1124,52 @@ const AdminMerchantView = () => {
                                     <div className="card mb-5 mb-xl-10">
                                         <div className="card-header cursor-pointer">
                                             <div className="card-title m-0">
-                                                <h3 className="fw-bolder m-0">Associated User Account</h3>
+                                                <h3 className="fw-bolder m-0">{t('admin.merchantsUI.associatedUserAccount')}</h3>
                                             </div>
                                         </div>
 
                                     <div className="card-body p-9">
                                         <div className="row mb-7">  
-                                            <label className="col-lg-4 fw-bold text-muted">Full Name</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelFullName')}</label>
                                             <div className="col-lg-8">
-                                                <span className="fs-6 text-gray-800">{merchant.user?.name || 'N/A'}</span>
+                                                <span className="fs-6 text-gray-800">{merchant.user?.name || t('admin.common.na')}</span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">Username</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelUsername')}</label>
                                             <div className="col-lg-8">
                                                 <span className="fs-6 text-gray-800">
-                                                    {merchant.user?.user_name || 'N/A'}
+                                                    {merchant.user?.user_name || t('admin.common.na')}
                                                 </span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">User Email</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelUserEmail')}</label>
                                             <div className="col-lg-8">
-                                                <span className="fs-6 text-gray-800">{merchant.user?.email || 'N/A'}</span>
+                                                <span className="fs-6 text-gray-800">{merchant.user?.email || t('admin.common.na')}</span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">User Phone</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelUserPhone')}</label>
                                             <div className="col-lg-8">
-                                                <span className="fs-6 text-gray-800">{merchant.user?.phone || 'N/A'}</span>
+                                                <span className="fs-6 text-gray-800">{merchant.user?.phone || t('admin.common.na')}</span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">User Status</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelUserStatus')}</label>
                                             <div className="col-lg-8">
                                                 <span className={`badge ${merchant.user?.is_active ? 'badge-light-success' : 'badge-light-danger'}`}>
-                                                    {merchant.user?.is_active ? 'Active' : 'Inactive'}
+                                                    {merchant.user?.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                                 </span>
                                             </div>
                                         </div>
 
                                         <div className="row mb-7">
-                                            <label className="col-lg-4 fw-bold text-muted">User Created</label>
+                                            <label className="col-lg-4 fw-bold text-muted">{t('admin.merchantsUI.labelUserCreated')}</label>
                                             <div className="col-lg-8">
                                                 <span className="fs-6 text-gray-800">
                                                     {merchant.user?.created_at ? new Date(merchant.user.created_at).toLocaleString() : 'N/A'}
@@ -1183,9 +1185,9 @@ const AdminMerchantView = () => {
                                     <div className="card card-xl-stretch mb-xl-10">
                                         <div className="card-header align-items-center border-0 mt-4">
                                             <h3 className="card-title align-items-start flex-column">
-                                                <span className="fw-bolder mb-2 text-dark">Events</span>
+                                                <span className="fw-bolder mb-2 text-dark">{t('admin.merchantsUI.eventsSidebarTitle')}</span>
                                                 <span className="text-muted fw-bold fs-7">
-                                                    {tabData.events?.length || 0} recent events
+                                                    {t('admin.merchantsUI.recentEventsCount', { count: tabData.events?.length || 0 })}
                                                 </span>
                                             </h3>
                                         </div>
@@ -1210,7 +1212,7 @@ const AdminMerchantView = () => {
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <div className="text-muted fs-6">No recent events</div>
+                                                    <div className="text-muted fs-6">{t('admin.merchantsUI.noRecentEvents')}</div>
                                                 )}
                                             </div>
                                         </div>
@@ -1228,8 +1230,8 @@ const AdminMerchantView = () => {
                                                 <span className="path3"></span>
                                             </i>
                                             <div className="d-flex flex-column">
-                                                <h4 className="mb-1 text-warning">No User Account Associated</h4>
-                                                <span>This merchant does not have an associated user account yet.</span>
+                                                <h4 className="mb-1 text-warning">{t('admin.merchantsUI.noUserAccountTitle')}</h4>
+                                                <span>{t('admin.merchantsUI.noUserAccountText')}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1243,7 +1245,7 @@ const AdminMerchantView = () => {
                 {activeTab === 'events' && (
                     <div className="card">
                         <div className="card-header">
-                            <h3 className="card-title">Merchant Events</h3>
+                            <h3 className="card-title">{t('admin.merchantsUI.merchantEventsTitle')}</h3>
                         </div>
                         <div className="card-body">
                             {tabLoading ? (
@@ -1265,14 +1267,14 @@ const AdminMerchantView = () => {
                                                     <div className="fs-7 mt-2 text-gray-600">{event.metadata.message}</div>
                                                 )}
                                                 {event.user_id && (
-                                                    <div className="fs-8 mt-1 text-muted">By: {event.metadata?.approved_by || event.metadata?.rejected_by || event.metadata?.suspended_by || 'System'}</div>
+                                                    <div className="fs-8 mt-1 text-muted">{t('admin.merchantsUI.eventByLine', { actor: event.metadata?.approved_by || event.metadata?.rejected_by || event.metadata?.suspended_by || t('admin.merchantsUI.system') })}</div>
                                                 )}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="alert alert-info">No events found for this merchant</div>
+                                <div className="alert alert-info">{t('admin.merchantsUI.noEventsForMerchant')}</div>
                             )}
                         </div>
                     </div>
@@ -1282,7 +1284,7 @@ const AdminMerchantView = () => {
                 {activeTab === 'branches' && (
                     <div className="card">
                         <div className="card-header">
-                            <h3 className="card-title">Merchant Branches</h3>
+                            <h3 className="card-title">{t('admin.merchantsUI.merchantBranchesTitle')}</h3>
                         </div>
                         <div className="card-body">
                             {tabLoading ? (
@@ -1292,21 +1294,21 @@ const AdminMerchantView = () => {
                                     <table className="table table-row-bordered gy-5">
                                         <thead>
                                             <tr className="fw-bold fs-6 text-gray-800">
-                                                <th>Branch Name</th>
-                                                <th>Location</th>
-                                                <th>Phone</th>
-                                                <th>Status</th>
+                                                <th>{t('admin.merchantsUI.colBranchName')}</th>
+                                                <th>{t('admin.merchantsUI.colLocation')}</th>
+                                                <th>{t('admin.merchantsIndex.colPhone')}</th>
+                                                <th>{t('admin.merchantsIndex.colStatus')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {tabData.branches.map((branch) => (
                                                 <tr key={branch.id}>
                                                     <td>{branch.name}</td>
-                                                    <td>{branch.address || 'N/A'}</td>
-                                                    <td>{branch.phone || 'N/A'}</td>
+                                                    <td>{branch.address || t('admin.common.na')}</td>
+                                                    <td>{branch.phone || t('admin.common.na')}</td>
                                                     <td>
                                                         <span className={`badge ${branch.is_active ? 'badge-light-success' : 'badge-light-danger'}`}>
-                                                            {branch.is_active ? 'Active' : 'Inactive'}
+                                                            {branch.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                                         </span>
                                                     </td>
                                                 </tr>
@@ -1315,7 +1317,7 @@ const AdminMerchantView = () => {
                                     </table>
                                 </div>
                             ) : (
-                                <div className="alert alert-info">No branches found for this merchant</div>
+                                <div className="alert alert-info">{t('admin.merchantsUI.noBranchesForMerchant')}</div>
                             )}
                         </div>
                     </div>
@@ -1325,7 +1327,7 @@ const AdminMerchantView = () => {
                 {activeTab === 'terminals' && (
                     <div className="card">
                         <div className="card-header">
-                            <h3 className="card-title">Merchant Terminals</h3>
+                            <h3 className="card-title">{t('admin.merchantsUI.merchantTerminalsTitle')}</h3>
                         </div>
                         <div className="card-body">
                             {tabLoading ? (
@@ -1335,18 +1337,18 @@ const AdminMerchantView = () => {
                                     <table className="table table-row-bordered gy-5">
                                         <thead>
                                             <tr className="fw-bold fs-6 text-gray-800">
-                                                <th>Terminal ID</th>
-                                                <th>Serial Number</th>
-                                                <th>Branch</th>
-                                                <th>Status</th>
+                                                <th>{t('admin.merchantsUI.colTerminalId')}</th>
+                                                <th>{t('admin.merchantsUI.colSerialNumber')}</th>
+                                                <th>{t('admin.merchantsUI.colBranch')}</th>
+                                                <th>{t('admin.merchantsIndex.colStatus')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {tabData.terminals.map((terminal) => (
                                                 <tr key={terminal.id}>
                                                     <td>{terminal.terminal_id}</td>
-                                                    <td>{terminal.serial_number || 'N/A'}</td>
-                                                    <td>{terminal.branch?.name || 'N/A'}</td>
+                                                    <td>{terminal.serial_number || t('admin.common.na')}</td>
+                                                    <td>{terminal.branch?.name || t('admin.common.na')}</td>
                                                     <td>
                                                         <span className={`badge ${terminal.status === 'active' ? 'badge-light-success' : 'badge-light-danger'}`}>
                                                             {terminal.status}
@@ -1358,7 +1360,7 @@ const AdminMerchantView = () => {
                                     </table>
                                 </div>
                             ) : (
-                                <div className="alert alert-info">No terminals found for this merchant</div>
+                                <div className="alert alert-info">{t('admin.merchantsUI.noTerminalsForMerchant')}</div>
                             )}
                         </div>
                     </div>
@@ -1368,7 +1370,7 @@ const AdminMerchantView = () => {
                 {activeTab === 'users' && (
                     <div className="card">
                         <div className="card-header">
-                            <h3 className="card-title">Merchant Users</h3>
+                            <h3 className="card-title">{t('admin.merchantsUI.merchantUsersTitle')}</h3>
                         </div>
                         <div className="card-body">
                             {tabLoading ? (
@@ -1378,11 +1380,11 @@ const AdminMerchantView = () => {
                                     <table className="table table-row-bordered gy-5">
                                         <thead>
                                             <tr className="fw-bold fs-6 text-gray-800">
-                                                <th>Name</th>
-                                                <th>Email</th>
-                                                <th>Phone</th>
-                                                <th>Role</th>
-                                                <th>Status</th>
+                                                <th>{t('admin.merchantsUI.colName')}</th>
+                                                <th>{t('admin.merchantsUI.labelEmail')}</th>
+                                                <th>{t('admin.merchantsIndex.colPhone')}</th>
+                                                <th>{t('admin.merchantsUI.colRole')}</th>
+                                                <th>{t('admin.merchantsIndex.colStatus')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1390,11 +1392,11 @@ const AdminMerchantView = () => {
                                                 <tr key={user.id}>
                                                     <td>{user.name}</td>
                                                     <td>{user.email}</td>
-                                                    <td>{user.phone || 'N/A'}</td>
-                                                    <td>{user.role || 'N/A'}</td>
+                                                    <td>{user.phone || t('admin.common.na')}</td>
+                                                    <td>{user.role || t('admin.common.na')}</td>
                                                     <td>
                                                         <span className={`badge ${user.is_active ? 'badge-light-success' : 'badge-light-danger'}`}>
-                                                            {user.is_active ? 'Active' : 'Inactive'}
+                                                            {user.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                                         </span>
                                                     </td>
                                                 </tr>
@@ -1403,7 +1405,7 @@ const AdminMerchantView = () => {
                                     </table>
                                 </div>
                             ) : (
-                                <div className="alert alert-info">No users found for this merchant</div>
+                                <div className="alert alert-info">{t('admin.merchantsUI.noUsersForMerchant')}</div>
                             )}
                         </div>
                     </div>
@@ -1413,11 +1415,11 @@ const AdminMerchantView = () => {
                 {activeTab === 'transactions' && (
                     <div className="card">
                         <div className="card-header">
-                            <h3 className="card-title">Merchant Transactions</h3>
+                            <h3 className="card-title">{t('admin.merchantsUI.sectionTitles.transactions')}</h3>
                         </div>
                         <div className="card-body">
                             <div className="alert alert-info">
-                                Transactions tab will display merchant's transaction history. Integration coming soon.
+                                {t('admin.merchantsUI.transactionsPlaceholder')}
                             </div>
                         </div>
                     </div>
@@ -1427,7 +1429,7 @@ const AdminMerchantView = () => {
                 {activeTab === 'attachments' && (
                     <div className="card">
                         <div className="card-header">
-                            <h3 className="card-title">Merchant Attachments</h3>
+                            <h3 className="card-title">{t('admin.merchantsUI.merchantAttachmentsTitle')}</h3>
                         </div>
                         <div className="card-body">
                             {tabLoading ? (
@@ -1437,12 +1439,12 @@ const AdminMerchantView = () => {
                                     <table className="table table-row-bordered gy-5">
                                         <thead>
                                             <tr className="fw-bold fs-6 text-gray-800">
-                                                <th>Attachment</th>
-                                                <th>Name</th>
-                                                <th>Type</th>
-                                                <th>Category</th>
-                                                <th>Uploaded Date</th>
-                                                <th>Actions</th>
+                                                <th>{t('admin.merchantsUI.colAttachment')}</th>
+                                                <th>{t('admin.merchantsUI.colName')}</th>
+                                                <th>{t('admin.merchantsUI.colType')}</th>
+                                                <th>{t('admin.merchantsUI.colCategory')}</th>
+                                                <th>{t('admin.merchantsUI.colUploadedDate')}</th>
+                                                <th>{t('admin.merchantsIndex.colActions')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -1451,8 +1453,8 @@ const AdminMerchantView = () => {
                                                 const isImage = attachment.type === 'image' || 
                                                                (attachment.url && /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(attachment.url));
                                                 const isPdf = attachment.url && /\.pdf$/i.test(attachment.url);
-                                                const fileName = attachment.url ? attachment.url.split('/').pop() : (attachment.url_type || 'Document');
-                                                const displayName = attachment.title || formatAttachmentName(attachment.url_type) || formatAttachmentName(fileName) || 'Document';
+                                                const fileName = attachment.url ? attachment.url.split('/').pop() : (attachment.url_type || t('admin.merchantsUI.document'));
+                                                const displayName = attachment.title || formatAttachmentName(attachment.url_type) || formatAttachmentName(fileName) || t('admin.merchantsUI.document');
                                                 
                                                 return (
                                                     <tr key={attachment.id || attachment.url}>
@@ -1502,7 +1504,7 @@ const AdminMerchantView = () => {
                                                         </td>
                                                         <td>
                                                             <span className="badge badge-light-info">
-                                                                {attachment.type ? attachment.type.charAt(0).toUpperCase() + attachment.type.slice(1) : 'Document'}
+                                                                {attachment.type ? attachment.type.charAt(0).toUpperCase() + attachment.type.slice(1) : t('admin.merchantsUI.document')}
                                                             </span>
                                                         </td>
                                                         <td>
@@ -1512,7 +1514,7 @@ const AdminMerchantView = () => {
                                                         </td>
                                                         <td>
                                                             <span className="text-gray-600">
-                                                                {attachment.created_at ? new Date(attachment.created_at).toLocaleDateString() : 'N/A'}
+                                                                {attachment.created_at ? new Date(attachment.created_at).toLocaleDateString() : t('admin.common.na')}
                                                             </span>
                                                         </td>
                                                         <td>
@@ -1524,7 +1526,7 @@ const AdminMerchantView = () => {
                                                                             target="_blank" 
                                                                             rel="noreferrer"
                                                                             className="btn btn-icon btn-light-primary btn-sm"
-                                                                            title="View"
+                                                                            title={t('admin.common.view')}
                                                                         >
                                                                             <i className="ki-duotone ki-eye fs-5">
                                                                                 <span className="path1"></span>
@@ -1538,7 +1540,7 @@ const AdminMerchantView = () => {
                                                                                 handleDownloadAttachment(attachment);
                                                                             }}
                                                                             className="btn btn-icon btn-light-success btn-sm"
-                                                                            title="Download"
+                                                                            title={t('admin.merchantsUI.downloadAttachmentAction')}
                                                                         >
                                                                             <i className="ki-duotone ki-file-down fs-5">
                                                                                 <span className="path1"></span>
@@ -1551,7 +1553,7 @@ const AdminMerchantView = () => {
                                                                                 handleDeleteAttachment(attachment);
                                                                             }}
                                                                             className="btn btn-icon btn-light-danger btn-sm"
-                                                                            title="Delete"
+                                                                            title={t('admin.common.delete')}
                                                                         >
                                                                             <i className="ki-duotone ki-trash fs-5">
                                                                                 <span className="path1"></span>
@@ -1572,7 +1574,7 @@ const AdminMerchantView = () => {
                                     </table>
                                 </div>
                             ) : (
-                                <div className="alert alert-info">No attachments found for this merchant</div>
+                                <div className="alert alert-info">{t('admin.merchantsUI.noAttachmentsForMerchant')}</div>
                             )}
                         </div>
                     </div>
@@ -1582,7 +1584,7 @@ const AdminMerchantView = () => {
                 {activeTab === 'change-requests' && (
                     <div className="card">
                         <div className="card-header">
-                            <h3 className="card-title">Change Requests</h3>
+                            <h3 className="card-title">{t('admin.merchantsUI.changeRequestsTitle')}</h3>
                         </div>
                         <div className="card-body">
                             {tabLoading ? (
@@ -1592,19 +1594,19 @@ const AdminMerchantView = () => {
                                     <table className="table table-row-bordered gy-5">
                                         <thead>
                                             <tr className="fw-bold fs-6 text-gray-800">
-                                                <th>Field</th>
-                                                <th>Old Value</th>
-                                                <th>New Value</th>
-                                                <th>Status</th>
-                                                <th>Requested At</th>
+                                                <th>{t('admin.merchantsUI.colField')}</th>
+                                                <th>{t('admin.merchantsUI.colOldValue')}</th>
+                                                <th>{t('admin.merchantsUI.colNewValue')}</th>
+                                                <th>{t('admin.merchantsIndex.colStatus')}</th>
+                                                <th>{t('admin.merchantsUI.colRequestedAt')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {tabData.changeRequests.map((request) => (
                                                 <tr key={request.id}>
                                                     <td>{request.field_name}</td>
-                                                    <td>{request.old_value || 'N/A'}</td>
-                                                    <td>{request.new_value || 'N/A'}</td>
+                                                    <td>{request.old_value || t('admin.common.na')}</td>
+                                                    <td>{request.new_value || t('admin.common.na')}</td>
                                                     <td>
                                                         <span className={`badge ${request.status === 'pending' ? 'badge-light-warning' : request.status === 'approved' ? 'badge-light-success' : 'badge-light-danger'}`}>
                                                             {request.status}
@@ -1617,7 +1619,7 @@ const AdminMerchantView = () => {
                                     </table>
                                 </div>
                             ) : (
-                                <div className="alert alert-info">No change requests found for this merchant</div>
+                                <div className="alert alert-info">{t('admin.merchantsUI.noChangeRequestsForMerchant')}</div>
                             )}
                         </div>
                     </div>

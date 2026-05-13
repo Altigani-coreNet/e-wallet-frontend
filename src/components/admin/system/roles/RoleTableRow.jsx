@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { deleteRole } from '../../../../services/adminRolesService';
 import { useCan } from '../../../../utils/permissions';
 
 const RoleTableRow = ({ role, isSelected, onSelect, onRefresh }) => {
+    const { t } = useTranslation();
     const canEditRole = useCan('pos.roles.edit_roles');
     const canDeleteRole = useCan('pos.roles.delete_roles');
     const [showActions, setShowActions] = useState(false);
@@ -22,21 +24,21 @@ const RoleTableRow = ({ role, isSelected, onSelect, onRefresh }) => {
     }, [showActions]);
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this role?')) {
+        if (!window.confirm(t('admin.systemRoles.deleteThisRoleConfirm'))) {
             return;
         }
 
         try {
             const response = await deleteRole(role.id);
             if (response.success) {
-                toast.success('Role deleted successfully');
+                toast.success(t('admin.systemRoles.roleDeleted'));
                 onRefresh();
             } else {
-                toast.error(response.error || 'Failed to delete role');
+                toast.error(response.error || t('admin.systemRoles.roleDeleteFailed'));
             }
         } catch (error) {
             console.error('Error deleting role:', error);
-            toast.error('Failed to delete role');
+            toast.error(t('admin.systemRoles.roleDeleteFailed'));
         }
     };
 
@@ -58,7 +60,9 @@ const RoleTableRow = ({ role, isSelected, onSelect, onRefresh }) => {
                 </Link>
             </td>
             <td>
-                <span className="badge badge-light-success">{role.permissions_count || 0} permissions</span>
+                <span className="badge badge-light-success">
+                    {t('admin.systemRoles.permissionsCountBadge', { count: role.permissions_count || 0 })}
+                </span>
             </td>
             <td>{new Date(role.created_at).toLocaleDateString()}</td>
             <td className="text-end">
@@ -70,7 +74,7 @@ const RoleTableRow = ({ role, isSelected, onSelect, onRefresh }) => {
                         onClick={() => setShowActions(!showActions)}
                         onBlur={() => setTimeout(() => setShowActions(false), 200)}
                     >
-                        Actions
+                        {t('admin.systemRoles.actionsMenu')}
                         <i className="ki-duotone ki-down fs-5 ms-1"></i>
                     </button>
                     {showActions && (
@@ -94,7 +98,7 @@ const RoleTableRow = ({ role, isSelected, onSelect, onRefresh }) => {
                                     <span className="path2"></span>
                                     <span className="path3"></span>
                                 </i>
-                                View
+                                {t('admin.common.view')}
                             </Link>
                             
                             {canEditRole && (
@@ -107,7 +111,7 @@ const RoleTableRow = ({ role, isSelected, onSelect, onRefresh }) => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Edit
+                                    {t('admin.common.edit')}
                                 </Link>
                             )}
                             
@@ -126,7 +130,7 @@ const RoleTableRow = ({ role, isSelected, onSelect, onRefresh }) => {
                                             <span className="path4"></span>
                                             <span className="path5"></span>
                                         </i>
-                                        Delete
+                                        {t('admin.common.delete')}
                                     </button>
                                 </>
                             )}

@@ -1,22 +1,24 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
-const MerchantChangeRequestsTab = ({ merchantId }) => (
-    <div className="card">
-        <div className="card-header border-0">
-            <div className="card-title">
-                <h3 className="fw-bold mb-0">Change Requests</h3>
+const MerchantChangeRequestsTab = ({ merchantId }) => {
+    const { t } = useTranslation();
+    return (
+        <div className="card">
+            <div className="card-header border-0">
+                <div className="card-title">
+                    <h3 className="fw-bold mb-0">{t('admin.merchantsUI.changeRequestsTab.title')}</h3>
+                </div>
+            </div>
+            <div className="card-body">
+                <div className="alert alert-info mb-0">
+                    {merchantId
+                        ? t('admin.merchantsUI.changeRequestsTab.placeholderWithMerchant', { id: merchantId })
+                        : t('admin.merchantsUI.changeRequestsTab.placeholder')}
+                </div>
             </div>
         </div>
-        <div className="card-body">
-            <div className="alert alert-info mb-0">
-                {merchantId
-                    ? `Change requests for merchant #${merchantId} will appear here once the integration is completed.`
-                    : 'Change requests will appear here once the integration is completed.'}
-            </div>
-        </div>
-    </div>
-);
+    );
+};
 
 export default MerchantChangeRequestsTab;
-
-

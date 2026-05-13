@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { useTranslation } from 'react-i18next';
 import { useCan } from '../../../utils/permissions';
 
 const TerminalGroupTableRow = ({ 
@@ -10,6 +11,7 @@ const TerminalGroupTableRow = ({
     onSelect, 
     onDelete 
 }) => {
+    const { t } = useTranslation();
     const canEditTerminalGroup = useCan('pos.terminal_groups.edit_terminal_assignments');
     const canDeleteTerminalGroup = useCan('pos.terminal_groups.delete_terminal_assignments');
     const [showActions, setShowActions] = useState(false);
@@ -32,7 +34,7 @@ const TerminalGroupTableRow = ({
 
     const getStatusBadge = (status) => {
         const isActive = status === 'active' || status === 1 || status === '1' || status === true;
-        const statusText = isActive ? 'Active' : 'Inactive';
+        const statusText = isActive ? t('admin.common.active') : t('admin.common.inactive');
         const statusClass = isActive ? 'badge-light-success' : 'badge-light-warning';
         
         return (
@@ -44,14 +46,14 @@ const TerminalGroupTableRow = ({
 
     const handleDelete = () => {
         Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete terminal group "${group.name}". This will remove all terminal and user group associations. This action cannot be undone!`,
+            title: t('admin.terminalGroupsUI.tableRow.deleteTitle'),
+            text: t('admin.terminalGroupsUI.tableRow.deleteText', { name: group.name }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('admin.terminalGroupsUI.tableRow.yesDelete'),
+            cancelButtonText: t('admin.terminalGroupsUI.tableRow.cancel')
         }).then((result) => {
             if (result.isConfirmed) {
                 onDelete(group.id);
@@ -87,7 +89,7 @@ const TerminalGroupTableRow = ({
                     >
                         {group.name}
                     </Link>
-                    <span className="text-muted fs-7">ID: {group.group_id}</span>
+                    <span className="text-muted fs-7">{t('admin.terminalGroupsUI.tableRow.idPrefix')} {group.group_id}</span>
                     {group.description && (
                         <span className="text-muted fs-7">{group.description.substring(0, 50)}{group.description.length > 50 ? '...' : ''}</span>
                     )}
@@ -97,28 +99,28 @@ const TerminalGroupTableRow = ({
             {/* Merchant ID */}
             <td>
                 <span className="text-gray-800">
-                    {group.merchant_id || 'N/A'}
+                    {group.merchant_id || t('admin.common.na')}
                 </span>
             </td>
 
             {/* Branch ID */}
             <td>
                 <span className="text-gray-800">
-                    {group.branch_id || 'N/A'}
+                    {group.branch_id || t('admin.common.na')}
                 </span>
             </td>
 
             {/* Terminals Count */}
             <td>
                 <span className="badge badge-light-primary">
-                    {group.terminals_count || 0} Terminals
+                    {t('admin.terminalGroupsUI.tableRow.terminalsCount', { count: group.terminals_count || 0 })}
                 </span>
             </td>
 
             {/* User Groups Count */}
             <td>
                 <span className="badge badge-light-info">
-                    {group.user_groups_count || 0} User Groups
+                    {t('admin.terminalGroupsUI.tableRow.userGroupsCount', { count: group.user_groups_count || 0 })}
                 </span>
             </td>
 
@@ -132,9 +134,9 @@ const TerminalGroupTableRow = ({
             {/* Is Subgroup */}
             <td>
                 {group.parent_id ? (
-                    <span className="badge badge-light-secondary">Subgroup</span>
+                    <span className="badge badge-light-secondary">{t('admin.terminalGroupsUI.tableRow.badgeSubgroup')}</span>
                 ) : (
-                    <span className="badge badge-light-primary">Parent</span>
+                    <span className="badge badge-light-primary">{t('admin.terminalGroupsUI.tableRow.badgeParent')}</span>
                 )}
             </td>
 
@@ -160,7 +162,7 @@ const TerminalGroupTableRow = ({
                         onClick={() => setShowActions(!showActions)}
                         onBlur={() => setTimeout(() => setShowActions(false), 200)}
                     >
-                        Actions
+                        {t('admin.terminalGroupsUI.tableRow.actions')}
                         <i className="ki-duotone ki-down fs-5 ms-1"></i>
                     </button>
                     {showActions && (
@@ -184,7 +186,7 @@ const TerminalGroupTableRow = ({
                                     <span className="path2"></span>
                                     <span className="path3"></span>
                                 </i>
-                                View
+                                {t('admin.common.view')}
                             </Link>
                             
                             {canEditTerminalGroup && (
@@ -219,7 +221,7 @@ const TerminalGroupTableRow = ({
                                         <span className="path4"></span>
                                         <span className="path5"></span>
                                     </i>
-                                    Delete
+                                    {t('admin.common.delete')}
                                 </button>
                             )}
                         </div>

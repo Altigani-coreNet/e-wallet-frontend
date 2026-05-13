@@ -1,22 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const UsersSearch = ({ onSearch, searchTerm }) => {
+    const { t } = useTranslation();
     const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm || '');
+    const timeoutRef = useRef(null);
 
     useEffect(() => {
         setLocalSearchTerm(searchTerm || '');
     }, [searchTerm]);
 
+    useEffect(() => {
+        return () => {
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
+
     const handleSearch = (e) => {
         const value = e.target.value;
         setLocalSearchTerm(value);
-        
-        // Debounce search
-        const timeoutId = setTimeout(() => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+        timeoutRef.current = setTimeout(() => {
             onSearch(value);
         }, 500);
-
-        return () => clearTimeout(timeoutId);
     };
 
     return (
@@ -28,7 +38,7 @@ const UsersSearch = ({ onSearch, searchTerm }) => {
             <input
                 type="text"
                 className="form-control form-control-solid w-250px ps-13"
-                placeholder="Search by name or email..."
+                placeholder={t('merchant.users.search.placeholder')}
                 value={localSearchTerm}
                 onChange={handleSearch}
             />
@@ -37,4 +47,3 @@ const UsersSearch = ({ onSearch, searchTerm }) => {
 };
 
 export default UsersSearch;
-

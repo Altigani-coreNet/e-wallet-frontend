@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const AdminDashboardFilters = ({ filters, onFilterChange, onApplyFilters, onClearFilters, isCollapsed }) => {
+    const { t } = useTranslation();
     if (isCollapsed) return null;
 
     return (
@@ -8,7 +10,7 @@ const AdminDashboardFilters = ({ filters, onFilterChange, onApplyFilters, onClea
             <div className="card-body">
                 <div className="row g-3 align-items-end">
                     <div className="col-6">
-                        <label className="form-label">From date &amp; time</label>
+                        <label className="form-label">{t('admin.paymentGetway.fromDateTime')}</label>
                         <input
                             type="datetime-local"
                             className="form-control"
@@ -18,7 +20,7 @@ const AdminDashboardFilters = ({ filters, onFilterChange, onApplyFilters, onClea
                         />
                     </div>
                     <div className="col-6">
-                        <label className="form-label">To date &amp; time</label>
+                        <label className="form-label">{t('admin.paymentGetway.toDateTime')}</label>
                         <input
                             type="datetime-local"
                             className="form-control"
@@ -29,10 +31,10 @@ const AdminDashboardFilters = ({ filters, onFilterChange, onApplyFilters, onClea
                     </div>
                     <div className="col-12 d-flex gap-2 justify-content-end">
                         <button className="btn btn-secondary" onClick={onClearFilters}>
-                            Clear Filters
+                            {t('admin.paymentGetway.clearFilters')}
                         </button>
                         <button className="btn btn-primary" onClick={onApplyFilters}>
-                            Apply Filters
+                            {t('admin.paymentGetway.applyFilters')}
                         </button>
                     </div>
                 </div>

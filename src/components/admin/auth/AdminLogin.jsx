@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { ADMIN_ENDPOINTS, APP_CONFIG } from '../../../utils/constants';
 import { setToken, setUser, removeToken } from '../../../utils/api';
 import useAuthStore from '../../../stores/authStore';
+import { resolveAdminPath } from '../../../i18n/localePaths';
 
 const AdminLogin = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { t } = useTranslation();
     
     const [formData, setFormData] = useState({
@@ -130,7 +132,7 @@ const AdminLogin = () => {
                 console.log('Admin login successful:', { admin: mergedUser, hasToken: !!authToken });
                 
                 toast.success(t('admin.login.loginSuccessful'));
-                navigate('/admin/dashboard');
+                navigate(resolveAdminPath('/admin/dashboard', location.pathname));
             } else {
                 throw new Error(response.data.message || t('admin.login.loginFailed'));
             }

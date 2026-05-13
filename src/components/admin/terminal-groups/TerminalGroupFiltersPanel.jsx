@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { getTranslatedText } from '../../../utils/helpers';
@@ -14,6 +15,7 @@ const TerminalGroupFiltersPanel = ({
     merchantsMap = {},
     countriesMap = {},
 }) => {
+    const { t } = useTranslation();
     const [branches, setBranches] = useState([]);
     const [loadingBranches, setLoadingBranches] = useState(false);
 
@@ -70,11 +72,11 @@ const TerminalGroupFiltersPanel = ({
                 <div className="row g-5">
                     {/* Search */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Search</label>
+                        <label className="form-label fw-bold">{t('admin.common.search')}</label>
                         <input
                             type="text"
                             className="form-control"
-                            placeholder="Search by name, group ID, description..."
+                            placeholder={t('admin.terminalGroupsUI.filters.searchPlaceholder')}
                             value={filters.search}
                             onChange={(e) => handleChange('search', e.target.value)}
                         />
@@ -82,29 +84,29 @@ const TerminalGroupFiltersPanel = ({
 
                     {/* Status Filter */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Status</label>
+                        <label className="form-label fw-bold">{t('admin.common.status')}</label>
                         <select
                             className="form-select"
                             value={filters.status}
                             onChange={(e) => handleChange('status', e.target.value)}
                         >
-                            <option value="">All Statuses</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="">{t('admin.terminalsIndex.allStatuses')}</option>
+                            <option value="active">{t('admin.common.active')}</option>
+                            <option value="inactive">{t('admin.common.inactive')}</option>
                         </select>
                     </div>
 
                     {/* Subgroup Filter */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Group Type</label>
+                        <label className="form-label fw-bold">{t('admin.terminalGroupsUI.filters.groupType')}</label>
                         <select
                             className="form-select"
                             value={filters.is_subgroup}
                             onChange={(e) => handleChange('is_subgroup', e.target.value)}
                         >
-                            <option value="">All Types</option>
-                            <option value="no">Parent Groups Only</option>
-                            <option value="yes">Subgroups Only</option>
+                            <option value="">{t('admin.terminalGroupsUI.filters.allTypes')}</option>
+                            <option value="no">{t('admin.terminalGroupsUI.filters.parentOnly')}</option>
+                            <option value="yes">{t('admin.terminalGroupsUI.filters.subOnly')}</option>
                         </select>
                     </div>
 
@@ -120,8 +122,8 @@ const TerminalGroupFiltersPanel = ({
                             }
                         }}
                         onCountryChange={(value) => handleChange('country_id', value || '')}
-                        merchantPlaceholder="All Merchants"
-                        countryPlaceholder="All Countries"
+                        merchantPlaceholder={t('admin.terminalsIndex.allMerchants')}
+                        countryPlaceholder={t('admin.terminalsIndex.allCountries')}
                         merchantNameResolver={resolveMerchant}
                         countryNameResolver={resolveCountry}
                         merchantWrapperClassName="col-md-4"
@@ -130,14 +132,14 @@ const TerminalGroupFiltersPanel = ({
 
                     {/* Branch Filter */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Branch</label>
+                        <label className="form-label fw-bold">{t('admin.usersIndex.colBranch')}</label>
                         <select
                             className="form-select"
                             value={filters.branch_id}
                             onChange={(e) => handleChange('branch_id', e.target.value)}
                             disabled={loadingBranches || !filters.merchant_id}
                         >
-                            <option value="">All Branches</option>
+                            <option value="">{t('admin.terminalsIndex.allBranches')}</option>
                             {branches.map((branch) => (
                                 <option key={branch.id} value={branch.id}>
                                     {getTranslatedText(branch.name)}
@@ -148,7 +150,7 @@ const TerminalGroupFiltersPanel = ({
 
                     {/* Date From */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Date From</label>
+                        <label className="form-label fw-bold">{t('admin.terminalsIndex.dateFrom')}</label>
                         <input
                             type="date"
                             className="form-control"
@@ -159,7 +161,7 @@ const TerminalGroupFiltersPanel = ({
 
                     {/* Date To */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Date To</label>
+                        <label className="form-label fw-bold">{t('admin.terminalsIndex.dateTo')}</label>
                         <input
                             type="date"
                             className="form-control"
@@ -177,7 +179,7 @@ const TerminalGroupFiltersPanel = ({
                             className="btn btn-light btn-active-light-primary"
                             onClick={onClearFilters}
                         >
-                            Clear Filters
+                            {t('admin.terminalsIndex.clearFilters')}
                         </button>
                         <button
                             type="button"
@@ -188,7 +190,7 @@ const TerminalGroupFiltersPanel = ({
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Apply Filters
+                            {t('admin.terminalsIndex.applyFilters')}
                         </button>
                     </div>
                 </div>

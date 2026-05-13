@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import axios from '../../utils/axiosConfig';
 import { toast } from "react-toastify";
@@ -12,19 +13,29 @@ import { formatDateTime } from "../../utils/helpers";
 import ServicesCatalogPreviewModal from "./services/ServicesCatalogPreviewModal";
 import { resolveBackendAssetUrl } from "../../utils/assetUrl";
 import { AUTH_SERVICE_BASE } from "../../utils/constants";
+import ServiceModel from "../../services/ServiceModel";
 
-const getServiceCountryDisplay = (service) => {
+const getServiceCountryDisplay = (service, naLabel) => {
+    const name = ServiceModel.countryName(service);
+    const short = service?.country_short_name || service?.country?.short_name || null;
+    if (name || short) {
+        return {
+            label: (name && String(name).trim()) || short || naLabel,
+            code: short || service?.country?.code || null,
+        };
+    }
     const c = service?.country;
-    if (!c) return { label: "N/A", code: null };
+    if (!c) return { label: naLabel, code: null };
     const n = c.name;
     let label = "";
     if (typeof n === "string") label = n.trim();
     else if (n && typeof n === "object") label = (n.en || n.ar || "").trim();
     if (!label && c.short_name) label = String(c.short_name);
-    return { label: label || "N/A", code: c.code || c.short_name || null };
+    return { label: label || naLabel, code: c.code || c.short_name || null };
 };
 
 const Services = () => {
+    const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const tableCardRef = useRef(null);
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -118,37 +129,30 @@ const Services = () => {
         [debouncedSearchTerm, filters]
     );
 
-    const resolveCategoryName = useCallback((service) => {
-        const c = service?.category;
-        if (!c) return "N/A";
-        return c.name_en || c.name_ar || c.code || "N/A";
-    }, []);
+    const resolveCategoryName = useCallback(
+        (service) => {
+            const na = t('admin.paymentGetway.na');
+            const name = ServiceModel.categoryName(service);
+            return name || na;
+        },
+        [t]
+    );
 
-    const resolveServiceName = useCallback((service) => {
-        if (service?.service_name_en || service?.service_name_ar) {
-            return service.service_name_en || service.service_name_ar || service.id || "N/A";
-        }
-        if (service?.service_name_text) return service.service_name_text;
-        if (service?.service_name && typeof service.service_name === 'object') {
-            return service.service_name.en || service.service_name.ar || service.id || "N/A";
-        }
-        return service?.service_name || service?.id || "N/A";
-    }, []);
+    const resolveServiceName = useCallback(
+        (service) => {
+            const na = t('admin.paymentGetway.na');
+            return ServiceModel.displayName(service) || na;
+        },
+        [t]
+    );
 
-    const resolvePartnerDisplayName = useCallback((service) => {
-        const partner =
-            service?.partner ||
-            service?.merchant ||
-            service?.contentProvider ||
-            null;
-        if (!partner) return "N/A";
-        const subName = partner?.name || "N/A";
-        const parentName = partner?.parent_name || null;
-        if (parentName) {
-            return `${subName} - ${parentName}`;
-        }
-        return subName;
-    }, []);
+    const resolvePartnerDisplayName = useCallback(
+        (service) => {
+            const na = t('admin.paymentGetway.na');
+            return ServiceModel.partnerDisplayName(service) || na;
+        },
+        [t]
+    );
 
     // Apply ?partner_id= from URL (e.g. deep link from partner details)
     useEffect(() => {
@@ -163,10 +167,10 @@ const Services = () => {
 
     // Set toolbar config
     useEffect(() => {
-        setTitle("Services Management");
+        setTitle(t('admin.paymentGetway.titlesServicesManagement'));
         setBreadcrumbs([
-            { label: "Home", path: "/admin" },
-            { label: "Services", path: "/admin/services" },
+            { label: t('admin.paymentGetway.breadcrumbsHome'), path: '/admin' },
+            { label: t('admin.paymentGetway.breadcrumbsServices'), path: '/admin/services' },
         ]);
 
         return () => {
@@ -174,7 +178,7 @@ const Services = () => {
             setActions(null);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [t]);
 
     // Set toolbar actions
     useEffect(() => {
@@ -188,7 +192,7 @@ const Services = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    {showFilters ? 'Hide Filters' : 'Show Filters'}
+                    {showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}
                 </button>
                 <button
                     type="button"
@@ -200,7 +204,7 @@ const Services = () => {
                         <span className="path2"></span>
                         <span className="path3"></span>
                     </i>
-                    Preview
+                    {t('admin.paymentGetway.svcListPreview')}
                 </button>
                 <button 
                     onClick={handleExport} 
@@ -210,7 +214,7 @@ const Services = () => {
                     {exporting ? (
                         <>
                             <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                            Exporting...
+                            {t('admin.common.exporting')}
                         </>
                     ) : (
                         <>
@@ -218,7 +222,7 @@ const Services = () => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Export
+                            {t('admin.common.export')}
                         </>
                     )}
                 </button>
@@ -235,7 +239,7 @@ const Services = () => {
                             <span className="path4"></span>
                             <span className="path5"></span>
                         </i>
-                        Delete Selected ({selectedServices.length})
+                        {t('admin.paymentGetway.svcListDeleteSelected', { count: selectedServices.length })}
                     </button>
                 )}
                 <Link to="/admin/services/create/wizard" className="btn btn-sm btn-primary">
@@ -244,12 +248,12 @@ const Services = () => {
                         <span className="path2"></span>
                         <span className="path3"></span>
                     </i>
-                    Add Service
+                    {t('admin.paymentGetway.titlesAddService')}
                 </Link>
             </div>
         );
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showFilters, exporting, selectedServices.length]);
+    }, [showFilters, exporting, selectedServices.length, t]);
 
     // Fetch services
     const fetchServices = useCallback(async () => {
@@ -277,7 +281,7 @@ const Services = () => {
 
             if (response.data.success) {
                 const { data, meta } = response.data;
-                setServices(data || []);
+                setServices(ServiceModel.fromApiResponseArray(data || []));
                 setPagination(prev => ({
                     ...prev,
                     current_page: meta?.current_page || 1,
@@ -287,12 +291,12 @@ const Services = () => {
             }
         } catch (error) {
             console.error("Error fetching services:", error);
-            toast.error(error.response?.data?.message || "Failed to fetch services");
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.svcListFailedFetch'));
         } finally {
             setLoading(false);
             setIsFetching(false);
         }
-    }, [pagination.current_page, pagination.per_page, debouncedSearchTerm, filters]);
+    }, [pagination.current_page, pagination.per_page, debouncedSearchTerm, filters, t]);
 
     useEffect(() => {
         fetchServices();
@@ -436,42 +440,42 @@ const Services = () => {
 
     const categoryOptions = useMemo(
         () => [
-            { value: '', label: 'All Categories' },
+            { value: '', label: t('admin.paymentGetway.cpAllCategories') },
             ...categories.map((category) => ({
                 value: category.value,
                 label: category.label,
             })),
         ],
-        [categories]
+        [categories, t]
     );
 
     const partnerOptions = useMemo(
         () => [
-            { value: '', label: 'All Partners' },
+            { value: '', label: t('admin.paymentGetway.productsAllPartners') },
             ...partners.map((p) => ({
                 value: p.value,
                 label: p.label,
                 ...p,
             })),
         ],
-        [partners]
+        [partners, t]
     );
 
     const subPartnerOptions = useMemo(
         () => [
-            { value: '', label: 'All Sub Partners' },
+            { value: '', label: t('admin.paymentGetway.productsAllSubPartners') },
             ...subPartners.map((p) => ({
                 value: p.value,
                 label: p.label,
                 ...p,
             })),
         ],
-        [subPartners]
+        [subPartners, t]
     );
 
     const countryOptions = useMemo(
         () => [
-            { value: '', label: 'All Countries', code: null },
+            { value: '', label: t('admin.paymentGetway.cpAllCountries'), code: null },
             ...countries.map((country) => ({
                 value: country.value,
                 label: country.label,
@@ -479,7 +483,7 @@ const Services = () => {
                 ...country
             })),
         ],
-        [countries]
+        [countries, t]
     );
 
     useEffect(() => {
@@ -565,25 +569,26 @@ const Services = () => {
     // Handle delete
     const handleDelete = async (id) => {
         const result = await Swal.fire({
-            title: "Are you sure?",
-            text: "You won't be able to revert this!",
+            title: t('admin.paymentGetway.svcListSwalDeleteTitle'),
+            text: t('admin.paymentGetway.svcListSwalDeleteText'),
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#d33",
             cancelButtonColor: "#3085d6",
-            confirmButtonText: "Yes, delete it!",
+            confirmButtonText: t('admin.paymentGetway.productsYesDeleteIt'),
+            cancelButtonText: t('admin.common.cancel'),
         });
 
         if (result.isConfirmed) {
             try {
                 const response = await axios.delete(ADMIN_ENDPOINTS.SERVICE_DETAILS(id));
                 if (response.data.success) {
-                    toast.success("Service deleted successfully");
+                    toast.success(t('admin.paymentGetway.svcListDeleted'));
                     fetchServices();
                 }
             } catch (error) {
                 console.error("Error deleting service:", error);
-                toast.error(error.response?.data?.message || "Failed to delete service");
+                toast.error(error.response?.data?.message || t('admin.paymentGetway.svcListErrDelete'));
             }
         }
     };
@@ -591,18 +596,19 @@ const Services = () => {
     // Handle bulk delete
     const handleBulkDelete = async () => {
         if (selectedServices.length === 0) {
-            toast.warning("Please select services to delete");
+            toast.warning(t('admin.paymentGetway.svcListSelectToDelete'));
             return;
         }
 
         const result = await Swal.fire({
-            title: "Delete Selected Services?",
-            text: `You are about to delete ${selectedServices.length} service(s).`,
+            title: t('admin.paymentGetway.svcListSwalBulkTitle'),
+            text: t('admin.paymentGetway.svcListSwalBulkText', { count: selectedServices.length }),
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#d33",
             cancelButtonColor: "#3085d6",
-            confirmButtonText: "Yes, delete them!",
+            confirmButtonText: t('admin.paymentGetway.productsYesDeleteThem'),
+            cancelButtonText: t('admin.common.cancel'),
         });
 
         if (result.isConfirmed) {
@@ -612,14 +618,14 @@ const Services = () => {
                 });
 
                 if (response.data.success) {
-                    toast.success("Services deleted successfully");
+                    toast.success(t('admin.paymentGetway.svcListBulkDeleted'));
                     setSelectedServices([]);
                     setSelectAll(false);
                     fetchServices();
                 }
             } catch (error) {
                 console.error("Error deleting services:", error);
-                toast.error(error.response?.data?.message || "Failed to delete services");
+                toast.error(error.response?.data?.message || t('admin.paymentGetway.svcListErrBulkDelete'));
             }
         }
     };
@@ -639,17 +645,17 @@ const Services = () => {
                             : null;
 
                 if (responseActiveNow === true) {
-                    toast.success("Service is actived");
+                    toast.success(t('admin.paymentGetway.svcListToggleActiveOn'));
                 } else if (responseActiveNow === false) {
-                    toast.success("Service is not activate");
+                    toast.success(t('admin.paymentGetway.svcListToggleActiveOff'));
                 } else {
-                    toast.success("Service active status updated successfully");
+                    toast.success(t('admin.paymentGetway.svcListToggleActiveOk'));
                 }
                 fetchServices();
             }
         } catch (error) {
             console.error("Error toggling active status:", error);
-            toast.error(error.response?.data?.message || "Failed to update service active status");
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.svcListErrToggleActive'));
         }
     };
 
@@ -712,11 +718,11 @@ const Services = () => {
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
 
-                toast.success("Services exported successfully");
+                toast.success(t('admin.paymentGetway.svcListExported'));
             }
         } catch (error) {
             console.error("Error exporting services:", error);
-            toast.error(error.response?.data?.message || "Failed to export services");
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.svcListErrExport'));
         } finally {
             setExporting(false);
         }
@@ -941,16 +947,20 @@ const Services = () => {
                 <div className="card mb-4 shadow-sm">
                         <div className="card-header border-0 pt-6 pb-4">
                             <h3 className="card-title align-items-start flex-column">
-                                <span className="card-label fw-bold fs-3 mb-1">Filter Services</span>
-                                <span className="text-muted mt-1 fw-semibold fs-7">Apply filters to find specific services</span>
+                                <span className="card-label fw-bold fs-3 mb-1">
+                                    {t('admin.paymentGetway.svcListFilterTitle')}
+                                </span>
+                                <span className="text-muted mt-1 fw-semibold fs-7">
+                                    {t('admin.paymentGetway.svcListFilterHint')}
+                                </span>
                             </h3>
                         </div>
                         <div className="card-body pt-0">
                             <div className="row g-4">
                                 <div className="col-md-6 col-lg-3">
                                     <SearchableDropdown
-                                        label="Country"
-                                        placeholder="All Countries"
+                                        label={t('admin.paymentGetway.cpCountry')}
+                                        placeholder={t('admin.paymentGetway.cpAllCountries')}
                                         options={countryOptions}
                                         selected={selectedCountryOption}
                                         onSelect={handleCountrySelect}
@@ -958,7 +968,7 @@ const Services = () => {
                                         loading={loadingCountries}
                                         onOpen={handleCountryOpen}
                                         onSearchChange={handleCountrySearchChange}
-                                        searchPlaceholder="Search countries..."
+                                        searchPlaceholder={t('admin.paymentGetway.cpSearchCountries')}
                                         renderSelected={(option) => (
                                             option ? (
                                                 <div className="d-flex align-items-center">
@@ -973,7 +983,11 @@ const Services = () => {
                                                     )}
                                                     <span>{option.label}</span>
                                                 </div>
-                                            ) : <span className="text-muted fw-semibold">All Countries</span>
+                                            ) : (
+                                                <span className="text-muted fw-semibold">
+                                                    {t('admin.paymentGetway.cpAllCountries')}
+                                                </span>
+                                            )
                                         )}
                                         renderOption={(option) => {
                                             const isAllSelected = option.value === '' && !selectedCountryOption;
@@ -1002,8 +1016,8 @@ const Services = () => {
                                 </div>
                                 <div className="col-md-6 col-lg-3">
                                     <SearchableDropdown
-                                        label="Partner"
-                                        placeholder="All Partners"
+                                        label={t('admin.paymentGetway.viewPartnerCol')}
+                                        placeholder={t('admin.paymentGetway.productsAllPartners')}
                                         options={partnerOptions}
                                         selected={selectedPartnerOption}
                                         onSelect={handlePartnerSelect}
@@ -1011,7 +1025,7 @@ const Services = () => {
                                         loading={loadingPartners}
                                         onOpen={handlePartnerOpen}
                                         onSearchChange={handlePartnerSearchChange}
-                                        searchPlaceholder="Search partners..."
+                                        searchPlaceholder={t('admin.paymentGetway.productsSearchPartners')}
                                         renderOption={(option) => {
                                             const isAllSelected = option.value === '' && !selectedPartnerOption;
                                             return (
@@ -1031,8 +1045,8 @@ const Services = () => {
                                 {selectedPartnerOption?.has_sub_partners && (
                                     <div className="col-md-3 col-lg-3">
                                         <SearchableDropdown
-                                            label="Sub Partner"
-                                            placeholder="All Sub Partners"
+                                            label={t('admin.paymentGetway.productsSubPartner')}
+                                            placeholder={t('admin.paymentGetway.productsAllSubPartners')}
                                             options={subPartnerOptions}
                                             selected={selectedSubPartnerOption}
                                             onSelect={handleSubPartnerSelect}
@@ -1040,7 +1054,7 @@ const Services = () => {
                                             loading={loadingSubPartners}
                                             onOpen={handleSubPartnerOpen}
                                             onSearchChange={handleSubPartnerSearchChange}
-                                            searchPlaceholder="Search sub partners..."
+                                            searchPlaceholder={t('admin.paymentGetway.productsSearchSubPartners')}
                                             renderOption={(option) => {
                                                 const isAllSelected = option.value === '' && !selectedSubPartnerOption;
                                                 return (
@@ -1060,8 +1074,8 @@ const Services = () => {
                                 )}
                                 <div className="col-md-6 col-lg-3">
                                     <SearchableDropdown
-                                        label="Category"
-                                        placeholder="All Categories"
+                                        label={t('admin.paymentGetway.viewCategoryCol')}
+                                        placeholder={t('admin.paymentGetway.cpAllCategories')}
                                         options={categoryOptions}
                                         selected={selectedCategoryOption}
                                         onSelect={handleCategorySelect}
@@ -1069,7 +1083,7 @@ const Services = () => {
                                         loading={loadingCategories}
                                         onOpen={handleCategoryOpen}
                                         onSearchChange={handleCategorySearchChange}
-                                        searchPlaceholder="Search categories..."
+                                        searchPlaceholder={t('admin.paymentGetway.catSearchPlaceholder')}
                                         renderOption={(option) => {
                                             const isAllSelected = option.value === '' && !selectedCategoryOption;
                                             return (
@@ -1087,22 +1101,26 @@ const Services = () => {
                                     />
                                 </div>
                                 <div className="col-md-6 col-lg-3">
-                                    <label className="form-label fw-bold">Service Status</label>
+                                    <label className="form-label fw-bold">
+                                        {t('admin.paymentGetway.svcListServiceStatus')}
+                                    </label>
                                     <select 
                                         className="form-select form-select-lg"
                                         value={filters.status}
                                         onChange={(e) => setFilterValue('status', e.target.value)}
                                     >
-                                        <option value="">All Status</option>
-                                        <option value="active">Active</option>
-                                        <option value="inactive">Inactive</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="staging">Staging</option>
-                                        <option value="testing">Testing</option>
+                                        <option value="">{t('admin.paymentGetway.svcListAllStatus')}</option>
+                                        <option value="active">{t('admin.paymentGetway.svcListStatusActive')}</option>
+                                        <option value="inactive">{t('admin.paymentGetway.svcListStatusInactive')}</option>
+                                        <option value="pending">{t('admin.common.pending')}</option>
+                                        <option value="staging">{t('admin.paymentGetway.wizStatusStaging')}</option>
+                                        <option value="testing">{t('admin.common.testing')}</option>
                                     </select>
                                 </div>
                                 <div className="col-md-6 col-lg-3">
-                                    <label className="form-label fw-bold">Active Status</label>
+                                    <label className="form-label fw-bold">
+                                        {t('admin.paymentGetway.cpLabelActiveStatus')}
+                                    </label>
                                     <select 
                                         className="form-select form-select-lg"
                                         value={filters.is_active === null ? "" : filters.is_active ? "1" : "0"}
@@ -1111,13 +1129,13 @@ const Services = () => {
                                             setFilterValue('is_active', value === "" ? null : value === "1");
                                         }}
                                     >
-                                        <option value="">All</option>
-                                        <option value="1">Active Only</option>
-                                        <option value="0">Inactive Only</option>
+                                        <option value="">{t('merchant.common.all')}</option>
+                                        <option value="1">{t('admin.paymentGetway.productsActiveOnly')}</option>
+                                        <option value="0">{t('admin.paymentGetway.productsInactiveOnly')}</option>
                                     </select>
                                 </div>
                                 <div className="col-md-6 col-lg-3">
-                                    <label className="form-label fw-bold">Date From</label>
+                                    <label className="form-label fw-bold">{t('merchant.common.fromDate')}</label>
                                     <input
                                         type="date"
                                         className="form-control form-control-lg"
@@ -1126,7 +1144,7 @@ const Services = () => {
                                     />
                                 </div>
                                 <div className="col-md-6 col-lg-3">
-                                    <label className="form-label fw-bold">Date To</label>
+                                    <label className="form-label fw-bold">{t('merchant.common.toDate')}</label>
                                     <input
                                         type="date"
                                         className="form-control form-control-lg"
@@ -1145,7 +1163,7 @@ const Services = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Reset All Filters
+                                            {t('admin.paymentGetway.svcListResetAllFilters')}
                                         </button>
                                         <button
                                             type="button"
@@ -1161,7 +1179,7 @@ const Services = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Apply Filters
+                                            {t('merchant.common.applyFilters')}
                                         </button>
                                     </div>
                                 </div>
@@ -1177,7 +1195,9 @@ const Services = () => {
                     <div className="card-title flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-3 w-100">
                         <div className="d-flex flex-column flex-sm-row flex-wrap align-items-stretch align-items-sm-center gap-2 flex-grow-1" style={{ minWidth: 0 }}>
                             <div className="flex-grow-1" style={{ minWidth: '200px', maxWidth: '420px' }}>
-                                <label className="form-label mb-1 text-muted fs-7 text-uppercase">Search</label>
+                                <label className="form-label mb-1 text-muted fs-7 text-uppercase">
+                                    {t('admin.paymentGetway.svcListSearchLabel')}
+                                </label>
                                 <div className="d-flex align-items-center position-relative" style={{ minWidth: '250px' }}>
                                     <i className="ki-duotone ki-magnifier fs-2 position-absolute ms-4" style={{ zIndex: 1 }}>
                                         <span className="path1"></span>
@@ -1186,7 +1206,7 @@ const Services = () => {
                                     <input
                                         type="text"
                                         className="form-control form-control-solid ps-13"
-                                        placeholder="Service ID, name, short code…"
+                                        placeholder={t('admin.paymentGetway.svcListSearchInputPlaceholder')}
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         autoComplete="off"
@@ -1211,7 +1231,9 @@ const Services = () => {
                         </div>
                         <div className="d-flex align-items-end gap-2 flex-shrink-0">
                             <div className="d-flex align-items-center gap-2">
-                                <label className="form-label mb-0 text-nowrap">Per page:</label>
+                                <label className="form-label mb-0 text-nowrap">
+                                    {t('admin.paymentGetway.svcListPerPage')}
+                                </label>
                                 <select 
                                     className="form-select form-select-sm" 
                                     style={{width: '80px'}}
@@ -1243,8 +1265,8 @@ const Services = () => {
                     <div className="table-responsive" style={{ opacity: isFetching ? 0.7 : 1, transition: 'opacity 0.2s' }}>
                     <table className="table align-middle table-row-dashed fs-6 gy-5">
                         <thead>
-                            <tr className="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                <th className="w-10px pe-2">
+                            <tr className="text-end text-muted fw-bold fs-7 text-uppercase gs-0">
+                                <th className="w-10px pe-2 text-start">
                                     <div className="form-check form-check-sm form-check-custom form-check-solid me-3">
                                         <input
                                             className="form-check-input"
@@ -1254,14 +1276,14 @@ const Services = () => {
                                         />
                                     </div>
                                 </th>
-                                <th className="min-w-90px">Image</th>
-                                <th className="min-w-150px">Country</th>
-                                <th className="min-w-125px">Partner</th>
-                                <th className="min-w-140px">Category</th>
-                                <th className="min-w-150px">Service Name</th>
-                                <th className="min-w-100px">Active Status</th>
-                                <th className="min-w-140px text-nowrap">Created</th>
-                                <th className="text-end min-w-100px">Actions</th>
+                                <th className="min-w-90px">{t('admin.paymentGetway.svcListColImage')}</th>
+                                <th className="min-w-150px">{t('admin.paymentGetway.svcListColCountry')}</th>
+                                <th className="min-w-125px">{t('admin.paymentGetway.svcListColPartner')}</th>
+                                <th className="min-w-140px">{t('admin.paymentGetway.svcListColCategory')}</th>
+                                <th className="min-w-150px">{t('admin.paymentGetway.svcListColServiceName')}</th>
+                                <th className="min-w-100px">{t('admin.paymentGetway.cpLabelActiveStatus')}</th>
+                                <th className="min-w-140px text-nowrap">{t('admin.paymentGetway.viewCreatedCol')}</th>
+                                <th className="text-end min-w-100px">{t('admin.paymentGetway.svcListColActions')}</th>
                             </tr>
                         </thead>
                         <tbody className="text-gray-600 fw-semibold">
@@ -1277,7 +1299,8 @@ const Services = () => {
                             ) : services.length > 0 ? (
                                 services.map((service) => {
                                     const { label: countryLabel, code: countryCode } = getServiceCountryDisplay(
-                                        service
+                                        service,
+                                        t('admin.paymentGetway.na')
                                     );
                                     return (
                                     <tr key={service.id}>
@@ -1312,7 +1335,7 @@ const Services = () => {
                                                 {countryCode && (
                                                     <img 
                                                         src={`/flags/${String(countryCode).toLowerCase()}.png`} 
-                                                        alt={countryLabel || 'Country'}
+                                                        alt={countryLabel || t('admin.paymentGetway.cpCountryAlt')}
                                                         className="me-2"
                                                         style={{ width: '20px', height: '15px', objectFit: 'cover' }}
                                                         onError={(e) => { e.target.style.display = 'none'; }}
@@ -1343,20 +1366,24 @@ const Services = () => {
                                                     checked={service.is_active === true || service.is_active === 1}
                                                     onChange={() => handleToggleActive(service.id)}
                                                     style={{ cursor: 'pointer' }}
-                                                    title={service.is_active ? "Click to deactivate" : "Click to activate"}
+                                                    title={
+                                                        service.is_active
+                                                            ? t('admin.paymentGetway.productsClickDeactivate')
+                                                            : t('admin.paymentGetway.productsClickActivate')
+                                                    }
                                                 />
                                             </div>
                                         </td>
                                         <td>
                                             <span className="text-gray-700 fs-7 text-nowrap">
-                                                {service.created_at ? formatDateTime(service.created_at) : '—'}
+                                                {service.created_at ? formatDateTime(service.created_at) : t('admin.paymentGetway.dash')}
                                             </span>
                                         </td>
                                         <td className="text-end">
                                             <Link
                                                 to={`/admin/services/${service.id}`}
                                                 className="btn btn-icon btn-bg-light btn-active-color-info btn-sm me-1"
-                                                title="View"
+                                                title={t('admin.common.view')}
                                             >
                                                 <i className="ki-duotone ki-eye fs-2">
                                                     <span className="path1"></span>
@@ -1367,7 +1394,7 @@ const Services = () => {
                                             <Link
                                                 to={`/admin/services/${service.id}/edit`}
                                                 className="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1"
-                                                title="Edit"
+                                                title={t('admin.common.edit')}
                                             >
                                                 <i className="ki-duotone ki-pencil fs-2">
                                                     <span className="path1"></span>
@@ -1377,7 +1404,7 @@ const Services = () => {
                                             <button
                                                 className="btn btn-icon btn-bg-light btn-active-color-danger btn-sm"
                                                 onClick={() => handleDelete(service.id)}
-                                                title="Delete"
+                                                title={t('admin.common.delete')}
                                             >
                                                 <i className="ki-duotone ki-trash fs-2">
                                                     <span className="path1"></span>
@@ -1394,7 +1421,7 @@ const Services = () => {
                             ) : (
                                 <tr>
                                         <td colSpan="9" className="text-center py-5">
-                                        No services found
+                                        {t('admin.paymentGetway.svcListNoServices')}
                                     </td>
                                 </tr>
                             )}
@@ -1406,8 +1433,15 @@ const Services = () => {
                 {!loading && pagination.last_page > 1 && (
                     <div className="d-flex justify-content-between align-items-center pt-4">
                         <div className="text-muted">
-                            Showing {services.length} of {pagination.total || 0} services
-                            {pagination.last_page > 1 && ` (Page ${pagination.current_page} of ${pagination.last_page})`}
+                            {t('admin.paymentGetway.svcListFooterShowing', {
+                                shown: services.length,
+                                total: pagination.total || 0,
+                            })}
+                            {pagination.last_page > 1 &&
+                                ` ${t('admin.paymentGetway.svcListFooterPage', {
+                                    page: pagination.current_page,
+                                    totalPages: pagination.last_page,
+                                })}`}
                         </div>
                         <nav>
                             <ul className="pagination mb-0">
@@ -1417,7 +1451,7 @@ const Services = () => {
                                         onClick={() => handlePageChange(Math.max(pagination.current_page - 1, 1))}
                                         disabled={pagination.current_page === 1 || isFetching}
                                     >
-                                        Previous
+                                        {t('admin.common.previous')}
                                     </button>
                                 </li>
                                 {[...Array(Math.min(pagination.last_page, 10))].map((_, i) => {
@@ -1441,7 +1475,7 @@ const Services = () => {
                                         onClick={() => handlePageChange(Math.min(pagination.current_page + 1, pagination.last_page))}
                                         disabled={pagination.current_page === pagination.last_page || isFetching}
                                     >
-                                        Next
+                                        {t('admin.common.next')}
                                     </button>
                                 </li>
                             </ul>

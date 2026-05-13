@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -10,6 +11,7 @@ import { useCan, USER_GROUP_EDIT_PERMISSIONS } from '../../../utils/permissions'
 import UserGroupViewSkeleton from './UserGroupViewSkeleton';
 
 const AdminUserGroupView = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
@@ -18,7 +20,7 @@ const AdminUserGroupView = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setTitle('User Group Details');
+        setTitle(t('admin.userGroupsUI.view.title'));
         setActions(
             <div className="d-flex align-items-center gap-2">
                 {canEditUserGroup && (
@@ -27,7 +29,7 @@ const AdminUserGroupView = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Edit Group
+                        {t('admin.userGroupsUI.view.editGroup')}
                     </Link>
                 )}
                 <Link to="/admin/user-groups" className="btn btn-sm btn-light">
@@ -35,12 +37,12 @@ const AdminUserGroupView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back
+                    {t('admin.userGroupsUI.view.back')}
                 </Link>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, id, canEditUserGroup]);
+    }, [setTitle, setActions, id, canEditUserGroup, t, i18n.language]);
 
     useEffect(() => {
         fetchUserGroup();
@@ -58,7 +60,7 @@ const AdminUserGroupView = () => {
                 setUserGroup(response.data.data);
             }
         } catch (error) {
-            toast.error('Failed to load user group');
+            toast.error(t('admin.userGroupsUI.form.loadFailed'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -66,7 +68,7 @@ const AdminUserGroupView = () => {
     };
 
     const handleActivate = async () => {
-        if (!window.confirm('Are you sure you want to activate this user group?')) return;
+        if (!window.confirm(t('admin.userGroupsIndex.activateConfirm'))) return;
 
         try {
             const token = getToken();
@@ -77,17 +79,17 @@ const AdminUserGroupView = () => {
             );
 
             if (response.data.success || response.data.status) {
-                toast.success('User group activated successfully');
+                toast.success(t('admin.userGroupsIndex.activated'));
                 fetchUserGroup();
             }
         } catch (error) {
-            toast.error('Failed to activate user group');
+            toast.error(t('admin.userGroupsIndex.activateFailed'));
             console.error(error);
         }
     };
 
     const handleDeactivate = async () => {
-        if (!window.confirm('Are you sure you want to deactivate this user group?')) return;
+        if (!window.confirm(t('admin.userGroupsIndex.deactivateConfirm'))) return;
 
         try {
             const token = getToken();
@@ -98,17 +100,17 @@ const AdminUserGroupView = () => {
             );
 
             if (response.data.success || response.data.status) {
-                toast.success('User group deactivated successfully');
+                toast.success(t('admin.userGroupsIndex.deactivated'));
                 fetchUserGroup();
             }
         } catch (error) {
-            toast.error('Failed to deactivate user group');
+            toast.error(t('admin.userGroupsIndex.deactivateFailed'));
             console.error(error);
         }
     };
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this user group? This action cannot be undone.')) return;
+        if (!window.confirm(t('admin.userGroupsIndex.deleteOneConfirm'))) return;
 
         try {
             const token = getToken();
@@ -118,11 +120,11 @@ const AdminUserGroupView = () => {
             );
 
             if (response.data.success || response.data.status) {
-                toast.success('User group deleted successfully');
+                toast.success(t('admin.userGroupsIndex.deleted'));
                 navigate('/admin/user-groups');
             }
         } catch (error) {
-            toast.error('Failed to delete user group');
+            toast.error(t('admin.userGroupsIndex.deleteFailed'));
             console.error(error);
         }
     };
@@ -134,7 +136,7 @@ const AdminUserGroupView = () => {
     if (!userGroup) {
         return (
             <div className="text-center py-10">
-                <p className="text-muted">User group not found</p>
+                <p className="text-muted">{t('admin.userGroupsUI.view.notFound')}</p>
             </div>
         );
     }
@@ -148,20 +150,20 @@ const AdminUserGroupView = () => {
                         <div className="card mb-5 mb-xl-10">
                             <div className="card-header border-0">
                                 <div className="card-title m-0">
-                                    <h3 className="fw-bold m-0">Group Information</h3>
+                                    <h3 className="fw-bold m-0">{t('admin.userGroupsUI.view.groupInfo')}</h3>
                                 </div>
                             </div>
 
                             <div className="card-body border-top p-9">
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-semibold text-muted">Group Name</label>
+                                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.userGroupsUI.view.groupName')}</label>
                                     <div className="col-lg-8">
                                         <span className="fw-bold fs-6 text-gray-800">{userGroup.name}</span>
                                     </div>
                                 </div>
 
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-semibold text-muted">Group ID</label>
+                                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.userGroupsUI.view.groupId')}</label>
                                     <div className="col-lg-8">
                                         <span className="fw-semibold text-gray-800 fs-6">{userGroup.group_id}</span>
                                     </div>
@@ -169,7 +171,7 @@ const AdminUserGroupView = () => {
 
                                 {userGroup.description && (
                                     <div className="row mb-7">
-                                        <label className="col-lg-4 fw-semibold text-muted">Description</label>
+                                        <label className="col-lg-4 fw-semibold text-muted">{t('admin.userGroupsUI.view.description')}</label>
                                         <div className="col-lg-8">
                                             <span className="fw-bold fs-6 text-gray-800">{userGroup.description}</span>
                                         </div>
@@ -177,16 +179,16 @@ const AdminUserGroupView = () => {
                                 )}
 
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-semibold text-muted">Status</label>
+                                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.userGroupsUI.view.status')}</label>
                                     <div className="col-lg-8">
                                         <span className={`badge badge-light-${userGroup.is_active ? 'success' : 'warning'} fw-bold`}>
-                                            {userGroup.is_active ? 'Active' : 'Inactive'}
+                                            {userGroup.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-semibold text-muted">Merchant</label>
+                                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.userGroupsUI.view.merchant')}</label>
                                     <div className="col-lg-8">
                                         {userGroup.merchant ? (
                                             <div>
@@ -213,7 +215,7 @@ const AdminUserGroupView = () => {
                                                 )}
                                                 {userGroup.merchant.merchant_code && (
                                                     <div className="text-muted fs-7">
-                                                        <span className="badge badge-light-info">Code: {userGroup.merchant.merchant_code}</span>
+                                                        <span className="badge badge-light-info">{t('admin.userGroupsUI.view.codeLabel', { code: userGroup.merchant.merchant_code })}</span>
                                                     </div>
                                                 )}
                                                 {userGroup.merchant.country && (
@@ -234,13 +236,13 @@ const AdminUserGroupView = () => {
                                                 )}
                                             </div>
                                         ) : (
-                                            <span className="text-muted">N/A</span>
+                                            <span className="text-muted">{t('admin.common.na')}</span>
                                         )}
                                     </div>
                                 </div>
 
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-semibold text-muted">Branch</label>
+                                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.userGroupsUI.view.branch')}</label>
                                     <div className="col-lg-8">
                                         {userGroup.branch ? (
                                             <div>
@@ -276,13 +278,13 @@ const AdminUserGroupView = () => {
                                                 )}
                                             </div>
                                         ) : (
-                                            <span className="text-muted">N/A</span>
+                                            <span className="text-muted">{t('admin.common.na')}</span>
                                         )}
                                     </div>
                                 </div>
 
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-semibold text-muted">Country</label>
+                                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.userGroupsUI.view.country')}</label>
                                     <div className="col-lg-8">
                                         {userGroup.merchant?.country ? (
                                             <div className="d-flex align-items-center">
@@ -305,13 +307,13 @@ const AdminUserGroupView = () => {
                                                 )}
                                             </div>
                                         ) : (
-                                            <span className="text-muted">N/A</span>
+                                            <span className="text-muted">{t('admin.common.na')}</span>
                                         )}
                                     </div>
                                 </div>
 
                                 <div className="row mb-7">
-                                    <label className="col-lg-4 fw-semibold text-muted">Created At</label>
+                                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.userGroupsUI.view.createdAt')}</label>
                                     <div className="col-lg-8">
                                         <span className="fw-bold fs-6 text-gray-800">
                                             {new Date(userGroup.created_at).toLocaleString()}
@@ -325,7 +327,7 @@ const AdminUserGroupView = () => {
                         <div className="card">
                             <div className="card-header">
                                 <div className="card-title">
-                                    <h3 className="fw-bold m-0">Users in Group ({userGroup.users?.length || 0})</h3>
+                                    <h3 className="fw-bold m-0">{t('admin.userGroupsUI.view.usersInGroup', { count: userGroup.users?.length || 0 })}</h3>
                                 </div>
                             </div>
                             <div className="card-body">
@@ -334,9 +336,9 @@ const AdminUserGroupView = () => {
                                         <table className="table table-row-bordered">
                                             <thead>
                                                 <tr className="fw-bold fs-6 text-gray-800">
-                                                    <th>Name</th>
-                                                    <th>Email</th>
-                                                    <th>Status</th>
+                                                    <th>{t('admin.userGroupsUI.view.colName')}</th>
+                                                    <th>{t('admin.userGroupsUI.view.colEmail')}</th>
+                                                    <th>{t('admin.userGroupsUI.view.colStatus')}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -355,7 +357,7 @@ const AdminUserGroupView = () => {
                                         </table>
                                     </div>
                                 ) : (
-                                    <p className="text-muted">No users in this group</p>
+                                    <p className="text-muted">{t('admin.userGroupsUI.view.noUsers')}</p>
                                 )}
                             </div>
                         </div>
@@ -366,7 +368,7 @@ const AdminUserGroupView = () => {
                         <div className="card">
                             <div className="card-header border-0">
                                 <div className="card-title m-0">
-                                    <h3 className="fw-bold m-0">Actions</h3>
+                                    <h3 className="fw-bold m-0">{t('admin.userGroupsUI.view.actions')}</h3>
                                 </div>
                             </div>
 
@@ -381,7 +383,7 @@ const AdminUserGroupView = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Edit Group
+                                            {t('admin.userGroupsUI.view.editGroup')}
                                         </Link>
                                     )}
 
@@ -394,7 +396,7 @@ const AdminUserGroupView = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Deactivate Group
+                                            {t('admin.userGroupsUI.view.deactivateGroup')}
                                         </button>
                                     ) : (
                                         <button
@@ -405,7 +407,7 @@ const AdminUserGroupView = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Activate Group
+                                            {t('admin.userGroupsUI.view.activateGroup')}
                                         </button>
                                     )}
 
@@ -420,7 +422,7 @@ const AdminUserGroupView = () => {
                                             <span className="path4"></span>
                                             <span className="path5"></span>
                                         </i>
-                                        Delete Group
+                                        {t('admin.userGroupsUI.view.deleteGroup')}
                                     </button>
                                 </div>
                             </div>

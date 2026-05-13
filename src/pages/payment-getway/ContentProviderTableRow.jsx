@@ -1,8 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AUTH_SERVICE_BASE } from '../../utils/constants';
 import { useCan } from '../../utils/permissions';
 import { formatDateTime, formatDate } from '../../utils/helpers';
+import ContentProviderModel from '../../services/ContentProviderModel';
 
 const resolveAuthAssetUrl = (path) => {
     if (!path) return null;
@@ -13,15 +15,6 @@ const resolveAuthAssetUrl = (path) => {
     const normalizedBase = AUTH_SERVICE_BASE.replace(/\/+$/, '');
     const normalizedPath = path.toString().replace(/^\/+/, '').replace(/\\/g, '/');
     return `${normalizedBase}/${normalizedPath}`;
-};
-
-const pickFirstValue = (...values) => {
-    for (const value of values) {
-        if (value !== null && value !== undefined && value !== '') {
-            return value;
-        }
-    }
-    return null;
 };
 
 const ContentProviderTableRow = ({
@@ -44,6 +37,8 @@ const ContentProviderTableRow = ({
     /** Sub Partner index: show column for main (parent) partner */
     showParentColumn = false,
 }) => {
+    const { t } = useTranslation();
+    const cp = useMemo(() => ContentProviderModel.ensure(contentProvider), [contentProvider]);
     const isCompact = variant === 'compact';
     const canEditContentProvider = useCan('pos.merchants.edit_merchants');
     const canDeleteContentProvider = useCan('pos.merchants.delete_merchants');
@@ -51,22 +46,12 @@ const ContentProviderTableRow = ({
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
     const buttonRef = useRef(null);
     const [logoError, setLogoError] = useState(false);
-    const logoCandidate = pickFirstValue(
-        contentProvider.logo_url,
-        contentProvider.logo,
-        contentProvider.image_url,
-        contentProvider.image,
-        contentProvider.avatar_url,
-        contentProvider.avatar,
-        contentProvider.profile_image_url,
-        contentProvider.profile_image
-    );
+    const logoCandidate = cp.getLogoCandidate();
 
     useEffect(() => {
         setLogoError(false);
     }, [logoCandidate]);
 
-    // Fixed dropdown: use viewport coords only (getBoundingClientRect + scroll offsets breaks placement).
     useEffect(() => {
         if (!showActions || !buttonRef.current) return undefined;
 
@@ -109,46 +94,23 @@ const ContentProviderTableRow = ({
 
     const logoUrl = resolveAuthAssetUrl(logoCandidate);
     const displayInitial = logoError || !logoUrl;
-    const fallbackSource = (contentProvider.business_name || contentProvider.name || 'C').trim();
-    const fallbackLetter = fallbackSource ? fallbackSource.charAt(0).toUpperCase() : 'C';
+    const displayName = cp.getDisplayName();
+    const fallbackLetter = displayName ? displayName.charAt(0).toUpperCase() : 'C';
 
-    const categoryLabel =
-        contentProvider.partner_category?.name_en ||
-        contentProvider.partner_category?.name_ar ||
-        contentProvider.partnerCategory?.name_en ||
-        contentProvider.partnerCategory?.name_ar ||
-        '—';
+    const { name: resolvedCountryName, code: resolvedCountryCode } = cp.resolveCountryDisplay(
+        lookupCountryName,
+        lookupCountryCode
+    );
 
-    const resolvedCountryName =
-        pickFirstValue(
-            lookupCountryName,
-            contentProvider.country_name,
-            contentProvider.countryName,
-            contentProvider.country?.name?.en,
-            contentProvider.country?.name_en,
-            contentProvider.country?.name,
-            contentProvider.country?.label
-        ) || null;
-
-    const resolvedCountryCode =
-        pickFirstValue(
-            lookupCountryCode,
-            contentProvider.country_code,
-            contentProvider.countryCode,
-            contentProvider.country?.code,
-            contentProvider.country?.short_name,
-            contentProvider.country?.iso2,
-            contentProvider.country?.alpha2
-        ) || null;
+    const categoryLabel = cp.getCategoryLabel();
+    const parentLink = cp.getParentForLink();
 
     const countryCellClass = isCompact ? 'text-gray-600 fs-8' : 'text-gray-600';
     const partnerLinkClass = isCompact
         ? 'text-gray-800 text-hover-primary fw-semibold fs-7'
         : 'text-gray-800 text-hover-primary fw-bold';
     const emailClass = isCompact ? 'text-gray-600 text-hover-primary d-block fs-8 mt-1' : 'text-gray-600 text-hover-primary d-block fs-7 mt-1';
-    const dateContent = isCompact
-        ? formatDate(contentProvider.created_at)
-        : formatDateTime(contentProvider.created_at);
+    const dateContent = isCompact ? formatDate(cp.created_at) : formatDateTime(cp.created_at);
     const dateClass = isCompact ? 'text-gray-600 fs-8' : 'text-gray-700';
 
     return (
@@ -160,7 +122,7 @@ const ContentProviderTableRow = ({
                             className="form-check-input"
                             type="checkbox"
                             checked={isSelected}
-                            onChange={(e) => onSelect(contentProvider.id, e.target.checked)}
+                            onChange={(e) => onSelect(cp.id, e.target.checked)}
                         />
                     </div>
                 </td>
@@ -171,40 +133,32 @@ const ContentProviderTableRow = ({
                     {resolvedCountryCode && (
                         <img
                             src={`/flags/${String(resolvedCountryCode).toLowerCase()}.png`}
-                            alt={resolvedCountryName || 'Country'}
+                            alt={resolvedCountryName || t('admin.paymentGetway.cpCountryAlt')}
                             className="me-1"
                             style={{ width: isCompact ? '16px' : '20px', height: isCompact ? '12px' : '15px', objectFit: 'cover' }}
                             onError={(e) => { e.target.style.display = 'none'; }}
                         />
                     )}
                     <span className={countryCellClass}>
-                        {resolvedCountryName || (lookupLoading ? 'Loading…' : 'N/A')}
+                        {resolvedCountryName || (lookupLoading ? t('admin.paymentGetway.cpLoading') : t('admin.paymentGetway.na'))}
                     </span>
                 </div>
             </td>
 
             {showParentColumn && (
                 <td className={isCompact ? 'py-2' : ''}>
-                    {(() => {
-                        const parent =
-                            contentProvider.parent_partner ||
-                            contentProvider.parentPartner ||
-                            contentProvider.parent;
-                        if (!parent?.id) {
-                            return <span className="text-muted fs-7">—</span>;
-                        }
-                        const pName = parent.business_name || parent.name || 'Parent';
-                        return (
-                            <Link
-                                to={`/admin/partners/${parent.id}`}
-                                className="text-gray-800 text-hover-primary fw-semibold fs-7 text-truncate d-inline-block"
-                                style={{ maxWidth: '200px' }}
-                                title={pName}
-                            >
-                                {pName}
-                            </Link>
-                        );
-                    })()}
+                    {!parentLink ? (
+                        <span className="text-muted fs-7">—</span>
+                    ) : (
+                        <Link
+                            to={`/admin/partners/${parentLink.id}`}
+                            className="text-gray-800 text-hover-primary fw-semibold fs-7 text-truncate d-inline-block"
+                            style={{ maxWidth: '200px' }}
+                            title={parentLink.name}
+                        >
+                            {parentLink.name}
+                        </Link>
+                    )}
                 </td>
             )}
 
@@ -214,7 +168,7 @@ const ContentProviderTableRow = ({
                         {!displayInitial && logoUrl ? (
                             <img
                                 src={logoUrl}
-                                alt={contentProvider.business_name}
+                                alt={displayName}
                                 className="rounded"
                                 style={isCompact ? { width: '35px', height: '35px', objectFit: 'cover' } : undefined}
                                 onError={() => setLogoError(true)}
@@ -228,17 +182,17 @@ const ContentProviderTableRow = ({
                         )}
                     </div>
                     <div className="d-flex flex-column min-w-0">
-                        <Link to={`/admin/partners/${contentProvider.id}`} className={`${partnerLinkClass} text-truncate`}>
-                            {contentProvider.business_name || contentProvider.name}
+                        <Link to={`/admin/partners/${cp.id}`} className={`${partnerLinkClass} text-truncate`}>
+                            {displayName}
                         </Link>
-                        {!isCompact && contentProvider.owner_name && (
+                        {!isCompact && cp.owner_name && (
                             <span className="text-muted fw-semibold d-block fs-7 mt-1">
-                                {contentProvider.owner_name}
+                                {cp.owner_name}
                             </span>
                         )}
-                        {contentProvider.email && (
-                            <a href={`mailto:${contentProvider.email}`} className={emailClass}>
-                                {contentProvider.email}
+                        {cp.email && (
+                            <a href={`mailto:${cp.email}`} className={emailClass}>
+                                {cp.email}
                             </a>
                         )}
                     </div>
@@ -254,8 +208,8 @@ const ContentProviderTableRow = ({
             </td>
 
             <td className={isCompact ? 'py-2' : ''}>
-                <span className={`badge ${getStatusBadgeClass(contentProvider.status)} ${isCompact ? 'fs-8' : ''}`}>
-                    {contentProvider.status ? contentProvider.status.charAt(0).toUpperCase() + contentProvider.status.slice(1) : 'N/A'}
+                <span className={`badge ${getStatusBadgeClass(cp.status)} ${isCompact ? 'fs-8' : ''}`}>
+                    {cp.status ? cp.status.charAt(0).toUpperCase() + cp.status.slice(1) : t('admin.paymentGetway.na')}
                 </span>
             </td>
 
@@ -268,7 +222,7 @@ const ContentProviderTableRow = ({
                         onClick={() => setShowActions(!showActions)}
                         onBlur={() => setTimeout(() => setShowActions(false), 200)}
                     >
-                        Actions
+                        {t('admin.paymentGetway.cpActions')}
                         <i className="ki-duotone ki-down fs-5 ms-1"></i>
                     </button>
                     {showActions && (
@@ -283,7 +237,7 @@ const ContentProviderTableRow = ({
                             }}
                         >
                             <Link
-                                to={`/admin/partners/${contentProvider.id}`}
+                                to={`/admin/partners/${cp.id}`}
                                 className="dropdown-item"
                                 onMouseDown={(e) => e.preventDefault()}
                             >
@@ -292,12 +246,12 @@ const ContentProviderTableRow = ({
                                     <span className="path2"></span>
                                     <span className="path3"></span>
                                 </i>
-                                View
+                                {t('admin.common.view')}
                             </Link>
 
                             {canEditContentProvider && (
                                 <Link
-                                    to={`/admin/partners/${contentProvider.id}/edit`}
+                                    to={`/admin/partners/${cp.id}/edit`}
                                     className="dropdown-item"
                                     onMouseDown={(e) => e.preventDefault()}
                                 >
@@ -305,13 +259,13 @@ const ContentProviderTableRow = ({
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Edit
+                                    {t('admin.common.edit')}
                                 </Link>
                             )}
 
-                            {contentProvider.is_parent && !contentProvider.parent_id && (
+                            {cp.is_parent && !cp.parent_id && (
                                 <Link
-                                    to={`/admin/partners/${contentProvider.id}?tab=sub-partners`}
+                                    to={`/admin/partners/${cp.id}?tab=sub-partners`}
                                     className="dropdown-item"
                                     onMouseDown={(e) => e.preventDefault()}
                                 >
@@ -322,72 +276,72 @@ const ContentProviderTableRow = ({
                                         <span className="path4"></span>
                                         <span className="path5"></span>
                                     </i>
-                                    Sub Partners
+                                    {t('admin.paymentGetway.cpSubPartners')}
                                 </Link>
                             )}
 
-                            {['pending', 'requesting_updated'].includes(contentProvider.status) && onApprove && (
+                            {['pending', 'requesting_updated'].includes(cp.status) && onApprove && (
                                 <button
-                                    onMouseDown={(e) => { e.preventDefault(); onApprove(contentProvider.id); }}
+                                    onMouseDown={(e) => { e.preventDefault(); onApprove(cp.id); }}
                                     className="dropdown-item"
                                 >
                                     <i className="ki-duotone ki-check fs-5 me-2">
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Approve
+                                    {t('admin.common.approve')}
                                 </button>
                             )}
 
-                            {['pending', 'requesting_updated'].includes(contentProvider.status) && onReject && (
+                            {['pending', 'requesting_updated'].includes(cp.status) && onReject && (
                                 <button
-                                    onMouseDown={(e) => { e.preventDefault(); onReject(contentProvider); }}
+                                    onMouseDown={(e) => { e.preventDefault(); onReject(cp); }}
                                     className="dropdown-item"
                                 >
                                     <i className="ki-duotone ki-cross fs-5 me-2">
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Reject
+                                    {t('admin.common.reject')}
                                 </button>
                             )}
 
-                            {contentProvider.status !== 'suspended' && onSuspend && (
+                            {cp.status !== 'suspended' && onSuspend && (
                                 <button
-                                    onMouseDown={(e) => { e.preventDefault(); onSuspend(contentProvider); }}
+                                    onMouseDown={(e) => { e.preventDefault(); onSuspend(cp); }}
                                     className="dropdown-item"
                                 >
                                     <i className="ki-duotone ki-lock fs-5 me-2">
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Suspend
+                                    {t('admin.common.suspend')}
                                 </button>
                             )}
 
-                            {contentProvider.status === 'suspended' && onUnsuspend && (
+                            {cp.status === 'suspended' && onUnsuspend && (
                                 <button
-                                    onMouseDown={(e) => { e.preventDefault(); onUnsuspend(contentProvider.id); }}
+                                    onMouseDown={(e) => { e.preventDefault(); onUnsuspend(cp.id); }}
                                     className="dropdown-item"
                                 >
                                     <i className="ki-duotone ki-lock-2 fs-5 me-2">
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Unsuspend
+                                    {t('admin.common.unsuspend')}
                                 </button>
                             )}
 
-                            {(contentProvider.user_id || contentProvider.user?.id) && onResetPassword && (
+                            {cp.hasLinkedUser && onResetPassword && (
                                 <button
-                                    onMouseDown={(e) => { e.preventDefault(); onResetPassword(contentProvider); }}
+                                    onMouseDown={(e) => { e.preventDefault(); onResetPassword(cp); }}
                                     className="dropdown-item"
                                 >
                                     <i className="ki-duotone ki-key fs-5 me-2">
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Reset Password
+                                    {t('admin.paymentGetway.cpResetPassword')}
                                 </button>
                             )}
 
@@ -395,7 +349,7 @@ const ContentProviderTableRow = ({
 
                             {canDeleteContentProvider && onDelete && (
                                 <button
-                                    onMouseDown={(e) => { e.preventDefault(); onDelete(contentProvider.id); }}
+                                    onMouseDown={(e) => { e.preventDefault(); onDelete(cp.id); }}
                                     className="dropdown-item text-danger"
                                 >
                                     <i className="ki-duotone ki-trash fs-5 me-2">
@@ -405,7 +359,7 @@ const ContentProviderTableRow = ({
                                         <span className="path4"></span>
                                         <span className="path5"></span>
                                     </i>
-                                    Delete
+                                    {t('admin.common.delete')}
                                 </button>
                             )}
                         </div>

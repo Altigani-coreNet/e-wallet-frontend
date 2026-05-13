@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from '../../utils/axiosConfig';
 import { toast } from 'react-toastify';
@@ -34,6 +35,7 @@ const getTextValue = (value) => {
 };
 
 const AdminContentProviderEdit = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
@@ -73,22 +75,22 @@ const AdminContentProviderEdit = () => {
     });
 
     useEffect(() => {
-        setTitle('Edit Partner');
+        setTitle(t('admin.paymentGetway.titlesEditPartner'));
         setActions(
             <Link to="/admin/partners" className="btn btn-sm btn-light-danger">
                 <i className="ki-duotone ki-arrow-left fs-2">
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back
+                {t('admin.paymentGetway.cpBack')}
             </Link>
         );
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t]);
 
     useEffect(() => {
         fetchPartner();
-    }, [id]);
+    }, [id, t]);
 
     const fetchCountries = async (searchTerm = '') => {
         try {
@@ -142,7 +144,7 @@ const AdminContentProviderEdit = () => {
                 } else if (partner.country_id) {
                     setSelectedCountry({
                         id: partner.country_id,
-                        text: partner.country_name || partner.country?.name || 'Selected Country'
+                        text: partner.country_name || partner.country?.name || t('admin.paymentGetway.cpSelectedCountryFallback')
                     });
                 }
                 if (partner.logo) setImagePreview(resolveAuthAssetUrl(partner.logo));
@@ -172,7 +174,7 @@ const AdminContentProviderEdit = () => {
                                 label:
                                     partner.partner_category.name_en ||
                                     partner.partner_category.name_ar ||
-                                    'Category',
+                                    t('admin.paymentGetway.cpCategoryFallback'),
                                 ...partner.partner_category,
                             });
                         }
@@ -183,7 +185,7 @@ const AdminContentProviderEdit = () => {
                 }
             }
         } catch (error) {
-            toast.error('Failed to load partner');
+            toast.error(t('admin.paymentGetway.cpErrLoadPartner'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -253,10 +255,10 @@ const AdminContentProviderEdit = () => {
                 getTextValue(selectedCountry?.text) ||
                 getTextValue(selectedCountry?.name) ||
                 getTextValue(selectedCountry?.label) ||
-                'Selected Country',
+                t('admin.paymentGetway.cpSelectedCountryFallback'),
             code: selectedCountry?.code || selectedCountry?.short_name || selectedCountry?.code_iso2
         };
-    }, [selectedCountry, countryOptions, formData.country_id]);
+    }, [selectedCountry, countryOptions, formData.country_id, t]);
 
     const fetchPartnerCategories = useCallback(async (searchTerm = '') => {
         try {
@@ -408,11 +410,11 @@ const AdminContentProviderEdit = () => {
 
             const isSuccess = result.data.success || result.data.status;
             if (isSuccess) {
-                toast.success('Partner updated successfully');
+                toast.success(t('admin.paymentGetway.cpUpdatedSuccess'));
                 navigate(`/admin/partners/${id}`);
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to update partner');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.cpErrUpdateFailed'));
             if (error.response?.data?.errors) setErrors(error.response.data.errors);
             console.error(error);
         } finally {
@@ -437,7 +439,7 @@ const AdminContentProviderEdit = () => {
                             <div className="card card-flush">
                                 <div className="card-header">
                                     <div className="card-title">
-                                        <h2>Logo</h2>
+                                        <h2>{t('admin.paymentGetway.cpLogoCardTitle')}</h2>
                                     </div>
                                 </div>
                                 <div className="card-body text-center pt-0">
@@ -474,7 +476,7 @@ const AdminContentProviderEdit = () => {
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="text-muted fs-7">Upload partner logo</div>
+                                    <div className="text-muted fs-7">{t('admin.paymentGetway.cpUploadPartnerLogo')}</div>
                                 </div>
                             </div>
                         </div>
@@ -483,7 +485,7 @@ const AdminContentProviderEdit = () => {
                             <div className="card">
                                 <div className="card-header border-0">
                                     <div className="card-title">
-                                        <h2>Edit Partner</h2>
+                                        <h2>{t('admin.paymentGetway.titlesEditPartner')}</h2>
                                     </div>
                                 </div>
                                 <div className="card-body p-9">
@@ -491,15 +493,15 @@ const AdminContentProviderEdit = () => {
                                         {isSubPartner && (
                                             <div className="col-12 mb-7">
                                                 <div className="alert alert-light-primary">
-                                                    Sub Partner: country and partner category are inherited from the parent and cannot be changed here.
+                                                    {t('admin.paymentGetway.cpEditSubPartnerInheritedNote')}
                                                 </div>
                                             </div>
                                         )}
                                         {!isSubPartner && (
                                         <div className="col-md-6 mb-7">
                                             <SearchableDropdown
-                                                label="Country"
-                                                placeholder="Select Country"
+                                                label={t('admin.paymentGetway.cpCountry')}
+                                                placeholder={t('admin.paymentGetway.wizPlaceholderCountry')}
                                                 options={countryOptions}
                                                 selected={selectedCountryOption}
                                                 onSelect={handleCountrySelect}
@@ -507,7 +509,7 @@ const AdminContentProviderEdit = () => {
                                                 loading={loadingCountries}
                                                 onOpen={handleCountryOpen}
                                                 onSearchChange={handleCountrySearchChange}
-                                                searchPlaceholder="Search countries..."
+                                                searchPlaceholder={t('admin.paymentGetway.cpSearchCountries')}
                                                 required={true}
                                             />
                                         </div>
@@ -516,8 +518,8 @@ const AdminContentProviderEdit = () => {
                                         {!isSubPartner && (
                                         <div className="col-md-6 mb-7">
                                             <SearchableDropdown
-                                                label="Partner category"
-                                                placeholder="Select partner category"
+                                                label={t('admin.paymentGetway.cpPartnerCategory')}
+                                                placeholder={t('admin.paymentGetway.cpSelectPartnerCategoryPlaceholder')}
                                                 options={partnerCategoryOptions}
                                                 selected={selectedPartnerCategoryOption}
                                                 onSelect={handlePartnerCategorySelect}
@@ -525,7 +527,7 @@ const AdminContentProviderEdit = () => {
                                                 loading={loadingPartnerCategories}
                                                 onOpen={handlePartnerCategoryOpen}
                                                 onSearchChange={handlePartnerCategorySearchChange}
-                                                searchPlaceholder="Search categories..."
+                                                searchPlaceholder={t('admin.paymentGetway.cpSearchCategories')}
                                                 required
                                             />
                                             {errors.partner_category_id && (
@@ -535,45 +537,116 @@ const AdminContentProviderEdit = () => {
                                         )}
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Business /Brand Name</label>
-                                            <input type="text" name="name" className={`form-control ${errors.name ? 'is-invalid' : ''}`} value={formData.name} onChange={handleInputChange} placeholder="Enter Business /Brand Name" />
+                                            <label className="form-label fw-bold required">
+                                                {t('admin.paymentGetway.viewBusinessBrandName')}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                                value={formData.name}
+                                                onChange={handleInputChange}
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderBusinessBrand')}
+                                            />
                                         </div>
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Contact Person Name</label>
-                                            <input type="text" name="business_name" className="form-control" value={formData.business_name} onChange={handleInputChange} placeholder="Enter Contact Person Name" required />
+                                            <label className="form-label fw-bold required">
+                                                {t('admin.paymentGetway.viewContactPersonName')}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="business_name"
+                                                className="form-control"
+                                                value={formData.business_name}
+                                                onChange={handleInputChange}
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderContactPerson')}
+                                                required
+                                            />
                                         </div>
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Company Name</label>
-                                            <input type="text" name="owner_name" className={`form-control ${errors.owner_name ? 'is-invalid' : ''}`} value={formData.owner_name} onChange={handleInputChange} placeholder="Enter Company Name" />
+                                            <label className="form-label fw-bold required">
+                                                {t('admin.paymentGetway.viewCompanyName')}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="owner_name"
+                                                className={`form-control ${errors.owner_name ? 'is-invalid' : ''}`}
+                                                value={formData.owner_name}
+                                                onChange={handleInputChange}
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderCompanyName')}
+                                            />
                                         </div>
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Email</label>
-                                            <input type="email" name="email" className={`form-control ${errors.email ? 'is-invalid' : ''}`} value={formData.email} onChange={handleInputChange} placeholder="partner@example.com" />
+                                            <label className="form-label fw-bold required">
+                                                {t('admin.paymentGetway.cpImportEmail')}
+                                            </label>
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                className={`form-control ${errors.email ? 'is-invalid' : ''}`}
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderEmailPartner')}
+                                            />
                                         </div>
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Phone</label>
-                                            <input type="text" name="phone" className={`form-control ${errors.phone ? 'is-invalid' : ''}`} value={formData.phone} onChange={handleInputChange} placeholder="+1234567890" />
+                                            <label className="form-label fw-bold required">
+                                                {t('admin.paymentGetway.cpImportPhone')}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="phone"
+                                                className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
+                                                value={formData.phone}
+                                                onChange={handleInputChange}
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderPhone')}
+                                            />
                                         </div>
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Business Phone</label>
-                                            <input type="text" name="business_phone" className="form-control" value={formData.business_phone} onChange={handleInputChange} placeholder="+1234567890" required />
+                                            <label className="form-label fw-bold required">
+                                                {t('admin.paymentGetway.viewBusinessPhone')}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                name="business_phone"
+                                                className="form-control"
+                                                value={formData.business_phone}
+                                                onChange={handleInputChange}
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderPhone')}
+                                                required
+                                            />
                                         </div>
 
                                         <div className="col-md-12 mb-7">
-                                            <label className="form-label fw-bold">Profile Summary</label>
-                                            <textarea name="address" className="form-control" rows="3" value={formData.address} onChange={handleInputChange} placeholder="Enter profile summary" />
+                                            <label className="form-label fw-bold">
+                                                {t('admin.paymentGetway.viewProfileSummary')}
+                                            </label>
+                                            <textarea
+                                                name="address"
+                                                className="form-control"
+                                                rows="3"
+                                                value={formData.address}
+                                                onChange={handleInputChange}
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderProfileSummary')}
+                                            />
                                         </div>
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Active Status</label>
+                                            <label className="form-label fw-bold">
+                                                {t('admin.paymentGetway.cpLabelActiveStatus')}
+                                            </label>
                                             <div className="form-check form-switch form-check-custom form-check-solid mt-2">
                                                 <input className="form-check-input" type="checkbox" name="is_active" checked={formData.is_active} onChange={handleInputChange} />
-                                                <label className="form-check-label">{formData.is_active ? 'Active' : 'Inactive'}</label>
+                                                <label className="form-check-label">
+                                                    {formData.is_active
+                                                        ? t('admin.common.active')
+                                                        : t('admin.common.inactive')}
+                                                </label>
                                             </div>
                                         </div>
 
@@ -589,7 +662,7 @@ const AdminContentProviderEdit = () => {
                                                         id="edit_is_parent"
                                                     />
                                                     <label className="form-check-label" htmlFor="edit_is_parent">
-                                                        Parent organization (allows Sub Partners — same country and category as this partner)
+                                                        {t('admin.paymentGetway.cpLabelParentOrgSwitchHint')}
                                                     </label>
                                                 </div>
                                             </div>
@@ -604,12 +677,14 @@ const AdminContentProviderEdit = () => {
                         <div className="col-md-3"></div>
                         <div className="col-md-9">
                             <div className="d-flex justify-content-end gap-3">
-                                <Link to={`/admin/partners/${id}`} className="btn btn-light">Cancel</Link>
+                                <Link to={`/admin/partners/${id}`} className="btn btn-light">
+                                    {t('admin.common.cancel')}
+                                </Link>
                                 <button type="submit" className="btn btn-primary" disabled={saving}>
                                     {saving ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Saving...
+                                            {t('admin.paymentGetway.cpSaving')}
                                         </>
                                     ) : (
                                         <>
@@ -617,7 +692,7 @@ const AdminContentProviderEdit = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Save Changes
+                                            {t('admin.paymentGetway.cpSaveChanges')}
                                         </>
                                     )}
                                 </button>

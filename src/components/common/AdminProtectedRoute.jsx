@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { getToken, getUser, removeToken } from '../../utils/api';
+import { resolveAdminPath } from '../../i18n/localePaths';
 
 const AdminProtectedRoute = ({ children }) => {
     const location = useLocation();
@@ -78,7 +79,10 @@ const AdminProtectedRoute = ({ children }) => {
                                 <a href="/merchant/dashboard" className="btn btn-lg btn-primary">
                                     Go to Merchant Dashboard
                                 </a>
-                                <a href="/admin/login" className="btn btn-lg btn-light-primary">
+                                <a
+                                    href={resolveAdminPath('/admin/login', location.pathname)}
+                                    className="btn btn-lg btn-light-primary"
+                                >
                                     Admin Login
                                 </a>
                             </div>

@@ -1,7 +1,10 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import MerchantCountryFilterFields from '../../common/filters/MerchantCountryFilterFields';
 
 const MerchantFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilters, onApply }) => {
+    const { t } = useTranslation();
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         onFilterChange({ ...filters, [name]: value });
@@ -22,7 +25,7 @@ const MerchantFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilte
             {/* Card header */}
             <div className="card-header border-0 pt-6">
                 <div className="card-title">
-                    <h3 className="fw-bold m-0">Filters</h3>
+                    <h3 className="fw-bold m-0">{t('admin.merchantsUI.filtersTitle')}</h3>
                 </div>
                 <div className="card-toolbar">
                     <button
@@ -34,7 +37,7 @@ const MerchantFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilte
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Clear Filters
+                        {t('admin.merchantsUI.clearFilters')}
                     </button>
                 </div>
             </div>
@@ -44,33 +47,33 @@ const MerchantFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilte
                 <div className="row g-4">
                     {/* Search */}
                     <div className="col-md-3">
-                        <label className="form-label fw-bold">Search</label>
+                        <label className="form-label fw-bold">{t('admin.merchantsUI.filterSearch')}</label>
                         <input
                             type="text"
                             className="form-control"
                             name="search"
                             value={filters.search || ''}
                             onChange={handleInputChange}
-                            placeholder="Search by name, email, phone, business type..."
+                            placeholder={t('admin.merchantsUI.filterSearchPlaceholder')}
                             onKeyPress={(e) => e.key === 'Enter' && onApply()}
                         />
                     </div>
 
                     {/* Status Filter */}
                     <div className="col-md-3">
-                        <label className="form-label fw-bold">Status</label>
+                        <label className="form-label fw-bold">{t('admin.merchantsUI.filterStatus')}</label>
                         <select
                             className="form-select"
                             name="status"
                             value={filters.status || ''}
                             onChange={handleInputChange}
                         >
-                            <option value="">All Statuses</option>
-                            <option value="pending">Pending</option>
-                            <option value="viewed">Viewed</option>
-                            <option value="approved">Approved</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="suspended">Suspended</option>
+                            <option value="">{t('admin.merchantsUI.filterAllStatuses')}</option>
+                            <option value="pending">{t('admin.common.pending')}</option>
+                            <option value="viewed">{t('admin.common.viewed')}</option>
+                            <option value="approved">{t('admin.common.approved')}</option>
+                            <option value="rejected">{t('admin.common.rejected')}</option>
+                            <option value="suspended">{t('admin.common.suspended')}</option>
                         </select>
                     </div>
 
@@ -79,15 +82,15 @@ const MerchantFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilte
                         countryValue={filters.country_id}
                         onMerchantChange={handleMerchantChange}
                         onCountryChange={handleCountryChange}
-                        merchantLabel="Merchant"
-                        countryLabel="Country"
-                        merchantPlaceholder="All Merchants"
-                        countryPlaceholder="All Countries"
+                        merchantLabel={t('admin.merchantsUI.filterMerchantLabel')}
+                        countryLabel={t('admin.merchantsUI.filterCountryLabel')}
+                        merchantPlaceholder={t('admin.merchantsUI.filterAllMerchants')}
+                        countryPlaceholder={t('admin.merchantsUI.filterAllCountries')}
                     />
 
                     {/* Date From */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold">Created Date From</label>
+                        <label className="form-label fw-bold">{t('admin.merchantsUI.filterDateFrom')}</label>
                         <input
                             type="date"
                             className="form-control"
@@ -99,7 +102,7 @@ const MerchantFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilte
 
                     {/* Date To */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold">Created Date To</label>
+                        <label className="form-label fw-bold">{t('admin.merchantsUI.filterDateTo')}</label>
                         <input
                             type="date"
                             className="form-control"
@@ -122,7 +125,7 @@ const MerchantFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilte
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Apply Filters
+                            {t('admin.merchantsUI.applyFilters')}
                         </button>
                     </div>
                 </div>
@@ -132,4 +135,3 @@ const MerchantFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilte
 };
 
 export default MerchantFiltersPanel;
-

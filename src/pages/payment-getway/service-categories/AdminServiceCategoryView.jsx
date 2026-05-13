@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { fetchServiceCategoryDetails } from '../../../services/serviceCategoriesService';
 import LoadingSpinner from '../../../common/LoadingSpinner';
 import { formatDateTime } from '../../../utils/helpers';
 
 const AdminServiceCategoryView = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
@@ -14,7 +16,7 @@ const AdminServiceCategoryView = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setTitle('Service Category Details');
+        setTitle(t('admin.paymentGetway.catViewTitle'));
         setActions(
             <button
                 className="btn btn-sm btn-secondary"
@@ -26,12 +28,12 @@ const AdminServiceCategoryView = () => {
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back to List
+                {t('admin.paymentGetway.catViewBackToList')}
             </button>
         );
 
         return () => setActions(null);
-    }, [navigate, setActions, setTitle, category]);
+    }, [navigate, setActions, setTitle, category, t]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -42,14 +44,22 @@ const AdminServiceCategoryView = () => {
                     setCategory(response.data);
                 }
             } catch (error) {
-                toast.error(error?.response?.data?.message || 'Failed to load category details');
+                toast.error(error?.response?.data?.message || t('admin.paymentGetway.catViewLoadFailed'));
             } finally {
                 setLoading(false);
             }
         };
 
         fetchData();
-    }, [id]);
+    }, [id, t]);
+
+    const displayName = (row) => {
+        if (!row) return t('admin.common.na');
+        if (i18n.dir() === 'rtl') {
+            return row.name_ar || row.name_en || row.name || t('admin.common.na');
+        }
+        return row.name_en || row.name_ar || row.name || t('admin.common.na');
+    };
 
     if (loading) {
         return <LoadingSpinner />;
@@ -59,63 +69,72 @@ const AdminServiceCategoryView = () => {
         return (
             <div className="card">
                 <div className="card-body text-center py-10">
-                    <div className="text-muted">Category not found</div>
+                    <div className="text-muted">{t('admin.paymentGetway.catViewNotFound')}</div>
                 </div>
             </div>
         );
     }
+
+    const typeLabel =
+        category.type === 'partner'
+            ? t('admin.paymentGetway.catViewTypePartner')
+            : t('admin.paymentGetway.catViewTypeService');
 
     return (
         <div className="row g-5 g-xl-8">
             <div className="col-xl-12">
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title">Category Information</h3>
+                        <h3 className="card-title">{t('admin.paymentGetway.catViewSectionInfo')}</h3>
                     </div>
                     <div className="card-body">
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Name</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.paymentGetway.catViewLabelName')}</label>
                             <div className="col-lg-8">
-                                <span className="fw-bolder fs-6 text-gray-800">{category.name_en || 'N/A'}</span>
-                            </div>
-                        </div>
-
-                        <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Code</label>
-                            <div className="col-lg-8">
-                                <span className="fw-bold fs-6 text-gray-800">{category.code || 'N/A'}</span>
-                            </div>
-                        </div>
-
-                        <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Type</label>
-                            <div className="col-lg-8">
-                                <span className="fw-bold fs-6 text-gray-800 text-capitalize">
-                                    {category.type === 'partner' ? 'Partner' : 'Service'}
+                                <span className="fw-bolder fs-6 text-gray-800" dir="auto">
+                                    {displayName(category)}
                                 </span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Parent Category</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.paymentGetway.catViewLabelCode')}</label>
                             <div className="col-lg-8">
-                                <span className="fw-bold fs-6 text-gray-800">{category.parent?.name_en || 'Root Category'}</span>
+                                <span className="fw-bold fs-6 text-gray-800">{category.code || t('admin.common.na')}</span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Status</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.paymentGetway.catViewLabelType')}</label>
+                            <div className="col-lg-8">
+                                <span className="fw-bold fs-6 text-gray-800 text-capitalize">{typeLabel}</span>
+                            </div>
+                        </div>
+
+                        <div className="row mb-7">
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.paymentGetway.catViewLabelParent')}</label>
+                            <div className="col-lg-8">
+                                <span className="fw-bold fs-6 text-gray-800" dir="auto">
+                                    {category.parent ? displayName(category.parent) : t('admin.paymentGetway.catViewRootCategory')}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="row mb-7">
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.paymentGetway.status')}</label>
                             <div className="col-lg-8">
                                 <span className={`badge badge-light-${category.is_active ? 'success' : 'danger'}`}>
-                                    {category.is_active ? 'Active' : 'Inactive'}
+                                    {category.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                 </span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Created At</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('admin.paymentGetway.catViewLabelCreatedAt')}</label>
                             <div className="col-lg-8">
-                                <span className="fw-bold fs-6 text-gray-800">{formatDateTime(category.created_at) || 'N/A'}</span>
+                                <span className="fw-bold fs-6 text-gray-800">
+                                    {formatDateTime(category.created_at) || t('admin.common.na')}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -125,29 +144,29 @@ const AdminServiceCategoryView = () => {
             <div className="col-xl-12">
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title">Sub-Categories</h3>
+                        <h3 className="card-title">{t('admin.paymentGetway.catViewSectionSubCategories')}</h3>
                     </div>
                     <div className="card-body">
                         {!category.sub_categories || category.sub_categories.length === 0 ? (
-                            <div className="text-muted">No sub-categories found.</div>
+                            <div className="text-muted">{t('admin.paymentGetway.catViewNoSubCategories')}</div>
                         ) : (
                             <div className="table-responsive">
                                 <table className="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
                                     <thead>
                                         <tr className="fw-bold text-muted">
-                                            <th>Name</th>
-                                            <th>Code</th>
-                                            <th>Status</th>
+                                            <th>{t('admin.paymentGetway.catViewSubColName')}</th>
+                                            <th>{t('admin.paymentGetway.catViewSubColCode')}</th>
+                                            <th>{t('admin.paymentGetway.status')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {category.sub_categories.map((child) => (
                                             <tr key={child.id}>
-                                                <td>{child.name_en || 'N/A'}</td>
-                                                <td>{child.code || 'N/A'}</td>
+                                                <td dir="auto">{displayName(child)}</td>
+                                                <td>{child.code || t('admin.common.na')}</td>
                                                 <td>
                                                     <span className={`badge badge-light-${child.is_active ? 'success' : 'danger'}`}>
-                                                        {child.is_active ? 'Active' : 'Inactive'}
+                                                        {child.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                                     </span>
                                                 </td>
                                             </tr>

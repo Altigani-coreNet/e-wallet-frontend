@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS } from '../../../../utils/constants';
@@ -7,6 +8,7 @@ import { getToken } from '../../../../utils/api';
 import PaginationControls from '../../../common/PaginationControls';
 
 const MerchantUsersTab = ({ merchantId }) => {
+    const { t } = useTranslation();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
@@ -43,7 +45,7 @@ const MerchantUsersTab = ({ merchantId }) => {
                 });
             }
         } catch (error) {
-            toast.error('Failed to load users');
+            toast.error(t('admin.merchantsUI.usersTab.loadFailed'));
             // eslint-disable-next-line no-console
             console.error('Failed to load users', error);
         } finally {
@@ -60,22 +62,20 @@ const MerchantUsersTab = ({ merchantId }) => {
         <div className="card">
             <div className="card-header border-0">
                 <div className="card-title">
-                    <h3 className="fw-bold mb-0">Users</h3>
+                    <h3 className="fw-bold mb-0">{t('admin.merchantsUI.usersTab.title')}</h3>
                 </div>
             </div>
             <div className="card-body border-top py-5">
-                {/* TODO: Add user filters (search, status) when those options are needed in the UI. */}
-
                 <div className="table-responsive">
                     <table className="table align-middle table-row-dashed fs-6 gy-5">
                         <thead>
                             <tr className="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
-                                <th className="min-w-150px">Name</th>
-                                <th className="min-w-180px">Email</th>
-                                <th className="min-w-120px">Phone</th>
-                                <th className="min-w-120px">Role</th>
-                                <th className="min-w-120px">Status</th>
-                                <th className="text-end min-w-120px">Actions</th>
+                                <th className="min-w-150px">{t('admin.merchantsUI.colName')}</th>
+                                <th className="min-w-180px">{t('admin.merchantsUI.labelEmail')}</th>
+                                <th className="min-w-120px">{t('admin.merchantsIndex.colPhone')}</th>
+                                <th className="min-w-120px">{t('admin.merchantsUI.colRole')}</th>
+                                <th className="min-w-120px">{t('admin.merchantsIndex.colStatus')}</th>
+                                <th className="text-end min-w-120px">{t('admin.merchantsIndex.colActions')}</th>
                             </tr>
                         </thead>
                         <tbody className="fw-semibold text-gray-600">
@@ -88,7 +88,7 @@ const MerchantUsersTab = ({ merchantId }) => {
                             ) : users.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="text-center py-10 text-gray-600">
-                                        No users found
+                                        {t('admin.merchantsUI.usersTab.noUsers')}
                                     </td>
                                 </tr>
                             ) : (
@@ -108,7 +108,7 @@ const MerchantUsersTab = ({ merchantId }) => {
                                                     rawStatus === true ||
                                                     user?.is_active === true;
                                                 const badgeClass = isActive ? 'success' : 'secondary';
-                                                const label = isActive ? 'Active' : 'Inactive';
+                                                const label = isActive ? t('admin.common.active') : t('admin.common.inactive');
                                                 return (
                                                     <span className={`badge badge-light-${badgeClass}`}>
                                                         {label}
@@ -118,7 +118,7 @@ const MerchantUsersTab = ({ merchantId }) => {
                                         </td>
                                         <td className="text-end">
                                             <Link to={`/admin/users/${user.id}`} className="btn btn-sm btn-light-primary">
-                                                View
+                                                {t('admin.common.view')}
                                             </Link>
                                         </td>
                                     </tr>
@@ -131,7 +131,11 @@ const MerchantUsersTab = ({ merchantId }) => {
             <div className="card-footer">
                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-center">
                     <div className="text-gray-600 small mb-3 mb-md-0">
-                        Showing {(pagination.current_page - 1) * pagination.per_page + (users.length ? 1 : 0)} to {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} users
+                        {t('admin.merchantsUI.usersTab.showing', {
+                            from: (pagination.current_page - 1) * pagination.per_page + (users.length ? 1 : 0),
+                            to: Math.min(pagination.current_page * pagination.per_page, pagination.total),
+                            total: pagination.total
+                        })}
                     </div>
                     <PaginationControls
                         pagination={pagination}

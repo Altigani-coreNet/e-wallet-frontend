@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { createAdvertisement } from '../../../../services/adminAdvertisementsService';
 import { AUTH_ENDPOINTS } from '../../../../utils/constants';
 import { openNativeDatePicker } from '../../../../utils/advertisementFormUtils';
 
 const AdminAdvertisementCreate = () => {
+	const { t, i18n } = useTranslation();
 	const { setTitle, setActions } = useToolbar();
 	const navigate = useNavigate();
 	const [loading, setLoading] = useState(false);
@@ -20,12 +22,6 @@ const AdminAdvertisementCreate = () => {
 	const [errors, setErrors] = useState({});
 	const [countriesLoading, setCountriesLoading] = useState(false);
 
-	useEffect(() => {
-		setTitle('Create Advertisement');
-		setActions(null);
-		fetchCountries();
-	}, [setTitle, setActions]);
-
 	const debounce = (func, delay) => {
 		let timeoutId;
 		return (...args) => {
@@ -37,9 +33,11 @@ const AdminAdvertisementCreate = () => {
 	const fetchCountries = useCallback(async (searchTerm = '') => {
 		setCountriesLoading(true);
 		try {
-			const url = searchTerm
+			const lang = i18n.language?.split('-')[0] || 'en';
+			let url = searchTerm
 				? `${AUTH_ENDPOINTS.COUNTRIES_SELECT}?search=${encodeURIComponent(searchTerm)}`
 				: AUTH_ENDPOINTS.COUNTRIES_SELECT;
+			url += `${url.includes('?') ? '&' : '?'}lang=${encodeURIComponent(lang)}`;
 			const response = await fetch(url);
 			const data = await response.json();
 			if (data?.status) {
@@ -51,7 +49,16 @@ const AdminAdvertisementCreate = () => {
 		} finally {
 			setCountriesLoading(false);
 		}
-	}, []);
+	}, [i18n.language]);
+
+	useEffect(() => {
+		setTitle(t('admin.settings.advertisements.createTitle'));
+		setActions(null);
+	}, [setTitle, setActions, t]);
+
+	useEffect(() => {
+		fetchCountries();
+	}, [fetchCountries]);
 
 	const debouncedCountrySearch = useCallback(
 		(searchTerm) => {
@@ -109,14 +116,14 @@ const AdminAdvertisementCreate = () => {
 		try {
 			const response = await createAdvertisement(formData);
 			if (response.success) {
-				toast.success('Advertisement created successfully');
+				toast.success(t('admin.settings.advertisements.createSuccess'));
 				navigate('/admin/system/advertisements');
 			} else {
 				if (response.errors) setErrors(response.errors);
-				toast.error(response.error || 'Failed to create advertisement');
+				toast.error(response.error || t('admin.settings.advertisements.createFailed'));
 			}
 		} catch (error) {
-			toast.error('Failed to create advertisement');
+			toast.error(t('admin.settings.advertisements.createFailed'));
 		} finally {
 			setLoading(false);
 		}
@@ -124,18 +131,18 @@ const AdminAdvertisementCreate = () => {
 
 	return (
 		<div className="card">
-			<div className="card-header"><h3 className="card-title">Create New Advertisement</h3></div>
+			<div className="card-header"><h3 className="card-title">{t('admin.settings.advertisements.createCardTitle')}</h3></div>
 			<form onSubmit={handleSubmit}>
 				<div className="card-body">
 					<div className="row">
 						<div className="col-md-6 mb-5">
-							<label className="form-label required">Name</label>
-							<input type="text" className={`form-control ${errors.name ? 'is-invalid' : ''}`} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Enter advertisement name" />
+							<label className="form-label required">{t('admin.settings.advertisements.labelName')}</label>
+							<input type="text" className={`form-control ${errors.name ? 'is-invalid' : ''}`} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder={t('admin.settings.advertisements.placeholderName')} />
 							{errors.name && <div className="invalid-feedback">{errors.name[0]}</div>}
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label required">Country</label>
+							<label className="form-label required">{t('admin.settings.advertisements.labelCountry')}</label>
 							<div className="position-relative">
 								<div className={`form-control h-50px d-flex align-items-center justify-content-between ${errors.country_id ? 'is-invalid' : ''}`} onClick={handleCountryDropdownToggle} style={{ cursor: 'pointer' }}>
 									<div className="d-flex align-items-center">
@@ -151,7 +158,7 @@ const AdminAdvertisementCreate = () => {
 												<span className="fw-bold text-gray-800">{selectedCountry.text}</span>
 										</>
 									) : (
-										<span className="text-muted">Select Country</span>
+										<span className="text-muted">{t('admin.settings.advertisements.selectCountry')}</span>
 									)}
 								</div>
 								<div className="d-flex align-items-center">
@@ -167,7 +174,7 @@ const AdminAdvertisementCreate = () => {
 							{countriesLoading && (
 								<div className="position-absolute top-50 end-0 translate-middle-y me-3">
 									<div className="spinner-border spinner-border-sm" role="status">
-										<span className="visually-hidden">Loading...</span>
+										<span className="visually-hidden">{t('admin.common.loading')}</span>
 									</div>
 								</div>
 							)}
@@ -178,7 +185,7 @@ const AdminAdvertisementCreate = () => {
 										<input 
 											type="text" 
 											className="form-control form-control-sm mb-2" 
-											placeholder="Search countries..." 
+											placeholder={t('admin.settings.advertisements.searchCountries')} 
 											value={countrySearchTerm} 
 											onChange={(e) => handleCountrySearch(e.target.value)} 
 											onFocus={(e) => e.stopPropagation()} 
@@ -189,9 +196,9 @@ const AdminAdvertisementCreate = () => {
 									{countriesLoading ? (
 										<div className="p-3 text-center">
 											<div className="spinner-border spinner-border-sm me-2" role="status">
-												<span className="visually-hidden">Loading...</span>
+												<span className="visually-hidden">{t('admin.common.loading')}</span>
 											</div>
-											<span className="text-muted">Searching countries...</span>
+											<span className="text-muted">{t('admin.settings.advertisements.searchingCountries')}</span>
 										</div>
 									) : (
 										filteredCountries.length > 0 ? (
@@ -208,7 +215,7 @@ const AdminAdvertisementCreate = () => {
 												</div>
 											))
 										) : (
-											<div className="p-3 text-muted text-center">No countries found</div>
+											<div className="p-3 text-muted text-center">{t('admin.settings.advertisements.noCountriesFound')}</div>
 										)
 									)}
 								</div>
@@ -218,27 +225,27 @@ const AdminAdvertisementCreate = () => {
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label required">Image</label>
+							<label className="form-label required">{t('admin.settings.advertisements.labelImage')}</label>
 							<input type="file" className={`form-control ${errors.image ? 'is-invalid' : ''}`} accept="image/*" onChange={handleImageChange} />
 							{errors.image && <div className="invalid-feedback">{errors.image[0]}</div>}
 							{imagePreview && (
 								<div className="mt-3">
-									<img src={imagePreview} alt="Preview" className="img-thumbnail" style={{maxWidth: '300px'}} />
+									<img src={imagePreview} alt="" className="img-thumbnail" style={{maxWidth: '300px'}} />
 								</div>
 							)}
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label required">Status</label>
+							<label className="form-label required">{t('admin.settings.advertisements.labelStatus')}</label>
 							<select className={`form-select ${errors.status ? 'is-invalid' : ''}`} value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
-								<option value="active">Active</option>
-								<option value="inactive">Inactive</option>
+								<option value="active">{t('admin.common.active')}</option>
+								<option value="inactive">{t('admin.common.inactive')}</option>
 							</select>
 							{errors.status && <div className="invalid-feedback">{errors.status[0]}</div>}
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label" htmlFor="advertisement-create-start-date">Start Date</label>
+							<label className="form-label" htmlFor="advertisement-create-start-date">{t('admin.settings.advertisements.labelStartDate')}</label>
 							<input
 								id="advertisement-create-start-date"
 								type="date"
@@ -251,7 +258,7 @@ const AdminAdvertisementCreate = () => {
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label" htmlFor="advertisement-create-end-date">End Date</label>
+							<label className="form-label" htmlFor="advertisement-create-end-date">{t('admin.settings.advertisements.labelEndDate')}</label>
 							<input
 								id="advertisement-create-end-date"
 								type="date"
@@ -266,8 +273,8 @@ const AdminAdvertisementCreate = () => {
 				</div>
 
 				<div className="card-footer d-flex justify-content-end gap-2">
-					<button type="button" className="btn btn-light" onClick={() => navigate('/admin/system/advertisements')} disabled={loading}>Cancel</button>
-					<button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Creating...' : 'Create Advertisement'}</button>
+					<button type="button" className="btn btn-light" onClick={() => navigate('/admin/system/advertisements')} disabled={loading}>{t('admin.common.cancel')}</button>
+					<button type="submit" className="btn btn-primary" disabled={loading}>{loading ? t('admin.settings.advertisements.creating') : t('admin.settings.advertisements.createBtn')}</button>
 				</div>
 			</form>
 		</div>

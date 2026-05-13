@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { getToken } from '../../../utils/api';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 
@@ -9,6 +10,7 @@ const CustomTerminalSelector = ({
     merchantId = null,
     className = '' 
 }) => {
+    const { t } = useTranslation();
     const [terminals, setTerminals] = useState([]);
     const [filteredTerminals, setFilteredTerminals] = useState([]);
     const [brands, setBrands] = useState([]);
@@ -126,7 +128,7 @@ const CustomTerminalSelector = ({
                 
                 if (terminalsResponse.data && terminalsResponse.data.data) {
                     const terminalsData = terminalsResponse.data.data;
-                    const uniqueBrands = [...new Set(terminalsData.map(t => t.brand).filter(Boolean))];
+                    const uniqueBrands = [...new Set(terminalsData.map(term => term.brand).filter(Boolean))];
                     setBrands(uniqueBrands);
                 }
             }
@@ -157,7 +159,7 @@ const CustomTerminalSelector = ({
             } else {
                 // Fallback: filter models from terminals based on selected brands
                 const filteredTerminals = terminals.filter(t => selectedBrands.includes(t.brand));
-                const uniqueModels = [...new Set(filteredTerminals.map(t => t.model).filter(Boolean))];
+                const uniqueModels = [...new Set(filteredTerminals.map(term => term.model).filter(Boolean))];
                 setModels(uniqueModels);
             }
         } catch (error) {
@@ -165,7 +167,7 @@ const CustomTerminalSelector = ({
             console.error('Error loading models for brands:', error);
             // Fallback: filter models from terminals based on selected brands
             const filteredTerminals = terminals.filter(t => selectedBrands.includes(t.brand));
-            const uniqueModels = [...new Set(filteredTerminals.map(t => t.model).filter(Boolean))];
+            const uniqueModels = [...new Set(filteredTerminals.map(term => term.model).filter(Boolean))];
             setModels(uniqueModels);
         } finally {
             setModelsLoading(false);
@@ -191,7 +193,7 @@ const CustomTerminalSelector = ({
             } else {
                 // Fallback: filter manufacturers from terminals based on selected models
                 const filteredTerminals = terminals.filter(t => selectedModels.includes(t.model));
-                const uniqueManufacturers = [...new Set(filteredTerminals.map(t => t.manufacturer).filter(Boolean))];
+                const uniqueManufacturers = [...new Set(filteredTerminals.map(term => term.manufacturer).filter(Boolean))];
                 setManufacturers(uniqueManufacturers);
             }
         } catch (error) {
@@ -199,7 +201,7 @@ const CustomTerminalSelector = ({
             console.error('Error loading manufacturers for models:', error);
             // Fallback: filter manufacturers from terminals based on selected models
             const filteredTerminals = terminals.filter(t => selectedModels.includes(t.model));
-            const uniqueManufacturers = [...new Set(filteredTerminals.map(t => t.manufacturer).filter(Boolean))];
+            const uniqueManufacturers = [...new Set(filteredTerminals.map(term => term.manufacturer).filter(Boolean))];
             setManufacturers(uniqueManufacturers);
         } finally {
             setManufacturersLoading(false);
@@ -362,6 +364,14 @@ const CustomTerminalSelector = ({
         }
     };
 
+    const terminalSelectAllAction = useMemo(
+        () =>
+            selectedTerminals.length === filteredTerminals.length && filteredTerminals.length > 0
+                ? t('admin.selectorCommon.deselectAll')
+                : t('admin.selectorCommon.selectAll'),
+        [selectedTerminals.length, filteredTerminals.length, t]
+    );
+
     const getActiveFiltersCount = () => {
         return selectedBrands.length + selectedModels.length + selectedManufacturers.length;
     };
@@ -374,7 +384,7 @@ const CustomTerminalSelector = ({
                     <span className="path2"></span>
                     <span className="path3"></span>
                 </i>
-                Please select a merchant first to load terminals
+                {t('admin.terminalGroupsUI.terminalSelector.pickMerchantFirst')}
             </div>
         );
     }
@@ -406,20 +416,20 @@ const CustomTerminalSelector = ({
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Available Brands & Models
+                    {t('admin.terminalGroupsUI.terminalSelector.header')}
                 </h5>
                 
                 {brandsLoading ? (
                     <div className="text-center py-3">
                         <div className="spinner-border spinner-border-sm text-primary me-2" role="status">
-                            <span className="visually-hidden">Loading...</span>
+                            <span className="visually-hidden">{t('admin.selectorCommon.loading')}</span>
                         </div>
-                        <span className="text-muted">Loading brands...</span>
+                        <span className="text-muted">{t('admin.terminalGroupsUI.terminalSelector.loadingBrands')}</span>
                     </div>
                 ) : brandsError ? (
                     <div className="alert alert-warning py-2">
                         <i className="ki-duotone ki-warning fs-5 me-2"></i>
-                        <small>Unable to load brands. Using fallback data.</small>
+                        <small>{t('admin.terminalGroupsUI.terminalSelector.brandsFallback')}</small>
                     </div>
                 ) : (
                     <>
@@ -427,7 +437,7 @@ const CustomTerminalSelector = ({
                         <div className="mb-4">
                             <h6 className="mb-2 fw-semibold text-dark">
                                 <i className="ki-duotone ki-star fs-5 me-2 text-warning"></i>
-                                Brands ({brands.length})
+                                {t('admin.terminalGroupsUI.terminalSelector.brandsSection', { count: brands.length })}
                             </h6>
                             <div className="d-flex flex-wrap gap-2">
                                 {brands.length > 0 ? (
@@ -436,13 +446,13 @@ const CustomTerminalSelector = ({
                                             key={brand}
                                             className={`brand-model-badge badge ${selectedBrands.includes(brand) ? 'active' : 'bg-light text-dark border'}`}
                                             onClick={() => handleFilterChange('brand', brand)}
-                                            title={`Filter by ${brand}`}
+                                            title={t('admin.selectorCommon.filterBy', { name: brand })}
                                         >
                                             {brand}
                                         </span>
                                     ))
                                 ) : (
-                                    <span className="text-muted small">No brands available</span>
+                                    <span className="text-muted small">{t('admin.terminalGroupsUI.terminalSelector.noBrands')}</span>
                                 )}
                             </div>
                         </div>
@@ -452,19 +462,19 @@ const CustomTerminalSelector = ({
                             <div className="mb-3">
                                 <h6 className="mb-2 fw-semibold text-dark">
                                     <i className="ki-duotone ki-gear fs-5 me-2 text-info"></i>
-                                    Models for Selected Brands ({models.length})
+                                    {t('admin.terminalGroupsUI.terminalSelector.modelsSection', { count: models.length })}
                                 </h6>
                                 {modelsLoading ? (
                                     <div className="text-center py-2">
                                         <div className="spinner-border spinner-border-sm text-info me-2" role="status">
-                                            <span className="visually-hidden">Loading...</span>
+                                            <span className="visually-hidden">{t('admin.selectorCommon.loading')}</span>
                                         </div>
-                                        <span className="text-muted small">Loading models...</span>
+                                        <span className="text-muted small">{t('admin.terminalGroupsUI.terminalSelector.loadingModels')}</span>
                                     </div>
                                 ) : modelsError ? (
                                     <div className="alert alert-warning py-2">
                                         <i className="ki-duotone ki-warning fs-5 me-2"></i>
-                                        <small>Unable to load models. Using fallback data.</small>
+                                        <small>{t('admin.terminalGroupsUI.terminalSelector.modelsFallback')}</small>
                                     </div>
                                 ) : (
                                     <div className="d-flex flex-wrap gap-2">
@@ -474,13 +484,13 @@ const CustomTerminalSelector = ({
                                                     key={model}
                                                     className={`brand-model-badge badge ${selectedModels.includes(model) ? 'active' : 'bg-light text-dark border'}`}
                                                     onClick={() => handleFilterChange('model', model)}
-                                                    title={`Filter by ${model}`}
+                                                    title={t('admin.selectorCommon.filterBy', { name: model })}
                                                 >
                                                     {model}
                                                 </span>
                                             ))
                                         ) : (
-                                            <span className="text-muted small">No models available for selected brands</span>
+                                            <span className="text-muted small">{t('admin.terminalGroupsUI.terminalSelector.noModelsForBrands')}</span>
                                         )}
                                     </div>
                                 )}
@@ -497,14 +507,14 @@ const CustomTerminalSelector = ({
                                 {manufacturersLoading ? (
                                     <div className="text-center py-2">
                                         <div className="spinner-border spinner-border-sm text-success me-2" role="status">
-                                            <span className="visually-hidden">Loading...</span>
+                                            <span className="visually-hidden">{t('admin.selectorCommon.loading')}</span>
                                         </div>
-                                        <span className="text-muted small">Loading manufacturers...</span>
+                                        <span className="text-muted small">{t('admin.terminalGroupsUI.terminalSelector.loadingManufacturers')}</span>
                                     </div>
                                 ) : manufacturersError ? (
                                     <div className="alert alert-warning py-2">
                                         <i className="ki-duotone ki-warning fs-5 me-2"></i>
-                                        <small>Unable to load manufacturers. Using fallback data.</small>
+                                        <small>{t('admin.terminalGroupsUI.terminalSelector.manufacturersFallback')}</small>
                                     </div>
                                 ) : (
                                     <div className="d-flex flex-wrap gap-2">
@@ -514,13 +524,13 @@ const CustomTerminalSelector = ({
                                                     key={manufacturer}
                                                     className={`brand-model-badge badge ${selectedManufacturers.includes(manufacturer) ? 'active' : 'bg-light text-dark border'}`}
                                                     onClick={() => handleFilterChange('manufacturer', manufacturer)}
-                                                    title={`Filter by ${manufacturer}`}
+                                                    title={t('admin.selectorCommon.filterBy', { name: manufacturer })}
                                                 >
                                                     {manufacturer}
                                                 </span>
                                             ))
                                         ) : (
-                                            <span className="text-muted small">No manufacturers available for selected models</span>
+                                            <span className="text-muted small">{t('admin.terminalGroupsUI.terminalSelector.noManufacturersForModels')}</span>
                                         )}
                                     </div>
                                 )}
@@ -556,14 +566,14 @@ const CustomTerminalSelector = ({
             <div className="filter-top-bar mb-3 p-3 bg-light rounded">
                 <div className="d-flex justify-content-between align-items-center">
                     <div className="d-flex align-items-center gap-2 flex-wrap">
-                        <span className="fw-bold">Active Filters:</span>
+                        <span className="fw-bold">{t('admin.selectorCommon.activeFiltersHeading')}</span>
                         {getActiveFiltersCount() === 0 ? (
-                            <span className="text-muted">None selected</span>
+                            <span className="text-muted">{t('admin.selectorCommon.noneSelected')}</span>
                         ) : (
                             <>
                                 {selectedBrands.length > 0 && (
                                     <span className="badge bg-primary me-2">
-                                        Brands: {selectedBrands.join(', ')}
+                                        {t('admin.selectorCommon.brandsLabel')} {selectedBrands.join(', ')}
                                         <button 
                                             className="btn-close btn-close-white ms-2" 
                                             onClick={() => setSelectedBrands([])}
@@ -573,7 +583,7 @@ const CustomTerminalSelector = ({
                                 )}
                                 {selectedModels.length > 0 && (
                                     <span className="badge bg-success me-2">
-                                        Models: {selectedModels.join(', ')}
+                                        {t('admin.selectorCommon.modelsLabel')} {selectedModels.join(', ')}
                                         <button 
                                             className="btn-close btn-close-white ms-2" 
                                             onClick={() => setSelectedModels([])}
@@ -583,7 +593,7 @@ const CustomTerminalSelector = ({
                                 )}
                                 {selectedManufacturers.length > 0 && (
                                     <span className="badge bg-info me-2">
-                                        Manufacturers: {selectedManufacturers.join(', ')}
+                                        {t('admin.selectorCommon.manufacturersLabel')} {selectedManufacturers.join(', ')}
                                         <button 
                                             className="btn-close btn-close-white ms-2" 
                                             onClick={() => setSelectedManufacturers([])}
@@ -599,7 +609,7 @@ const CustomTerminalSelector = ({
                             className="btn btn-sm btn-outline-secondary"
                             onClick={clearAllFilters}
                         >
-                            Clear All
+                            {t('admin.selectorCommon.clearAll')}
                         </button>
                     )}
                 </div>
@@ -617,7 +627,7 @@ const CustomTerminalSelector = ({
                     <input
                         type="text"
                         className="form-control"
-                        placeholder="Search terminals by name or ID..."
+                        placeholder={t('admin.terminalGroupsUI.terminalSelector.searchPlaceholder')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -629,7 +639,7 @@ const CustomTerminalSelector = ({
                 {/* Results Count */}
                 <div className="results-count mb-3 p-2 bg-light rounded">
                     <small className="text-muted">
-                        Showing {filteredTerminals.length} of {terminals.length} terminals
+                        {t('admin.terminalGroupsUI.terminalSelector.showingTerminals', { shown: filteredTerminals.length, total: terminals.length })}
                     </small>
                 </div>
 
@@ -639,9 +649,9 @@ const CustomTerminalSelector = ({
                         <div className="alert alert-info py-2 mb-3">
                             <div className="d-flex align-items-center">
                                 <div className="spinner-border spinner-border-sm text-info me-2" role="status">
-                                    <span className="visually-hidden">Loading...</span>
+                                    <span className="visually-hidden">{t('admin.selectorCommon.loading')}</span>
                                 </div>
-                                <span className="small">Fetching filtered terminals from server...</span>
+                                <span className="small">{t('admin.terminalGroupsUI.terminalSelector.fetchingTerminals')}</span>
                             </div>
                         </div>
                     )}
@@ -649,38 +659,38 @@ const CustomTerminalSelector = ({
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <div className="d-flex align-items-center gap-3">
                             <h6 className="mb-0 fw-bold">
-                                Terminals ({filteredTerminals.length})
+                                {t('admin.terminalGroupsUI.terminalSelector.terminalsHeading', { count: filteredTerminals.length })}
                             </h6>
                             {filteredTerminals.length > 0 && (
                                 <div className="d-flex align-items-center gap-2">
                                     <button
                                         className={`btn btn-sm ${selectedTerminals.length === filteredTerminals.length && filteredTerminals.length > 0 ? 'btn-success' : 'btn-outline-primary'}`}
                                         onClick={() => handleSelectAll()}
-                                        title={selectedTerminals.length === filteredTerminals.length ? 'Deselect All' : 'Select All'}
+                                        title={terminalSelectAllAction}
                                     >
                                         <i className={`ki-duotone ${selectedTerminals.length === filteredTerminals.length && filteredTerminals.length > 0 ? 'ki-check' : 'ki-plus'} fs-5 me-1`}>
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        {selectedTerminals.length === filteredTerminals.length && filteredTerminals.length > 0 ? 'Deselect All' : 'Select All'}
+                                        {terminalSelectAllAction}
                                     </button>
                                     {selectedTerminals.length > 0 && selectedTerminals.length < filteredTerminals.length && (
                                         <small className="text-muted">
-                                            ({selectedTerminals.length} of {filteredTerminals.length})
+                                            {t('admin.selectorCommon.ofTotal', { selected: selectedTerminals.length, total: filteredTerminals.length })}
                                         </small>
                                     )}
                                 </div>
                             )}
                         </div>
                         <small className="text-muted">
-                            {selectedTerminals.length} selected
+                            {t('admin.selectorCommon.selectedCount', { count: selectedTerminals.length })}
                         </small>
                     </div>
 
                     {loading ? (
                         <div className="text-center py-4">
                             <div className="spinner-border text-primary" role="status">
-                                <span className="visually-hidden">Loading...</span>
+                                <span className="visually-hidden">{t('admin.selectorCommon.loading')}</span>
                             </div>
                         </div>
                     ) : filteredTerminals.length === 0 ? (
@@ -689,7 +699,7 @@ const CustomTerminalSelector = ({
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            <p>No terminals found matching your criteria</p>
+                            <p>{t('admin.terminalGroupsUI.terminalSelector.noMatch')}</p>
                         </div>
                     ) : (
                         <div className="terminal-grid">
@@ -704,13 +714,10 @@ const CustomTerminalSelector = ({
                                         id="select-all-terminals"
                                     />
                                     <label className="form-check-label fw-semibold mb-0" htmlFor="select-all-terminals">
-                                        {selectedTerminals.length === filteredTerminals.length && filteredTerminals.length > 0 
-                                            ? 'Deselect All' 
-                                            : 'Select All'
-                                        } Terminals
+                                        {t('admin.terminalGroupsUI.terminalSelector.selectAllTerminals', { action: terminalSelectAllAction })}
                                         {selectedTerminals.length > 0 && (
                                             <span className="text-muted ms-2">
-                                                ({selectedTerminals.length} of {filteredTerminals.length})
+                                                {t('admin.selectorCommon.ofTotal', { selected: selectedTerminals.length, total: filteredTerminals.length })}
                                             </span>
                                         )}
                                     </label>
@@ -742,21 +749,21 @@ const CustomTerminalSelector = ({
                                             <div className="fw-semibold">{terminal.name}</div>
                                             <div className="row">
                                                 <div className="text-muted small col-md-6">
-                                                    ID: {terminal.terminal_id}
+                                                    {t('admin.selectorCommon.labelId')} {terminal.terminal_id}
                                                 </div>
                                                 {terminal.brand && (
                                                     <div className="text-muted small col-md-6">
-                                                        Brand: {terminal.brand}
+                                                        {t('admin.selectorCommon.labelBrand')} {terminal.brand}
                                                     </div>
                                                 )}
                                                 {terminal.model && (
                                                     <div className="text-muted small col-md-6">
-                                                        Model: {terminal.model}
+                                                        {t('admin.selectorCommon.labelModel')} {terminal.model}
                                                     </div>
                                                 )}
                                                 {terminal.manufacturer && (
                                                     <div className="text-muted small col-md-6">
-                                                        Manufacturer: {terminal.manufacturer}
+                                                        {t('admin.selectorCommon.labelManufacturer')} {terminal.manufacturer}
                                                     </div>
                                                 )}
                                             </div>
@@ -773,11 +780,11 @@ const CustomTerminalSelector = ({
             {selectedTerminals.length > 0 && (
                 <div className="selected-summary mt-3 p-3 bg-primary bg-opacity-10 rounded">
                     <h6 className="mb-2 fw-bold">
-                        Selected Terminals ({selectedTerminals.length})
+                        {t('admin.terminalGroupsUI.terminalSelector.selectedTerminalsTitle', { count: selectedTerminals.length })}
                     </h6>
                     <div className="selected-list">
                         {terminals
-                            .filter(t => selectedTerminals.includes(t.id))
+                            .filter(term => selectedTerminals.includes(term.id))
                             .map(terminal => (
                                 <span key={terminal.id} className="badge bg-primary me-2 mb-1">
                                     {terminal.name} ({terminal.terminal_id})

@@ -1,7 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
-const renderStatusBadge = (status, terminalStatus, displayName) => {
-    let label = displayName || 'Inactive';
+const renderStatusBadge = (status, terminalStatus, displayName, t) => {
+    let label = displayName || t('merchant.common.inactive');
     let badgeClass = 'badge-light-danger';
 
     if (terminalStatus) {
@@ -9,29 +10,32 @@ const renderStatusBadge = (status, terminalStatus, displayName) => {
 
         switch (normalized) {
             case 'online':
+                label = displayName || t('merchant.common.online');
+                badgeClass = 'badge-light-success';
+                break;
             case 'active':
-                label = terminalStatus.charAt(0).toUpperCase() + terminalStatus.slice(1);
+                label = displayName || t('merchant.common.active');
                 badgeClass = 'badge-light-success';
                 break;
             case 'offline':
-                label = 'Offline';
+                label = displayName || t('merchant.common.offline');
                 badgeClass = 'badge-light-warning';
                 break;
             default:
-                label = terminalStatus.charAt(0).toUpperCase() + terminalStatus.slice(1);
+                label = displayName || terminalStatus.charAt(0).toUpperCase() + terminalStatus.slice(1);
                 badgeClass = 'badge-light-secondary';
                 break;
         }
     } else if (status === true || status === 1 || status === '1' || status === 'active') {
-        label = 'Active';
+        label = displayName || t('merchant.common.active');
         badgeClass = 'badge-light-success';
     }
 
     return <span className={`badge ${badgeClass}`}>{label}</span>;
 };
 
-const formatDateTime = (value) => {
-    if (!value) return 'N/A';
+const formatDateTime = (value, na) => {
+    if (!value) return na;
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 };
@@ -49,16 +53,21 @@ const EmptyState = ({ title, description, icon = 'ki-information' }) => (
 );
 
 const UserTerminalsTab = ({ terminals = [], terminalGroups = [] }) => {
+    const { t } = useTranslation();
+    const na = t('merchant.common.na');
+
     return (
         <div className="row g-5 g-xl-8">
             <div className="col-xl-12">
                 <div className="card mb-5 mb-xl-10">
                     <div className="card-header border-0">
                         <div className="card-title m-0">
-                            <h3 className="fw-bolder m-0">Assigned Terminal Groups</h3>
+                            <h3 className="fw-bolder m-0">{t('merchant.users.terminalsTab.terminalGroupsTitle')}</h3>
                         </div>
                         <div className="card-toolbar">
-                            <span className="badge badge-light-primary">{terminalGroups.length} groups</span>
+                            <span className="badge badge-light-primary">
+                                {t('merchant.users.terminalsTab.groupsBadge', { count: terminalGroups.length })}
+                            </span>
                         </div>
                     </div>
                     <div className="card-body p-0">
@@ -67,11 +76,11 @@ const UserTerminalsTab = ({ terminals = [], terminalGroups = [] }) => {
                                 <table className="table table-row-dashed table-row-gray-100 align-middle gs-0 gy-4">
                                     <thead>
                                         <tr className="fw-bold text-muted">
-                                            <th className="min-w-200px ps-9">Group Name</th>
-                                            <th className="min-w-150px">Group ID</th>
-                                            <th className="min-w-150px">Terminals</th>
-                                            <th className="min-w-150px">Status</th>
-                                            <th className="min-w-175px">Assigned At</th>
+                                            <th className="min-w-200px ps-9">{t('merchant.users.terminalsTab.colGroupName')}</th>
+                                            <th className="min-w-150px">{t('merchant.users.terminalsTab.colGroupId')}</th>
+                                            <th className="min-w-150px">{t('merchant.users.terminalsTab.colTerminals')}</th>
+                                            <th className="min-w-150px">{t('merchant.users.terminalsTab.colStatus')}</th>
+                                            <th className="min-w-175px">{t('merchant.users.terminalsTab.colAssignedAt')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -79,9 +88,7 @@ const UserTerminalsTab = ({ terminals = [], terminalGroups = [] }) => {
                                             <tr key={group.id}>
                                                 <td className="ps-9">
                                                     <div className="d-flex flex-column">
-                                                        <span className="text-dark fw-bold text-hover-primary fs-6">
-                                                            {group.name}
-                                                        </span>
+                                                        <span className="text-dark fw-bold text-hover-primary fs-6">{group.name}</span>
                                                         {group.description && (
                                                             <span className="text-muted fs-7">{group.description}</span>
                                                         )}
@@ -91,12 +98,10 @@ const UserTerminalsTab = ({ terminals = [], terminalGroups = [] }) => {
                                                     <span className="badge badge-light-info">{group.group_id}</span>
                                                 </td>
                                                 <td>
-                                                    <span className="fw-bold text-gray-800">
-                                                        {group.terminals_count ?? 0}
-                                                    </span>
+                                                    <span className="fw-bold text-gray-800">{group.terminals_count ?? 0}</span>
                                                 </td>
-                                                <td>{renderStatusBadge(group.is_active, null, group.status_display_name)}</td>
-                                                <td>{formatDateTime(group.assigned_at)}</td>
+                                                <td>{renderStatusBadge(group.is_active, null, group.status_display_name, t)}</td>
+                                                <td>{formatDateTime(group.assigned_at, na)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -104,8 +109,8 @@ const UserTerminalsTab = ({ terminals = [], terminalGroups = [] }) => {
                             </div>
                         ) : (
                             <EmptyState
-                                title="No Terminal Groups"
-                                description="This user is not assigned to any terminal groups yet."
+                                title={t('merchant.users.terminalsTab.emptyGroupsTitle')}
+                                description={t('merchant.users.terminalsTab.emptyGroupsHint')}
                             />
                         )}
                     </div>
@@ -116,10 +121,12 @@ const UserTerminalsTab = ({ terminals = [], terminalGroups = [] }) => {
                 <div className="card">
                     <div className="card-header border-0">
                         <div className="card-title m-0">
-                            <h3 className="fw-bolder m-0">Assigned Terminals</h3>
+                            <h3 className="fw-bolder m-0">{t('merchant.users.terminalsTab.terminalsTitle')}</h3>
                         </div>
                         <div className="card-toolbar">
-                            <span className="badge badge-light-primary">{terminals.length} terminals</span>
+                            <span className="badge badge-light-primary">
+                                {t('merchant.users.terminalsTab.terminalsBadge', { count: terminals.length })}
+                            </span>
                         </div>
                     </div>
                     <div className="card-body p-0">
@@ -128,12 +135,12 @@ const UserTerminalsTab = ({ terminals = [], terminalGroups = [] }) => {
                                 <table className="table table-row-dashed table-row-gray-100 align-middle gs-0 gy-4">
                                     <thead>
                                         <tr className="fw-bold text-muted">
-                                            <th className="min-w-200px ps-9">Terminal Name</th>
-                                            <th className="min-w-150px">Device ID</th>
-                                            <th className="min-w-150px">Terminal ID</th>
-                                            <th className="min-w-150px">Serial Number</th>
-                                            <th className="min-w-125px">Status</th>
-                                            <th className="min-w-175px">Assigned At</th>
+                                            <th className="min-w-200px ps-9">{t('merchant.users.terminalsTab.colTerminalName')}</th>
+                                            <th className="min-w-150px">{t('merchant.users.terminalsTab.colDeviceId')}</th>
+                                            <th className="min-w-150px">{t('merchant.users.terminalsTab.colTerminalId')}</th>
+                                            <th className="min-w-150px">{t('merchant.users.terminalsTab.colSerialNumber')}</th>
+                                            <th className="min-w-125px">{t('merchant.users.terminalsTab.colStatus')}</th>
+                                            <th className="min-w-175px">{t('merchant.users.terminalsTab.colAssignedAt')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -142,7 +149,7 @@ const UserTerminalsTab = ({ terminals = [], terminalGroups = [] }) => {
                                                 <td className="ps-9">
                                                     <div className="d-flex flex-column">
                                                         <span className="text-dark fw-bold text-hover-primary fs-6">
-                                                            {terminal.name || 'Unnamed Terminal'}
+                                                            {terminal.name || t('merchant.users.terminalsTab.unnamedTerminal')}
                                                         </span>
                                                         {terminal.model && (
                                                             <span className="text-muted fs-7">
@@ -153,28 +160,23 @@ const UserTerminalsTab = ({ terminals = [], terminalGroups = [] }) => {
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <span className="fw-semibold text-gray-600">
-                                                        {terminal.device_id || 'N/A'}
-                                                    </span>
+                                                    <span className="fw-semibold text-gray-600">{terminal.device_id || na}</span>
                                                 </td>
                                                 <td>
-                                                    <span className="fw-semibold text-gray-600">
-                                                        {terminal.terminal_id || 'N/A'}
-                                                    </span>
+                                                    <span className="fw-semibold text-gray-600">{terminal.terminal_id || na}</span>
                                                 </td>
                                                 <td>
-                                                    <span className="fw-semibold text-gray-600">
-                                                        {terminal.serial_no || 'N/A'}
-                                                    </span>
+                                                    <span className="fw-semibold text-gray-600">{terminal.serial_no || na}</span>
                                                 </td>
                                                 <td>
                                                     {renderStatusBadge(
                                                         terminal.is_active,
                                                         terminal.terminal_status,
-                                                        terminal.status_display_name
+                                                        terminal.status_display_name,
+                                                        t
                                                     )}
                                                 </td>
-                                                <td>{formatDateTime(terminal.assigned_at)}</td>
+                                                <td>{formatDateTime(terminal.assigned_at, na)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -183,8 +185,8 @@ const UserTerminalsTab = ({ terminals = [], terminalGroups = [] }) => {
                         ) : (
                             <EmptyState
                                 icon="ki-tablet"
-                                title="No Terminals Assigned"
-                                description="Assign terminals to this user to grant device access."
+                                title={t('merchant.users.terminalsTab.emptyTerminalsTitle')}
+                                description={t('merchant.users.terminalsTab.emptyTerminalsHint')}
                             />
                         )}
                     </div>
@@ -195,4 +197,3 @@ const UserTerminalsTab = ({ terminals = [], terminalGroups = [] }) => {
 };
 
 export default UserTerminalsTab;
-

@@ -4,11 +4,13 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 import enApp from '../locales/en/app.json';
 import arApp from '../locales/ar/app.json';
+import enAuth from '../locales/en/auth.json';
+import arAuth from '../locales/ar/auth.json';
 import { applyMetronicRtlStylesheets, applyDocumentDirection } from './rtlStylesheets';
 
 const resources = {
-    en: { translation: enApp },
-    ar: { translation: arApp },
+    en: { translation: { ...enApp, ...enAuth } },
+    ar: { translation: { ...arApp, ...arAuth } },
 };
 
 function applyDocumentLanguage(lng) {

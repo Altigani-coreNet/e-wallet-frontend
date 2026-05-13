@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { createServiceFee } from '../../../../services/adminServiceFeesService';
 
 const AdminServiceFeeCreate = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -16,9 +18,9 @@ const AdminServiceFeeCreate = () => {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        setTitle('Create Service Fee');
+        setTitle(t('admin.settings.serviceFees.createTitle'));
         setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -37,10 +39,10 @@ const AdminServiceFeeCreate = () => {
         setLoading(false);
 
         if (response.success) {
-            toast.success('Service fee created successfully');
+            toast.success(t('admin.settings.serviceFees.createSuccess'));
             navigate('/admin/settings/service-fees');
         } else {
-            toast.error(response.error || 'Failed to create service fee');
+            toast.error(response.error || t('admin.settings.serviceFees.createFailed'));
             if (response.errors) {
                 setErrors(response.errors);
             }
@@ -51,13 +53,13 @@ const AdminServiceFeeCreate = () => {
         <>
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title">Service Fee Information</h3>
+                        <h3 className="card-title">{t('admin.settings.serviceFees.cardInfo')}</h3>
                     </div>
                     <form onSubmit={handleSubmit}>
                         <div className="card-body">
                             <div className="row mb-6">
                                 <div className="col-lg-6">
-                                    <label className="form-label required">Name</label>
+                                    <label className="form-label required">{t('admin.settings.serviceFees.labelName')}</label>
                                     <input 
                                         type="text"
                                         name="name"
@@ -69,7 +71,7 @@ const AdminServiceFeeCreate = () => {
                                     {errors.name && <div className="invalid-feedback">{errors.name[0]}</div>}
                                 </div>
                                 <div className="col-lg-6">
-                                    <label className="form-label required">Type</label>
+                                    <label className="form-label required">{t('admin.settings.serviceFees.labelType')}</label>
                                     <input 
                                         type="text"
                                         name="type"
@@ -83,7 +85,7 @@ const AdminServiceFeeCreate = () => {
                             </div>
                             <div className="row mb-6">
                                 <div className="col-lg-6">
-                                    <label className="form-label required">Fees</label>
+                                    <label className="form-label required">{t('admin.settings.serviceFees.labelFees')}</label>
                                     <input 
                                         type="number"
                                         name="fees"
@@ -104,7 +106,7 @@ const AdminServiceFeeCreate = () => {
                                 className="btn btn-light btn-active-light-primary me-2"
                                 onClick={() => navigate('/admin/settings/service-fees')}
                             >
-                                Cancel
+                                {t('admin.common.cancel')}
                             </button>
                             <button 
                                 type="submit" 
@@ -114,10 +116,10 @@ const AdminServiceFeeCreate = () => {
                                 {loading ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2"></span>
-                                        Creating...
+                                        {t('admin.settings.serviceFees.creating')}
                                     </>
                                 ) : (
-                                    'Create Service Fee'
+                                    t('admin.settings.serviceFees.createBtn')
                                 )}
                             </button>
                         </div>
@@ -128,5 +130,3 @@ const AdminServiceFeeCreate = () => {
 };
 
 export default AdminServiceFeeCreate;
-
-

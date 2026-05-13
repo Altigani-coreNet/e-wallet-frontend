@@ -1,32 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import ServiceModel from '../../../services/ServiceModel';
 
-const resolveServiceName = (service) => {
-    if (!service) return 'N/A';
-    if (service.service_name_en || service.service_name_ar) {
-        return service.service_name_en || service.service_name_ar || service.id || 'N/A';
-    }
-    if (service.service_name_text) return service.service_name_text;
-    if (service.service_name && typeof service.service_name === 'object') {
-        return service.service_name.en || service.service_name.ar || service.id || 'N/A';
-    }
-    return service.service_name || service.id || 'N/A';
-};
-
-const resolveCountry = (service) => {
-    const c = service?.country;
-    if (!c) return 'N/A';
-    const n = c.name;
-    if (typeof n === 'string') return n;
-    if (n && typeof n === 'object') return n.en || n.ar || 'N/A';
-    return 'N/A';
-};
-
-const PartnerServicesTab = ({ services = [], loading, partnerId }) => (
-    <div className="card mb-5 mb-xl-10">
+const PartnerServicesTab = ({ services = [], loading, partnerId }) => {
+    const { t } = useTranslation();
+    return (
+        <div className="card mb-5 mb-xl-10">
         <div className="card-header border-0 align-items-center">
             <div className="card-title m-0">
-                <h3 className="fw-bolder m-0">Services</h3>
+                <h3 className="fw-bolder m-0">{t('admin.paymentGetway.viewServiceCol')}</h3>
             </div>
             {partnerId && (
                 <div className="card-toolbar">
@@ -34,47 +17,47 @@ const PartnerServicesTab = ({ services = [], loading, partnerId }) => (
                         to={`/admin/services?partner_id=${encodeURIComponent(partnerId)}`}
                         className="btn btn-sm btn-light-primary"
                     >
-                        Open services list
+                        {t('admin.paymentGetway.viewOpenServicesList')}
                     </Link>
                 </div>
             )}
         </div>
         <div className="card-body border-top p-9">
             {loading ? (
-                <div className="text-muted">Loading services...</div>
+                <div className="text-muted">{t('admin.paymentGetway.viewLoadingServices')}</div>
             ) : services.length === 0 ? (
-                <div className="text-muted">No services linked to this partner.</div>
+                <div className="text-muted">{t('admin.paymentGetway.viewNoLinkedServices')}</div>
             ) : (
                 <div className="table-responsive">
                     <table className="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
                         <thead>
                             <tr className="fw-bold text-muted">
-                                <th className="min-w-200px">Service</th>
-                                <th className="min-w-100px">Type</th>
-                                <th className="min-w-100px">Country</th>
-                                <th className="min-w-80px">Status</th>
-                                <th className="min-w-80px text-end">Actions</th>
+                                <th className="min-w-200px">{t('admin.paymentGetway.viewServiceCol')}</th>
+                                <th className="min-w-100px">{t('admin.paymentGetway.viewTypeCol')}</th>
+                                <th className="min-w-100px">{t('admin.paymentGetway.viewCountryCol')}</th>
+                                <th className="min-w-80px">{t('admin.paymentGetway.status')}</th>
+                                <th className="min-w-80px text-end">{t('admin.common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody>
                             {services.map((s) => (
                                 <tr key={s.id}>
                                     <td>
-                                        <span className="text-gray-800 fw-semibold">{resolveServiceName(s)}</span>
+                                        <span className="text-gray-800 fw-semibold">{ServiceModel.displayName(s) || t('admin.paymentGetway.na')}</span>
                                     </td>
                                     <td>
                                         <span className="text-muted fs-7">
                                             {s.service_type_display || s.service_type || '—'}
                                         </span>
                                     </td>
-                                    <td className="text-muted fs-7">{resolveCountry(s)}</td>
+                                    <td className="text-muted fs-7">{ServiceModel.countryName(s) || t('admin.paymentGetway.na')}</td>
                                     <td>
                                         <span
                                             className={`badge ${
                                                 s.is_active ? 'badge-light-success' : 'badge-light-secondary'
                                             }`}
                                         >
-                                            {s.is_active ? 'Active' : 'Inactive'}
+                                            {s.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                         </span>
                                     </td>
                                     <td className="text-end">
@@ -86,7 +69,7 @@ const PartnerServicesTab = ({ services = [], loading, partnerId }) => (
                                             }
                                             className="btn btn-sm btn-light-primary"
                                         >
-                                            View
+                                            {t('admin.common.view')}
                                         </Link>
                                     </td>
                                 </tr>
@@ -96,7 +79,8 @@ const PartnerServicesTab = ({ services = [], loading, partnerId }) => (
                 </div>
             )}
         </div>
-    </div>
-);
+        </div>
+    );
+};
 
 export default PartnerServicesTab;

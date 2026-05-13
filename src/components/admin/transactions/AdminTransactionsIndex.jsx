@@ -4,6 +4,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
+import ContentProviderModel from '../../../services/ContentProviderModel';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { exportTransactions } from '../../../utils/transactionExport';
@@ -820,7 +821,7 @@ const AdminTransactionsIndex = () => {
                                     <option value="">{t('admin.transactionsIndex.allPartners')}</option>
                                     {partnersList.map((partner) => (
                                         <option key={partner.id} value={partner.id}>
-                                            {partner.business_name || partner.name}
+                                            {ContentProviderModel.displayName(partner)}
                                         </option>
                                     ))}
                                 </select>

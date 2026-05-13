@@ -14,7 +14,7 @@ const TerminalTableRow = ({
     onSelect, 
     onDelete 
 }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const canEditTerminal = useCan('pos.terminals.edit_terminals');
     const canDeleteTerminal = useCan('pos.terminals.delete_terminals');
 

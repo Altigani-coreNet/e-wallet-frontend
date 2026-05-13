@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { getServiceFeesData, bulkDeleteServiceFees } from '../../../../services/adminServiceFeesService';
 import ServiceFeeTableRow from './ServiceFeeTableRow';
@@ -10,6 +11,7 @@ import BulkActionBar from '../../../common/BulkActionBar';
 import '../SkeletonLoader.css';
 
 const AdminServiceFeesIndex = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const [serviceFees, setServiceFees] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -24,7 +26,7 @@ const AdminServiceFeesIndex = () => {
     const [filters, setFilters] = useState({ type: '', date_from: '', date_to: '' });
 
     useEffect(() => {
-        setTitle('Service Fees Management');
+        setTitle(t('admin.pages.serviceFeesManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button 
@@ -39,7 +41,9 @@ const AdminServiceFeesIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">{showFilters ? 'Hide' : 'Show'} Filters</span>
+                    <span className="d-none d-md-inline ms-1">
+                        {showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}
+                    </span>
                 </button>
                 <button 
                     type="button" 
@@ -50,19 +54,19 @@ const AdminServiceFeesIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Import</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.settings.serviceFees.import')}</span>
                 </button>
                 <Link to="/admin/settings/service-fees/create" className="btn btn-sm fw-bold btn-primary">
                     <i className="ki-duotone ki-plus fs-3">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Add Service Fee</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.settings.serviceFees.add')}</span>
                 </Link>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters]);
+    }, [setTitle, setActions, showFilters, t]);
 
     useEffect(() => { 
         fetchServiceFees(); 
@@ -103,12 +107,12 @@ const AdminServiceFeesIndex = () => {
                     }));
                 }
             } else {
-                toast.error(response.error || 'Failed to fetch service fees');
+                toast.error(response.error || t('admin.settings.serviceFees.fetchFailed'));
                 setServiceFees([]);
             }
         } catch (error) {
             console.error('Fetch error:', error);
-            toast.error('Failed to fetch service fees');
+            toast.error(t('admin.settings.serviceFees.fetchFailed'));
             setServiceFees([]);
         } finally {
             setLoading(false);
@@ -117,19 +121,19 @@ const AdminServiceFeesIndex = () => {
 
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) {
-            toast.warning('Please select service fees to delete');
+            toast.warning(t('admin.settings.serviceFees.selectToDelete'));
             return;
         }
         
-        if (!window.confirm(`Delete ${selectedIds.length} service fee(s)?`)) return;
+        if (!window.confirm(t('admin.settings.serviceFees.bulkDeleteConfirm', { count: selectedIds.length }))) return;
         
         const response = await bulkDeleteServiceFees(selectedIds);
         if (response.success) {
-            toast.success('Service fees deleted successfully');
+            toast.success(t('admin.settings.serviceFees.bulkDeleted'));
             setSelectedIds([]);
             fetchServiceFees();
         } else {
-            toast.error(response.error || 'Failed to delete service fees');
+            toast.error(response.error || t('admin.settings.serviceFees.bulkDeleteFailed'));
         }
     };
 
@@ -154,7 +158,7 @@ const AdminServiceFeesIndex = () => {
                     <BulkActionBar 
                         selectedCount={selectedIds.length}
                         onDelete={handleBulkDelete}
-                        onCancel={() => setSelectedIds([])}
+                        onClear={() => setSelectedIds([])}
                     />
                 )}
 
@@ -169,7 +173,7 @@ const AdminServiceFeesIndex = () => {
                                 <input 
                                     type="text" 
                                     className="form-control form-control-solid w-250px ps-13" 
-                                    placeholder="Search Service Fees"
+                                    placeholder={t('admin.settings.serviceFees.searchToolbar')}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
@@ -191,12 +195,12 @@ const AdminServiceFeesIndex = () => {
                                             />
                                         </div>
                                     </th>
-                                    <th>ID</th>
-                                    <th className="min-w-200px">Name</th>
-                                    <th>Type</th>
-                                    <th>Fees</th>
-                                    <th>Created At</th>
-                                    <th className="text-end min-w-100px">Actions</th>
+                                    <th>{t('admin.settings.serviceFees.colId')}</th>
+                                    <th className="min-w-200px">{t('admin.settings.serviceFees.colName')}</th>
+                                    <th>{t('admin.settings.serviceFees.colType')}</th>
+                                    <th>{t('admin.settings.serviceFees.colFees')}</th>
+                                    <th>{t('admin.settings.serviceFees.colCreatedAt')}</th>
+                                    <th className="text-end min-w-100px">{t('admin.common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="fw-semibold text-gray-600">
@@ -216,7 +220,7 @@ const AdminServiceFeesIndex = () => {
                                     </>
                                 ) : serviceFees.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="text-center py-5">No service fees found</td>
+                                        <td colSpan="7" className="text-center py-5">{t('admin.settings.serviceFees.noRows')}</td>
                                     </tr>
                                 ) : (
                                     serviceFees.map(serviceFee => (
@@ -238,7 +242,10 @@ const AdminServiceFeesIndex = () => {
                             <div className="row">
                                 <div className="col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start">
                                     <div className="dataTables_length">
-                                        Showing page {pagination.current_page} of {pagination.last_page}
+                                        {t('admin.settings.serviceFees.showingPage', {
+                                            current: pagination.current_page,
+                                            last: pagination.last_page,
+                                        })}
                                     </div>
                                 </div>
                                 <div className="col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end">
@@ -293,4 +300,3 @@ const AdminServiceFeesIndex = () => {
 };
 
 export default AdminServiceFeesIndex;
-

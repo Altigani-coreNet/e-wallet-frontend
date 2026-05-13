@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getRoles } from '../../services/rolesService';
 import { getBranchesForSelect } from '../../services/branchesService';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorAlert from '../common/ErrorAlert';
 
 const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) => {
+    const { t } = useTranslation();
     const location = useLocation();
     
     // Detect route context (merchant or sales)
@@ -162,7 +164,7 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
             {/* Card Header */}
             <div className="card-header border-0 pt-6">
                 <div className="card-title">
-                    <h2>{mode === 'create' ? 'Add User' : 'Edit User'}</h2>
+                    <h2>{mode === 'create' ? t('merchant.users.form.addTitle') : t('merchant.users.form.editTitle')}</h2>
                 </div>
                 <div className="card-toolbar">
                     <div className="d-flex justify-content-end">
@@ -171,7 +173,7 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Back
+                            {t('merchant.users.form.back')}
                         </Link>
                     </div>
                 </div>
@@ -186,14 +188,14 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
                     <div className="row">
                         {/* Name */}
                         <div className="col-md-6 mb-5">
-                            <label className="form-label fs-6 fw-bold required">Name</label>
+                            <label className="form-label fs-6 fw-bold required">{t('merchant.users.form.name')}</label>
                             <input
                                 type="text"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
                                 className={`form-control form-control-solid ${validationErrors.name ? 'is-invalid' : ''}`}
-                                placeholder="Enter name"
+                                placeholder={t('merchant.users.form.namePh')}
                                 required
                             />
                             {validationErrors.name && (
@@ -205,14 +207,14 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
 
                         {/* Email */}
                         <div className="col-md-6 mb-5">
-                            <label className="form-label fs-6 fw-bold required">Email</label>
+                            <label className="form-label fs-6 fw-bold required">{t('merchant.users.form.email')}</label>
                             <input
                                 type="email"
                                 name="email"
                                 value={formData.email}
                                 onChange={handleChange}
                                 className={`form-control form-control-solid ${validationErrors.email ? 'is-invalid' : ''}`}
-                                placeholder="Enter email"
+                                placeholder={t('merchant.users.form.emailPh')}
                                 required
                                 disabled={mode === 'edit'}
                             />
@@ -222,20 +224,20 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
                                 </div>
                             )}
                             {mode === 'edit' && (
-                                <div className="form-text">Email cannot be changed after creation</div>
+                                <div className="form-text">{t('merchant.users.form.emailLockedHint')}</div>
                             )}
                         </div>
 
                         {/* Phone */}
                         <div className="col-md-6 mb-5">
-                            <label className="form-label fs-6 fw-bold required">Phone</label>
+                            <label className="form-label fs-6 fw-bold required">{t('merchant.users.form.phone')}</label>
                             <input
                                 type="text"
                                 name="phone"
                                 value={formData.phone}
                                 onChange={handleChange}
                                 className={`form-control form-control-solid ${validationErrors.phone ? 'is-invalid' : ''}`}
-                                placeholder="Enter phone"
+                                placeholder={t('merchant.users.form.phonePh')}
                                 required
                             />
                             {validationErrors.phone && (
@@ -247,9 +249,9 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
 
                         {/* Branch */}
                         <div className="col-md-6 mb-5">
-                            <label className="form-label fs-6 fw-bold">Branch</label>
+                            <label className="form-label fs-6 fw-bold">{t('merchant.users.form.branch')}</label>
                             {loadingBranches ? (
-                                <div className="text-muted">Loading branches...</div>
+                                <div className="text-muted">{t('merchant.users.form.loadingBranches')}</div>
                             ) : (
                                 <select
                                     name="branch_id"
@@ -257,7 +259,7 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
                                     onChange={handleChange}
                                     className="form-select form-select-solid"
                                 >
-                                    <option value="">Select Branch (Optional)</option>
+                                    <option value="">{t('merchant.users.form.selectBranchOptional')}</option>
                                     {branches.map((branch) => (
                                         <option key={branch.id} value={branch.id}>
                                             {branch.name}
@@ -274,31 +276,31 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
 
                         {/* Status */}
                         <div className="col-md-6 mb-5">
-                            <label className="form-label fs-6 fw-bold">Status</label>
+                            <label className="form-label fs-6 fw-bold">{t('merchant.users.form.status')}</label>
                             <select
                                 name="status"
                                 value={formData.status}
                                 onChange={handleChange}
                                 className="form-select form-select-solid"
                             >
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
+                                <option value="1">{t('merchant.common.active')}</option>
+                                <option value="0">{t('merchant.common.inactive')}</option>
                             </select>
                         </div>
 
                         {/* User Type */}
                         <div className="col-md-6 mb-5">
-                            <label className="form-label fs-6 fw-bold">User Type</label>
+                            <label className="form-label fs-6 fw-bold">{t('merchant.users.form.userType')}</label>
                             <select
                                 name="user_type"
                                 value={formData.user_type}
                                 onChange={handleChange}
                                 className="form-select form-select-solid"
                             >
-                                <option value="">Select User Type</option>
-                                <option value="admin">Admin</option>
-                                <option value="supervisor">Supervisor</option>
-                                <option value="cashier">Cashier</option>
+                                <option value="">{t('merchant.users.form.selectUserType')}</option>
+                                <option value="admin">{t('merchant.users.form.typeAdmin')}</option>
+                                <option value="supervisor">{t('merchant.users.form.typeSupervisor')}</option>
+                                <option value="cashier">{t('merchant.users.form.typeCashier')}</option>
                             </select>
                             {validationErrors.user_type && (
                                 <div className="invalid-feedback d-block">
@@ -317,8 +319,8 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
                                         <span className="path3"></span>
                                     </i>
                                     <div>
-                                        <h5 className="mb-1">Password Auto-Generation</h5>
-                                        <p className="mb-0">A secure random password will be automatically generated for this user. You'll receive it after creation.</p>
+                                        <h5 className="mb-1">{t('merchant.users.form.passwordInfoTitle')}</h5>
+                                        <p className="mb-0">{t('merchant.users.form.passwordInfoBody')}</p>
                                     </div>
                                 </div>
                             </div>
@@ -326,13 +328,13 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
 
                         {/* Roles */}
                         <div className="col-md-12 mb-5">
-                            <label className="form-label fs-6 fw-bold">Roles (Select Multiple)</label>
+                            <label className="form-label fs-6 fw-bold">{t('merchant.users.form.roles')}</label>
                             <div className="text-muted fs-7 mb-3">
-                                {loadingRoles ? 'Loading roles...' : 'Select one or more roles for this user'}
+                                {loadingRoles ? t('merchant.users.form.rolesLoading') : t('merchant.users.form.rolesHint')}
                             </div>
                             
                             {loadingRoles ? (
-                                <LoadingSpinner message="Loading roles..." />
+                                <LoadingSpinner message={t('merchant.users.form.loadingRolesMsg')} />
                             ) : (
                                 <div className="border rounded p-4" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                                     <div className="row">
@@ -356,7 +358,7 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
 
                                         {(!roles || roles.length === 0) && (
                                             <div className="col-12 text-center text-muted py-5">
-                                                No roles available
+                                                {t('merchant.users.form.noRoles')}
                                             </div>
                                         )}
                                     </div>
@@ -366,7 +368,9 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
                             {/* Selected Roles Display */}
                             {selectedRoles.length > 0 && Array.isArray(roles) && (
                                 <div className="mt-3">
-                                    <div className="fs-7 text-muted mb-2">Selected Roles ({selectedRoles.length}):</div>
+                                    <div className="fs-7 text-muted mb-2">
+                                        {t('merchant.users.form.selectedRoles', { count: selectedRoles.length })}
+                                    </div>
                                     <div className="d-flex flex-wrap gap-2">
                                         {roles
                                             .filter(role => selectedRoles.includes(role.id))
@@ -397,14 +401,14 @@ const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) =>
                                 {loading ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2"></span>
-                                        {mode === 'create' ? 'Saving...' : 'Updating...'}
+                                        {mode === 'create' ? t('merchant.users.form.saving') : t('merchant.users.form.updating')}
                                     </>
                                 ) : (
-                                    mode === 'create' ? 'Create User' : 'Update User'
+                                    mode === 'create' ? t('merchant.users.form.createUser') : t('merchant.users.form.updateUser')
                                 )}
                             </button>
                             <Link to={usersPath} className="btn btn-light-danger ms-2">
-                                Cancel
+                                {t('merchant.users.form.cancel')}
                             </Link>
                         </div>
                     </div>

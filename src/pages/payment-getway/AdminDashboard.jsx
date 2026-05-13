@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../contexts/ToolbarContext';
 import AdminDashboardStatistics from './dashboard/AdminDashboardStatistics';
@@ -17,6 +18,7 @@ const createInitialFilters = () => ({
 });
 
 const AdminDashboard = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const queryClient = useQueryClient();
 
@@ -37,7 +39,7 @@ const AdminDashboard = () => {
         queryFn: () => fetchAdminDashboardOverview(filtersForData),
         keepPreviousData: true,
         onError: (err) => {
-            const message = err?.response?.data?.message || err?.message || 'Failed to load dashboard summary.';
+            const message = err?.response?.data?.message || err?.message || t('admin.paymentGetway.failedLoadDashboardSummary');
             toast.error(message);
         },
     });
@@ -47,7 +49,7 @@ const AdminDashboard = () => {
         queryFn: () => fetchAdminDashboardSubscriptions(filtersForData),
         keepPreviousData: true,
         onError: (err) => {
-            const message = err?.response?.data?.message || err?.message || 'Failed to load subscription data.';
+            const message = err?.response?.data?.message || err?.message || t('admin.paymentGetway.failedLoadSubscriptionData');
             toast.error(message);
         },
     });
@@ -58,8 +60,8 @@ const AdminDashboard = () => {
     const isRefreshing = queryStates.some((query) => query.isFetching && !query.isLoading);
 
     useEffect(() => {
-        setTitle('Admin Dashboard');
-    }, [setTitle]);
+        setTitle(t('admin.paymentGetway.adminDashboardTitle'));
+    }, [setTitle, t]);
 
     const activeFilterCount = useMemo(() => {
         let count = 0;
@@ -96,12 +98,12 @@ const AdminDashboard = () => {
                 queryClient.invalidateQueries({ queryKey: ['admin-dashboard-overview'] }),
                 queryClient.invalidateQueries({ queryKey: ['admin-dashboard-subscriptions'] }),
             ]);
-            toast.success('Dashboard data refreshed');
+            toast.success(t('admin.paymentGetway.dashboardDataRefreshed'));
         } catch (err) {
             console.error('Refresh error:', err);
-            toast.error('Failed to refresh dashboard data');
+            toast.error(t('admin.paymentGetway.failedRefreshDashboardData'));
         }
-    }, [queryClient]);
+    }, [queryClient, t]);
 
     useEffect(() => {
         setActions(
@@ -121,20 +123,20 @@ const AdminDashboard = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    {activeFilterCount > 0 ? `Filters Active (${activeFilterCount})` : 'Toggle Filters'}
+                    {activeFilterCount > 0 ? t('admin.paymentGetway.filtersActive', { count: activeFilterCount }) : t('admin.paymentGetway.toggleFiltersToolbar')}
                 </button>
 
                 <button
                     className="btn btn-sm btn-light-primary"
                     onClick={handleRefresh}
                     disabled={isRefreshing}
-                    title="Refresh all dashboard data"
+                    title={t('admin.paymentGetway.refreshAllDashboardDataTitle')}
                 >
                     <i className="ki-duotone ki-arrows-circle fs-6 me-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                    {isRefreshing ? t('admin.paymentGetway.refreshing') : t('admin.paymentGetway.refresh')}
                 </button>
             </>
         );
@@ -149,16 +151,17 @@ const AdminDashboard = () => {
         isRefreshing,
         setActions,
         toggleFilters,
+        t,
     ]);
 
     if (overviewQuery.isError && !overviewQuery.data) {
         return (
             <div className="alert alert-danger m-5" role="alert">
-                <h4 className="alert-heading">Error!</h4>
-                <p>{overviewQuery.error?.response?.data?.message || overviewQuery.error?.message || 'Failed to load dashboard data.'}</p>
+                <h4 className="alert-heading">{t('admin.paymentGetway.errorHeading')}</h4>
+                <p>{overviewQuery.error?.response?.data?.message || overviewQuery.error?.message || t('admin.paymentGetway.failedLoadDashboardDataDot')}</p>
                 <hr />
                 <button className="btn btn-danger" onClick={() => overviewQuery.refetch()}>
-                    Try Again
+                    {t('admin.paymentGetway.tryAgain')}
                 </button>
             </div>
         );

@@ -8,7 +8,7 @@ import useAuthStore from '../../../stores/authStore';
 import { toast } from 'react-toastify';
 
 const UserTransactionsTab = ({ userId, merchantId: propMerchantId }) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { user, merchant } = useAuthStore();
     
@@ -55,14 +55,14 @@ const UserTransactionsTab = ({ userId, merchantId: propMerchantId }) => {
             } catch (err) {
                 console.error('Error fetching transactions:', err);
                 setError(err.message);
-                toast.error('Failed to load transactions');
+                toast.error(t('merchant.users.transactionsTab.toastLoadFailed'));
             } finally {
                 setTransactionsLoading(false);
             }
         };
 
         loadTransactions();
-    }, [userId, merchantId, currentPage, perPage, sortBy, sortOrder]);
+    }, [userId, merchantId, currentPage, perPage, sortBy, sortOrder, t, i18n.language]);
 
     // Handle page change
     const handlePageChange = (page) => {
@@ -170,8 +170,8 @@ const UserTransactionsTab = ({ userId, merchantId: propMerchantId }) => {
                     <span className="path3"></span>
                 </i>
                 <div className="d-flex flex-column">
-                    <h4 className="mb-1 text-warning">User or Merchant Information Missing</h4>
-                    <span>Unable to load transactions. Please ensure user and merchant information is available.</span>
+                    <h4 className="mb-1 text-warning">{t('merchant.users.transactionsTab.missingContextTitle')}</h4>
+                    <span>{t('merchant.users.transactionsTab.missingContextHint')}</span>
                 </div>
             </div>
         );
@@ -229,26 +229,26 @@ const UserTransactionsTab = ({ userId, merchantId: propMerchantId }) => {
                                         onClick={() => handleSort('amount')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Amount {getSortIcon('amount')}
+                                        {t('merchant.users.transactionsTab.colAmount')} {getSortIcon('amount')}
                                     </th>
-                                    <th className="text-dark">Batch No</th>
-                                    <th className="text-dark">SDK</th>
+                                    <th className="text-dark">{t('merchant.users.transactionsTab.colBatchNo')}</th>
+                                    <th className="text-dark">{t('merchant.users.transactionsTab.colSdk')}</th>
                                     <th 
                                         className="text-dark cursor-pointer" 
                                         onClick={() => handleSort('created_at')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Created Time {getSortIcon('created_at')}
+                                        {t('merchant.users.transactionsTab.colCreatedTime')} {getSortIcon('created_at')}
                                     </th>
-                                    <th className="text-dark">Payment Channel</th>
+                                    <th className="text-dark">{t('merchant.users.transactionsTab.colPaymentChannel')}</th>
                                     <th 
                                         className="text-dark cursor-pointer" 
                                         onClick={() => handleSort('status')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        Status {getSortIcon('status')}
+                                        {t('merchant.users.transactionsTab.colStatus')} {getSortIcon('status')}
                                     </th>
-                                    <th className="text-end text-dark">Actions</th>
+                                    <th className="text-end text-dark">{t('merchant.users.transactionsTab.colActions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -342,7 +342,7 @@ const UserTransactionsTab = ({ userId, merchantId: propMerchantId }) => {
                             <div className="col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start">
                                 <div className="dataTables_length">
                                     <label className="d-flex align-items-center">
-                                        <span className="me-2">Show</span>
+                                        <span className="me-2">{t('merchant.users.transactionsTab.show')}</span>
                                         <select 
                                             className="form-select form-select-sm" 
                                             value={perPage}
@@ -354,12 +354,16 @@ const UserTransactionsTab = ({ userId, merchantId: propMerchantId }) => {
                                             <option value="50">50</option>
                                             <option value="100">100</option>
                                         </select>
-                                        <span className="ms-2">entries</span>
+                                        <span className="ms-2">{t('merchant.users.transactionsTab.entries')}</span>
                                     </label>
                                 </div>
                                 <div className="ms-5">
                                     <span className="text-muted">
-                                        Showing {((currentPage - 1) * perPage) + 1} to {Math.min(currentPage * perPage, totalRows)} of {totalRows} entries
+                                        {t('merchant.common.showingEntries', {
+                                            from: ((currentPage - 1) * perPage) + 1,
+                                            to: Math.min(currentPage * perPage, totalRows),
+                                            total: totalRows,
+                                        })}
                                     </span>
                                 </div>
                             </div>
@@ -372,7 +376,7 @@ const UserTransactionsTab = ({ userId, merchantId: propMerchantId }) => {
                                                 onClick={() => handlePageChange(currentPage - 1)}
                                                 disabled={currentPage === 1}
                                             >
-                                                Previous
+                                                {t('merchant.common.previous')}
                                             </button>
                                         </li>
                                         {getPaginationNumbers().map((page, index) => (
@@ -397,7 +401,7 @@ const UserTransactionsTab = ({ userId, merchantId: propMerchantId }) => {
                                                 onClick={() => handlePageChange(currentPage + 1)}
                                                 disabled={currentPage === lastPage}
                                             >
-                                                Next
+                                                {t('merchant.common.next')}
                                             </button>
                                         </li>
                                     </ul>

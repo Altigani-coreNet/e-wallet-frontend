@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AUTH_ENDPOINTS, ADMIN_ENDPOINTS } from '../../../../utils/constants';
 
 const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
+    const { t } = useTranslation();
     const [countries, setCountries] = useState([]);
     const [filteredCountries, setFilteredCountries] = useState([]);
     const [cities, setCities] = useState([]);
@@ -254,11 +256,11 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
             if (data.success && data.data && data.data.terms) {
                 setTermsContent(data.data.terms);
             } else {
-                setTermsContent('Terms and Conditions content not available at the moment. Please contact support for more information.');
+                setTermsContent(t('auth.partnerProfile.termsUnavailable'));
             }
         } catch (error) {
             console.error('Error fetching terms content:', error);
-            setTermsContent('Terms and Conditions content not available at the moment. Please contact support for more information.');
+            setTermsContent(t('auth.partnerProfile.termsUnavailable'));
         } finally {
             setLoading(prev => ({ ...prev, terms: false }));
         }
@@ -344,21 +346,21 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
     return (
         <div className="w-100">
             <div className="pb-10 pb-lg-15">
-                <h2 className="fw-bolder text-dark">Partner Profile</h2>
+                <h2 className="fw-bolder text-dark">{t('auth.partnerProfile.title')}</h2>
                 <div className="text-muted fw-bold fs-6">
-                    Please provide your partner business information to complete onboarding.
+                    {t('auth.partnerProfile.subtitle')}
                 </div>
             </div>
 
             <div className="col-12">
-                <h4 className="fw-bold text-dark mb-4">Business Information</h4>
+                <h4 className="fw-bold text-dark mb-4">{t('auth.partnerProfile.businessInfo')}</h4>
             </div>
 
             <div className="row">
                 {/* Basic Business Information */}
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="owner_name" className="form-label">
-                        Company Name <span className="text-danger">*</span>
+                        {t('auth.partnerProfile.companyName')} <span className="text-danger">*</span>
                     </label>
                     <input
                         type="text"
@@ -367,7 +369,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                         name="owner_name"
                         value={formData.owner_name || ''}
                         onChange={handleChange}
-                        placeholder="Enter Company Name"
+                        placeholder={t('auth.partnerProfile.placeholderCompany')}
                         required
                         style={{ textTransform: 'none' }}
                     />
@@ -378,7 +380,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="name" className="form-label">
-                        Business /Brand Name <span className="text-danger">*</span>
+                        {t('auth.partnerProfile.businessBrandName')} <span className="text-danger">*</span>
                     </label>
                     <input
                         type="text"
@@ -387,7 +389,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                         name="name"
                         value={formData.name || ''}
                         onChange={handleChange}
-                        placeholder="Enter Business /Brand Name"
+                        placeholder={t('auth.partnerProfile.placeholderBrand')}
                         required
                         style={{ textTransform: 'none' }}
                     />
@@ -398,7 +400,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="business_name" className="form-label">
-                        Contact Person Name <span className="text-danger">*</span>
+                        {t('auth.partnerProfile.contactPersonName')} <span className="text-danger">*</span>
                     </label>
                     <input
                         type="text"
@@ -407,7 +409,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                         name="business_name"
                         value={formData.business_name || ''}
                         onChange={handleChange}
-                        placeholder="Enter Contact Person Name"
+                        placeholder={t('auth.partnerProfile.placeholderContact')}
                         required
                         style={{ textTransform: 'none' }}
                     />
@@ -418,7 +420,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="business_phone" className="form-label">
-                        Business Phone <span className="text-danger">*</span>
+                        {t('auth.partnerProfile.businessPhone')} <span className="text-danger">*</span>
                     </label>
                     <input
                         type="tel"
@@ -427,7 +429,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                         name="business_phone"
                         value={formData.business_phone || ''}
                         onChange={handleChange}
-                        placeholder="Enter Business Phone"
+                        placeholder={t('auth.partnerProfile.placeholderPhone')}
                         required
                         style={{ textTransform: 'none' }}
                     />
@@ -438,7 +440,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="country" className="form-label">
-                        Country <span className="text-danger">*</span>
+                        {t('auth.partnerProfile.country')} <span className="text-danger">*</span>
                     </label>
                     <div className="position-relative">
                         <div 
@@ -461,7 +463,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                                         <span className="fw-bold text-gray-800">{selectedCountry.text}</span>
                                     </>
                                 ) : (
-                                    <span className="text-muted">Select Country</span>
+                                    <span className="text-muted">{t('auth.partnerProfile.selectCountry')}</span>
                                 )}
                             </div>
                             <div className="d-flex align-items-center">
@@ -490,7 +492,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                         {loading.countries && (
                             <div className="position-absolute top-50 end-0 translate-middle-y me-3">
                                 <div className="spinner-border spinner-border-sm" role="status">
-                                    <span className="visually-hidden">Loading...</span>
+                                    <span className="visually-hidden">{t('auth.common.loading')}</span>
                                 </div>
                             </div>
                         )}
@@ -502,7 +504,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                                     <input 
                                         type="text" 
                                         className="form-control form-control-sm mb-2" 
-                                        placeholder="Search countries..."
+                                        placeholder={t('auth.partnerProfile.searchCountries')}
                                         value={countrySearchTerm}
                                         onChange={(e) => {
                                             const value = e.target.value;
@@ -516,9 +518,9 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                                 {loading.countries ? (
                                     <div className="p-3 text-center">
                                         <div className="spinner-border spinner-border-sm me-2" role="status">
-                                            <span className="visually-hidden">Loading...</span>
+                                            <span className="visually-hidden">{t('auth.common.loading')}</span>
                                         </div>
-                                        <span className="text-muted">Searching countries...</span>
+                                        <span className="text-muted">{t('auth.partnerProfile.searchingCountries')}</span>
                                     </div>
                                 ) : filteredCountries.length > 0 ? (
                                     filteredCountries.map((country) => (
@@ -546,7 +548,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                                 ) : (
                                     <div className="p-3 text-muted text-center">
                                         <i className="fas fa-search me-2"></i>
-                                        No countries found
+                                        {t('auth.partnerProfile.noCountries')}
                                     </div>
                                 )}
                             </div>
@@ -559,7 +561,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="partner_category_id" className="form-label">
-                        Partner Category <span className="text-danger">*</span>
+                        {t('auth.partnerProfile.partnerCategory')} <span className="text-danger">*</span>
                     </label>
                     <div className="position-relative">
                         <div
@@ -573,7 +575,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                                         {selectedPartnerCategory.name_en || selectedPartnerCategory.name_ar || selectedPartnerCategory.code}
                                     </span>
                                 ) : (
-                                    <span className="text-muted">Select partner category</span>
+                                    <span className="text-muted">{t('auth.partnerProfile.selectPartnerCategory')}</span>
                                 )}
                             </div>
                             <div className="d-flex align-items-center">
@@ -602,7 +604,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                         {loading.partnerCategories && (
                             <div className="position-absolute top-50 end-0 translate-middle-y me-3">
                                 <div className="spinner-border spinner-border-sm" role="status">
-                                    <span className="visually-hidden">Loading...</span>
+                                    <span className="visually-hidden">{t('auth.common.loading')}</span>
                                 </div>
                             </div>
                         )}
@@ -613,7 +615,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                                     <input
                                         type="text"
                                         className="form-control form-control-sm mb-2"
-                                        placeholder="Search categories..."
+                                        placeholder={t('auth.partnerProfile.searchCategories')}
                                         value={partnerCategorySearchTerm}
                                         onChange={(e) => handlePartnerCategorySearch(e.target.value)}
                                         onFocus={(e) => e.stopPropagation()}
@@ -638,7 +640,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="p-3 text-muted text-center">No categories found</div>
+                                    <div className="p-3 text-muted text-center">{t('auth.partnerProfile.noCategories')}</div>
                                 )}
                             </div>
                         )}
@@ -650,7 +652,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-12 fv-row mb-4">
                     <label htmlFor="business_address" className="form-label">
-                        Profile Summary <span className="text-danger">*</span>
+                        {t('auth.partnerProfile.profileSummary')} <span className="text-danger">*</span>
                     </label>
                     <textarea
                         className={`form-control ${fieldErrors?.business_address ? 'is-invalid' : ''}`}
@@ -659,7 +661,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                         rows="3"
                         value={formData.business_address || ''}
                         onChange={handleChange}
-                        placeholder="Enter profile summary"
+                        placeholder={t('auth.partnerProfile.placeholderSummary')}
                         required
                     ></textarea>
                     {fieldErrors?.business_address && (
@@ -680,13 +682,13 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                             required
                         />
                         <label className="form-check-label" htmlFor="accept_terms">
-                            I agree to the{' '}
+                            {t('auth.partnerProfile.agreeTerms')}{' '}
                             <a 
                                 href="#" 
                                 className="text-primary fw-bold"
                                 onClick={handleTermsClick}
                             >
-                                Terms and Conditions
+                                {t('auth.partnerProfile.termsLink')}
                             </a>
                             <span className="text-danger">*</span>
                         </label>
@@ -705,16 +707,16 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                     <div className="modal-dialog modal-lg modal-dialog-scrollable">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title fw-bold">Terms and Conditions</h5>
+                                <h5 className="modal-title fw-bold">{t('auth.partnerProfile.termsModalTitle')}</h5>
                                 <button type="button" className="btn-close" onClick={handleTermsModalClose}></button>
                             </div>
                             <div className="modal-body">
                                 {loading.terms ? (
                                     <div className="text-center py-5">
                                         <div className="spinner-border text-primary" role="status">
-                                            <span className="visually-hidden">Loading...</span>
+                                            <span className="visually-hidden">{t('auth.common.loading')}</span>
                                         </div>
-                                        <p className="mt-3 text-muted">Loading terms and conditions...</p>
+                                        <p className="mt-3 text-muted">{t('auth.partnerProfile.termsLoading')}</p>
                                     </div>
                                 ) : (
                                     <div 
@@ -735,7 +737,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                                     className="btn btn-secondary" 
                                     onClick={handleTermsModalClose}
                                 >
-                                    Close
+                                    {t('auth.common.close')}
                                 </button>
                                 <button 
                                     type="button" 
@@ -743,7 +745,7 @@ const PartnerProfile = ({ formData, setFormData, fieldErrors }) => {
                                     onClick={handleTermsAgree}
                                     disabled={loading.terms}
                                 >
-                                    I Agree
+                                    {t('auth.partnerProfile.iAgree')}
                                 </button>
                             </div>
                         </div>

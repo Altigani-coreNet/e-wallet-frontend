@@ -1,9 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { downloadUserTemplate, previewUserImport } from '../../services/usersService';
 import ImportPreviewModal from './ImportPreviewModal';
 
-export default function UserImportModal({ show, onHide, onImportComplete }) {
+export default function UserImportModal({ show, onHide, onImportComplete, onImportSuccess }) {
+    const { t } = useTranslation();
+    const notifyParent = onImportComplete || onImportSuccess;
+
     const [selectedFile, setSelectedFile] = useState(null);
     const [downloadingTemplate, setDownloadingTemplate] = useState(false);
     const [validating, setValidating] = useState(false);
@@ -14,17 +18,15 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Validate file type
             const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
             if (!validTypes.includes(file.type)) {
-                toast.error('Please upload a valid Excel file (.xlsx or .xls)');
+                toast.error(t('merchant.users.import.toastInvalidType'));
                 setSelectedFile(null);
                 return;
             }
 
-            // Validate file size (max 10MB)
             if (file.size > 10 * 1024 * 1024) {
-                toast.error('File size must be less than 10MB');
+                toast.error(t('merchant.users.import.toastFileSize'));
                 setSelectedFile(null);
                 return;
             }
@@ -37,8 +39,7 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
         try {
             setDownloadingTemplate(true);
             const blob = await downloadUserTemplate();
-            
-            // Create download link
+
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -47,11 +48,11 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            
-            toast.success('Template downloaded successfully!');
+
+            toast.success(t('merchant.users.import.toastTemplateOk'));
         } catch (err) {
             console.error('Error downloading template:', err);
-            toast.error('Failed to download template');
+            toast.error(t('merchant.users.import.toastTemplateFail'));
         } finally {
             setDownloadingTemplate(false);
         }
@@ -59,7 +60,7 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
 
     const handlePreview = async () => {
         if (!selectedFile) {
-            toast.error('Please select a file first');
+            toast.error(t('merchant.users.import.toastSelectFile'));
             return;
         }
 
@@ -71,31 +72,34 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
                 setPreviewData(response.data);
                 setShowPreviewModal(true);
             } else {
-                toast.error(response.message || 'Failed to preview file');
+                toast.error(response.message || t('merchant.users.import.toastPreviewFail'));
             }
         } catch (err) {
             console.error('Preview error:', err);
-            toast.error(err.response?.data?.message || 'Failed to preview file');
+            toast.error(err.response?.data?.message || t('merchant.users.import.toastPreviewFail'));
         } finally {
             setValidating(false);
         }
     };
 
     const handleImportSuccess = (result) => {
-        toast.success(`Import completed! ${result.imported} users imported, ${result.updated} updated.`);
-        
-        // Reset form
+        toast.success(
+            t('merchant.users.import.toastImportDone', {
+                imported: result.imported,
+                updated: result.updated,
+            })
+        );
+
         setSelectedFile(null);
         setPreviewData(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
 
-        // Close modals and refresh parent
         setShowPreviewModal(false);
         onHide();
-        if (onImportComplete) {
-            onImportComplete();
+        if (notifyParent) {
+            notifyParent();
         }
     };
 
@@ -117,7 +121,6 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
 
     return (
         <>
-            {/* Main Import Modal */}
             <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
                 <div className="modal-dialog modal-dialog-centered modal-xl">
                     <div className="modal-content">
@@ -127,12 +130,11 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Import Users from Excel
+                                {t('merchant.users.import.title')}
                             </h5>
                             <button type="button" className="btn-close btn-close-white" onClick={handleClose}></button>
                         </div>
                         <div className="modal-body">
-                            {/* Instructions */}
                             <div className="alert alert-info">
                                 <h6>
                                     <i className="ki-duotone ki-information fs-2 me-2">
@@ -140,32 +142,25 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
                                         <span className="path2"></span>
                                         <span className="path3"></span>
                                     </i>
-                                    How to Import Users:
+                                    {t('merchant.users.import.howToTitle')}
                                 </h6>
                                 <ol className="mb-0">
-                                    <li>Download the Excel template below</li>
-                                    <li>Fill in your user data (use dropdowns in the template)</li>
-                                    <li>Upload the completed file</li>
-                                    <li>Preview and validate your data</li>
-                                    <li>Confirm to import to database</li>
+                                    <li>{t('merchant.users.import.howToStep1')}</li>
+                                    <li>{t('merchant.users.import.howToStep2')}</li>
+                                    <li>{t('merchant.users.import.howToStep3')}</li>
+                                    <li>{t('merchant.users.import.howToStep4')}</li>
+                                    <li>{t('merchant.users.import.howToStep5')}</li>
                                 </ol>
                             </div>
 
-                            {/* Download Template */}
                             <div className="mb-4">
-                                <h6>Step 1: Download Template</h6>
-                                <p className="text-muted small">
-                                    The template includes dropdown lists and reference sheets (Branches and Roles) for easy data entry.
-                                </p>
-                                <button 
-                                    className="btn btn-primary"
-                                    onClick={handleDownloadTemplate}
-                                    disabled={downloadingTemplate}
-                                >
+                                <h6>{t('merchant.users.import.step1Title')}</h6>
+                                <p className="text-muted small">{t('merchant.users.import.step1Hint')}</p>
+                                <button className="btn btn-primary" onClick={handleDownloadTemplate} disabled={downloadingTemplate}>
                                     {downloadingTemplate ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Downloading...
+                                            {t('merchant.users.import.downloading')}
                                         </>
                                     ) : (
                                         <>
@@ -173,7 +168,7 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Download Excel Template
+                                            {t('merchant.users.import.downloadTemplate')}
                                         </>
                                     )}
                                 </button>
@@ -181,9 +176,8 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
 
                             <hr />
 
-                            {/* Upload File */}
                             <div className="mb-4">
-                                <h6>Step 2: Upload Your File</h6>
+                                <h6>{t('merchant.users.import.step2Title')}</h6>
                                 <input
                                     ref={fileInputRef}
                                     type="file"
@@ -199,23 +193,21 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(2)} KB)
+                                            {t('merchant.users.import.selectedFile', {
+                                                name: selectedFile.name,
+                                                size: (selectedFile.size / 1024).toFixed(2),
+                                            })}
                                         </small>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Preview Button */}
                             <div className="d-flex gap-2">
-                                <button 
-                                    className="btn btn-success"
-                                    onClick={handlePreview}
-                                    disabled={!selectedFile || validating}
-                                >
+                                <button className="btn btn-success" onClick={handlePreview} disabled={!selectedFile || validating}>
                                     {validating ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Validating...
+                                            {t('merchant.users.import.validating')}
                                         </>
                                     ) : (
                                         <>
@@ -224,13 +216,13 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
                                                 <span className="path2"></span>
                                                 <span className="path3"></span>
                                             </i>
-                                            Preview & Validate
+                                            {t('merchant.users.import.previewValidate')}
                                         </>
                                     )}
                                 </button>
 
                                 {selectedFile && (
-                                    <button 
+                                    <button
                                         className="btn btn-secondary"
                                         onClick={() => {
                                             setSelectedFile(null);
@@ -240,17 +232,16 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
                                         }}
                                         disabled={validating}
                                     >
-                                        Clear
+                                        {t('merchant.users.import.clear')}
                                     </button>
                                 )}
                             </div>
 
-                            {/* Progress Bar */}
                             {validating && (
                                 <div className="mt-3">
                                     <div className="progress">
                                         <div className="progress-bar progress-bar-striped progress-bar-animated w-100">
-                                            Validating...
+                                            {t('merchant.users.import.validating')}
                                         </div>
                                     </div>
                                 </div>
@@ -264,17 +255,16 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
                                     <span className="path2"></span>
                                     <span className="path3"></span>
                                 </i>
-                                Tip: Use the dropdown arrows in the Excel template to select valid values.
+                                {t('merchant.users.import.tip')}
                             </small>
                             <button type="button" className="btn btn-secondary" onClick={handleClose}>
-                                Close
+                                {t('merchant.users.import.close')}
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Preview Modal */}
             <ImportPreviewModal
                 show={showPreviewModal}
                 onHide={handleCloseModal}
@@ -285,4 +275,3 @@ export default function UserImportModal({ show, onHide, onImportComplete }) {
         </>
     );
 }
-

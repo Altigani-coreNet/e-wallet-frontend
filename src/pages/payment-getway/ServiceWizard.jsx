@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import axios from '../../utils/axiosConfig';
 import { useToolbar } from '../../contexts/ToolbarContext';
@@ -20,6 +21,7 @@ const debounce = (func, delay) => {
 };
 
 const ServiceWizard = () => {
+    const { t } = useTranslation();
     const { setTitle, setBreadcrumbs } = useToolbar();
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(1);
@@ -92,11 +94,11 @@ const ServiceWizard = () => {
     const [loadingSubPartners, setLoadingSubPartners] = useState(false);
 
     useEffect(() => {
-        setTitle('Create Service');
+        setTitle(t('admin.paymentGetway.titlesCreateService'));
         setBreadcrumbs([
-            { label: 'Home', path: '/admin' },
-            { label: 'Services', path: '/admin/services' },
-            { label: 'Create Service', path: '/admin/services/create/wizard', active: true }
+            { label: t('admin.paymentGetway.breadcrumbsHome'), path: '/admin' },
+            { label: t('admin.paymentGetway.breadcrumbsServices'), path: '/admin/services' },
+            { label: t('admin.paymentGetway.titlesCreateService'), path: '/admin/services/create/wizard', active: true }
         ]);
 
         loadInitialData();
@@ -104,7 +106,7 @@ const ServiceWizard = () => {
         return () => {
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs]);
+    }, [setTitle, setBreadcrumbs, t]);
 
     const loadInitialData = async () => {
         await Promise.all([
@@ -127,7 +129,7 @@ const ServiceWizard = () => {
             }
         } catch (error) {
             console.error('Error loading categories:', error);
-            toast.error('Failed to load service categories');
+            toast.error(t('admin.paymentGetway.wizFailedLoadCategories'));
         } finally {
             setLoadingCategories(false);
         }
@@ -165,9 +167,9 @@ const ServiceWizard = () => {
 
     const loadServiceTypes = async (searchTerm = '') => {
         const fallbackTypes = [
-            { value: 'digital', label: 'Digital' },
-            { value: 'ivr', label: 'IVR' },
-            { value: 'sms', label: 'SMS' }
+            { value: 'digital', label: t('admin.paymentGetway.svcTypeDigital') },
+            { value: 'ivr', label: t('admin.paymentGetway.svcTypeIvr') },
+            { value: 'sms', label: t('admin.paymentGetway.svcTypeSms') }
         ];
         try {
             setLoadingServiceTypes(true);
@@ -219,7 +221,7 @@ const ServiceWizard = () => {
             }
         } catch (error) {
             console.error('Failed to fetch countries:', error);
-            toast.error('Failed to load countries');
+            toast.error(t('admin.paymentGetway.wizFailedLoadCountries'));
         } finally {
             setLoadingCountries(false);
         }
@@ -330,11 +332,11 @@ const ServiceWizard = () => {
             }
         } catch (error) {
             console.error('Failed to fetch parent partners:', error);
-            toast.error('Failed to load parent partners');
+            toast.error(t('admin.paymentGetway.wizFailedLoadParentPartners'));
         } finally {
             setLoadingContentProviders(false);
         }
-    }, []);
+    }, [t]);
 
     const fetchSubPartnersForParent = useCallback(async (parentId, searchTerm = '') => {
         if (!parentId) {
@@ -359,12 +361,12 @@ const ServiceWizard = () => {
             }
         } catch (error) {
             console.error('Failed to fetch sub-partners:', error);
-            toast.error('Failed to load sub-partners');
+            toast.error(t('admin.paymentGetway.wizFailedLoadSubPartners'));
             setFilteredSubPartners([]);
         } finally {
             setLoadingSubPartners(false);
         }
-    }, []);
+    }, [t]);
 
     const debouncedContentProviderSearch = useCallback(
         debounce((searchTerm, countryId) => {
@@ -416,7 +418,7 @@ const ServiceWizard = () => {
 
     const handleContentProviderOpen = () => {
         if (!serviceFormData.country_id) {
-            toast.warning("Please select a country first");
+            toast.warning(t('admin.paymentGetway.wizSelectCountryFirst'));
             return;
         }
         if (filteredContentProviders.length === 0) {
@@ -534,19 +536,19 @@ const ServiceWizard = () => {
             !serviceFormData.description_en ||
             !serviceFormData.description_ar
         ) {
-            toast.error('Please fill in required fields (Country, Category, Name EN/AR, Description EN/AR)');
+            toast.error(t('admin.paymentGetway.wizFillRequiredService'));
             return;
         }
         if (!selectedParentPartner) {
-            toast.error('Please select a parent partner');
+            toast.error(t('admin.paymentGetway.wizSelectParentPartner'));
             return;
         }
         if (selectedParentPartner.has_sub_partners && !serviceFormData.partner_id) {
-            toast.error('Please select a sub partner for this parent organization');
+            toast.error(t('admin.paymentGetway.wizSelectSubPartnerOrg'));
             return;
         }
         if (!serviceFormData.partner_id) {
-            toast.error('Please select a parent partner');
+            toast.error(t('admin.paymentGetway.wizSelectParentPartner'));
             return;
         }
 
@@ -608,7 +610,7 @@ const ServiceWizard = () => {
                 if (!serviceData.id) {
                     console.error('Service created but UUID (id) is missing!', serviceData);
                     console.error('Full response:', response.data);
-                    toast.error('Service created but UUID is missing. Please refresh and try again.');
+                    toast.error(t('admin.paymentGetway.wizServiceUuidMissing'));
                     return;
                 }
                 
@@ -619,24 +621,24 @@ const ServiceWizard = () => {
                         id: serviceData.id,
                         expectedFormat: 'UUID (e.g., 019b9f25-623b-71d6-bd49-02ec1203f977)'
                     });
-                    toast.error('Service created but UUID format is invalid. Please refresh and try again.');
+                    toast.error(t('admin.paymentGetway.wizServiceUuidInvalid'));
                     return;
                 }
                 
                 console.log('✓ Service created successfully');
                 console.log('  Service UUID (id):', serviceData.id, '← Use this for product.service_id (foreign key)');
                 console.log('  Service Name:', serviceData.service_name);
-                toast.success('Service created successfully!');
+                toast.success(t('admin.paymentGetway.wizServiceCreatedSuccess'));
                 if (mode === 'design_later') {
                     navigate('/admin/services');
                 } else {
                     setCurrentStep(2);
                 }
             } else {
-                toast.error(response.data?.message || 'Failed to create service');
+                toast.error(response.data?.message || t('admin.paymentGetway.wizFailedCreateService'));
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to create service');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.wizFailedCreateService'));
         } finally {
             setSubmitting(false);
         }
@@ -646,19 +648,19 @@ const ServiceWizard = () => {
         e.preventDefault();
         
         if (!productFormData.price) {
-            toast.error('Price is required');
+            toast.error(t('admin.paymentGetway.wizPriceRequired'));
             return;
         }
 
         // Validate that cancel_code and sub_code are not the same
         if (productFormData.sub_code && productFormData.cancel_code && 
             productFormData.sub_code.trim() === productFormData.cancel_code.trim()) {
-            toast.error('Sub Code and Cancel Code cannot be the same');
+            toast.error(t('admin.paymentGetway.wizSubCancelCodeSame'));
             return;
         }
 
         if (!createdService || !createdService.id) {
-            toast.error('Service information is missing. Please go back and create the service first.');
+            toast.error(t('admin.paymentGetway.wizServiceInfoMissing'));
             return;
         }
 
@@ -729,19 +731,19 @@ const ServiceWizard = () => {
                 }
                 return;
             }
-            toast.error('Price is required');
+            toast.error(t('admin.paymentGetway.wizPriceRequired'));
             return false;
         }
 
         // Validate that cancel_code and sub_code are not the same
         if (productFormData.sub_code && productFormData.cancel_code && 
             productFormData.sub_code.trim() === productFormData.cancel_code.trim()) {
-            toast.error('Sub Code and Cancel Code cannot be the same');
+            toast.error(t('admin.paymentGetway.wizSubCancelCodeSame'));
             return false;
         }
 
         if (!createdService || !createdService.id) {
-            toast.error('Service information is missing. Please go back and create the service first.');
+            toast.error(t('admin.paymentGetway.wizServiceInfoMissing'));
             return false;
         }
 
@@ -751,7 +753,7 @@ const ServiceWizard = () => {
             const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
             
             if (!uuidRegex.test(serviceUuid)) {
-                toast.error('Invalid service UUID format. Please refresh and try again.');
+                toast.error(t('admin.paymentGetway.wizInvalidServiceUuid'));
                 setSubmitting(false);
                 return false;
             }
@@ -764,7 +766,7 @@ const ServiceWizard = () => {
             const result = await createProduct(productPayload);
 
             if (result.success) {
-                toast.success('Product saved successfully!');
+                toast.success(t('admin.paymentGetway.wizProductSaved'));
                 await loadCreatedProducts();
                 
                 if (shouldNavigate) {
@@ -794,18 +796,18 @@ const ServiceWizard = () => {
                 return true;
             } else {
                 console.error('Product creation failed:', result);
-                toast.error(result.error || 'Failed to save product');
+                toast.error(result.error || t('admin.paymentGetway.wizFailedSaveProduct'));
                 
                 if (result.errors && Object.keys(result.errors).length > 0) {
                     const errorMessages = Object.values(result.errors).flat().join(', ');
-                    toast.error(`Validation errors: ${errorMessages}`);
+                    toast.error(t('admin.paymentGetway.wizValidationErrorsPrefix', { errors: errorMessages }));
                 }
                 setSubmitting(false);
                 return false;
             }
         } catch (error) {
             console.error('Exception creating product:', error);
-            toast.error(error.response?.data?.message || 'Failed to save product');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.wizFailedSaveProduct'));
             setSubmitting(false);
             return false;
         }
@@ -838,12 +840,12 @@ const ServiceWizard = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Create Service</h3>
+                <h3 className="card-title">{t('admin.paymentGetway.wizCardTitle')}</h3>
                 <div className="card-toolbar">
                     <div className="d-flex align-items-center gap-2">
-                        <span className={`badge ${currentStep === 1 ? 'badge-primary' : 'badge-success'}`}>Step 1: Service</span>
+                        <span className={`badge ${currentStep === 1 ? 'badge-primary' : 'badge-success'}`}>{t('admin.paymentGetway.wizStep1')}</span>
                         <span className="badge badge-light">→</span>
-                        <span className={`badge ${currentStep === 2 ? 'badge-primary' : 'badge-light'}`}>Step 2: Product</span>
+                        <span className={`badge ${currentStep === 2 ? 'badge-primary' : 'badge-light'}`}>{t('admin.paymentGetway.wizStep2')}</span>
                     </div>
                 </div>
             </div>
@@ -855,7 +857,7 @@ const ServiceWizard = () => {
                                 <div className="card card-flush">
                                     <div className="card-header">
                                         <div className="card-title">
-                                            <h2>Service Image</h2>
+                                            <h2>{t('admin.paymentGetway.wizServiceImage')}</h2>
                                         </div>
                                     </div>
                                     <div className="card-body text-center pt-0">
@@ -885,7 +887,7 @@ const ServiceWizard = () => {
                                                 </label>
                                             </div>
                                         </div>
-                                        <div className="text-muted fs-7">Upload service image</div>
+                                        <div className="text-muted fs-7">{t('admin.paymentGetway.wizUploadServiceImage')}</div>
                                     </div>
                                 </div>
                             </div>
@@ -894,7 +896,7 @@ const ServiceWizard = () => {
                                     <div className="card-body p-9">
                                         <div className="row">
                                             <div className="col-md-6 mb-7">
-                                                <label className="form-label">Country <span className="text-danger">*</span></label>
+                                                <label className="form-label">{t('admin.paymentGetway.wizLabelCountry')} <span className="text-danger">*</span></label>
                                                 <SearchableDropdown
                                                     options={countryOptions}
                                                     selected={selectedCountryOption}
@@ -902,13 +904,13 @@ const ServiceWizard = () => {
                                                     onClear={handleCountryClear}
                                                     onOpen={handleCountryOpen}
                                                     onSearchChange={handleCountrySearchChange}
-                                                    placeholder="Select Country"
+                                                    placeholder={t('admin.paymentGetway.wizPlaceholderCountry')}
                                                     loading={loadingCountries}
                                                     required={true}
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-7">
-                                                <label className="form-label">Parent partner <span className="text-danger">*</span></label>
+                                                <label className="form-label">{t('admin.paymentGetway.wizLabelParentPartner')} <span className="text-danger">*</span></label>
                                                 <SearchableDropdown
                                                     options={parentPartnerOptions}
                                                     selected={selectedParentPartnerOption}
@@ -916,7 +918,7 @@ const ServiceWizard = () => {
                                                     onClear={handleContentProviderClear}
                                                     onOpen={handleContentProviderOpen}
                                                     onSearchChange={handleContentProviderSearchChange}
-                                                    placeholder="Select parent partner"
+                                                    placeholder={t('admin.paymentGetway.wizPlaceholderParentPartner')}
                                                     loading={loadingContentProviders}
                                                     required={true}
                                                     showClear={false}
@@ -924,7 +926,7 @@ const ServiceWizard = () => {
                                             </div>
                                             {selectedParentPartner?.has_sub_partners ? (
                                                 <div className="col-md-6 mb-7">
-                                                    <label className="form-label">Sub partner <span className="text-danger">*</span></label>
+                                                    <label className="form-label">{t('admin.paymentGetway.wizLabelSubPartner')} <span className="text-danger">*</span></label>
                                                     <SearchableDropdown
                                                         options={subPartnerOptions}
                                                         selected={selectedSubPartnerOption}
@@ -932,7 +934,7 @@ const ServiceWizard = () => {
                                                         onClear={handleSubPartnerClear}
                                                         onOpen={handleSubPartnerOpen}
                                                         onSearchChange={handleSubPartnerSearchChange}
-                                                        placeholder="Select sub partner"
+                                                        placeholder={t('admin.paymentGetway.wizPlaceholderSubPartner')}
                                                         loading={loadingSubPartners}
                                                         required={true}
                                                         showClear={false}
@@ -940,18 +942,18 @@ const ServiceWizard = () => {
                                                 </div>
                                             ) : null}
                                             <div className="col-md-6 mb-7">
-                                                <label className="form-label">Service Category <span className="text-danger">*</span></label>
+                                                <label className="form-label">{t('admin.paymentGetway.wizLabelServiceCategory')} <span className="text-danger">*</span></label>
                                                 <SearchableDropdown
                                                     options={categories}
                                                     selected={selectedCategoryOption}
                                                     onSelect={(option) => setServiceFormData(prev => ({ ...prev, category_id: option?.value || '' }))}
                                                     onClear={() => setServiceFormData(prev => ({ ...prev, category_id: '', sub_category_id: '' }))}
-                                                    placeholder="Select Service Category"
+                                                    placeholder={t('admin.paymentGetway.wizPlaceholderServiceCategory')}
                                                     loading={loadingCategories}
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-7">
-                                                <label className="form-label">Sub Category</label>
+                                                <label className="form-label">{t('admin.paymentGetway.wizLabelSubCategory')}</label>
                                                 <SearchableDropdown
                                                     options={subCategories}
                                                     selected={selectedSubCategoryOption}
@@ -965,13 +967,13 @@ const ServiceWizard = () => {
                                                         setServiceFormData(prev => ({ ...prev, sub_category_id: '' }));
                                                     }}
                                                     onSearchChange={handleSubCategorySearchChange}
-                                                    placeholder="Select Sub Category"
+                                                    placeholder={t('admin.paymentGetway.wizPlaceholderSubCategory')}
                                                     loading={loadingSubCategories}
                                                     showClear={true}
                                                 />
                                             </div>
                             <div className="col-md-6 mb-7 d-none">
-                                                <label className="form-label">Service Type <span className="text-danger">*</span></label>
+                                                <label className="form-label">{t('admin.paymentGetway.wizLabelServiceType')} <span className="text-danger">*</span></label>
                                                 <SearchableDropdown
                                                     options={serviceTypeOptions}
                                                     selected={selectedServiceTypeOption}
@@ -979,73 +981,73 @@ const ServiceWizard = () => {
                                                     onClear={() => setServiceFormData(prev => ({ ...prev, service_type: 'digital' }))}
                                                     onOpen={() => loadServiceTypes()}
                                                     onSearchChange={handleServiceTypeSearchChange}
-                                                    placeholder="Select Service Type"
+                                                    placeholder={t('admin.paymentGetway.wizPlaceholderServiceType')}
                                                     loading={loadingServiceTypes}
                                                     showClear={false}
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-7">
-                                                <label className="form-label">Service Name (EN) <span className="text-danger">*</span></label>
+                                                <label className="form-label">{t('admin.paymentGetway.wizLabelServiceNameEn')} <span className="text-danger">*</span></label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
                                                     value={serviceFormData.service_name_en}
                                                     onChange={(e) => setServiceFormData({...serviceFormData, service_name_en: e.target.value})}
-                                                    placeholder="Enter Service Name (English)"
+                                                    placeholder={t('admin.paymentGetway.wizPlaceholderServiceNameEn')}
                                                     required
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-7">
-                                                <label className="form-label">Service Name (AR) <span className="text-danger">*</span></label>
+                                                <label className="form-label">{t('admin.paymentGetway.wizLabelServiceNameAr')} <span className="text-danger">*</span></label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
                                                     value={serviceFormData.service_name_ar}
                                                     onChange={(e) => setServiceFormData({...serviceFormData, service_name_ar: e.target.value})}
-                                                    placeholder="ادخل اسم الخدمة بالعربية"
+                                                    placeholder={t('admin.paymentGetway.wizPlaceholderServiceNameAr')}
                                                     required
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-7">
-                                                <label className="form-label">Description (EN)</label>
+                                                <label className="form-label">{t('admin.paymentGetway.wizLabelDescEn')}</label>
                                                 <textarea
                                                     className="form-control"
                                                     rows="3"
                                                     value={serviceFormData.description_en}
                                                     onChange={(e) => setServiceFormData({ ...serviceFormData, description_en: e.target.value })}
-                                                    placeholder="Enter service description (English)"
+                                                    placeholder={t('admin.paymentGetway.wizPlaceholderDescEn')}
                                                     required
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-7">
-                                                <label className="form-label">Description (AR)</label>
+                                                <label className="form-label">{t('admin.paymentGetway.wizLabelDescAr')}</label>
                                                 <textarea
                                                     className="form-control"
                                                     rows="3"
                                                     dir="rtl"
                                                     value={serviceFormData.description_ar}
                                                     onChange={(e) => setServiceFormData({ ...serviceFormData, description_ar: e.target.value })}
-                                                    placeholder="أدخل وصف الخدمة بالعربية"
+                                                    placeholder={t('admin.paymentGetway.wizPlaceholderDescAr')}
                                                     required
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-7">
-                                                <label className="form-label">Status <span className="text-danger">*</span></label>
+                                                <label className="form-label">{t('admin.paymentGetway.wizLabelStatus')} <span className="text-danger">*</span></label>
                                                 <select
                                                     className="form-select"
                                                     value={serviceFormData.status}
                                                     onChange={(e) => setServiceFormData({ ...serviceFormData, status: e.target.value })}
                                                     required
                                                 >
-                                                    <option value="active">Active</option>
-                                                    <option value="inactive">Inactive</option>
-                                                    <option value="pending">Pending</option>
-                                                    <option value="staging">Staging</option>
-                                                    <option value="testing">Testing</option>
+                                                    <option value="active">{t('admin.common.active')}</option>
+                                                    <option value="inactive">{t('admin.common.inactive')}</option>
+                                                    <option value="pending">{t('admin.common.pending')}</option>
+                                                    <option value="staging">{t('admin.paymentGetway.wizStatusStaging')}</option>
+                                                    <option value="testing">{t('admin.common.testing')}</option>
                                                 </select>
                                             </div>
                                             <div className="col-md-6 mb-7">
-                                                <label className="form-label">Active Status</label>
+                                                <label className="form-label">{t('admin.paymentGetway.wizLabelActiveStatus')}</label>
                                                 <div className="form-check form-switch form-check-custom form-check-solid mt-2">
                                                     <input
                                                         className="form-check-input"
@@ -1054,7 +1056,7 @@ const ServiceWizard = () => {
                                                         onChange={(e) => setServiceFormData({ ...serviceFormData, is_active: e.target.checked })}
                                                     />
                                                     <label className="form-check-label">
-                                                        {serviceFormData.is_active ? 'Active' : 'Inactive'}
+                                                        {serviceFormData.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                                     </label>
                                                 </div>
                                             </div>
@@ -1065,18 +1067,19 @@ const ServiceWizard = () => {
                         </div>
                         {createdService && (
                             <div className="alert alert-info">
-                                <strong>Service Created!</strong> Service UUID: {createdService.id}
+                                <strong>{t('admin.paymentGetway.wizServiceCreatedInfo')}</strong>{' '}
+                                {t('admin.paymentGetway.wizServiceUuidLabel', { uuid: createdService.id })}
                             </div>
                         )}
                         <div className="d-flex justify-content-end gap-2 mt-4">
                             <button type="button" className="btn btn-light" onClick={() => navigate('/admin/services')}>
-                                Cancel
+                                {t('admin.common.cancel')}
                             </button>
                             <button type="button" className="btn btn-light-primary" disabled={submitting} onClick={(e) => handleServiceSubmit(e, 'design_later')}>
-                                {submitting ? 'Saving...' : 'Create - Design Later'}
+                                {submitting ? t('admin.paymentGetway.wizSavingShort') : t('admin.paymentGetway.wizCreateDesignLater')}
                             </button>
                             <button type="button" className="btn btn-primary" disabled={submitting} onClick={(e) => handleServiceSubmit(e, 'design_service')}>
-                                {submitting ? 'Creating...' : 'Create - Design Service'}
+                                {submitting ? t('admin.paymentGetway.wizCreatingShort') : t('admin.paymentGetway.wizCreateDesignService')}
                             </button>
                         </div>
                     </form>

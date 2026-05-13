@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
@@ -17,6 +18,7 @@ const debounce = (func, delay) => {
 
 const AdminMerchantCreate = () => {
     const navigate = useNavigate();
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const [saving, setSaving] = useState(false);
     const [filteredCountries, setFilteredCountries] = useState([]);
@@ -56,18 +58,18 @@ const AdminMerchantCreate = () => {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        setTitle('Add New Merchant');
+        setTitle(t('admin.merchantsUI.createTitle'));
         setActions(
             <Link to="/admin/merchants" className="btn btn-sm btn-light-danger">
                 <i className="ki-duotone ki-arrow-left fs-2">
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back
+                {t('admin.merchantsUI.back')}
             </Link>
         );
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t, i18n.language]);
 
     useEffect(() => {
         fetchCurrencies();
@@ -103,7 +105,7 @@ const AdminMerchantCreate = () => {
             }
         } catch (error) {
             console.error('Failed to fetch countries:', error);
-            toast.error('Failed to load countries');
+            toast.error(t('admin.merchantsUI.loadCountriesFailed'));
         }
     };
 
@@ -251,7 +253,7 @@ const AdminMerchantCreate = () => {
             }
         } catch (error) {
             console.error('Failed to fetch plans:', error);
-            toast.error('Failed to load plans');
+            toast.error(t('admin.merchantsUI.loadPlansFailed'));
         }
     };
 
@@ -277,7 +279,7 @@ const AdminMerchantCreate = () => {
         } catch (error) {
             console.error('Failed to fetch business types:', error);
             console.error('Error response:', error.response?.data);
-            toast.error('Failed to load business types');
+            toast.error(t('admin.merchantsUI.loadBusinessTypesFailed'));
             setBusinessTypes([]);
         } finally {
             setLoadingBusinessTypes(false);
@@ -296,7 +298,7 @@ const AdminMerchantCreate = () => {
             }
         } catch (error) {
             console.error('Failed to fetch scopes:', error);
-            toast.error('Failed to load scopes');
+            toast.error(t('admin.merchantsUI.loadScopesFailed'));
         }
     };
 
@@ -326,29 +328,29 @@ const AdminMerchantCreate = () => {
         const newErrors = {};
 
         if (!formData.name?.trim()) {
-            newErrors.name = 'Merchant name is required';
+            newErrors.name = t('admin.merchantsUI.validationNameRequired');
         }
 
         if (!formData.owner_name?.trim()) {
-            newErrors.owner_name = 'Owner name is required';
+            newErrors.owner_name = t('admin.merchantsUI.validationOwnerRequired');
         }
 
         if (!formData.email?.trim()) {
-            newErrors.email = 'Email is required';
+            newErrors.email = t('admin.merchantsUI.validationEmailRequired');
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            newErrors.email = 'Invalid email format';
+            newErrors.email = t('admin.merchantsUI.validationEmailInvalid');
         }
 
         if (!formData.phone?.trim()) {
-            newErrors.phone = 'Phone is required';
+            newErrors.phone = t('admin.merchantsUI.validationPhoneRequired');
         }
 
         if (!formData.business_type) {
-            newErrors.business_type = 'Business type is required';
+            newErrors.business_type = t('admin.merchantsUI.validationBusinessTypeRequired');
         }
 
         if (!formData.country_id) {
-            newErrors.country_id = 'Country is required';
+            newErrors.country_id = t('admin.merchantsUI.validationCountryRequired');
         }
 
         setErrors(newErrors);
@@ -359,7 +361,7 @@ const AdminMerchantCreate = () => {
         e.preventDefault();
 
         if (!validateForm()) {
-            toast.error('Please fill in all required fields');
+            toast.error(t('admin.merchantsUI.fillRequiredFields'));
             return;
         }
 
@@ -382,11 +384,11 @@ const AdminMerchantCreate = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Merchant created successfully');
+                toast.success(t('admin.merchantsUI.createSuccess'));
                 navigate('/admin/merchants');
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Failed to create merchant';
+            const errorMessage = error.response?.data?.message || t('admin.merchantsUI.createFailed');
             toast.error(errorMessage);
             
             // Handle validation errors from backend
@@ -409,7 +411,7 @@ const AdminMerchantCreate = () => {
                             <div className="card">
                                 <div className="card-header border-0">
                                     <div className="card-title">
-                                        <h2>Add New Merchant</h2>
+                                        <h2>{t('admin.merchantsUI.createCardTitle')}</h2>
                                     </div>
                                 </div>
 
@@ -423,7 +425,7 @@ const AdminMerchantCreate = () => {
                                                     <span className="path2"></span>
                                                 </i>
                                                 <div className="d-flex flex-column">
-                                                    <h4 className="mb-1">Validation Errors</h4>
+                                                    <h4 className="mb-1">{t('admin.merchantsUI.validationErrorsTitle')}</h4>
                                                     <ul className="mb-0">
                                                         {Object.values(errors).map((error, idx) => (
                                                             <li key={idx}>{error}</li>
@@ -438,63 +440,63 @@ const AdminMerchantCreate = () => {
                                     <div className="row">
                                         {/* Merchant Name */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Merchant Name</label>
+                                            <label className="form-label fw-bold required">{t('admin.merchantsUI.labelMerchantName')}</label>
                                             <input
                                                 type="text"
                                                 name="name"
                                                 className={`form-control ${errors.name ? 'is-invalid' : ''}`}
                                                 value={formData.name}
                                                 onChange={handleInputChange}
-                                                placeholder="Enter merchant name"
+                                                placeholder={t('admin.merchantsUI.placeholderMerchantName')}
                                             />
                                             {errors.name && <div className="invalid-feedback d-block">{errors.name}</div>}
                                         </div>
 
                                         {/* Business Name */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Business Name</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelBusinessNameField')}</label>
                                             <input
                                                 type="text"
                                                 name="business_name"
                                                 className="form-control"
                                                 value={formData.business_name}
                                                 onChange={handleInputChange}
-                                                placeholder="Leave empty to use Merchant Name"
+                                                placeholder={t('admin.merchantsUI.placeholderBusinessName')}
                                             />
-                                            <div className="form-text">Optional: Will default to Merchant Name if not provided</div>
+                                            <div className="form-text">{t('admin.merchantsUI.hintBusinessNameOptional')}</div>
                                         </div>
 
                                         {/* Owner Name */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Owner Name</label>
+                                            <label className="form-label fw-bold required">{t('admin.merchantsUI.labelOwnerName')}</label>
                                             <input
                                                 type="text"
                                                 name="owner_name"
                                                 className={`form-control ${errors.owner_name ? 'is-invalid' : ''}`}
                                                 value={formData.owner_name}
                                                 onChange={handleInputChange}
-                                                placeholder="Enter owner full name"
+                                                placeholder={t('admin.merchantsUI.placeholderOwnerName')}
                                             />
                                             {errors.owner_name && <div className="invalid-feedback d-block">{errors.owner_name}</div>}
                                         </div>
 
                                         {/* Email */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Email</label>
+                                            <label className="form-label fw-bold required">{t('admin.merchantsUI.labelEmail')}</label>
                                             <input
                                                 type="email"
                                                 name="email"
                                                 className={`form-control ${errors.email ? 'is-invalid' : ''}`}
                                                 value={formData.email}
                                                 onChange={handleInputChange}
-                                                placeholder="merchant@example.com"
+                                                placeholder={t('admin.merchantsUI.placeholderEmail')}
                                             />
                                             {errors.email && <div className="invalid-feedback d-block">{errors.email}</div>}
                                         </div>
 
                                         {/* Phone */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Phone</label>
+                                            <label className="form-label fw-bold required">{t('admin.merchantsUI.labelPhone')}</label>
                                             <input
                                                 type="text"
                                                 name="phone"
@@ -508,7 +510,7 @@ const AdminMerchantCreate = () => {
 
                                         {/* Business Phone */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Business Phone</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelBusinessPhone')}</label>
                                             <input
                                                 type="text"
                                                 name="business_phone"
@@ -521,7 +523,7 @@ const AdminMerchantCreate = () => {
 
                                         {/* Business Type */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Business Type</label>
+                                            <label className="form-label fw-bold required">{t('admin.merchantsUI.labelBusinessType')}</label>
                                             <select
                                                 name="business_type"
                                                 className={`form-select ${errors.business_type ? 'is-invalid' : ''}`}
@@ -530,7 +532,7 @@ const AdminMerchantCreate = () => {
                                                 disabled={loadingBusinessTypes}
                                             >
                                                 <option value="">
-                                                    {loadingBusinessTypes ? 'Loading business types...' : 'Select Business Type'}
+                                                    {loadingBusinessTypes ? t('admin.merchantsUI.loadingBusinessTypes') : t('admin.merchantsUI.selectBusinessType')}
                                                 </option>
                                                 {businessTypes.map((businessType) => (
                                                     <option key={businessType.id || businessType.value} value={businessType.value || businessType.id}>
@@ -540,13 +542,13 @@ const AdminMerchantCreate = () => {
                                             </select>
                                             {errors.business_type && <div className="invalid-feedback d-block">{errors.business_type}</div>}
                                             {!loadingBusinessTypes && businessTypes.length === 0 && (
-                                                <div className="form-text text-warning">No business types available</div>
+                                                <div className="form-text text-warning">{t('admin.merchantsUI.noBusinessTypes')}</div>
                                             )}
                                         </div>
 
                         {/* Country */}
                         <div className="col-md-6 mb-7">
-                            <label className="form-label fw-bold required">Country</label>
+                            <label className="form-label fw-bold required">{t('admin.merchantsUI.labelCountry')}</label>
                             <div className="position-relative">
                                 <div 
                                     className={`form-control h-50px d-flex align-items-center justify-content-between ${errors.country_id ? 'is-invalid' : ''}`}
@@ -566,7 +568,7 @@ const AdminMerchantCreate = () => {
                                                 <span className="text-gray-800">{selectedCountry.text || selectedCountry.name}</span>
                                             </>
                                         ) : (
-                                            <span className="text-muted">Select Country</span>
+                                            <span className="text-muted">{t('admin.merchantsUI.selectCountry')}</span>
                                         )}
                                     </div>
                                     <div className="d-flex align-items-center">
@@ -595,7 +597,7 @@ const AdminMerchantCreate = () => {
                                             <input 
                                                 type="text" 
                                                 className="form-control form-control-sm mb-2" 
-                                                placeholder="Search countries..."
+                                                placeholder={t('admin.merchantsUI.searchCountries')}
                                                 value={countrySearchTerm}
                                                 onChange={(e) => handleCountrySearch(e.target.value)}
                                                 onClick={(e) => e.stopPropagation()}
@@ -621,7 +623,7 @@ const AdminMerchantCreate = () => {
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="p-3 text-muted text-center">No countries found</div>
+                                            <div className="p-3 text-muted text-center">{t('admin.merchantsUI.noCountriesFound')}</div>
                                         )}
                                     </div>
                                 )}
@@ -631,7 +633,7 @@ const AdminMerchantCreate = () => {
 
                         {/* City */}
                         <div className="col-md-6 mb-7">
-                            <label className="form-label fw-bold">City</label>
+                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelCityOptional')}</label>
                             <div className="position-relative">
                                 <div 
                                     className="form-control h-50px d-flex align-items-center justify-content-between"
@@ -646,7 +648,7 @@ const AdminMerchantCreate = () => {
                                             <span className="text-gray-800">{selectedCity.text || selectedCity.name}</span>
                                         ) : (
                                             <span className="text-muted">
-                                                {!(selectedCountry || formData.country_id) ? 'Please select a country first' : 'Select City'}
+                                                {!(selectedCountry || formData.country_id) ? t('admin.merchantsUI.selectCityFirst') : t('admin.merchantsUI.selectCity')}
                                             </span>
                                         )}
                                     </div>
@@ -676,7 +678,7 @@ const AdminMerchantCreate = () => {
                                             <input 
                                                 type="text" 
                                                 className="form-control form-control-sm mb-2" 
-                                                placeholder="Search cities..."
+                                                placeholder={t('admin.merchantsUI.searchCities')}
                                                 value={citySearchTerm}
                                                 onChange={(e) => handleCitySearch(e.target.value)}
                                                 onClick={(e) => e.stopPropagation()}
@@ -695,24 +697,24 @@ const AdminMerchantCreate = () => {
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="p-3 text-muted text-center">No cities found</div>
+                                            <div className="p-3 text-muted text-center">{t('admin.merchantsUI.noCitiesFound')}</div>
                                         )}
                                     </div>
                                 )}
                             </div>
-                            <div className="form-text">Optional</div>
+                            <div className="form-text">{t('admin.merchantsUI.cityOptionalHint')}</div>
                         </div>
 
                                         {/* Currency */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Currency</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelCurrency')}</label>
                                             <select
                                                 name="currency_id"
                                                 className="form-select"
                                                 value={formData.currency_id}
                                                 onChange={handleInputChange}
                                             >
-                                                <option value="">Select Currency</option>
+                                                <option value="">{t('admin.merchantsUI.selectCurrency')}</option>
                                                 {currencies.map((currency) => (
                                                     <option key={currency.id} value={currency.id}>
                                                         {currency.text || currency.name} ({currency.symbol || ''})
@@ -723,65 +725,65 @@ const AdminMerchantCreate = () => {
 
                                         {/* Plan Selection */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Plan</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelPlan')}</label>
                                             <select
                                                 name="plan_id"
                                                 className="form-select"
                                                 value={formData.plan_id}
                                                 onChange={handleInputChange}
                                             >
-                                                <option value="">Select Plan</option>
+                                                <option value="">{t('admin.merchantsUI.selectPlan')}</option>
                                                 {plans.map((plan) => (
                                                     <option key={plan.id} value={plan.id}>
-                                                        {plan.name || plan.text} - ${plan.price ? parseFloat(plan.price).toFixed(2) : '0.00'} / {plan.plan_type || 'Monthly'}
+                                                        {plan.name || plan.text} - ${plan.price ? parseFloat(plan.price).toFixed(2) : '0.00'}{t('admin.merchantsUI.planPriceSuffix', { type: plan.plan_type || t('admin.merchantsUI.monthly') })}
                                                     </option>
                                                 ))}
                                             </select>
-                                            <div className="form-text">Select a plan to assign to this merchant</div>
+                                            <div className="form-text">{t('admin.merchantsUI.planAssignHint')}</div>
                                         </div>
 
                                         {/* Address */}
                                         <div className="col-md-12 mb-7">
-                                            <label className="form-label fw-bold">Address</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelAddress')}</label>
                                             <textarea
                                                 name="address"
                                                 className="form-control"
                                                 rows="3"
                                                 value={formData.address}
                                                 onChange={handleInputChange}
-                                                placeholder="Enter business address"
+                                                placeholder={t('admin.merchantsUI.placeholderAddress')}
                                             />
                                         </div>
 
                                         {/* Trade License Number */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Trade License Number</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelTradeLicenseNumber')}</label>
                                             <input
                                                 type="text"
                                                 name="trade_license_number"
                                                 className="form-control"
                                                 value={formData.trade_license_number}
                                                 onChange={handleInputChange}
-                                                placeholder="TL123456"
+                                                placeholder={t('admin.merchantsUI.placeholderTradeLicense')}
                                             />
                                         </div>
 
                                         {/* Tax Number */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Tax Number</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelTaxNumber')}</label>
                                             <input
                                                 type="text"
                                                 name="tax_number"
                                                 className="form-control"
                                                 value={formData.tax_number}
                                                 onChange={handleInputChange}
-                                                placeholder="TAX123456"
+                                                placeholder={t('admin.merchantsUI.placeholderTaxNumber')}
                                             />
                                         </div>
 
                                         {/* Trade License Start Date */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Trade License Start Date</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelTradeLicenseStart')}</label>
                                             <input
                                                 type="date"
                                                 name="trade_license_start_date"
@@ -793,7 +795,7 @@ const AdminMerchantCreate = () => {
 
                                         {/* Trade License Expiry Date */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Trade License Expiry Date</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelTradeLicenseExpiry')}</label>
                                             <input
                                                 type="date"
                                                 name="trade_license_expired_date"
@@ -805,7 +807,7 @@ const AdminMerchantCreate = () => {
 
                                         {/* Is Active */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Active Status</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelActiveStatus')}</label>
                                             <div className="form-check form-switch form-check-custom form-check-solid mt-2">
                                                 <input
                                                     className="form-check-input"
@@ -815,14 +817,14 @@ const AdminMerchantCreate = () => {
                                                     onChange={handleInputChange}
                                                 />
                                                 <label className="form-check-label">
-                                                    {formData.is_active ? 'Active' : 'Inactive'}
+                                                    {formData.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                                 </label>
                                             </div>
                                         </div>
 
                                         {/* Scopes */}
                                         <div className="col-md-12 mb-7">
-                                            <label className="form-label fw-bold">Scopes</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelScopes')}</label>
                                             <div className="row">
                                                 {availableScopes.map((scope) => (
                                                     <div key={scope.id || scope.key} className="col-md-6 mb-3">
@@ -845,7 +847,7 @@ const AdminMerchantCreate = () => {
                                                 ))}
                                             </div>
                                             {availableScopes.length === 0 && (
-                                                <div className="text-muted">No scopes available</div>
+                                                <div className="text-muted">{t('admin.merchantsUI.noScopesAvailable')}</div>
                                             )}
                                         </div>
                                     </div>
@@ -855,7 +857,7 @@ const AdminMerchantCreate = () => {
                                         <div className="col-12">
                                             <div className="d-flex justify-content-end gap-3">
                                                 <Link to="/admin/merchants" className="btn btn-light">
-                                                    Cancel
+                                                    {t('admin.merchantsUI.cancel')}
                                                 </Link>
                                                 <button
                                                     type="submit"
@@ -865,7 +867,7 @@ const AdminMerchantCreate = () => {
                                                     {saving ? (
                                                         <>
                                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                                            Creating...
+                                                            {t('admin.merchantsUI.creating')}
                                                         </>
                                                     ) : (
                                                         <>
@@ -873,7 +875,7 @@ const AdminMerchantCreate = () => {
                                                                 <span className="path1"></span>
                                                                 <span className="path2"></span>
                                                             </i>
-                                                            Create Merchant
+                                                            {t('admin.merchantsUI.createMerchant')}
                                                         </>
                                                     )}
                                                 </button>

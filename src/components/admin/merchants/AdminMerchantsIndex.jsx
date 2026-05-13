@@ -527,28 +527,16 @@ const AdminMerchantsIndex = () => {
 
     const renderPlaceholderTable = useMemo(() => {
         if (!loading) return null;
-        const columns = [
-            'checkbox',
-            'ID',
-            'Logo',
-            'Merchant Info',
-            'Phone',
-            'Business Type',
-            'Plan',
-            'Status',
-            'Is Active',
-            'Country',
-            'Actions'
-        ];
+        const columnCount = 11;
 
         return (
             <div className="table-responsive">
                 <table className="table align-middle table-row-dashed fs-6 gy-5">
                     <thead>
                         <tr className="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
-                            {columns.map((column) => (
-                                <th key={column}>
-                                    {column === 'checkbox' ? (
+                            {Array.from({ length: columnCount }).map((_, colIndex) => (
+                                <th key={colIndex}>
+                                    {colIndex === 0 ? (
                                         <div className="form-check form-check-sm form-check-custom form-check-solid me-3 placeholder-glow">
                                             <span className="placeholder col-12 rounded" style={{ height: '16px' }}></span>
                                         </div>
@@ -766,7 +754,7 @@ const AdminMerchantsIndex = () => {
                                                 onClick={() => setPagination({ ...pagination, current_page: pagination.current_page + 1 })}
                                                 disabled={pagination.current_page === pagination.last_page}
                                             >
-                                                Next
+                                                {t('admin.common.next')}
                                             </button>
                                         </li>
                                     </ul>

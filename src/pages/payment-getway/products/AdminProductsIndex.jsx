@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -305,6 +306,7 @@ const initialFilters = {
 };
 
 const AdminProductsIndex = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const { merchantsMap, countriesMap, loading: refDataLoading } = useAdminReferenceData();
 
@@ -326,32 +328,32 @@ const AdminProductsIndex = () => {
             const exportRows = exportPayload?.data || [];
             if (success && exportRows.length > 0) {
                 downloadCSV(exportRows, exportPayload?.filename || 'products_export.csv');
-                toast.success('Products export ready');
+                toast.success(t('admin.paymentGetway.productsExportReady'));
             } else {
-                toast.info('No products to export');
+                toast.info(t('admin.paymentGetway.productsNoExportData'));
             }
         } catch (error) {
             console.error('Error exporting products:', error);
-            toast.error('Failed to export products');
+            toast.error(t('admin.paymentGetway.productsFailedExport'));
         }
-    }, [appliedFilters]);
+    }, [appliedFilters, t]);
 
     useEffect(() => {
-        setTitle('Products Management');
+        setTitle(t('admin.paymentGetway.productsManagementTitle'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button className="btn btn-sm btn-flex btn-secondary fw-bold" onClick={() => setShowFilters(!showFilters)}>
                     <i className={`ki-duotone ki-filter fs-6 text-muted me-1 ${showFilters ? '' : 'rotate-90'}`}><span className="path1"></span><span className="path2"></span></i>
-                    Toggle Filters
+                    {t('admin.paymentGetway.toggleFilters')}
                 </button>
                 <button className="btn btn-sm btn-flex btn-light-primary fw-bold" onClick={handleExport}>
                     <i className="ki-duotone ki-file-down fs-6 text-primary me-1"><span className="path1"></span><span className="path2"></span></i>
-                    Export
+                    {t('admin.paymentGetway.export')}
                 </button>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters, handleExport]);
+    }, [setTitle, setActions, showFilters, handleExport, t]);
 
     const productParams = useMemo(() => ({
         page: pagination.current_page,
@@ -397,16 +399,16 @@ const AdminProductsIndex = () => {
     useEffect(() => {
         if (!productsData) return;
         if (!isSuccessfulProductsResponse(productsData)) {
-            const message = getPayloadMessage(productsData) || 'Failed to load products';
+            const message = getPayloadMessage(productsData) || t('admin.paymentGetway.productFailedLoad');
             toast.error(message);
         }
-    }, [productsData]);
+    }, [productsData, t]);
 
     useEffect(() => {
         if (!productsError) return;
-        const message = productsError?.response?.data?.message || productsError.message || 'Failed to load products';
+        const message = productsError?.response?.data?.message || productsError.message || t('admin.paymentGetway.productFailedLoad');
         toast.error(message);
-    }, [productsError]);
+    }, [productsError, t]);
 
     const products = useMemo(() => {
         if (!productsData || !isSuccessfulProductsResponse(productsData)) return [];
@@ -512,7 +514,7 @@ const AdminProductsIndex = () => {
 
     const renderMerchant = useCallback((shopId) => {
         if (!shopId) {
-            return 'N/A';
+            return t('admin.paymentGetway.na');
         }
 
         const lookupRecord = merchantLookups.getMerchantRecord(shopId);
@@ -525,11 +527,11 @@ const AdminProductsIndex = () => {
         }
 
         return merchantsMap[shopId] || `#${shopId}`;
-    }, [isLookupLoading, merchantLookups, merchantPlaceholder, merchantsMap]);
+    }, [isLookupLoading, merchantLookups, merchantPlaceholder, merchantsMap, t]);
 
     const renderCountry = useCallback((shopId) => {
         if (!shopId) {
-            return 'N/A';
+            return t('admin.paymentGetway.na');
         }
 
         // Get country name from merchant lookup (merchant has country info)
@@ -542,8 +544,8 @@ const AdminProductsIndex = () => {
             return countryPlaceholder;
         }
 
-        return 'N/A';
-    }, [countryPlaceholder, isLookupLoading, merchantLookups, refDataLoading]);
+        return t('admin.paymentGetway.na');
+    }, [countryPlaceholder, isLookupLoading, merchantLookups, refDataLoading, t]);
 
     const filtersCard = showFilters ? (
         <ProductFiltersPanel
@@ -571,7 +573,7 @@ const AdminProductsIndex = () => {
                                 <input
                                     type="text"
                                     className="form-control form-control-solid w-250px ps-12"
-                                    placeholder="Quick search: Product name, SKU..."
+                                    placeholder={t('admin.paymentGetway.productsQuickSearchPlaceholder')}
                                     value={filters.search}
                                     onChange={(e) => handleQuickSearch(e.target.value)}
                                 />
@@ -579,7 +581,7 @@ const AdminProductsIndex = () => {
                         </div>
                         <div className="card-toolbar">
                             <div className="d-flex align-items-center gap-2">
-                                <label className="form-label mb-0 text-nowrap">Show:</label>
+                                <label className="form-label mb-0 text-nowrap">{t('admin.paymentGetway.showLabel')}</label>
                                 <select 
                                     className="form-select form-select-sm" 
                                     value={pagination.per_page}
@@ -599,28 +601,28 @@ const AdminProductsIndex = () => {
                         <div className="table-responsive">
                             <table className="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
                                 <thead>
-                                    <tr className="fw-bold text-muted">
-                                        <th className="min-w-70px">Image</th>
+                                    <tr className="fw-bold text-muted text-end">
+                                        <th className="min-w-70px">{t('admin.paymentGetway.productsImage')}</th>
                                         <th style={{ cursor: 'pointer' }} onClick={() => handleSort('id')} className="user-select-none">
                                             ID {getSortIcon('id')}
                                         </th>
                                         <th style={{ cursor: 'pointer' }} onClick={() => handleSort('merchant_id')} className="user-select-none">
-                                            Merchant {getSortIcon('merchant_id')}
+                                            {t('admin.paymentGetway.productsMerchant')} {getSortIcon('merchant_id')}
                                         </th>
                                         <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')} className="user-select-none">
-                                            Name {getSortIcon('name')}
+                                            {t('admin.paymentGetway.productsName')} {getSortIcon('name')}
                                         </th>
                                         <th style={{ cursor: 'pointer' }} onClick={() => handleSort('sku')} className="user-select-none">
                                             SKU {getSortIcon('sku')}
                                         </th>
                                         <th style={{ cursor: 'pointer' }} onClick={() => handleSort('category_id')} className="user-select-none">
-                                            Category {getSortIcon('category_id')}
+                                            {t('admin.paymentGetway.productsCategory')} {getSortIcon('category_id')}
                                         </th>
                                         <th style={{ cursor: 'pointer' }} onClick={() => handleSort('brand_id')} className="user-select-none">
-                                            Brand {getSortIcon('brand_id')}
+                                            {t('admin.paymentGetway.productsBrand')} {getSortIcon('brand_id')}
                                         </th>
-                                        <th>Country</th>
-                                        <th className="text-end">Actions</th>
+                                        <th>{t('admin.paymentGetway.viewCountryCol')}</th>
+                                        <th className="text-end">{t('admin.common.actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -654,7 +656,7 @@ const AdminProductsIndex = () => {
                             <input
                                 type="text"
                                 className="form-control form-control-solid w-250px ps-12"
-                                placeholder="Quick search: Product name, SKU..."
+                                placeholder={t('admin.paymentGetway.productsQuickSearchPlaceholder')}
                                 value={filters.search}
                                 onChange={(e) => handleQuickSearch(e.target.value)}
                             />
@@ -662,7 +664,7 @@ const AdminProductsIndex = () => {
                     </div>
                     <div className="card-toolbar">
                         <div className="d-flex align-items-center gap-2">
-                            <label className="form-label mb-0 text-nowrap">Show:</label>
+                            <label className="form-label mb-0 text-nowrap">{t('admin.paymentGetway.showLabel')}</label>
                             <select 
                                 className="form-select form-select-sm" 
                                 value={pagination.per_page}
@@ -682,34 +684,34 @@ const AdminProductsIndex = () => {
                     {isFetching && !isLoading && (
                         <div className="alert alert-info py-3 mb-5 d-flex align-items-center gap-2">
                             <span className="spinner-border spinner-border-sm"></span>
-                            <span>Refreshing products...</span>
+                            <span>{t('admin.paymentGetway.productsRefreshing')}</span>
                         </div>
                     )}
                     <div className="table-responsive">
                         <table className="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
                             <thead>
-                                <tr className="fw-bold text-muted">
+                                <tr className="fw-bold text-muted text-end">
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('id')} className="user-select-none">
                                         ID {getSortIcon('id')}
                                     </th>
-                                    <th className="min-w-70px">Image</th>
+                                    <th className="min-w-70px">{t('admin.paymentGetway.productsImage')}</th>
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('merchant_id')} className="user-select-none">
-                                        Merchant {getSortIcon('merchant_id')}
+                                        {t('admin.paymentGetway.productsMerchant')} {getSortIcon('merchant_id')}
                                     </th>
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('name')} className="user-select-none">
-                                        Name {getSortIcon('name')}
+                                        {t('admin.paymentGetway.productsName')} {getSortIcon('name')}
                                     </th>
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('sku')} className="user-select-none">
                                         SKU {getSortIcon('sku')}
                                     </th>
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('category_id')} className="user-select-none">
-                                        Category {getSortIcon('category_id')}
+                                        {t('admin.paymentGetway.productsCategory')} {getSortIcon('category_id')}
                                     </th>
                                     <th style={{ cursor: 'pointer' }} onClick={() => handleSort('brand_id')} className="user-select-none">
-                                        Brand {getSortIcon('brand_id')}
+                                        {t('admin.paymentGetway.productsBrand')} {getSortIcon('brand_id')}
                                     </th>
-                                    <th>Country</th>
-                                    <th className="text-end">Actions</th>
+                                    <th>{t('admin.paymentGetway.viewCountryCol')}</th>
+                                    <th className="text-end">{t('admin.common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -720,16 +722,16 @@ const AdminProductsIndex = () => {
                                         <td><ProductThumbnail product={product} /></td>
                                         <td>{renderMerchant(product?.shop_id)}</td>
                                         <td><span className="text-dark fw-bold fs-6">{product.product_name || product.name}</span></td>
-                                        <td><span className="text-muted">{product.sku || product.code || 'N/A'}</span></td>
-                                        <td><span className="text-muted">{getTranslatedText(product.category?.name) || 'N/A'}</span></td>
-                                        <td><span className="text-muted">{getTranslatedText(product.brand?.name) || 'N/A'}</span></td>
+                                        <td><span className="text-muted">{product.sku || product.code || t('admin.paymentGetway.na')}</span></td>
+                                        <td><span className="text-muted">{getTranslatedText(product.category?.name) || t('admin.paymentGetway.na')}</span></td>
+                                        <td><span className="text-muted">{getTranslatedText(product.brand?.name) || t('admin.paymentGetway.na')}</span></td>
                                         <td>{renderCountry(product?.shop_id)}</td>
                                         <td className="text-end">
-                                            <Link to={`/admin/sales/products/${product.id}`} className="btn btn-sm btn-primary">Show</Link>
+                                            <Link to={`/admin/sales/products/${product.id}`} className="btn btn-sm btn-primary">{t('admin.common.show')}</Link>
                                         </td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan="9" className="text-center py-5"><div className="text-muted">No products found</div></td></tr>
+                                    <tr><td colSpan="9" className="text-center py-5"><div className="text-muted">{t('admin.paymentGetway.productsNoProductsFound')}</div></td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -742,16 +744,16 @@ const AdminProductsIndex = () => {
                                     const perPage = resolvedPagination.per_page ?? pagination.per_page ?? 15;
                                     const currentPage = pagination.current_page ?? 1;
                                     if (total === 0) {
-                                        return 'Showing 0 to 0 of 0 entries';
+                                        return t('admin.paymentGetway.productsShowingZero');
                                     }
                                     const start = ((currentPage - 1) * perPage) + 1;
                                     const end = Math.min(currentPage * perPage, total);
-                                    return `Showing ${start} to ${end} of ${total} entries`;
+                                    return t('admin.paymentGetway.productsShowingRange', { start, end, total });
                                 })()}
                             </div>
                             <ul className="pagination">
                                 <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}>
-                                    <button className="page-link" onClick={() => handlePageChange(pagination.current_page - 1)} disabled={pagination.current_page === 1}>Previous</button>
+                                    <button className="page-link" onClick={() => handlePageChange(pagination.current_page - 1)} disabled={pagination.current_page === 1}>{t('admin.common.previous')}</button>
                                 </li>
                                 {buildPaginationRange(resolvedPagination.last_page, pagination.current_page, 1).map((page, index) => (
                                     typeof page === 'number' ? (
@@ -767,7 +769,7 @@ const AdminProductsIndex = () => {
                                     )
                                 ))}
                                 <li className={`page-item ${pagination.current_page === resolvedPagination.last_page ? 'disabled' : ''}`}>
-                                    <button className="page-link" onClick={() => handlePageChange(pagination.current_page + 1)} disabled={pagination.current_page === resolvedPagination.last_page}>Next</button>
+                                    <button className="page-link" onClick={() => handlePageChange(pagination.current_page + 1)} disabled={pagination.current_page === resolvedPagination.last_page}>{t('admin.common.next')}</button>
                                 </li>
                             </ul>
                         </div>

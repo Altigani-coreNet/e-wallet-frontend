@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { getTranslatedText } from '../../../utils/helpers';
 
 const UserGroupFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilters, onApply }) => {
+    const { t } = useTranslation();
     const [merchants, setMerchants] = useState([]);
     const [branches, setBranches] = useState([]);
     const [loadingMerchants, setLoadingMerchants] = useState(false);
@@ -74,11 +76,11 @@ const UserGroupFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilt
                 <div className="row g-5">
                     {/* Search */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Search</label>
+                        <label className="form-label fw-bold">{t('admin.common.search')}</label>
                         <input
                             type="text"
                             className="form-control"
-                            placeholder="Search by name, group ID, description..."
+                            placeholder={t('admin.userGroupsUI.filters.searchPlaceholder')}
                             value={filters.search}
                             onChange={(e) => handleChange('search', e.target.value)}
                         />
@@ -86,28 +88,28 @@ const UserGroupFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilt
 
                     {/* Status Filter */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Status</label>
+                        <label className="form-label fw-bold">{t('admin.common.status')}</label>
                         <select
                             className="form-select"
                             value={filters.status}
                             onChange={(e) => handleChange('status', e.target.value)}
                         >
-                            <option value="">All Statuses</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="">{t('admin.terminalsIndex.allStatuses')}</option>
+                            <option value="active">{t('admin.common.active')}</option>
+                            <option value="inactive">{t('admin.common.inactive')}</option>
                         </select>
                     </div>
 
                     {/* Merchant Filter */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Merchant</label>
+                        <label className="form-label fw-bold">{t('admin.usersIndex.colMerchant')}</label>
                         <select
                             className="form-select"
                             value={filters.merchant_id}
                             onChange={(e) => handleChange('merchant_id', e.target.value)}
                             disabled={loadingMerchants}
                         >
-                            <option value="">All Merchants</option>
+                            <option value="">{t('admin.terminalsIndex.allMerchants')}</option>
                             {merchants.map((merchant) => (
                                 <option key={merchant.id} value={merchant.id}>
                                     {getTranslatedText(merchant.business_name) || getTranslatedText(merchant.name)}
@@ -118,14 +120,14 @@ const UserGroupFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilt
 
                     {/* Branch Filter */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Branch</label>
+                        <label className="form-label fw-bold">{t('admin.usersIndex.colBranch')}</label>
                         <select
                             className="form-select"
                             value={filters.branch_id}
                             onChange={(e) => handleChange('branch_id', e.target.value)}
                             disabled={!filters.merchant_id || loadingBranches}
                         >
-                            <option value="">All Branches</option>
+                            <option value="">{t('admin.terminalsIndex.allBranches')}</option>
                             {branches.map((branch) => (
                                 <option key={branch.id} value={branch.id}>
                                     {getTranslatedText(branch.name)}
@@ -133,13 +135,13 @@ const UserGroupFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilt
                             ))}
                         </select>
                         {!filters.merchant_id && (
-                            <div className="form-text">Select a merchant first</div>
+                            <div className="form-text">{t('admin.terminalsIndex.selectMerchantFirst')}</div>
                         )}
                     </div>
 
                     {/* Date From */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Date From</label>
+                        <label className="form-label fw-bold">{t('admin.terminalsIndex.dateFrom')}</label>
                         <input
                             type="date"
                             className="form-control"
@@ -150,7 +152,7 @@ const UserGroupFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilt
 
                     {/* Date To */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Date To</label>
+                        <label className="form-label fw-bold">{t('admin.terminalsIndex.dateTo')}</label>
                         <input
                             type="date"
                             className="form-control"
@@ -169,7 +171,7 @@ const UserGroupFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilt
                                 className="btn btn-light btn-active-light-primary"
                                 onClick={onClearFilters}
                             >
-                                Clear Filters
+                                {t('admin.terminalsIndex.clearFilters')}
                             </button>
                             <button
                                 type="button"
@@ -180,7 +182,7 @@ const UserGroupFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilt
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Apply Filters
+                                {t('admin.terminalsIndex.applyFilters')}
                             </button>
                         </div>
                     </div>

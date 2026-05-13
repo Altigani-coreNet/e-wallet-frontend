@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { getUsers, deleteUser, changeUserStatus, exportUsers } from '../../services/usersService';
 import { getBranchesForSelect } from '../../services/branchesService';
@@ -15,6 +16,7 @@ import ErrorAlert from '../common/ErrorAlert';
 import { toast } from 'react-toastify';
 
 const UsersIndex = () => {
+    const { t, i18n } = useTranslation();
     const location = useLocation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const dateFromRef = useRef(null);
@@ -115,11 +117,11 @@ const UsersIndex = () => {
                     });
                 }
             } else {
-                setError(response.error || 'Failed to fetch users');
+                setError(response.error || t('merchant.users.list.fetchFailed'));
             }
         } catch (err) {
             console.error('Error fetching users:', err);
-            setError('An unexpected error occurred while fetching users');
+            setError(t('merchant.users.list.unexpectedFetch'));
         } finally {
             setLoading(false);
         }
@@ -183,7 +185,7 @@ const UsersIndex = () => {
 
     // Handle delete user
     const handleDeleteUser = async (userId) => {
-        if (!confirm('Are you sure you want to delete this user?')) {
+        if (!confirm(t('merchant.users.list.deleteConfirm'))) {
             return;
         }
 
@@ -195,11 +197,11 @@ const UsersIndex = () => {
                 fetchUsers(pagination.currentPage, searchTerm, statusFilter, sortConfig.column, sortConfig.direction);
                 // You can add a success toast notification here
             } else {
-                setError(response.error || 'Failed to delete user');
+                setError(response.error || t('merchant.users.list.deleteFailed'));
             }
         } catch (err) {
             console.error('Error deleting user:', err);
-            setError('An unexpected error occurred while deleting the user');
+            setError(t('merchant.users.list.unexpectedDelete'));
         }
     };
 
@@ -214,11 +216,11 @@ const UsersIndex = () => {
                 // Refresh users list
                 fetchUsers(pagination.currentPage, searchTerm, statusFilter, sortConfig.column, sortConfig.direction);
             } else {
-                setError(response.error || 'Failed to change user status');
+                setError(response.error || t('merchant.users.list.statusFailed'));
             }
         } catch (err) {
             console.error('Error changing user status:', err);
-            setError('An unexpected error occurred while changing user status');
+            setError(t('merchant.users.list.unexpectedStatus'));
         }
     };
 
@@ -340,10 +342,10 @@ const UsersIndex = () => {
             link.remove();
             window.URL.revokeObjectURL(url);
             
-            toast.success('Users exported successfully!');
+            toast.success(t('merchant.users.list.exportSuccess'));
         } catch (err) {
             console.error('Error exporting users:', err);
-            const errorMessage = err.response?.data?.message || err.message || 'Failed to export users';
+            const errorMessage = err.response?.data?.message || err.message || t('merchant.users.list.exportFailed');
             setError(errorMessage);
             toast.error(errorMessage);
         } finally {
@@ -380,10 +382,10 @@ const UsersIndex = () => {
     // Set toolbar title and breadcrumbs
     useEffect(() => {
         const breadcrumbs = [
-            { label: 'Users', path: `${basePath}/users`, active: true }
+            { label: t('merchant.users.list.breadcrumbUsers'), path: `${basePath}/users`, active: true }
         ];
         
-        setTitle('Users Management');
+        setTitle(t('merchant.users.list.title'));
         setBreadcrumbs(breadcrumbs);
         setActions(
             <UsersToolbar 
@@ -402,7 +404,7 @@ const UsersIndex = () => {
             setActions(null);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [basePath, loading]);
+    }, [basePath, loading, t, i18n.language]);
 
     return (
         <>
@@ -442,7 +444,7 @@ const UsersIndex = () => {
                                             style={{ cursor: 'pointer' }}
                                             onClick={() => dateFromRef.current?.focus()}
                                         >
-                                            Date From
+                                            {t('merchant.users.list.filterDateFrom')}
                                         </label>
                                         <input 
                                             id="date_from"
@@ -462,7 +464,7 @@ const UsersIndex = () => {
                                             style={{ cursor: 'pointer' }}
                                             onClick={() => dateToRef.current?.focus()}
                                         >
-                                            Date To
+                                            {t('merchant.users.list.filterDateTo')}
                                         </label>
                                         <input 
                                             id="date_to"
@@ -477,11 +479,11 @@ const UsersIndex = () => {
                                     </div>
                                     <div className="col-md-6">
                                         <SearchableDropdown
-                                            label="Branch"
-                                            placeholder="All Branches"
+                                            label={t('merchant.users.list.filterBranch')}
+                                            placeholder={t('merchant.users.list.allBranches')}
                                             options={branches.map(branch => ({
                                                 value: branch.id,
-                                                label: branch.name || `Branch #${branch.id}`
+                                                label: branch.name || t('merchant.users.list.branchNamed', { id: branch.id })
                                             }))}
                                             selected={filters.branch_id || null}
                                             onSelect={(option) => {
@@ -494,7 +496,7 @@ const UsersIndex = () => {
                                             loading={loadingBranches}
                                             showClear={true}
                                             name="branch_id"
-                                            searchPlaceholder="Search branches..."
+                                            searchPlaceholder={t('merchant.users.list.searchBranches')}
                                             onSearchChange={(search) => {
                                                 // Clear previous timeout
                                                 if (branchSearchTimeoutRef.current) {
@@ -509,11 +511,11 @@ const UsersIndex = () => {
                                     </div>
                                     <div className="col-md-6">
                                         <SearchableDropdown
-                                            label="Role"
-                                            placeholder="All Roles"
+                                            label={t('merchant.users.list.filterRole')}
+                                            placeholder={t('merchant.users.list.allRoles')}
                                             options={roles.map(role => ({
                                                 value: role.id,
-                                                label: role.name || `Role #${role.id}`
+                                                label: role.name || t('merchant.users.list.roleNamed', { id: role.id })
                                             }))}
                                             selected={filters.role_id || null}
                                             onSelect={(option) => {
@@ -526,7 +528,7 @@ const UsersIndex = () => {
                                             loading={loadingRoles}
                                             showClear={true}
                                             name="role_id"
-                                            searchPlaceholder="Search roles..."
+                                            searchPlaceholder={t('merchant.users.list.searchRoles')}
                                             onSearchChange={(search) => {
                                                 // Clear previous timeout
                                                 if (roleSearchTimeoutRef.current) {
@@ -548,14 +550,14 @@ const UsersIndex = () => {
                                             <span className="path2"></span>
                                             <span className="path3"></span>
                                         </i>
-                                        Filters apply automatically as you change values
+                                        {t('merchant.users.list.filtersAutoApply')}
                                     </div>
                                     <button onClick={resetFilters} className="btn btn-sm btn-light-primary">
                                         <i className="ki-duotone ki-arrows-circle fs-3">
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Reset Filters
+                                        {t('merchant.users.list.resetFilters')}
                                     </button>
                                 </div>
                             </div>

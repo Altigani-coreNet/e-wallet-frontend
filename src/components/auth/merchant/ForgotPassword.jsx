@@ -1,11 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { AUTH_ENDPOINTS } from '../../../utils/constants';
 import VerificationInput from '../../common/VerificationInput';
 
 const ForgotPassword = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [step, setStep] = useState('request'); // request -> verify -> reset -> done
     const [email, setEmail] = useState('');
@@ -42,14 +44,14 @@ const ForgotPassword = () => {
                 setToken(response.data.token);
                 setVerifiedCode('');
                 setStep('verify');
-                toast.success('A reset code has been sent to your email.');
+                toast.success(t('auth.forgotPassword.toastCodeSent'));
                 startResendTimer();
                 resetVerificationInputs();
             } else {
-                toast.error(response.data.message || 'Unable to start password reset.');
+                toast.error(response.data.message || t('auth.forgotPassword.toastUnableStart'));
             }
         } catch (err) {
-            const errorMessage = err.response?.data?.message || 'Network error. Please try again.';
+            const errorMessage = err.response?.data?.message || t('auth.forgotPassword.toastNetwork');
             toast.error(errorMessage);
         } finally {
             setSubmitting(false);
@@ -60,12 +62,12 @@ const ForgotPassword = () => {
         e.preventDefault();
 
         if (!code || code.length !== 6) {
-            toast.error('Please enter the 6-digit verification code.');
+            toast.error(t('auth.forgotPassword.toastEnterSix'));
             return;
         }
 
         if (!token) {
-            toast.error('Session expired. Please request a new code.');
+            toast.error(t('auth.forgotPassword.toastSessionExpired'));
             setStep('request');
             return;
         }
@@ -80,15 +82,15 @@ const ForgotPassword = () => {
 
             if (response.data.success) {
                 setVerifiedCode(code);
-                toast.success('Code verified. You can now reset your password.');
+                toast.success(t('auth.forgotPassword.toastCodeVerified'));
                 setStep('reset');
                 resetVerificationInputs();
             } else {
                 const errors = response.data.errors ? Object.values(response.data.errors).flat().join('\n') : '';
-                toast.error(errors || response.data.message || 'Failed to verify code.');
+                toast.error(errors || response.data.message || t('auth.forgotPassword.toastVerifyFailed'));
             }
         } catch (err) {
-            const errorMessage = err.response?.data?.message || 'Verification failed. Please try again.';
+            const errorMessage = err.response?.data?.message || t('auth.forgotPassword.toastVerifyRetry');
             const errors = err.response?.data?.errors;
             if (errors) {
                 const errorList = Object.values(errors).flat().join('\n');
@@ -109,21 +111,21 @@ const ForgotPassword = () => {
 
         // Validate code exists
         if (!activeCode || activeCode.length !== 6) {
-            toast.error('Please verify the 6-digit code before resetting your password.');
+            toast.error(t('auth.forgotPassword.toastVerifyBeforeReset'));
             setStep('verify');
             return;
         }
 
         // Validate token exists
         if (!token) {
-            toast.error('Session expired. Please request a new code.');
+            toast.error(t('auth.forgotPassword.toastSessionExpired'));
             setStep('request');
             return;
         }
         
         // Client-side password validation
         if (!isPasswordValid()) {
-            toast.error('Please meet all password requirements before proceeding.');
+            toast.error(t('auth.forgotPassword.toastMeetRequirements'));
             return;
         }
         
@@ -140,13 +142,13 @@ const ForgotPassword = () => {
             if (response.data.success) {
                 setStep('done');
                 setVerifiedCode('');
-                toast.success('Password reset successful. You can now log in.');
+                toast.success(t('auth.forgotPassword.toastResetSuccess'));
             } else {
                 const errors = response.data.errors ? Object.values(response.data.errors).flat().join('\n') : '';
-                toast.error(errors || response.data.message || 'Failed to reset password.');
+                toast.error(errors || response.data.message || t('auth.forgotPassword.toastResetFailed'));
             }
         } catch (err) {
-            const errorMessage = err.response?.data?.message || 'Network error while resetting password.';
+            const errorMessage = err.response?.data?.message || t('auth.forgotPassword.toastResetNetwork');
             const errors = err.response?.data?.errors;
             if (errors) {
                 const errorList = Object.values(errors).flat().join('\n');
@@ -225,12 +227,12 @@ const ForgotPassword = () => {
                 setStep('verify');
                 startResendTimer();
                 resetVerificationInputs();
-                toast.success('A new code has been sent if the email exists.');
+                toast.success(t('auth.forgotPassword.toastResendOk'));
             } else {
-                toast.error(response.data.message || 'Failed to resend code.');
+                toast.error(response.data.message || t('auth.forgotPassword.toastResendFailed'));
             }
         } catch (err) {
-            const errorMessage = err.response?.data?.message || 'Network error while resending code.';
+            const errorMessage = err.response?.data?.message || t('auth.forgotPassword.toastResendNetwork');
             toast.error(errorMessage);
         } finally {
             setIsResending(false);
@@ -304,18 +306,18 @@ const ForgotPassword = () => {
                             <img 
                                 className="theme-light-show mx-auto mw-100 w-150px w-lg-300px mb-10 mb-lg-20" 
                                 src="/assets/media/auth/agency.png" 
-                                alt="Logo" 
+                                alt={t('auth.common.logoAlt')} 
                             />
                             <img 
                                 className="theme-dark-show mx-auto mw-100 w-150px w-lg-300px mb-10 mb-lg-20" 
                                 src="/assets/media/auth/agency-dark.png" 
-                                alt="Logo" 
+                                alt={t('auth.common.logoAlt')} 
                             />
                             <h1 className="text-gray-800 fs-2qx fw-bold text-center mb-7">
-                                Corenet Tech Merchant Panel
+                                {t('auth.forgotPassword.brandTitle')}
                             </h1>
                             <div className="text-gray-600 fs-base text-center fw-semibold">
-                                Reset your password to regain access to your merchant account.
+                                {t('auth.forgotPassword.brandSubtitle')}
                             </div>
                         </div>
                     </div>
@@ -329,14 +331,14 @@ const ForgotPassword = () => {
                                     {step === 'request' && (
                                         <form className="form w-100" onSubmit={handleRequestReset} noValidate>
                                             <div className="text-center mb-10">
-                                                <h1 className="text-gray-900 fw-bolder mb-3">Forgot Password?</h1>
-                                                <div className="text-gray-500 fw-semibold fs-6">Enter your email to reset your password.</div>
+                                                <h1 className="text-gray-900 fw-bolder mb-3">{t('auth.forgotPassword.requestTitle')}</h1>
+                                                <div className="text-gray-500 fw-semibold fs-6">{t('auth.forgotPassword.requestSubtitle')}</div>
                                             </div>
 
                                             <div className="fv-row mb-8">
                                                 <input
                                                     type="email"
-                                                    placeholder="Email"
+                                                    placeholder={t('auth.forgotPassword.emailPlaceholder')}
                                                     name="email"
                                                     autoComplete="off"
                                                     className="form-control bg-transparent"
@@ -348,15 +350,15 @@ const ForgotPassword = () => {
 
                                             <div className="d-flex flex-wrap justify-content-center pb-lg-0">
                                                 <button type="submit" className="btn btn-primary me-4" disabled={submitting}>
-                                                    <span className={submitting ? 'd-none' : 'indicator-label'}>Submit</span>
+                                                    <span className={submitting ? 'd-none' : 'indicator-label'}>{t('auth.common.submit')}</span>
                                                     {submitting && (
                                                         <span className="indicator-progress" style={{ display: 'block' }}>
-                                                            Sending Code...
+                                                            {t('auth.common.sendingCode')}
                                                             <span className="spinner-border spinner-border-sm align-middle ms-2"></span>
                                                         </span>
                                                     )}
                                                 </button>
-                                                <Link to="/login" className="btn btn-light">Cancel</Link>
+                                                <Link to="/login" className="btn btn-light">{t('auth.common.cancel')}</Link>
                                             </div>
                                         </form>
                                     )}
@@ -364,14 +366,15 @@ const ForgotPassword = () => {
                                     {step === 'verify' && (
                                         <form className="form w-100" onSubmit={handleVerifyCode} noValidate>
                                             <div className="text-center mb-10">
-                                                <h1 className="text-gray-900 fw-bolder mb-3">Verify Reset Code</h1>
+                                                <h1 className="text-gray-900 fw-bolder mb-3">{t('auth.forgotPassword.verifyTitle')}</h1>
                                                 <div className="text-gray-500 fw-semibold fs-6">
-                                                    Enter the 6-digit code sent to: <strong>{maskEmail(email)}</strong>
+                                                    {t('auth.forgotPassword.verifyCodeLead')}{' '}
+                                                    <strong>{maskEmail(email)}</strong>
                                                 </div>
                                             </div>
 
                                             <div className="fv-row mb-8">
-                                                <label className="form-label fw-bolder text-dark fs-6">Verification Code</label>
+                                                <label className="form-label fw-bolder text-dark fs-6">{t('auth.forgotPassword.verificationCodeLabel')}</label>
                                                 <VerificationInput
                                                     ref={verificationInputRef}
                                                     length={6}
@@ -389,12 +392,12 @@ const ForgotPassword = () => {
                                                         {isResending ? (
                                                             <>
                                                                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                                Resending...
+                                                                {t('auth.common.resending')}
                                                             </>
                                                         ) : isResendDisabled ? (
-                                                            `Resend Code (${resendTimer}s)`
+                                                            t('auth.forgotPassword.resendCodeIn', { seconds: resendTimer })
                                                         ) : (
-                                                            'Resend Code'
+                                                            t('auth.forgotPassword.resendCode')
                                                         )}
                                                     </button>
                                                 </div>
@@ -402,10 +405,10 @@ const ForgotPassword = () => {
 
                                             <div className="d-flex flex-wrap justify-content-center pb-lg-0">
                                                 <button type="submit" className="btn btn-primary me-4" disabled={verifying || !code || code.length !== 6}>
-                                                    <span className={verifying ? 'd-none' : 'indicator-label'}>Verify Code</span>
+                                                    <span className={verifying ? 'd-none' : 'indicator-label'}>{t('auth.forgotPassword.verifyCode')}</span>
                                                     {verifying && (
                                                         <span className="indicator-progress" style={{ display: 'block' }}>
-                                                            Verifying...
+                                                            {t('auth.common.verifying')}
                                                             <span className="spinner-border spinner-border-sm align-middle ms-2"></span>
                                                         </span>
                                                     )}
@@ -416,7 +419,7 @@ const ForgotPassword = () => {
                                                     onClick={handleBackToRequest} 
                                                     disabled={verifying}
                                                 >
-                                                    Back
+                                                    {t('auth.common.back')}
                                                 </button>
                                             </div>
                                         </form>
@@ -425,18 +428,19 @@ const ForgotPassword = () => {
                                     {step === 'reset' && (
                                         <form className="form w-100" onSubmit={handleResetPassword} noValidate>
                                             <div className="text-center mb-10">
-                                                <h1 className="text-gray-900 fw-bolder mb-3">Set New Password</h1>
+                                                <h1 className="text-gray-900 fw-bolder mb-3">{t('auth.forgotPassword.setNewTitle')}</h1>
                                                 <div className="text-gray-500 fw-semibold fs-6">
-                                                    Verification successful for <strong>{maskEmail(email)}</strong>.
+                                                    {t('auth.forgotPassword.setNewVerifiedLead')}{' '}
+                                                    <strong>{maskEmail(email)}</strong>.
                                                 </div>
                                             </div>
 
                                             <div className="fv-row mb-8">
-                                                <label className="form-label fw-bolder text-dark fs-6">Password</label>
+                                                <label className="form-label fw-bolder text-dark fs-6">{t('auth.common.password')}</label>
                                                 <div className="position-relative">
                                                     <input
                                                         type={showPassword ? 'text' : 'password'}
-                                                        placeholder="Enter password"
+                                                        placeholder={t('auth.forgotPassword.enterPasswordPlaceholder')}
                                                         name="password"
                                                         className={`form-control form-control-lg form-control-solid ${password && (isPasswordValid() ? 'is-valid' : 'is-invalid')}`}
                                                         value={password}
@@ -455,11 +459,11 @@ const ForgotPassword = () => {
                                             </div>
 
                                             <div className="fv-row mb-8">
-                                                <label className="form-label fw-bolder text-dark fs-6">Confirm Password</label>
+                                                <label className="form-label fw-bolder text-dark fs-6">{t('auth.common.confirmPassword')}</label>
                                                 <div className="position-relative">
                                                     <input
                                                         type={showPasswordConfirmation ? 'text' : 'password'}
-                                                        placeholder="Confirm password"
+                                                        placeholder={t('auth.forgotPassword.confirmPasswordPlaceholder')}
                                                         name="password_confirmation"
                                                         className={`form-control form-control-lg form-control-solid ${passwordConfirmation && (passwordValidation.match ? 'is-valid' : 'is-invalid')}`}
                                                         value={passwordConfirmation}
@@ -476,7 +480,7 @@ const ForgotPassword = () => {
                                                     </span>
                                                 </div>
                                                 {!passwordValidation.match && passwordConfirmation && (
-                                                    <div className="text-danger mt-2">Passwords do not match</div>
+                                                    <div className="text-danger mt-2">{t('auth.passwordRules.doNotMatch')}</div>
                                                 )}
                                             </div>
 
@@ -484,29 +488,29 @@ const ForgotPassword = () => {
                                                 <div className="password-validation mt-3">
                                                     <div className={`validation-item ${passwordValidation.length ? 'text-success' : 'text-danger'}`}>
                                                         <i className={`fas fa-${passwordValidation.length ? 'check' : 'times'} me-2`}></i>
-                                                        At least 8 characters
+                                                        {t('auth.passwordRules.atLeast8')}
                                                     </div>
                                                     <div className={`validation-item ${passwordValidation.uppercase ? 'text-success' : 'text-danger'}`}>
                                                         <i className={`fas fa-${passwordValidation.uppercase ? 'check' : 'times'} me-2`}></i>
-                                                        One uppercase letter
+                                                        {t('auth.passwordRules.uppercase')}
                                                     </div>
                                                     <div className={`validation-item ${passwordValidation.lowercase ? 'text-success' : 'text-danger'}`}>
                                                         <i className={`fas fa-${passwordValidation.lowercase ? 'check' : 'times'} me-2`}></i>
-                                                        One lowercase letter
+                                                        {t('auth.passwordRules.lowercase')}
                                                     </div>
                                                     <div className={`validation-item ${passwordValidation.number ? 'text-success' : 'text-danger'}`}>
                                                         <i className={`fas fa-${passwordValidation.number ? 'check' : 'times'} me-2`}></i>
-                                                        One number
+                                                        {t('auth.passwordRules.number')}
                                                     </div>
                                                 </div>
                                             </div>
 
                                             <div className="d-flex flex-wrap justify-content-center pb-lg-0">
                                                 <button type="submit" className="btn btn-primary me-4" disabled={resetting || !isPasswordValid() || !verifiedCode || verifiedCode.length !== 6}>
-                                                    <span className={resetting ? 'd-none' : 'indicator-label'}>Reset Password</span>
+                                                    <span className={resetting ? 'd-none' : 'indicator-label'}>{t('auth.forgotPassword.resetPassword')}</span>
                                                     {resetting && (
                                                         <span className="indicator-progress" style={{ display: 'block' }}>
-                                                            Resetting...
+                                                            {t('auth.common.resetting')}
                                                             <span className="spinner-border spinner-border-sm align-middle ms-2"></span>
                                                         </span>
                                                     )}
@@ -517,7 +521,7 @@ const ForgotPassword = () => {
                                                     onClick={handleBackToVerify} 
                                                     disabled={resetting}
                                                 >
-                                                    Back
+                                                    {t('auth.common.back')}
                                                 </button>
                                             </div>
                                         </form>
@@ -526,12 +530,12 @@ const ForgotPassword = () => {
                                     {step === 'done' && (
                                         <div className="w-100 text-center">
                                             <div className="text-center mb-10">
-                                                <h1 className="text-gray-900 fw-bolder mb-3">Password Reset Complete</h1>
+                                                <h1 className="text-gray-900 fw-bolder mb-3">{t('auth.forgotPassword.doneTitle')}</h1>
                                                 <div className="text-gray-500 fw-semibold fs-6">
-                                                    Your password has been successfully reset. You can now log in with your new password.
+                                                    {t('auth.forgotPassword.doneSubtitle')}
                                                 </div>
                                             </div>
-                                            <Link to="/login" className="btn btn-primary">Go to Login</Link>
+                                            <Link to="/login" className="btn btn-primary">{t('auth.common.goToLogin')}</Link>
                                         </div>
                                     )}
                                 </div>

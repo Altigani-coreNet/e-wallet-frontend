@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { useAdminProduct } from '../../../services/adminProductsService';
@@ -55,10 +56,10 @@ const getPayloadMessage = (payload) => {
     return payload.message || payload.error || payload?.data?.message || null;
 };
 
-const formatDateTime = (value) => {
-    if (!value) return 'N/A';
+const formatDateTime = (value, fallback) => {
+    if (!value) return fallback;
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? 'N/A' : date.toLocaleString();
+    return Number.isNaN(date.getTime()) ? fallback : date.toLocaleString();
 };
 
 const ensureAbsoluteUrl = (base, value) => {
@@ -95,55 +96,56 @@ const getFormDisplayName = (form, locale = 'en') => {
     return '';
 };
 
-const DetailRow = ({ label, children }) => (
+const DetailRow = ({ label, children, fallback = 'N/A' }) => (
     <div className="row mb-5">
         <div className="col-lg-4"><span className="fw-bold text-gray-800">{label}</span></div>
-        <div className="col-lg-8"><span className="text-gray-700">{children ?? 'N/A'}</span></div>
+        <div className="col-lg-8"><span className="text-gray-700">{children ?? fallback}</span></div>
     </div>
 );
 
-const FormPreviewScreen = ({ form, label }) => {
+const FormPreviewScreen = ({ form, label, t }) => {
     const fields = form?.fields || [];
     return (
         <div className="p-4 bg-white" style={{ height: '100%', overflowY: 'auto' }}>
             <div className="mb-4 pb-3 border-bottom">
-                <div className="fw-bold fs-5 text-gray-900">{label || 'Live Form Preview'}</div>
-                <div className="text-muted fs-7 mt-1">{getFormDisplayName(form) || form?.title || 'Mobile Services Form'}</div>
+                <div className="fw-bold fs-5 text-gray-900">{label || t('admin.paymentGetway.liveFormPreview')}</div>
+                <div className="text-muted fs-7 mt-1">{getFormDisplayName(form) || form?.title || t('admin.paymentGetway.mobileServicesForm')}</div>
             </div>
             {fields.length === 0 ? (
-                <div className="text-muted">No fields in this form.</div>
+                <div className="text-muted">{t('admin.paymentGetway.productsNoFieldsInForm')}</div>
             ) : (
                 fields.map((field, idx) => (
                     <div key={field.id || idx} className="mb-4 pb-3 border-bottom border-gray-200">
-                        <div className="mb-1"><span className="fw-bold text-gray-800">Label (EN)</span> <span className="text-gray-700">{field.label_en || '—'}</span></div>
-                        <div className="mb-1"><span className="fw-bold text-gray-800">Label (AR)</span> <span className="text-gray-700">{field.label_ar || '—'}</span></div>
-                        <div className="mb-1"><span className="fw-bold text-gray-800">Key</span> <span className="text-gray-700 font-monospace">{field.key || '—'}</span></div>
-                        <div><span className="fw-bold text-gray-800">Type</span> <span className="text-gray-700">{field.type || '—'}</span></div>
+                        <div className="mb-1"><span className="fw-bold text-gray-800">{t('admin.paymentGetway.productsLabelEn')}</span> <span className="text-gray-700">{field.label_en || t('admin.paymentGetway.dash')}</span></div>
+                        <div className="mb-1"><span className="fw-bold text-gray-800">{t('admin.paymentGetway.productsLabelAr')}</span> <span className="text-gray-700">{field.label_ar || t('admin.paymentGetway.dash')}</span></div>
+                        <div className="mb-1"><span className="fw-bold text-gray-800">{t('admin.paymentGetway.productsKey')}</span> <span className="text-gray-700 font-monospace">{field.key || t('admin.paymentGetway.dash')}</span></div>
+                        <div><span className="fw-bold text-gray-800">{t('admin.paymentGetway.productsType')}</span> <span className="text-gray-700">{field.type || t('admin.paymentGetway.dash')}</span></div>
                     </div>
                 ))
             )}
             <div className="d-flex gap-2 mt-5 pt-2">
-                <button type="button" className="btn btn-light w-100" disabled>Cancel</button>
-                <button type="button" className="btn btn-primary w-100" disabled>Process</button>
+                <button type="button" className="btn btn-light w-100" disabled>{t('admin.common.cancel')}</button>
+                <button type="button" className="btn btn-primary w-100" disabled>{t('admin.common.process')}</button>
             </div>
         </div>
     );
 };
 
 const AdminProductView = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
     useEffect(() => {
-        setTitle('Show Product');
+        setTitle(t('admin.paymentGetway.productShowTitle'));
         setActions(
             <button className="btn btn-sm btn-secondary" onClick={() => navigate('/admin/sales/products')}>
                 <i className="ki-duotone ki-arrow-left fs-2"><span className="path1"></span><span className="path2"></span></i>
-                Back to List
+                {t('admin.paymentGetway.backToList')}
             </button>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, navigate]);
+    }, [setTitle, setActions, navigate, t]);
 
     const {
         data: productResponse,
@@ -164,16 +166,16 @@ const AdminProductView = () => {
     useEffect(() => {
         if (!productResponse) return;
         if (!isSuccessfulProductResponse(productResponse)) {
-            const message = getPayloadMessage(productResponse) || 'Failed to load product details';
+            const message = getPayloadMessage(productResponse) || t('admin.paymentGetway.productFailedLoadDetails');
             toast.error(message);
         }
-    }, [productResponse]);
+    }, [productResponse, t]);
 
     useEffect(() => {
         if (!productError) return;
-        const message = productError?.response?.data?.message || productError.message || 'Failed to load product details';
+        const message = productError?.response?.data?.message || productError.message || t('admin.paymentGetway.productFailedLoadDetails');
         toast.error(message);
-    }, [productError]);
+    }, [productError, t]);
 
     useEffect(() => {
         const loadForms = async () => {
@@ -222,7 +224,7 @@ const AdminProductView = () => {
             </div>
         );
     }
-    if (!product) return <div className="card"><div className="card-body text-center py-10"><div className="text-muted">Product not found</div></div></div>;
+    if (!product) return <div className="card"><div className="card-body text-center py-10"><div className="text-muted">{t('admin.paymentGetway.productNotFound')}</div></div></div>;
 
     const showRefreshing = isFetching && !isLoading;
     const productName = normalizeName(product.name);
@@ -235,7 +237,7 @@ const AdminProductView = () => {
             <div className="col-md-9">
                 <div className="card">
                     <div className="card-header d-flex justify-content-between align-items-center">
-                        <h3 className="card-title mb-0">Show Product</h3>
+                        <h3 className="card-title mb-0">{t('admin.paymentGetway.productShowTitle')}</h3>
                         <button
                             type="button"
                             className="btn btn-primary"
@@ -250,32 +252,32 @@ const AdminProductView = () => {
                                 <span className="path2"></span>
                                 <span className="path3"></span>
                             </i>
-                            Preview
+                            {t('admin.paymentGetway.homeCfgPreview')}
                         </button>
                     </div>
                     <div className="card-body">
                         {showRefreshing && (
                             <div className="alert alert-info d-flex align-items-center gap-2 mb-5">
                                 <span className="spinner-border spinner-border-sm"></span>
-                                <span>Refreshing product details...</span>
+                                <span>{t('admin.paymentGetway.productRefreshingDetails')}</span>
                             </div>
                         )}
-                        <DetailRow label="Product ID">{product.id}</DetailRow>
-                        <DetailRow label="Product Name (English)">{nameEn}</DetailRow>
-                        <DetailRow label="Product Name (Arabic)">{nameAr}</DetailRow>
-                        {(product.sku || product.code) && <DetailRow label="SKU / Code">{product.sku || product.code}</DetailRow>}
-                        {product.barcode && <DetailRow label="Barcode">{product.barcode}</DetailRow>}
-                        <DetailRow label="Type ID">{product.type_id}</DetailRow>
-                        <DetailRow label="Service Sub Category ID">{product.service_sub_category_id}</DetailRow>
-                        <DetailRow label="Service UUID (FK)">{product.service_id}</DetailRow>
-                        <DetailRow label="Service record id">{product?.service?.id || '—'}</DetailRow>
-                        <DetailRow label="Status">
+                        <DetailRow label={t('admin.paymentGetway.productsId')}>{product.id}</DetailRow>
+                        <DetailRow label={t('admin.paymentGetway.productNameEnglish')}>{nameEn}</DetailRow>
+                        <DetailRow label={t('admin.paymentGetway.productNameArabic')}>{nameAr}</DetailRow>
+                        {(product.sku || product.code) && <DetailRow label={t('admin.paymentGetway.productsSkuCode')}>{product.sku || product.code}</DetailRow>}
+                        {product.barcode && <DetailRow label={t('admin.paymentGetway.productsBarcode')}>{product.barcode}</DetailRow>}
+                        <DetailRow label={t('admin.paymentGetway.productsTypeId')}>{product.type_id}</DetailRow>
+                        <DetailRow label={t('admin.paymentGetway.productServiceSubCategory')}>{product.service_sub_category_id}</DetailRow>
+                        <DetailRow label={t('admin.paymentGetway.productsServiceUuidFk')}>{product.service_id}</DetailRow>
+                        <DetailRow label={t('admin.paymentGetway.productsServiceRecordId')}>{product?.service?.id || t('admin.paymentGetway.dash')}</DetailRow>
+                        <DetailRow label={t('admin.paymentGetway.status')}>
                             <span className={`badge badge-${product.status ? 'success' : 'danger'}`}>
-                                {product.status ? 'Active' : 'Inactive'}
+                                {product.status ? t('admin.common.active') : t('admin.common.inactive')}
                             </span>
                         </DetailRow>
-                        <DetailRow label="Created At">{formatDateTime(product.created_at)}</DetailRow>
-                        {product.updated_at && <DetailRow label="Updated At">{formatDateTime(product.updated_at)}</DetailRow>}
+                        <DetailRow label={t('admin.paymentGetway.viewCreatedCol')}>{formatDateTime(product.created_at, t('admin.paymentGetway.na'))}</DetailRow>
+                        {product.updated_at && <DetailRow label={t('admin.paymentGetway.viewLastUpdated')}>{formatDateTime(product.updated_at, t('admin.paymentGetway.na'))}</DetailRow>}
                     </div>
                 </div>
             </div>
@@ -284,7 +286,7 @@ const AdminProductView = () => {
                 <div className="card card-flush">
                     <div className="card-header">
                         <div className="card-title">
-                            <h3>Product Image</h3>
+                            <h3>{t('admin.paymentGetway.productImage')}</h3>
                         </div>
                     </div>
                     <div className="card-body text-center pt-0">
@@ -302,7 +304,7 @@ const AdminProductView = () => {
                                 ></div>
                             </div>
                         </div>
-                        <div className="text-muted fs-7">Product image preview</div>
+                        <div className="text-muted fs-7">{t('admin.paymentGetway.productImagePreview')}</div>
                     </div>
                 </div>
             </div>
@@ -310,20 +312,20 @@ const AdminProductView = () => {
             <div className="col-12">
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title">Additional Information</h3>
+                        <h3 className="card-title">{t('admin.paymentGetway.productsAdditionalInformation')}</h3>
                     </div>
                     <div className="card-body">
-                        <DetailRow label="Category">{getTranslatedText(product?.category?.name)}</DetailRow>
-                        <DetailRow label="Brand">{getTranslatedText(product?.brand?.name)}</DetailRow>
-                        <DetailRow label="Unit">{getTranslatedText(product?.unit?.name)}</DetailRow>
-                        <DetailRow label="Tax">{product?.tax ? `${getTranslatedText(product.tax.name) || '—'} (${product.tax.rate ?? '0'}%)` : '—'}</DetailRow>
+                        <DetailRow label={t('admin.paymentGetway.productsCategory')}>{getTranslatedText(product?.category?.name)}</DetailRow>
+                        <DetailRow label={t('admin.paymentGetway.productsBrand')}>{getTranslatedText(product?.brand?.name)}</DetailRow>
+                        <DetailRow label={t('admin.paymentGetway.productsUnit')}>{getTranslatedText(product?.unit?.name)}</DetailRow>
+                        <DetailRow label={t('admin.paymentGetway.productsTax')}>{product?.tax ? `${getTranslatedText(product.tax.name) || t('admin.paymentGetway.dash')} (${product.tax.rate ?? '0'}%)` : t('admin.paymentGetway.dash')}</DetailRow>
                         {(product.base_price != null || product.sale_price != null) && (
-                            <DetailRow label="Prices">
-                                {`Base: ${product.base_price ?? '—'} | Sale: ${product.sale_price ?? '—'}`}
+                            <DetailRow label={t('admin.paymentGetway.productsPrices')}>
+                                {`${t('admin.paymentGetway.productsBase')}: ${product.base_price ?? t('admin.paymentGetway.dash')} | ${t('admin.paymentGetway.productsSale')}: ${product.sale_price ?? t('admin.paymentGetway.dash')}`}
                             </DetailRow>
                         )}
                         {product.quantity !== undefined && product.quantity !== null && (
-                            <DetailRow label="Stock quantity">{String(product.quantity)}</DetailRow>
+                            <DetailRow label={t('admin.paymentGetway.productsStockQuantity')}>{String(product.quantity)}</DetailRow>
                         )}
                     </div>
                 </div>
@@ -332,7 +334,7 @@ const AdminProductView = () => {
             <div className="col-12">
                 <div className="card">
                     <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <h3 className="card-title mb-0">Service forms</h3>
+                        <h3 className="card-title mb-0">{t('admin.paymentGetway.productsServiceForms')}</h3>
                         {forms.length > 0 && (
                             <button
                                 type="button"
@@ -344,15 +346,15 @@ const AdminProductView = () => {
                                 disabled={loadingForms}
                             >
                                 <i className="ki-duotone ki-eye fs-3"><span className="path1"></span><span className="path2"></span><span className="path3"></span></i>
-                                Preview in mockup
+                                {t('admin.paymentGetway.productsPreviewInMockup')}
                             </button>
                         )}
                     </div>
                     <div className="card-body">
                         {loadingForms ? (
-                            <div className="text-muted py-4">Loading forms…</div>
+                            <div className="text-muted py-4">{t('admin.paymentGetway.productsLoadingForms')}</div>
                         ) : forms.length === 0 ? (
-                            <div className="text-muted">No service forms for this product.</div>
+                            <div className="text-muted">{t('admin.paymentGetway.productsNoServiceForms')}</div>
                         ) : (
                             forms.map((form, formIdx) => (
                                 <div className="card border mb-5" key={form.id || formIdx}>
@@ -361,38 +363,38 @@ const AdminProductView = () => {
                                         {form.id != null && <span className="text-muted ms-2">(id: {form.id})</span>}
                                     </div>
                                     <div className="card-body">
-                                        <DetailRow label="Form name (EN)">{getFormDisplayName(form, 'en') || '—'}</DetailRow>
-                                        <DetailRow label="Form name (AR)">{getFormDisplayName(form, 'ar') || '—'}</DetailRow>
-                                        <DetailRow label="Form URL">{form.form_url || '—'}</DetailRow>
-                                        <div className="fw-bold text-gray-800 mb-3 mt-2">Fields</div>
+                                        <DetailRow label={t('admin.paymentGetway.productsFormNameEn')}>{getFormDisplayName(form, 'en') || t('admin.paymentGetway.dash')}</DetailRow>
+                                        <DetailRow label={t('admin.paymentGetway.productsFormNameAr')}>{getFormDisplayName(form, 'ar') || t('admin.paymentGetway.dash')}</DetailRow>
+                                        <DetailRow label={t('admin.paymentGetway.productsFormUrl')}>{form.form_url || t('admin.paymentGetway.dash')}</DetailRow>
+                                        <div className="fw-bold text-gray-800 mb-3 mt-2">{t('admin.paymentGetway.productsFields')}</div>
                                         {(form.fields || []).length === 0 ? (
-                                            <div className="text-muted">No fields.</div>
+                                            <div className="text-muted">{t('admin.paymentGetway.productsNoFields')}</div>
                                         ) : (
                                             (form.fields || []).map((field, fIdx) => (
                                                 <div className="card border border-gray-200 mb-4" key={field.id || fIdx}>
                                                     <div className="card-body py-4">
-                                                        <div className="mb-2"><span className="fw-bold">Label (English)</span>{' '}<span className="text-gray-700">{field.label_en || '—'}</span></div>
-                                                        <div className="mb-2"><span className="fw-bold">Label (Arabic)</span>{' '}<span className="text-gray-700">{field.label_ar || '—'}</span></div>
-                                                        <div className="mb-2"><span className="fw-bold">Key</span>{' '}<span className="text-gray-700 font-monospace">{field.key || '—'}</span></div>
-                                                        <div className="mb-2"><span className="fw-bold">Type</span>{' '}<span className="text-gray-700">{field.type || '—'}</span></div>
+                                                        <div className="mb-2"><span className="fw-bold">{t('admin.paymentGetway.productsLabelEnglish')}</span>{' '}<span className="text-gray-700">{field.label_en || t('admin.paymentGetway.dash')}</span></div>
+                                                        <div className="mb-2"><span className="fw-bold">{t('admin.paymentGetway.productsLabelArabic')}</span>{' '}<span className="text-gray-700">{field.label_ar || t('admin.paymentGetway.dash')}</span></div>
+                                                        <div className="mb-2"><span className="fw-bold">{t('admin.paymentGetway.productsKey')}</span>{' '}<span className="text-gray-700 font-monospace">{field.key || t('admin.paymentGetway.dash')}</span></div>
+                                                        <div className="mb-2"><span className="fw-bold">{t('admin.paymentGetway.productsType')}</span>{' '}<span className="text-gray-700">{field.type || t('admin.paymentGetway.dash')}</span></div>
                                                         {field.sort_order != null && (
-                                                            <div className="mb-2"><span className="fw-bold">Sort order</span>{' '}<span className="text-gray-700">{String(field.sort_order)}</span></div>
+                                                            <div className="mb-2"><span className="fw-bold">{t('admin.paymentGetway.productsSortOrder')}</span>{' '}<span className="text-gray-700">{String(field.sort_order)}</span></div>
                                                         )}
                                                         {field.is_required !== undefined && (
-                                                            <div className="mb-2"><span className="fw-bold">Required</span>{' '}<span className="text-gray-700">{field.is_required ? 'Yes' : 'No'}</span></div>
+                                                            <div className="mb-2"><span className="fw-bold">{t('admin.paymentGetway.productsRequired')}</span>{' '}<span className="text-gray-700">{field.is_required ? t('admin.paymentGetway.productsYes') : t('admin.paymentGetway.productsNo')}</span></div>
                                                         )}
                                                         {field.status !== undefined && (
-                                                            <div className="mb-2"><span className="fw-bold">Field status</span>{' '}<span className="text-gray-700">{field.status ? 'Active' : 'Inactive'}</span></div>
+                                                            <div className="mb-2"><span className="fw-bold">{t('admin.paymentGetway.productsFieldStatus')}</span>{' '}<span className="text-gray-700">{field.status ? t('admin.common.active') : t('admin.common.inactive')}</span></div>
                                                         )}
                                                         {Array.isArray(field.options) && field.options.length > 0 && (
                                                             <div className="mt-3">
-                                                                <div className="fw-bold mb-2">Options</div>
+                                                                <div className="fw-bold mb-2">{t('admin.paymentGetway.productsOptions')}</div>
                                                                 <ul className="mb-0 ps-4">
                                                                     {field.options.map((opt, oIdx) => (
                                                                         <li key={opt.id || oIdx} className="text-gray-700 mb-1">
-                                                                            <span className="fw-bold">EN</span> {opt.label_en || '—'} ·{' '}
-                                                                            <span className="fw-bold">AR</span> {opt.label_ar || '—'} ·{' '}
-                                                                            <span className="fw-bold">Value</span> <span className="font-monospace">{opt.value ?? '—'}</span>
+                                                                            <span className="fw-bold">EN</span> {opt.label_en || t('admin.paymentGetway.dash')} ·{' '}
+                                                                            <span className="fw-bold">AR</span> {opt.label_ar || t('admin.paymentGetway.dash')} ·{' '}
+                                                                            <span className="fw-bold">{t('admin.paymentGetway.productsValue')}</span> <span className="font-monospace">{opt.value ?? t('admin.paymentGetway.dash')}</span>
                                                                         </li>
                                                                     ))}
                                                                 </ul>
@@ -415,14 +417,14 @@ const AdminProductView = () => {
                     <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '900px' }}>
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title">Forms Preview</h5>
+                                <h5 className="modal-title">{t('admin.paymentGetway.productsFormsPreview')}</h5>
                                 <button type="button" className="btn-close" onClick={() => setPreviewOpen(false)}></button>
                             </div>
                             <div className="modal-body">
                                 {loadingForms ? (
-                                    <div className="text-center py-5">Loading forms...</div>
+                                    <div className="text-center py-5">{t('admin.paymentGetway.productsLoadingForms')}</div>
                                 ) : forms.length === 0 ? (
-                                    <div className="text-muted">No forms available for this product.</div>
+                                    <div className="text-muted">{t('admin.paymentGetway.productsNoFormsAvailable')}</div>
                                 ) : (
                                     <div className="row g-6">
                                         <div className="col-lg-6">
@@ -430,13 +432,14 @@ const AdminProductView = () => {
                                                 <IPhoneMockup screenWidth={320} frameColor="#000000">
                                                     <FormPreviewScreen
                                                         form={forms[activeFormIndex]}
-                                                        label={nameEn || nameAr || 'Live Form Preview'}
+                                                        label={nameEn || nameAr || t('admin.paymentGetway.liveFormPreview')}
+                                                        t={t}
                                                     />
                                                 </IPhoneMockup>
                                             </div>
                                         </div>
                                         <div className="col-lg-6">
-                                            <div className="fw-semibold mb-3">Service Forms</div>
+                                            <div className="fw-semibold mb-3">{t('admin.paymentGetway.productsServiceForms')}</div>
                                             <div className="list-group">
                                                 {forms.map((form, idx) => (
                                                     <button
@@ -445,7 +448,7 @@ const AdminProductView = () => {
                                                         className={`list-group-item list-group-item-action ${idx === activeFormIndex ? 'active' : ''}`}
                                                         onClick={() => setActiveFormIndex(idx)}
                                                     >
-                                                        {getFormDisplayName(form) || `Form ${idx + 1}`}
+                                                        {getFormDisplayName(form) || t('admin.paymentGetway.catalogFormWithIndex', { index: idx + 1 })}
                                                     </button>
                                                 ))}
                                             </div>
@@ -455,7 +458,7 @@ const AdminProductView = () => {
                             </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-light" onClick={() => setPreviewOpen(false)}>
-                                    Close
+                                    {t('admin.common.close')}
                                 </button>
                             </div>
                         </div>

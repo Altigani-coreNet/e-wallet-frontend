@@ -1,35 +1,36 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import FilePondUpload from './FilePondUpload';
 
 const BusinessDocuments = ({ formData, setFormData, fieldErrors = {} }) => {
-    // Generate a temporary merchant code for file uploads
-    // In a real scenario, this would come from the merchant registration process
+    const { t } = useTranslation();
     const merchantCode = formData.merchant_code || `temp_${Date.now()}`;
 
     const handleUploadSuccess = (serverData, file) => {
         console.log('File uploaded successfully:', serverData);
-        // You can add additional success handling here
     };
 
     const handleUploadError = (error) => {
         console.error('File upload error:', error);
-        // You can add additional error handling here
     };
-    
+
     return (
         <div className="w-100">
             <div className="pb-10 pb-lg-15">
-                <h2 className="fw-bolder text-dark">Business Documents</h2>
+                <h2 className="fw-bolder text-dark">{t('auth.businessDocuments.title')}</h2>
                 <div className="text-muted fw-bold fs-6">
-                    If you need more info, please check out
-                    <a href="#" className="link-primary fw-bolder"> Help Page</a>.
+                    {t('auth.businessDocuments.helpLead')}{' '}
+                    <a href="#" className="link-primary fw-bolder">
+                        {t('auth.common.helpPage')}
+                    </a>
+                    .
                 </div>
             </div>
 
             <div className="row">
                 <div className="col-md-6 mb-4">
                     <FilePondUpload
-                        title="Company Logo"
+                        title={t('auth.businessDocuments.companyLogo')}
                         name="company_logo"
                         accept=".jpg,.jpeg,.png,.gif"
                         formData={formData}
@@ -38,14 +39,14 @@ const BusinessDocuments = ({ formData, setFormData, fieldErrors = {} }) => {
                         fieldErrors={fieldErrors}
                         onUploadSuccess={handleUploadSuccess}
                         onUploadError={handleUploadError}
-                        maxSize={5 * 1024 * 1024} // 5MB for images
+                        maxSize={5 * 1024 * 1024}
                         isImage={true}
                     />
                 </div>
 
                 <div className="col-md-6 mb-4">
                     <FilePondUpload
-                        title="Trade License"
+                        title={t('auth.businessDocuments.tradeLicense')}
                         name="trade_license"
                         accept=".pdf"
                         formData={formData}
@@ -54,14 +55,14 @@ const BusinessDocuments = ({ formData, setFormData, fieldErrors = {} }) => {
                         fieldErrors={fieldErrors}
                         onUploadSuccess={handleUploadSuccess}
                         onUploadError={handleUploadError}
-                        maxSize={10 * 1024 * 1024} // 10MB for documents
+                        maxSize={10 * 1024 * 1024}
                         isImage={false}
                     />
                 </div>
 
                 <div className="col-md-6 mb-4">
                     <FilePondUpload
-                        title="Tax Certification"
+                        title={t('auth.businessDocuments.taxCertification')}
                         name="tax_certification"
                         accept=".pdf"
                         formData={formData}
@@ -70,14 +71,14 @@ const BusinessDocuments = ({ formData, setFormData, fieldErrors = {} }) => {
                         fieldErrors={fieldErrors}
                         onUploadSuccess={handleUploadSuccess}
                         onUploadError={handleUploadError}
-                        maxSize={10 * 1024 * 1024} // 10MB for documents
+                        maxSize={10 * 1024 * 1024}
                         isImage={false}
                     />
                 </div>
 
                 <div className="col-md-6 mb-4">
                     <FilePondUpload
-                        title="User ID Document"
+                        title={t('auth.businessDocuments.userIdDocument')}
                         name="user_id_document"
                         accept=".pdf"
                         formData={formData}
@@ -86,7 +87,7 @@ const BusinessDocuments = ({ formData, setFormData, fieldErrors = {} }) => {
                         fieldErrors={fieldErrors}
                         onUploadSuccess={handleUploadSuccess}
                         onUploadError={handleUploadError}
-                        maxSize={10 * 1024 * 1024} // 10MB for documents
+                        maxSize={10 * 1024 * 1024}
                         isImage={false}
                     />
                 </div>
@@ -96,4 +97,3 @@ const BusinessDocuments = ({ formData, setFormData, fieldErrors = {} }) => {
 };
 
 export default BusinessDocuments;
-

@@ -1,18 +1,22 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import UserTableRow from './UserTableRow';
 import Pagination from '../common/Pagination';
 
 const UsersTable = ({ users = [], sortConfig, onSort, onDelete, onStatusChange, pagination, onPageChange, basePath = '/sales' }) => {
-    // Ensure users is an array
+    const { t } = useTranslation();
     const usersArray = Array.isArray(users) ? users : [];
+
     const renderSortIcon = (column) => {
         if (sortConfig.column !== column) {
             return <i className="ki-duotone ki-up-down fs-5 ms-1 text-muted"></i>;
         }
-        
-        return sortConfig.direction === 'asc' 
-            ? <i className="ki-duotone ki-arrow-up fs-5 ms-1"></i>
-            : <i className="ki-duotone ki-arrow-down fs-5 ms-1"></i>;
+
+        return sortConfig.direction === 'asc' ? (
+            <i className="ki-duotone ki-arrow-up fs-5 ms-1"></i>
+        ) : (
+            <i className="ki-duotone ki-arrow-down fs-5 ms-1"></i>
+        );
     };
 
     return (
@@ -21,35 +25,29 @@ const UsersTable = ({ users = [], sortConfig, onSort, onDelete, onStatusChange, 
                 <table className="table align-middle table-row-dashed fs-6 gy-5" id="users_table">
                     <thead>
                         <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                            <th className="text-dark">#</th>
-                            <th 
-                                className="min-w-200px text-dark cursor-pointer" 
-                                onClick={() => onSort('name')}
-                            >
-                                User Info
+                            <th className="text-dark">{t('merchant.users.table.hash')}</th>
+                            <th className="min-w-200px text-dark cursor-pointer" onClick={() => onSort('name')}>
+                                {t('merchant.users.table.userInfo')}
                                 {renderSortIcon('name')}
                             </th>
-                            <th className="text-dark">Phone</th>
-                            <th className="text-dark">User Type</th>
-                            <th className="text-dark">Branch</th>
-                            <th className="text-dark">Roles</th>
-                            <th 
-                                className="text-dark cursor-pointer" 
-                                onClick={() => onSort('status')}
-                            >
-                                Status
+                            <th className="text-dark">{t('merchant.users.table.phone')}</th>
+                            <th className="text-dark">{t('merchant.users.table.userType')}</th>
+                            <th className="text-dark">{t('merchant.users.table.branch')}</th>
+                            <th className="text-dark">{t('merchant.users.table.roles')}</th>
+                            <th className="text-dark cursor-pointer" onClick={() => onSort('status')}>
+                                {t('merchant.users.table.status')}
                                 {renderSortIcon('status')}
                             </th>
-                            <th className="text-end text-dark">Actions</th>
+                            <th className="text-end text-dark">{t('merchant.users.table.actions')}</th>
                         </tr>
                     </thead>
                     <tbody className="fw-bold text-gray-600">
                         {usersArray && usersArray.length > 0 ? (
                             usersArray.map((user, index) => (
-                                <UserTableRow 
-                                    key={user.id} 
+                                <UserTableRow
+                                    key={user.id}
                                     user={user}
-                                    index={index + 1 + ((pagination.currentPage - 1) * pagination.perPage)}
+                                    index={index + 1 + (pagination.currentPage - 1) * pagination.perPage}
                                     onDelete={onDelete}
                                     onStatusChange={onStatusChange}
                                     basePath={basePath}
@@ -57,10 +55,8 @@ const UsersTable = ({ users = [], sortConfig, onSort, onDelete, onStatusChange, 
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="7" className="text-center py-10">
-                                    <div className="text-gray-500 fs-4">
-                                        No users found
-                                    </div>
+                                <td colSpan="8" className="text-center py-10">
+                                    <div className="text-gray-500 fs-4">{t('merchant.users.table.noUsers')}</div>
                                 </td>
                             </tr>
                         )}
@@ -68,9 +64,8 @@ const UsersTable = ({ users = [], sortConfig, onSort, onDelete, onStatusChange, 
                 </table>
             </div>
 
-            {/* Pagination */}
             {usersArray && usersArray.length > 0 && (
-                <Pagination 
+                <Pagination
                     currentPage={pagination.currentPage}
                     lastPage={pagination.lastPage}
                     total={pagination.total}
@@ -83,4 +78,3 @@ const UsersTable = ({ users = [], sortConfig, onSort, onDelete, onStatusChange, 
 };
 
 export default UsersTable;
-

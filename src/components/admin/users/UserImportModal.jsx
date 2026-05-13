@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 
 const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
+    const { t } = useTranslation();
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState(null);
     const [uploading, setUploading] = useState(false);
@@ -15,7 +17,7 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
         if (selectedFile) {
             const fileExtension = selectedFile.name.split('.').pop().toLowerCase();
             if (!['xlsx', 'xls'].includes(fileExtension)) {
-                toast.error('Please select an Excel file (.xlsx or .xls)');
+                toast.error(t('admin.usersUI.import.toastExcelOnly'));
                 return;
             }
             setFile(selectedFile);
@@ -25,7 +27,7 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 
     const handlePreview = async () => {
         if (!file) {
-            toast.error('Please select a file first');
+            toast.error(t('admin.usersUI.import.toastSelectFile'));
             return;
         }
 
@@ -49,13 +51,13 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
             if (response.data.success || response.data.status) {
                 setPreview(response.data.data);
                 if (response.data.data.invalid_rows > 0) {
-                    toast.warning(`${response.data.data.invalid_rows} row(s) have validation errors`);
+                    toast.warning(t('admin.usersUI.import.toastInvalidRows', { count: response.data.data.invalid_rows }));
                 } else {
-                    toast.success('Preview generated successfully');
+                    toast.success(t('admin.usersUI.import.toastPreviewOk'));
                 }
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to preview file');
+            toast.error(error.response?.data?.message || t('admin.usersUI.import.toastPreviewFail'));
             console.error(error);
         } finally {
             setUploading(false);
@@ -64,16 +66,16 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 
     const handleImport = async () => {
         if (!file) {
-            toast.error('Please select a file first');
+            toast.error(t('admin.usersUI.import.toastSelectFile'));
             return;
         }
 
         if (!preview || !preview.summary.can_import) {
-            toast.error('Please preview the file first to validate the data');
+            toast.error(t('admin.usersUI.import.toastPreviewFirst'));
             return;
         }
 
-        if (!window.confirm(`Are you sure you want to import ${preview.summary.valid_count} user(s)?`)) {
+        if (!window.confirm(t('admin.usersUI.import.importConfirm', { count: preview.summary.valid_count }))) {
             return;
         }
 
@@ -95,12 +97,12 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
             );
 
             if (response.data.success || response.data.status) {
-                toast.success(response.data.data?.message || 'Users imported successfully');
+                toast.success(response.data.data?.message || t('admin.usersUI.import.toastImportOk'));
                 handleClose();
                 onImportSuccess();
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to import users');
+            toast.error(error.response?.data?.message || t('admin.usersUI.import.toastImportFail'));
             console.error(error);
         } finally {
             setImporting(false);
@@ -125,9 +127,9 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
             link.remove();
             window.URL.revokeObjectURL(url);
             
-            toast.success('Template downloaded successfully');
+            toast.success(t('admin.usersUI.import.toastTemplateOk'));
         } catch (error) {
-            toast.error('Failed to download template');
+            toast.error(t('admin.usersUI.import.toastTemplateFail'));
             console.error(error);
         }
     };
@@ -145,7 +147,7 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
             <div className="modal-dialog modal-dialog-centered modal-lg">
                 <div className="modal-content">
                     <div className="modal-header">
-                        <h2 className="modal-title">Import Users</h2>
+                        <h2 className="modal-title">{t('admin.usersUI.import.title')}</h2>
                         <button
                             type="button"
                             className="btn btn-icon btn-sm btn-active-light-primary"
@@ -167,7 +169,7 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                 <span className="path3"></span>
                             </i>
                             <div className="flex-grow-1">
-                                <strong>Need a template?</strong> Download the CSV template to see the required format.
+                                <strong>{t('admin.usersUI.import.templateLead')}</strong> {t('admin.usersUI.import.templateHint')}
                             </div>
                             <button
                                 type="button"
@@ -178,13 +180,13 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Download Template
+                                {t('admin.usersUI.import.downloadTemplate')}
                             </button>
                         </div>
 
                         {/* File Upload */}
                         <div className="mb-7">
-                            <label className="form-label fw-bold">Select Excel File</label>
+                            <label className="form-label fw-bold">{t('admin.usersUI.import.selectFile')}</label>
                             <input
                                 type="file"
                                 className="form-control"
@@ -197,11 +199,11 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Selected: {file.name}
+                                    {t('admin.usersUI.import.selectedFile', { name: file.name })}
                                 </div>
                             )}
                             <div className="form-text text-muted mt-1">
-                                Excel file (.xlsx or .xls) with Users, Merchants, and Branches sheets
+                                {t('admin.usersUI.import.fileHint')}
                             </div>
                         </div>
 
@@ -217,7 +219,7 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     {uploading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Previewing...
+                                            {t('admin.usersUI.import.previewing')}
                                         </>
                                     ) : (
                                         <>
@@ -226,7 +228,7 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                 <span className="path2"></span>
                                                 <span className="path3"></span>
                                             </i>
-                                            Preview Import
+                                            {t('admin.usersUI.import.previewImport')}
                                         </>
                                     )}
                                 </button>
@@ -243,7 +245,7 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                         <span className="path2"></span>
                                     </i>
                                     <div className="flex-grow-1">
-                                        <strong>{preview.message || 'Preview ready'}</strong>
+                                        <strong>{preview.message || t('admin.usersUI.import.previewReady')}</strong>
                                     </div>
                                 </div>
 
@@ -254,19 +256,19 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                             <div className="col-4">
                                                 <div className="text-center">
                                                     <div className="fs-2x fw-bold text-primary">{preview.summary.total_rows}</div>
-                                                    <div className="text-muted">Total Rows</div>
+                                                    <div className="text-muted">{t('admin.usersUI.import.totalRows')}</div>
                                                 </div>
                                             </div>
                                             <div className="col-4">
                                                 <div className="text-center">
                                                     <div className="fs-2x fw-bold text-success">{preview.summary.valid_count}</div>
-                                                    <div className="text-muted">Valid</div>
+                                                    <div className="text-muted">{t('admin.usersUI.import.valid')}</div>
                                                 </div>
                                             </div>
                                             <div className="col-4">
                                                 <div className="text-center">
                                                     <div className="fs-2x fw-bold text-danger">{preview.summary.invalid_count}</div>
-                                                    <div className="text-muted">Invalid</div>
+                                                    <div className="text-muted">{t('admin.usersUI.import.invalid')}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -279,14 +281,14 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                         <table className="table table-sm table-bordered">
                                             <thead className="table-light" style={{ position: 'sticky', top: 0 }}>
                                                 <tr>
-                                                    <th style={{ width: '50px' }}>Row</th>
-                                                    <th style={{ width: '80px' }}>Status</th>
-                                                    <th>Name</th>
-                                                    <th>Email</th>
-                                                    <th>Phone</th>
-                                                    <th>Merchant</th>
-                                                    <th>Branch</th>
-                                                    <th>Errors</th>
+                                                    <th style={{ width: '50px' }}>{t('admin.usersUI.import.colRow')}</th>
+                                                    <th style={{ width: '80px' }}>{t('admin.usersUI.import.colStatus')}</th>
+                                                    <th>{t('admin.usersUI.import.colName')}</th>
+                                                    <th>{t('admin.usersUI.import.colEmail')}</th>
+                                                    <th>{t('admin.usersUI.import.colPhone')}</th>
+                                                    <th>{t('admin.usersUI.import.colMerchant')}</th>
+                                                    <th>{t('admin.usersUI.import.colBranch')}</th>
+                                                    <th>{t('admin.usersUI.import.colErrors')}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -295,9 +297,9 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                         <td className="text-center">{user.row}</td>
                                                         <td className="text-center">
                                                             {user.is_valid ? (
-                                                                <span className="badge badge-light-success">Valid</span>
+                                                                <span className="badge badge-light-success">{t('admin.usersUI.import.validBadge')}</span>
                                                             ) : (
-                                                                <span className="badge badge-light-danger">Invalid</span>
+                                                                <span className="badge badge-light-danger">{t('admin.usersUI.import.invalidBadge')}</span>
                                                             )}
                                                         </td>
                                                         <td>{user.name}</td>
@@ -325,7 +327,7 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 
                                 {preview.summary.invalid_count > 0 && (
                                     <div className="alert alert-info mt-3">
-                                        <strong>Note:</strong> Rows with validation errors will be skipped during import. Only valid rows will be imported.
+                                        {t('admin.usersUI.import.noteInvalid')}
                                     </div>
                                 )}
                             </div>
@@ -338,7 +340,7 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                             className="btn btn-light"
                             onClick={handleClose}
                         >
-                            Cancel
+                            {t('admin.common.cancel')}
                         </button>
                         {preview && (
                             <button
@@ -350,7 +352,7 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                 {importing ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2"></span>
-                                        Importing...
+                                        {t('admin.usersUI.import.importing')}
                                     </>
                                 ) : (
                                     <>
@@ -358,7 +360,7 @@ const UserImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Import {preview.summary.valid_count} User(s)
+                                        {t('admin.usersUI.import.importUsers', { count: preview.summary.valid_count })}
                                     </>
                                 )}
                             </button>

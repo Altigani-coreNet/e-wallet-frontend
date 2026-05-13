@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
@@ -6,6 +7,7 @@ import { getToken } from '../../../utils/api';
 import { validateFile } from '../../../utils/fileHelpers';
 
 const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
+    const { t } = useTranslation();
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewData, setPreviewData] = useState(null);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -16,7 +18,6 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validate file
         const validation = validateFile(file, {
             allowedTypes: [
                 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -41,7 +42,7 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 
     const handlePreview = async () => {
         if (!selectedFile) {
-            toast.error('Please select a file first');
+            toast.error(t('admin.merchantsUI.importSelectFileFirst'));
             return;
         }
 
@@ -62,10 +63,10 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
             if (isSuccess) {
                 setPreviewData(response.data.data);
                 setIsPreviewMode(true);
-                toast.success('Preview generated successfully');
+                toast.success(t('admin.merchantsUI.previewSuccess'));
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to preview import');
+            toast.error(error.response?.data?.message || t('admin.merchantsUI.previewFailed'));
             console.error(error);
         } finally {
             setIsLoading(false);
@@ -74,14 +75,14 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 
     const handleImport = async () => {
         if (!selectedFile) {
-            toast.error('Please select a file first');
+            toast.error(t('admin.merchantsUI.importSelectFileFirst'));
             return;
         }
 
         try {
             setIsLoading(true);
-            setImportProgress({ status: 'importing', message: 'Importing merchants...' });
-            
+            setImportProgress({ status: 'importing', message: t('admin.merchantsUI.importProgressMessage') });
+
             const formData = new FormData();
             formData.append('import_file', selectedFile);
 
@@ -102,18 +103,20 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                     failed: response.data.data.failed_count,
                     errors: response.data.data.errors
                 });
-                
-                toast.success(`Import completed: ${response.data.data.imported_count} imported, ${response.data.data.failed_count} failed`);
-                
-                // Call success callback after a delay
+
+                toast.success(t('admin.merchantsUI.importCompletedToast', {
+                    imported: response.data.data.imported_count,
+                    failed: response.data.data.failed_count
+                }));
+
                 setTimeout(() => {
                     onImportSuccess();
                     handleClose();
                 }, 2000);
             }
         } catch (error) {
-            setImportProgress({ status: 'error', message: error.response?.data?.message || 'Import failed' });
-            toast.error(error.response?.data?.message || 'Failed to import merchants');
+            setImportProgress({ status: 'error', message: error.response?.data?.message || t('admin.merchantsUI.importFailed') });
+            toast.error(error.response?.data?.message || t('admin.merchantsUI.importFailedMerchants'));
             console.error(error);
         } finally {
             setIsLoading(false);
@@ -140,12 +143,12 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                 link.click();
                 link.remove();
                 window.URL.revokeObjectURL(url);
-                toast.success('Template downloaded successfully');
+                toast.success(t('admin.merchantsUI.templateDownloaded'));
             } else {
-                toast.error('Failed to download template');
+                toast.error(t('admin.merchantsUI.templateDownloadFailed'));
             }
         } catch (error) {
-            toast.error('Failed to download template');
+            toast.error(t('admin.merchantsUI.templateDownloadFailed'));
             console.error(error);
         }
     };
@@ -170,7 +173,7 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Import Merchants
+                            {t('admin.merchantsUI.importTitle')}
                         </h5>
                         <button type="button" className="btn-close" onClick={handleClose} disabled={isLoading}></button>
                     </div>
@@ -178,9 +181,8 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                     <div className="modal-body">
                         {!isPreviewMode && !importProgress && (
                             <>
-                                {/* File Upload Section */}
                                 <div className="mb-5">
-                                    <label htmlFor="import_file" className="form-label fw-bold">Select File</label>
+                                    <label htmlFor="import_file" className="form-label fw-bold">{t('admin.merchantsUI.importSelectFile')}</label>
                                     <input
                                         type="file"
                                         className="form-control"
@@ -189,10 +191,9 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                         onChange={handleFileSelect}
                                         disabled={isLoading}
                                     />
-                                    <div className="form-text">Supported formats: .xlsx, .xls, .csv (Max 10MB)</div>
+                                    <div className="form-text">{t('admin.merchantsUI.importFormatsHint')}</div>
                                 </div>
 
-                                {/* Instructions */}
                                 <div className="alert alert-info d-flex align-items-center">
                                     <i className="ki-duotone ki-information-5 fs-2hx text-info me-4">
                                         <span className="path1"></span>
@@ -200,12 +201,11 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                         <span className="path3"></span>
                                     </i>
                                     <div className="d-flex flex-column">
-                                        <h5 className="mb-1">Import Instructions</h5>
-                                        <span>Download the template, fill in merchant data, and upload the file. Click Preview to validate before importing.</span>
+                                        <h5 className="mb-1">{t('admin.merchantsUI.importInstructionsTitle')}</h5>
+                                        <span>{t('admin.merchantsUI.importInstructionsText')}</span>
                                     </div>
                                 </div>
 
-                                {/* Download Template Button */}
                                 <div className="mb-3">
                                     <button
                                         type="button"
@@ -216,22 +216,23 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Download Template
+                                        {t('admin.merchantsUI.downloadTemplate')}
                                     </button>
                                 </div>
                             </>
                         )}
 
-                        {/* Preview Section */}
                         {isPreviewMode && previewData && (
                             <div>
                                 <div className="alert alert-light-primary d-flex align-items-center mb-5">
                                     <div className="d-flex flex-column">
-                                        <h5 className="mb-1">Preview Summary</h5>
+                                        <h5 className="mb-1">{t('admin.merchantsUI.previewSummary')}</h5>
                                         <span>
-                                            Total: {previewData.summary.total} | 
-                                            Valid: <span className="text-success fw-bold">{previewData.summary.valid}</span> | 
-                                            Invalid: <span className="text-danger fw-bold">{previewData.summary.invalid}</span>
+                                            {t('admin.merchantsUI.previewTotalValidInvalid', {
+                                                total: previewData.summary.total,
+                                                valid: previewData.summary.valid,
+                                                invalid: previewData.summary.invalid
+                                            })}
                                         </span>
                                     </div>
                                 </div>
@@ -240,13 +241,13 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     <table className="table table-sm table-row-bordered">
                                         <thead className="sticky-top bg-light">
                                             <tr>
-                                                <th>Row</th>
-                                                <th>Name</th>
-                                                <th>Email</th>
-                                                <th>Phone</th>
-                                                <th>Country</th>
-                                                <th>Status</th>
-                                                <th>Errors</th>
+                                                <th>{t('admin.merchantsUI.importColRow')}</th>
+                                                <th>{t('admin.merchantsUI.importColName')}</th>
+                                                <th>{t('admin.merchantsUI.importColEmail')}</th>
+                                                <th>{t('admin.merchantsUI.importColPhone')}</th>
+                                                <th>{t('admin.merchantsUI.importColCountry')}</th>
+                                                <th>{t('admin.merchantsUI.importColStatus')}</th>
+                                                <th>{t('admin.merchantsUI.importColErrors')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -259,9 +260,9 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                     <td>{row.data.country || '-'}</td>
                                                     <td>
                                                         {row.valid ? (
-                                                            <span className="badge badge-light-success">Valid</span>
+                                                            <span className="badge badge-light-success">{t('admin.merchantsUI.importValid')}</span>
                                                         ) : (
-                                                            <span className="badge badge-light-danger">Invalid</span>
+                                                            <span className="badge badge-light-danger">{t('admin.merchantsUI.importInvalid')}</span>
                                                         )}
                                                     </td>
                                                     <td>
@@ -288,27 +289,26 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                             </div>
                         )}
 
-                        {/* Import Progress */}
                         {importProgress && (
                             <div className={`alert ${importProgress.status === 'error' ? 'alert-danger' : 'alert-info'}`}>
-                                <h5>{importProgress.status === 'error' ? 'Import Failed' : 'Import Status'}</h5>
+                                <h5>{importProgress.status === 'error' ? t('admin.merchantsUI.importFailedTitle') : t('admin.merchantsUI.importStatusTitle')}</h5>
                                 <p>{importProgress.message}</p>
                                 {importProgress.imported !== undefined && (
                                     <div>
-                                        <p>Imported: {importProgress.imported}</p>
-                                        <p>Failed: {importProgress.failed}</p>
+                                        <p>{t('admin.merchantsUI.importedLabel', { count: importProgress.imported })}</p>
+                                        <p>{t('admin.merchantsUI.failedLabel', { count: importProgress.failed })}</p>
                                     </div>
                                 )}
                                 {importProgress.errors && importProgress.errors.length > 0 && (
                                     <div className="mt-3">
-                                        <h6>Errors:</h6>
+                                        <h6>{t('admin.merchantsUI.errorsHeading')}</h6>
                                         <ul>
                                             {importProgress.errors.slice(0, 10).map((error, idx) => (
                                                 <li key={idx}>{error}</li>
                                             ))}
                                         </ul>
                                         {importProgress.errors.length > 10 && (
-                                            <p>... and {importProgress.errors.length - 10} more errors</p>
+                                            <p>{t('admin.merchantsUI.moreErrors', { count: importProgress.errors.length - 10 })}</p>
                                         )}
                                     </div>
                                 )}
@@ -323,9 +323,9 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                             onClick={handleClose}
                             disabled={isLoading}
                         >
-                            Close
+                            {t('admin.merchantsUI.close')}
                         </button>
-                        
+
                         {!isPreviewMode && !importProgress && (
                             <>
                                 <button
@@ -337,7 +337,7 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     {isLoading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Loading...
+                                            {t('admin.merchantsUI.loading')}
                                         </>
                                     ) : (
                                         <>
@@ -346,7 +346,7 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                 <span className="path2"></span>
                                                 <span className="path3"></span>
                                             </i>
-                                            Preview
+                                            {t('admin.merchantsUI.preview')}
                                         </>
                                     )}
                                 </button>
@@ -359,7 +359,7 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     {isLoading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Importing...
+                                            {t('admin.merchantsUI.importing')}
                                         </>
                                     ) : (
                                         <>
@@ -367,7 +367,7 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Import Now
+                                            {t('admin.merchantsUI.importNow')}
                                         </>
                                     )}
                                 </button>
@@ -381,7 +381,7 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     className="btn btn-secondary"
                                     onClick={() => setIsPreviewMode(false)}
                                 >
-                                    Back
+                                    {t('admin.common.back')}
                                 </button>
                                 <button
                                     type="button"
@@ -392,7 +392,7 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     {isLoading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Importing...
+                                            {t('admin.merchantsUI.importing')}
                                         </>
                                     ) : (
                                         <>
@@ -400,7 +400,7 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Import {previewData?.summary.valid} Valid Rows
+                                            {t('admin.merchantsUI.importValidRows', { count: previewData?.summary.valid ?? 0 })}
                                         </>
                                     )}
                                 </button>
@@ -414,4 +414,3 @@ const MerchantImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 };
 
 export default MerchantImportModal;
-

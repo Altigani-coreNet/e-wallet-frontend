@@ -8,6 +8,7 @@ import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import SearchableDropdown from '../../../common/filters/SearchableDropdown';
+import ServiceModel from '../../../services/ServiceModel';
 
 const getStatusBadgeClass = (status) => {
     const map = {
@@ -223,7 +224,7 @@ const AdminServiceTransactionsIndex = () => {
     }));
     const serviceOptions = servicesList.map((s) => ({
         value: s.id,
-        label: s.service_name_en || s.service_name_ar || s.service_name || s.text || String(s.id),
+        label: ServiceModel.displayName(s) || s.text || String(s.id),
     }));
     const productOptions = productsList.map((p) => ({
         value: p.id,

@@ -1,30 +1,38 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
-const renderStatusBadge = (status, displayName) => {
+const renderStatusBadge = (status, displayName, activeLabel, inactiveLabel) => {
     const isActive = status === true || status === 1 || status === '1' || status === 'active';
-    const label = displayName || (isActive ? 'Active' : 'Inactive');
+    const label = displayName || (isActive ? activeLabel : inactiveLabel);
     const badgeClass = `badge badge-light-${isActive ? 'success' : 'warning'}`;
 
     return <span className={badgeClass}>{label}</span>;
 };
 
-const formatDateTime = (value) => {
-    if (!value) return 'N/A';
+const formatDateTime = (value, na) => {
+    if (!value) return na;
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
 };
 
 const UserUserGroupsTab = ({ userGroups = [] }) => {
+    const { t } = useTranslation();
+    const na = t('merchant.common.na');
+    const activeLabel = t('merchant.common.active');
+    const inactiveLabel = t('merchant.common.inactive');
+
     return (
         <div className="row g-5 g-xl-8">
             <div className="col-xl-12">
                 <div className="card">
                     <div className="card-header border-0">
                         <div className="card-title m-0">
-                            <h3 className="fw-bolder m-0">Assigned User Groups</h3>
+                            <h3 className="fw-bolder m-0">{t('merchant.users.userGroupsTab.title')}</h3>
                         </div>
                         <div className="card-toolbar">
-                            <span className="badge badge-light-primary">{userGroups.length} groups</span>
+                            <span className="badge badge-light-primary">
+                                {t('merchant.users.userGroupsTab.groupsBadge', { count: userGroups.length })}
+                            </span>
                         </div>
                     </div>
                     <div className="card-body p-0">
@@ -33,11 +41,11 @@ const UserUserGroupsTab = ({ userGroups = [] }) => {
                                 <table className="table table-row-dashed table-row-gray-100 align-middle gs-0 gy-4">
                                     <thead>
                                         <tr className="fw-bold text-muted">
-                                            <th className="min-w-220px ps-9">Group Name</th>
-                                            <th className="min-w-140px">Group ID</th>
-                                            <th className="min-w-140px">Users Count</th>
-                                            <th className="min-w-140px">Status</th>
-                                            <th className="min-w-180px">Assigned At</th>
+                                            <th className="min-w-220px ps-9">{t('merchant.users.userGroupsTab.colGroupName')}</th>
+                                            <th className="min-w-140px">{t('merchant.users.userGroupsTab.colGroupId')}</th>
+                                            <th className="min-w-140px">{t('merchant.users.userGroupsTab.colUsersCount')}</th>
+                                            <th className="min-w-140px">{t('merchant.users.userGroupsTab.colStatus')}</th>
+                                            <th className="min-w-180px">{t('merchant.users.userGroupsTab.colAssignedAt')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -45,9 +53,7 @@ const UserUserGroupsTab = ({ userGroups = [] }) => {
                                             <tr key={group.id}>
                                                 <td className="ps-9">
                                                     <div className="d-flex flex-column">
-                                                        <span className="text-dark fw-bold text-hover-primary fs-6">
-                                                            {group.name}
-                                                        </span>
+                                                        <span className="text-dark fw-bold text-hover-primary fs-6">{group.name}</span>
                                                         {group.description && (
                                                             <span className="text-muted fs-7">{group.description}</span>
                                                         )}
@@ -57,12 +63,10 @@ const UserUserGroupsTab = ({ userGroups = [] }) => {
                                                     <span className="badge badge-light-info">{group.group_id}</span>
                                                 </td>
                                                 <td>
-                                                    <span className="fw-semibold text-gray-600">
-                                                        {group.users_count ?? 0}
-                                                    </span>
+                                                    <span className="fw-semibold text-gray-600">{group.users_count ?? 0}</span>
                                                 </td>
-                                                <td>{renderStatusBadge(group.is_active, group.status_display_name)}</td>
-                                                <td>{formatDateTime(group.assigned_at)}</td>
+                                                <td>{renderStatusBadge(group.is_active, group.status_display_name, activeLabel, inactiveLabel)}</td>
+                                                <td>{formatDateTime(group.assigned_at, na)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -75,10 +79,8 @@ const UserUserGroupsTab = ({ userGroups = [] }) => {
                                     <span className="path2"></span>
                                     <span className="path3"></span>
                                 </i>
-                                <h4 className="fw-bold text-gray-800 mb-3">No User Groups</h4>
-                                <p className="text-gray-500 fs-6 mb-0">
-                                    Assign this user to a group to manage permissions collectively.
-                                </p>
+                                <h4 className="fw-bold text-gray-800 mb-3">{t('merchant.users.userGroupsTab.emptyTitle')}</h4>
+                                <p className="text-gray-500 fs-6 mb-0">{t('merchant.users.userGroupsTab.emptyHint')}</p>
                             </div>
                         )}
                     </div>
@@ -89,4 +91,3 @@ const UserUserGroupsTab = ({ userGroups = [] }) => {
 };
 
 export default UserUserGroupsTab;
-

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from '../../../utils/axiosConfig';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
@@ -16,25 +17,21 @@ import {
     toggleProductStatus,
     exportGatewayProducts,
 } from '../../../services/serviceProductsService';
+import ServiceModel from '../../../services/ServiceModel';
 
 const resolveServiceName = (service) => {
-    if (!service) return 'N/A';
-    if (service.service_name_en || service.service_name_ar) {
-        return service.service_name_en || service.service_name_ar || 'N/A';
-    }
-    if (service.service_name && typeof service.service_name === 'object') {
-        return service.service_name.en || service.service_name.ar || 'N/A';
-    }
-    return service.id || 'N/A';
+    if (!service) return null;
+    const name = ServiceModel.displayName(service);
+    return name || service.id || null;
 };
 
 const resolveProductName = (product) => {
-    if (!product) return 'N/A';
+    if (!product) return null;
     if (product.name_en || product.name_ar) return product.name_en || product.name_ar;
     if (product.name && typeof product.name === 'object') {
-        return product.name.en || product.name.ar || 'N/A';
+        return product.name.en || product.name.ar || null;
     }
-    return 'N/A';
+    return null;
 };
 
 /** Server resolves copy from Accept-Language via description_text; fallback for older payloads. */
@@ -54,15 +51,16 @@ const resolveProductDescription = (product) => {
 
 const getProductCountryDisplay = (product) => {
     const c = product?.country || product?.service?.country;
-    if (!c) return { label: 'N/A', code: null };
+    if (!c) return { label: null, code: null };
     const n = c.name;
     let label = '';
     if (typeof n === 'string') label = n.trim();
     else if (n && typeof n === 'object') label = (n.en || n.ar || '').trim();
-    return { label: label || 'N/A', code: c.short_name || c.code || null };
+    return { label: label || null, code: c.short_name || c.code || null };
 };
 
 const Products = () => {
+    const { t } = useTranslation();
     const [searchParams] = useSearchParams();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [products, setProducts] = useState([]);
@@ -134,17 +132,17 @@ const Products = () => {
     }, [searchParams]);
 
     useEffect(() => {
-        setTitle('Service Product Management');
+        setTitle(t('admin.paymentGetway.productsManagementTitle'));
         setBreadcrumbs([
-            { label: 'Home', path: '/admin' },
-            { label: 'Service Products', path: '/admin/service-products' },
+            { label: t('admin.paymentGetway.breadcrumbsHome'), path: '/admin' },
+            { label: t('admin.paymentGetway.breadcrumbsServiceProducts'), path: '/admin/service-products' },
         ]);
         return () => {
             setBreadcrumbs([]);
             setActions(null);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [setTitle, setBreadcrumbs, setActions, t]);
 
     const fetchProductList = useCallback(async () => {
         setLoading(true);
@@ -177,7 +175,7 @@ const Products = () => {
             }
         } catch (error) {
             console.error('Error fetching products:', error);
-            toast.error(error.response?.data?.message || 'Failed to fetch products');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.productFailedLoad'));
         } finally {
             setLoading(false);
             setIsFetching(false);
@@ -310,31 +308,31 @@ const Products = () => {
 
     const contentProviderOptions = useMemo(
         () => [
-            { value: '', label: 'All Partners' },
+            { value: '', label: t('admin.paymentGetway.productsAllPartners') },
             ...contentProviders.map((cp) => ({
                 value: cp.value,
                 label: cp.label,
                 ...cp,
             })),
         ],
-        [contentProviders]
+        [contentProviders, t]
     );
 
     const subPartnerOptions = useMemo(
         () => [
-            { value: '', label: 'All Sub Partners' },
+            { value: '', label: t('admin.paymentGetway.productsAllSubPartners') },
             ...subPartners.map((cp) => ({
                 value: cp.value,
                 label: cp.label,
                 ...cp,
             })),
         ],
-        [subPartners]
+        [subPartners, t]
     );
 
     const countryOptions = useMemo(
         () => [
-            { value: '', label: 'All Countries', code: null },
+            { value: '', label: t('admin.paymentGetway.cpAllCountries'), code: null },
             ...countries.map((country) => ({
                 value: country.value,
                 label: country.label,
@@ -342,7 +340,7 @@ const Products = () => {
                 ...country,
             })),
         ],
-        [countries]
+        [countries, t]
     );
 
     useEffect(() => {
@@ -407,11 +405,11 @@ const Products = () => {
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
-                toast.success('Products exported successfully');
+                toast.success(t('admin.paymentGetway.productsExportSuccess'));
             }
         } catch (error) {
             console.error('Error exporting products:', error);
-            toast.error(error.response?.data?.message || 'Failed to export products');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.productsFailedExport'));
         } finally {
             setExporting(false);
         }
@@ -419,53 +417,53 @@ const Products = () => {
 
     const handleDelete = async (id) => {
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
+            title: t('admin.common.areYouSure'),
+            text: t('admin.paymentGetway.productsDeleteRevertWarning'),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
+            confirmButtonText: t('admin.paymentGetway.productsYesDeleteIt'),
         });
         if (!result.isConfirmed) return;
         try {
             const response = await deleteProduct(id);
             if (response.success) {
-                toast.success('Product deleted successfully');
+                toast.success(t('admin.paymentGetway.productDeletedSuccessfully'));
                 fetchProductList();
             }
         } catch (error) {
             console.error('Error deleting product:', error);
-            toast.error(error.response?.data?.message || 'Failed to delete product');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.productFailedDelete'));
         }
     };
 
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) {
-            toast.warning('Please select products to delete');
+            toast.warning(t('admin.paymentGetway.productsSelectForDelete'));
             return;
         }
         const result = await Swal.fire({
-            title: 'Delete selected products?',
-            text: `You are about to delete ${selectedIds.length} product(s).`,
+            title: t('admin.paymentGetway.productsDeleteSelectedTitle'),
+            text: t('admin.paymentGetway.productsDeleteSelectedText', { count: selectedIds.length }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete them!',
+            confirmButtonText: t('admin.paymentGetway.homeCfgYesDeleteThem'),
         });
         if (!result.isConfirmed) return;
         try {
             const response = await bulkDeleteProducts(selectedIds);
             if (response.success) {
-                toast.success('Products deleted successfully');
+                toast.success(t('admin.paymentGetway.productsDeletedSuccessfully'));
                 setSelectedIds([]);
                 setSelectAll(false);
                 fetchProductList();
             }
         } catch (error) {
             console.error('Error deleting products:', error);
-            toast.error(error.response?.data?.message || 'Failed to delete products');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.productsFailedDeleteMany'));
         }
     };
 
@@ -473,12 +471,12 @@ const Products = () => {
         try {
             const response = await toggleProductStatus(id);
             if (response.success) {
-                toast.success('Product status updated');
+                toast.success(t('admin.paymentGetway.productsStatusUpdated'));
                 fetchProductList();
             }
         } catch (error) {
             console.error('Error toggling product status:', error);
-            toast.error(error.response?.data?.message || 'Failed to update status');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.homeCfgFailedStatusUpdate'));
         }
     };
 
@@ -730,13 +728,13 @@ const Products = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    {showFilters ? 'Hide Filters' : 'Show Filters'}
+                    {showFilters ? t('admin.paymentGetway.productsHideFilters') : t('admin.paymentGetway.productsShowFilters')}
                 </button>
                 <button type="button" onClick={handleExport} className="btn btn-sm btn-success" disabled={exporting}>
                     {exporting ? (
                         <>
                             <span className="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true" />
-                            Exporting...
+                            {t('admin.paymentGetway.exporting')}
                         </>
                     ) : (
                         <>
@@ -744,7 +742,7 @@ const Products = () => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Export
+                            {t('admin.paymentGetway.export')}
                         </>
                     )}
                 </button>
@@ -757,7 +755,7 @@ const Products = () => {
                             <span className="path4"></span>
                             <span className="path5"></span>
                         </i>
-                        Delete Selected ({selectedIds.length})
+                        {t('admin.paymentGetway.productsDeleteSelectedWithCount', { count: selectedIds.length })}
                     </button>
                 )}
                 <Link to="/admin/service-products/create" className="btn btn-sm btn-primary">
@@ -766,13 +764,13 @@ const Products = () => {
                         <span className="path2"></span>
                         <span className="path3"></span>
                     </i>
-                    Add Product
+                    {t('admin.paymentGetway.productAdd')}
                 </Link>
             </div>
         );
         return () => setActions(null);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [showFilters, exporting, selectedIds.length]);
+    }, [showFilters, exporting, selectedIds.length, t]);
 
     const partnerName = (product) => {
         const candidate =
@@ -784,7 +782,7 @@ const Products = () => {
             product?.service?.contentProvider ||
             null;
 
-        if (!candidate) return 'N/A';
+        if (!candidate) return t('admin.paymentGetway.na');
 
         const name =
             (typeof candidate.name === 'string' ? candidate.name : candidate.name?.en || candidate.name?.ar) ||
@@ -799,7 +797,7 @@ const Products = () => {
             candidate.main_partner_name ||
             null;
         const child = String(name || '').trim();
-        if (!child) return 'N/A';
+        if (!child) return t('admin.paymentGetway.na');
         if (parentName) {
             return `${child} - ${String(parentName).trim()}`;
         }
@@ -812,9 +810,9 @@ const Products = () => {
                 <div className="card mb-4 shadow-sm">
                     <div className="card-header border-0 pt-6 pb-4">
                         <h3 className="card-title align-items-start flex-column">
-                            <span className="card-label fw-bold fs-3 mb-1">Filter Products</span>
+                            <span className="card-label fw-bold fs-3 mb-1">{t('admin.paymentGetway.productsFilterTitle')}</span>
                             <span className="text-muted mt-1 fw-semibold fs-7">
-                                Same filters as services: country, partner, dates, active state, service type
+                                {t('admin.paymentGetway.productsFilterSubtitle')}
                             </span>
                         </h3>
                     </div>
@@ -822,8 +820,8 @@ const Products = () => {
                         <div className="row g-4">
                             <div className="col-md-6 col-lg-3">
                                 <SearchableDropdown
-                                    label="Country"
-                                    placeholder="All Countries"
+                                    label={t('admin.paymentGetway.viewCountryCol')}
+                                    placeholder={t('admin.paymentGetway.cpAllCountries')}
                                     options={countryOptions}
                                     selected={selectedCountryOption}
                                     onSelect={handleCountrySelect}
@@ -831,7 +829,7 @@ const Products = () => {
                                     loading={loadingCountries}
                                     onOpen={handleCountryOpen}
                                     onSearchChange={handleCountrySearchChange}
-                                    searchPlaceholder="Search countries..."
+                                    searchPlaceholder={t('admin.paymentGetway.productsSearchCountries')}
                                     renderSelected={(option) =>
                                         option ? (
                                             <div className="d-flex align-items-center">
@@ -849,7 +847,7 @@ const Products = () => {
                                                 <span>{option.label}</span>
                                             </div>
                                         ) : (
-                                            <span className="text-muted fw-semibold">All Countries</span>
+                                            <span className="text-muted fw-semibold">{t('admin.paymentGetway.cpAllCountries')}</span>
                                         )
                                     }
                                     renderOption={(option) => {
@@ -885,8 +883,8 @@ const Products = () => {
                             </div>
                             <div className="col-md-6 col-lg-3">
                                 <SearchableDropdown
-                                    label="Partner"
-                                    placeholder="All Partners"
+                                    label={t('admin.paymentGetway.viewPartnerCol')}
+                                    placeholder={t('admin.paymentGetway.productsAllPartners')}
                                     options={contentProviderOptions}
                                     selected={selectedContentProviderOption}
                                     onSelect={handleContentProviderSelect}
@@ -894,7 +892,7 @@ const Products = () => {
                                     loading={loadingContentProviders}
                                     onOpen={handleContentProviderOpen}
                                     onSearchChange={handleContentProviderSearchChange}
-                                    searchPlaceholder="Search partners..."
+                                    searchPlaceholder={t('admin.paymentGetway.productsSearchPartners')}
                                     renderOption={(option) => {
                                         const isAllSelected = option.value === '' && !selectedContentProviderOption;
                                         return (
@@ -919,8 +917,8 @@ const Products = () => {
                             {selectedContentProviderOption?.has_sub_partners && (
                                 <div className="col-md-3 col-lg-3">
                                     <SearchableDropdown
-                                        label="Sub Partner"
-                                        placeholder="All Sub Partners"
+                                        label={t('admin.paymentGetway.productsSubPartner')}
+                                        placeholder={t('admin.paymentGetway.productsAllSubPartners')}
                                         options={subPartnerOptions}
                                         selected={selectedSubPartnerOption}
                                         onSelect={handleSubPartnerSelect}
@@ -928,7 +926,7 @@ const Products = () => {
                                         loading={loadingSubPartners}
                                         onOpen={handleSubPartnerOpen}
                                         onSearchChange={handleSubPartnerSearchChange}
-                                        searchPlaceholder="Search sub partners..."
+                                        searchPlaceholder={t('admin.paymentGetway.productsSearchSubPartners')}
                                         renderOption={(option) => {
                                             const isAllSelected = option.value === '' && !selectedSubPartnerOption;
                                             return (
@@ -952,20 +950,20 @@ const Products = () => {
                                 </div>
                             )}
                             <div className="col-md-6 col-lg-3">
-                                <label className="form-label fw-bold">Service type</label>
+                                <label className="form-label fw-bold">{t('admin.paymentGetway.productsServiceType')}</label>
                                 <select
                                     className="form-select form-select-lg"
                                     value={filters.service_type}
                                     onChange={(e) => setFilterValue('service_type', e.target.value)}
                                 >
-                                    <option value="">All types</option>
-                                    <option value="digital">Digital</option>
+                                    <option value="">{t('admin.paymentGetway.productsAllTypes')}</option>
+                                    <option value="digital">{t('admin.paymentGetway.productsDigital')}</option>
                                     <option value="ivr">IVR</option>
                                     <option value="sms">SMS</option>
                                 </select>
                             </div>
                             <div className="col-md-6 col-lg-3">
-                                <label className="form-label fw-bold">Active status</label>
+                                <label className="form-label fw-bold">{t('admin.paymentGetway.productsActiveStatus')}</label>
                                 <select
                                     className="form-select form-select-lg"
                                     value={filters.is_active === null ? '' : filters.is_active ? '1' : '0'}
@@ -974,13 +972,13 @@ const Products = () => {
                                         setFilterValue('is_active', v === '' ? null : v === '1');
                                     }}
                                 >
-                                    <option value="">All</option>
-                                    <option value="1">Active only</option>
-                                    <option value="0">Inactive only</option>
+                                    <option value="">{t('admin.common.all')}</option>
+                                    <option value="1">{t('admin.paymentGetway.productsActiveOnly')}</option>
+                                    <option value="0">{t('admin.paymentGetway.productsInactiveOnly')}</option>
                                 </select>
                             </div>
                             <div className="col-md-6 col-lg-3">
-                                <label className="form-label fw-bold">Date from</label>
+                                <label className="form-label fw-bold">{t('admin.paymentGetway.cpCreatedFrom')}</label>
                                 <input
                                     type="date"
                                     className="form-control form-control-lg"
@@ -989,7 +987,7 @@ const Products = () => {
                                 />
                             </div>
                             <div className="col-md-6 col-lg-3">
-                                <label className="form-label fw-bold">Date to</label>
+                                <label className="form-label fw-bold">{t('admin.paymentGetway.cpCreatedTo')}</label>
                                 <input
                                     type="date"
                                     className="form-control form-control-lg"
@@ -1005,7 +1003,7 @@ const Products = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Reset all filters
+                                        {t('admin.paymentGetway.productsResetAllFilters')}
                                     </button>
                                     <button
                                         type="button"
@@ -1016,7 +1014,7 @@ const Products = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Apply filters
+                                        {t('admin.paymentGetway.cpApplyFilters')}
                                     </button>
                                 </div>
                             </div>
@@ -1033,7 +1031,7 @@ const Products = () => {
                             style={{ minWidth: 0 }}
                         >
                             <div className="flex-grow-1" style={{ minWidth: '200px', maxWidth: '420px' }}>
-                                <label className="form-label mb-1 text-muted fs-7 text-uppercase">Search</label>
+                                <label className="form-label mb-1 text-muted fs-7 text-uppercase">{t('admin.paymentGetway.searchLabel')}</label>
                                 <div className="d-flex align-items-center position-relative" style={{ minWidth: '250px' }}>
                                     <i className="ki-duotone ki-magnifier fs-2 position-absolute ms-4" style={{ zIndex: 1 }}>
                                         <span className="path1"></span>
@@ -1042,7 +1040,7 @@ const Products = () => {
                                     <input
                                         type="text"
                                         className="form-control form-control-solid ps-13"
-                                        placeholder="Product name, URLs…"
+                                        placeholder={t('admin.paymentGetway.productsSearchInputPlaceholder')}
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         autoComplete="off"
@@ -1053,7 +1051,7 @@ const Products = () => {
                         </div>
                         <div className="d-flex align-items-end gap-2 flex-shrink-0">
                             <div className="d-flex align-items-center gap-2">
-                                <label className="form-label mb-0 text-nowrap">Per page:</label>
+                                <label className="form-label mb-0 text-nowrap">{t('admin.paymentGetway.perPage')}</label>
                                 <select
                                     className="form-select form-select-sm"
                                     style={{ width: '80px' }}
@@ -1086,8 +1084,8 @@ const Products = () => {
                     >
                         <table className="table align-middle table-row-dashed fs-6 gy-5">
                             <thead>
-                                <tr className="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th className="w-10px pe-2">
+                                <tr className="text-end text-muted fw-bold fs-7 text-uppercase gs-0">
+                                    <th className="w-10px pe-2 text-start">
                                         <div className="form-check form-check-sm form-check-custom form-check-solid me-3">
                                             <input
                                                 className="form-check-input"
@@ -1097,16 +1095,16 @@ const Products = () => {
                                             />
                                         </div>
                                     </th>
-                                    <th className="min-w-90px">Image</th>
-                                    <th className="min-w-150px">Country</th>
-                                    <th className="min-w-125px">Partner</th>
-                                    <th className="min-w-150px">Service</th>
-                                    <th className="min-w-150px">Product name</th>
-                                    <th className="min-w-200px">Description</th>
-                                    <th className="min-w-80px text-center">Forms</th>
-                                    <th className="min-w-100px">Status</th>
-                                    <th className="min-w-140px text-nowrap">Created</th>
-                                    <th className="text-end min-w-120px">Actions</th>
+                                    <th className="min-w-90px">{t('admin.paymentGetway.productsImage')}</th>
+                                    <th className="min-w-150px">{t('admin.paymentGetway.viewCountryCol')}</th>
+                                    <th className="min-w-125px">{t('admin.paymentGetway.viewPartnerCol')}</th>
+                                    <th className="min-w-150px">{t('admin.paymentGetway.viewServiceCol')}</th>
+                                    <th className="min-w-150px">{t('admin.paymentGetway.productsProductName')}</th>
+                                    <th className="min-w-200px">{t('admin.paymentGetway.productsDescription')}</th>
+                                    <th className="min-w-80px text-center">{t('admin.paymentGetway.productsForms')}</th>
+                                    <th className="min-w-100px">{t('admin.paymentGetway.status')}</th>
+                                    <th className="min-w-140px text-nowrap">{t('admin.paymentGetway.viewCreatedCol')}</th>
+                                    <th className="text-end min-w-120px">{t('admin.common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="text-gray-600 fw-semibold">
@@ -1174,13 +1172,13 @@ const Products = () => {
                                                                 }}
                                                             />
                                                         )}
-                                                        <span className="text-gray-800">{countryLabel}</span>
+                                                        <span className="text-gray-800">{countryLabel || t('admin.paymentGetway.na')}</span>
                                                     </div>
                                                 </td>
                                                 <td>{partnerName(product)}</td>
                                                 <td>
                                                     <div className="text-gray-800 text-hover-primary mb-1">
-                                                        {resolveServiceName(product.service)}
+                                                        {resolveServiceName(product.service) || t('admin.paymentGetway.na')}
                                                     </div>
                                                     {product.service?.id && (
                                                         <div className="text-muted fs-7 text-break">UUID: {product.service.id}</div>
@@ -1195,7 +1193,7 @@ const Products = () => {
                                                         style={{ maxWidth: '280px' }}
                                                         title={resolveProductDescription(product) || undefined}
                                                     >
-                                                        {resolveProductDescription(product) || '—'}
+                                                        {resolveProductDescription(product) || t('admin.paymentGetway.dash')}
                                                     </span>
                                                 </td>
                                                 <td className="text-center">
@@ -1211,20 +1209,20 @@ const Products = () => {
                                                             checked={product.status === true || product.status === 1}
                                                             onChange={() => handleToggleStatus(product.id)}
                                                             style={{ cursor: 'pointer' }}
-                                                            title={product.status ? 'Click to deactivate' : 'Click to activate'}
+                                                            title={product.status ? t('admin.paymentGetway.productsClickDeactivate') : t('admin.paymentGetway.productsClickActivate')}
                                                         />
                                                     </div>
                                                 </td>
                                                 <td>
                                                     <span className="text-gray-700 fs-7 text-nowrap">
-                                                        {product.created_at ? formatDateTime(product.created_at) : '—'}
+                                                        {product.created_at ? formatDateTime(product.created_at) : t('admin.paymentGetway.dash')}
                                                     </span>
                                                 </td>
                                                 <td className="text-end">
                                                     <Link
                                                         to={`/admin/service-products/${product.id}/edit`}
                                                         className="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1"
-                                                        title="Edit"
+                                                        title={t('admin.common.edit')}
                                                     >
                                                         <i className="ki-duotone ki-pencil fs-2">
                                                             <span className="path1"></span>
@@ -1235,7 +1233,7 @@ const Products = () => {
                                                         type="button"
                                                         className="btn btn-icon btn-bg-light btn-active-color-danger btn-sm"
                                                         onClick={() => handleDelete(product.id)}
-                                                        title="Delete"
+                                                        title={t('admin.common.delete')}
                                                     >
                                                         <i className="ki-duotone ki-trash fs-2">
                                                             <span className="path1"></span>
@@ -1252,7 +1250,7 @@ const Products = () => {
                                 ) : (
                                     <tr>
                                         <td colSpan="11" className="text-center py-5">
-                                            No products found
+                                            {t('admin.paymentGetway.productsNoProductsFound')}
                                         </td>
                                     </tr>
                                 )}
@@ -1263,9 +1261,9 @@ const Products = () => {
                     {!loading && pagination.last_page > 1 && (
                         <div className="d-flex justify-content-between align-items-center pt-4">
                             <div className="text-muted">
-                                Showing {products.length} of {pagination.total || 0} products
+                                {t('admin.paymentGetway.productsShowingCount', { count: products.length, total: pagination.total || 0 })}
                                 {pagination.last_page > 1 &&
-                                    ` (Page ${pagination.current_page} of ${pagination.last_page})`}
+                                    ` (${t('admin.paymentGetway.productsPageOf', { page: pagination.current_page, totalPages: pagination.last_page })})`}
                             </div>
                             <nav>
                                 <ul className="pagination mb-0">
@@ -1280,7 +1278,7 @@ const Products = () => {
                                             onClick={() => handlePageChange(Math.max(pagination.current_page - 1, 1))}
                                             disabled={pagination.current_page === 1 || isFetching}
                                         >
-                                            Previous
+                                            {t('admin.common.previous')}
                                         </button>
                                     </li>
                                     {[...Array(Math.min(pagination.last_page, 10))].map((_, i) => {
@@ -1325,7 +1323,7 @@ const Products = () => {
                                             }
                                             disabled={pagination.current_page === pagination.last_page || isFetching}
                                         >
-                                            Next
+                                            {t('admin.common.next')}
                                         </button>
                                     </li>
                                 </ul>

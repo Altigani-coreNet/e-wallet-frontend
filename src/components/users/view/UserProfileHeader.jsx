@@ -10,12 +10,14 @@ const DEFAULT_TABS = [
     { key: 'events', label: 'Events', icon: 'ki-abstract-44' },
 ];
 
-const getStatusMeta = (status) => {
+const getStatusMeta = (status, labels = {}) => {
     const isActive = status === true || status === 1 || status === '1' || status === 'active';
+    const activeLabel = labels.activeLabel ?? 'Active';
+    const inactiveLabel = labels.inactiveLabel ?? 'Inactive';
 
     return {
         isActive,
-        label: isActive ? 'Active' : 'Inactive',
+        label: isActive ? activeLabel : inactiveLabel,
         badgeClass: `badge badge-light-${isActive ? 'success' : 'danger'}`,
         progressClass: `bg-${isActive ? 'success' : 'danger'}`,
         progressValue: isActive ? 100 : 0,
@@ -59,12 +61,19 @@ const UserProfileHeader = ({
     activeTab,
     onTabChange,
     tabs = DEFAULT_TABS,
+    activeStatusLabel,
+    inactiveStatusLabel,
+    userStatusLabel,
+    nameFallback = 'N/A',
 }) => {
     if (!user) {
         return null;
     }
 
-    const statusMeta = getStatusMeta(user.status);
+    const statusMeta = getStatusMeta(user.status, {
+        activeLabel: activeStatusLabel,
+        inactiveLabel: inactiveStatusLabel,
+    });
     const fullMerchantName = user.merchant
         ? getTranslatedText(user.merchant.business_name) || getTranslatedText(user.merchant.name)
         : null;
@@ -149,7 +158,7 @@ const UserProfileHeader = ({
                                 </div>
                                 <div className="d-flex flex-column align-items-center w-200px w-sm-300px mt-6 mt-sm-0">
                                     <div className="d-flex justify-content-between w-100 mb-2">
-                                        <span className="fw-bold fs-7 text-gray-500">User Status</span>
+                                        <span className="fw-bold fs-7 text-gray-500">{userStatusLabel ?? 'User Status'}</span>
                                         <span className="fw-bold fs-7">{statusMeta.progressValue}%</span>
                                     </div>
                                     <div className="h-5px mx-3 w-100 bg-light mb-2">

@@ -54,15 +54,15 @@ const Toolbar = ({ title, breadcrumbs, actions }) => {
                 dir={toolbarDir}
             >
                 {/* Page title */}
-                <div className="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+                <div className="page-title d-flex flex-column justify-content-center flex-wrap me-3 align-items-start text-start">
                     {/* Title */}
-                    <h1 className="page-heading d-flex text-dark fw-bold fs-3 flex-column justify-content-center my-0">
+                    <h1 className="page-heading d-flex text-dark fw-bold fs-3 flex-column justify-content-center my-0 text-start">
                         {title || t('merchant.toolbar.defaultTitle')}
                     </h1>
                     
                     {/* Breadcrumb - always show Home first, then other breadcrumbs */}
                     {allBreadcrumbs.length > 0 && (
-                        <ul className="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+                        <ul className="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1 justify-content-start text-start">
                             {allBreadcrumbs.map((item, index) => (
                                 <React.Fragment key={index}>
                                     {index > 0 && (

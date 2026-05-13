@@ -1,20 +1,26 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { deleteServiceFee } from '../../../../services/adminServiceFeesService';
 import { toast } from 'react-toastify';
+import { translateServiceFeeType } from '../../../../utils/serviceFeeTypeLabel';
 
 const ServiceFeeTableRow = ({ serviceFee, isSelected, onSelect, onRefresh }) => {
+    const { t, i18n } = useTranslation();
+
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this service fee?')) return;
+        if (!window.confirm(t('admin.settings.serviceFees.deleteConfirm'))) return;
         
         const response = await deleteServiceFee(serviceFee.id);
         if (response.success) {
-            toast.success('Service fee deleted successfully');
+            toast.success(t('admin.settings.serviceFees.deleted'));
             onRefresh();
         } else {
-            toast.error(response.error || 'Failed to delete service fee');
+            toast.error(response.error || t('admin.settings.serviceFees.deleteFailed'));
         }
     };
+
+    const typeLabel = translateServiceFeeType(t, serviceFee.type);
 
     return (
         <tr>
@@ -30,16 +36,16 @@ const ServiceFeeTableRow = ({ serviceFee, isSelected, onSelect, onRefresh }) => 
             </td>
             <td>{serviceFee.id}</td>
             <td className="fw-bold">{serviceFee.name}</td>
-            <td><span className="badge badge-light-primary">{serviceFee.type}</span></td>
+            <td><span className="badge badge-light-primary" dir="auto">{typeLabel}</span></td>
             <td>{Number(serviceFee.fees).toFixed(2)}</td>
-            <td>{new Date(serviceFee.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}</td>
+            <td>{new Date(serviceFee.created_at).toLocaleDateString(i18n.language, { month: 'short', day: '2-digit', year: 'numeric' })}</td>
             <td className="text-end">
                 <div className="d-flex justify-content-end flex-shrink-0">
                     <Link 
                         to={`/admin/settings/service-fees/${serviceFee.id}`}
                         className="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1"
                         data-bs-toggle="tooltip"
-                        title="View"
+                        title={t('admin.common.view')}
                     >
                         <i className="ki-duotone ki-eye fs-3">
                             <span className="path1"></span>
@@ -51,7 +57,7 @@ const ServiceFeeTableRow = ({ serviceFee, isSelected, onSelect, onRefresh }) => 
                         to={`/admin/settings/service-fees/${serviceFee.id}/edit`}
                         className="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1"
                         data-bs-toggle="tooltip"
-                        title="Edit"
+                        title={t('admin.common.edit')}
                     >
                         <i className="ki-duotone ki-pencil fs-3">
                             <span className="path1"></span>
@@ -59,10 +65,11 @@ const ServiceFeeTableRow = ({ serviceFee, isSelected, onSelect, onRefresh }) => 
                         </i>
                     </Link>
                     <button 
+                        type="button"
                         onClick={handleDelete}
                         className="btn btn-icon btn-bg-light btn-active-color-danger btn-sm"
                         data-bs-toggle="tooltip"
-                        title="Delete"
+                        title={t('admin.common.delete')}
                     >
                         <i className="ki-duotone ki-trash fs-3">
                             <span className="path1"></span>
@@ -79,5 +86,3 @@ const ServiceFeeTableRow = ({ serviceFee, isSelected, onSelect, onRefresh }) => 
 };
 
 export default ServiceFeeTableRow;
-
-

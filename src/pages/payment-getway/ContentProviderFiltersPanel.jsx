@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from '../../utils/axiosConfig';
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../utils/constants';
 import { getToken } from '../../utils/api';
@@ -27,6 +28,7 @@ const ContentProviderFiltersPanel = ({
     onClearFilters,
     mode = 'default',
 }) => {
+    const { t } = useTranslation();
     const isSubMode = mode === 'subPartners';
     const [draft, setDraft] = useState(isSubMode ? emptyDraftSubPartners : emptyDraft);
 
@@ -125,14 +127,14 @@ const ContentProviderFiltersPanel = ({
     }, [isSubMode, parentsEnabled, draft.country_id, parentOrgSearchTerm, fetchParentOrganizations]);
 
     const parentOrgOptions = useMemo(() => {
-        const all = { value: '', label: 'All parent partners' };
+        const all = { value: '', label: t('admin.paymentGetway.cpAllParentPartners') };
         const list = parentOrgs.map((p) => ({
             value: p.id,
             label: p.text || p.name || p.email || p.id,
             ...p,
         }));
         return [all, ...list];
-    }, [parentOrgs]);
+    }, [parentOrgs, t]);
 
     const selectedParentOrgOption = useMemo(() => {
         if (!draft.parent_id) return null;
@@ -190,7 +192,7 @@ const ContentProviderFiltersPanel = ({
     }, [countriesEnabled, countrySearchTerm, fetchCountries]);
 
     const countryOptions = useMemo(() => {
-        const allOption = { value: '', label: 'All Countries' };
+        const allOption = { value: '', label: t('admin.paymentGetway.cpAllCountries') };
         const countryList = filteredCountries.map((country) => ({
             value: country.id,
             label: country.text || country.name,
@@ -198,7 +200,7 @@ const ContentProviderFiltersPanel = ({
             ...country,
         }));
         return [allOption, ...countryList];
-    }, [filteredCountries]);
+    }, [filteredCountries, t]);
 
     const selectedCountryOption = useMemo(() => {
         if (!draft.country_id) {
@@ -285,14 +287,14 @@ const ContentProviderFiltersPanel = ({
     }, [partnerCategoriesEnabled, partnerCategorySearchTerm, fetchPartnerCategories]);
 
     const partnerCategoryOptions = useMemo(() => {
-        const all = { value: '', label: 'All partner categories' };
+        const all = { value: '', label: t('admin.paymentGetway.cpAllCategories') };
         const list = partnerCategories.map((c) => ({
             value: c.id,
             label: c.name_en || c.name_ar || c.code || c.id,
             ...c,
         }));
         return [all, ...list];
-    }, [partnerCategories]);
+    }, [partnerCategories, t]);
 
     const selectedPartnerCategoryOption = useMemo(() => {
         if (!draft.partner_category_id) return null;
@@ -327,7 +329,7 @@ const ContentProviderFiltersPanel = ({
 
     const renderCountrySelected = (option) => {
         if (!option) {
-            return <span className="text-muted">All Countries</span>;
+            return <span className="text-muted">{t('admin.paymentGetway.cpAllCountries')}</span>;
         }
         const code = option?.code;
         return (
@@ -350,7 +352,7 @@ const ContentProviderFiltersPanel = ({
 
     const renderCountryOption = (option) => {
         if (option.value === '') {
-            return <div className="text-gray-800 fw-bold">All Countries</div>;
+            return <div className="text-gray-800 fw-bold">{t('admin.paymentGetway.cpAllCountries')}</div>;
         }
         const code = option?.code;
         return (
@@ -377,7 +379,7 @@ const ContentProviderFiltersPanel = ({
         <div className="card bg-white card-xl-stretch mb-5 mb-xl-8">
             <div className="card-header border-0 pt-6">
                 <div className="card-title">
-                    <h3 className="fw-bold m-0">Filters</h3>
+                    <h3 className="fw-bold m-0">{t('admin.paymentGetway.cpFiltersTitle')}</h3>
                 </div>
                 <div className="card-toolbar d-flex flex-wrap align-items-center gap-2">
                     <button type="button" className="btn btn-sm btn-primary" onClick={handleApplyClick}>
@@ -385,14 +387,14 @@ const ContentProviderFiltersPanel = ({
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Apply filters
+                        {t('admin.paymentGetway.cpApplyFilters')}
                     </button>
                     <button type="button" className="btn btn-sm btn-light-primary" onClick={handleClearClick}>
                         <i className="ki-duotone ki-refresh fs-2">
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Clear filters
+                        {t('admin.paymentGetway.cpClearFilters')}
                     </button>
                 </div>
             </div>
@@ -401,8 +403,8 @@ const ContentProviderFiltersPanel = ({
                 <div className="row g-4">
                     <div className="col-xl-3 col-md-6">
                         <SearchableDropdown
-                            label="Partner category"
-                            placeholder="All categories"
+                            label={t('admin.paymentGetway.cpPartnerCategory')}
+                            placeholder={t('admin.paymentGetway.cpAllCategories')}
                             options={partnerCategoryOptions}
                             selected={selectedPartnerCategoryOption}
                             onSelect={handlePartnerCategorySelect}
@@ -410,14 +412,14 @@ const ContentProviderFiltersPanel = ({
                             loading={loadingPartnerCategories}
                             onOpen={handlePartnerCategoryOpen}
                             onSearchChange={handlePartnerCategorySearchChange}
-                            searchPlaceholder="Search categories..."
+                            searchPlaceholder={t('admin.paymentGetway.cpSearchCategories')}
                         />
                     </div>
 
                     <div className="col-xl-3 col-md-6">
                         <SearchableDropdown
-                            label="Country"
-                            placeholder="All Countries"
+                            label={t('admin.paymentGetway.cpCountry')}
+                            placeholder={t('admin.paymentGetway.cpAllCountries')}
                             options={countryOptions}
                             selected={selectedCountryOption}
                             onSelect={handleCountrySelect}
@@ -425,7 +427,7 @@ const ContentProviderFiltersPanel = ({
                             loading={loadingCountries}
                             onOpen={handleCountryOpen}
                             onSearchChange={handleCountrySearchChange}
-                            searchPlaceholder="Search countries..."
+                            searchPlaceholder={t('admin.paymentGetway.cpSearchCountries')}
                             renderSelected={renderCountrySelected}
                             renderOption={renderCountryOption}
                         />
@@ -434,8 +436,8 @@ const ContentProviderFiltersPanel = ({
                     {isSubMode && (
                         <div className="col-xl-3 col-md-6">
                             <SearchableDropdown
-                                label="Parent partner"
-                                placeholder={draft.country_id ? 'All parent partners' : 'Select country first'}
+                                label={t('admin.paymentGetway.cpParentPartner')}
+                                placeholder={draft.country_id ? t('admin.paymentGetway.cpAllParentPartners') : t('admin.paymentGetway.cpSelectCountryFirst')}
                                 options={parentOrgOptions}
                                 selected={selectedParentOrgOption}
                                 onSelect={handleParentOrgSelect}
@@ -446,14 +448,14 @@ const ContentProviderFiltersPanel = ({
                                     setParentOrgSearchTerm(v);
                                     setParentsEnabled(true);
                                 }}
-                                searchPlaceholder="Search parent partners..."
+                                searchPlaceholder={t('admin.paymentGetway.cpSearchParentPartners')}
                                 disabled={!draft.country_id}
                             />
                         </div>
                     )}
 
                     <div className="col-xl-3 col-md-6">
-                        <label className="form-label fw-bold">Created from (date and time)</label>
+                        <label className="form-label fw-bold">{t('admin.paymentGetway.cpCreatedFrom')}</label>
                         <input
                             type="datetime-local"
                             className="form-control"
@@ -464,7 +466,7 @@ const ContentProviderFiltersPanel = ({
                     </div>
 
                     <div className="col-xl-3 col-md-6">
-                        <label className="form-label fw-bold">Created to (date and time)</label>
+                        <label className="form-label fw-bold">{t('admin.paymentGetway.cpCreatedTo')}</label>
                         <input
                             type="datetime-local"
                             className="form-control"

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import axios from '../../utils/axiosConfig';
 import { toast } from 'react-toastify';
@@ -55,6 +56,7 @@ const extractAdminList = (response) => {
 };
 
 const AdminContentProviderView = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -109,37 +111,40 @@ const AdminContentProviderView = () => {
 
     const tabs = useMemo(() => {
         const base = [
-            { key: 'overview', label: 'Overview' },
-            { key: 'events', label: 'Events' },
-            { key: 'attachments', label: 'Attachments' },
-            { key: 'services', label: 'Services' },
-            { key: 'products', label: 'Products' },
+            { key: 'overview', label: t('admin.paymentGetway.viewTabOverview') },
+            { key: 'events', label: t('admin.paymentGetway.viewTabEvents') },
+            { key: 'attachments', label: t('admin.paymentGetway.viewTabAttachments') },
+            { key: 'services', label: t('admin.paymentGetway.viewTabServices') },
+            { key: 'products', label: t('admin.paymentGetway.viewTabProducts') },
         ];
         if (contentProvider && !contentProvider.parent_id && contentProvider.is_parent) {
             return [
-                { key: 'overview', label: 'Overview' },
-                { key: 'sub-partners', label: 'Sub Partners' },
+                { key: 'overview', label: t('admin.paymentGetway.viewTabOverview') },
+                { key: 'sub-partners', label: t('admin.paymentGetway.viewSubPartnersTitle') },
                 ...base.slice(1),
             ];
         }
         return base;
-    }, [contentProvider]);
+    }, [contentProvider, t]);
 
     const statsConfig = useMemo(() => {
         const base = [
-            { key: 'events', label: 'Events', icon: 'ki-abstract-44' },
-            { key: 'attachments', label: 'Attachments', icon: 'ki-folder' },
-            { key: 'services', label: 'Services', icon: 'ki-setting-2' },
-            { key: 'products', label: 'Products', icon: 'ki-package' },
+            { key: 'events', label: t('admin.paymentGetway.viewTabEvents'), icon: 'ki-abstract-44' },
+            { key: 'attachments', label: t('admin.paymentGetway.viewTabAttachments'), icon: 'ki-folder' },
+            { key: 'services', label: t('admin.paymentGetway.viewTabServices'), icon: 'ki-setting-2' },
+            { key: 'products', label: t('admin.paymentGetway.viewTabProducts'), icon: 'ki-package' },
         ];
         if (contentProvider && !contentProvider.parent_id && contentProvider.is_parent) {
-            return [{ key: 'sub_partners', label: 'Sub Partners', icon: 'ki-people' }, ...base];
+            return [
+                { key: 'sub_partners', label: t('admin.paymentGetway.viewSubPartnersTitle'), icon: 'ki-people' },
+                ...base,
+            ];
         }
         return base;
-    }, [contentProvider]);
+    }, [contentProvider, t]);
 
     useEffect(() => {
-        setTitle('Partner Details');
+        setTitle(t('admin.paymentGetway.titlesPartnerDetails'));
         setActions(
             <div className="d-flex align-items-center gap-2">
                 <Link to={`${PARTNERS_PATH}/${id}/edit`} className="btn btn-sm btn-primary">
@@ -147,23 +152,23 @@ const AdminContentProviderView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Edit Partner
+                    {t('admin.paymentGetway.viewEditPartner')}
                 </Link>
                 <Link to={PARTNERS_PATH} className="btn btn-sm btn-light">
                     <i className="ki-duotone ki-arrow-left fs-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back
+                    {t('admin.paymentGetway.cpBack')}
                 </Link>
             </div>
         );
 
         return () => {
-            setTitle('Dashboard');
+            setTitle(t('admin.paymentGetway.titlesDashboard'));
             setActions(null);
         };
-    }, [id, setTitle, setActions]);
+    }, [id, setTitle, setActions, t]);
 
     const fetchAttachments = useCallback(async () => {
         try {
@@ -242,16 +247,21 @@ const AdminContentProviderView = () => {
     }, [id]);
 
     const handleDeleteAttachment = async (attachment) => {
-        const attachmentName = attachment?.title || attachment?.file_name || attachment?.name || attachment?.url_type || 'this attachment';
+        const attachmentName =
+            attachment?.title ||
+            attachment?.file_name ||
+            attachment?.name ||
+            attachment?.url_type ||
+            t('admin.paymentGetway.viewAttachmentFallbackName');
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `If you delete ${attachmentName}, it cannot be restored.`,
+            title: t('admin.paymentGetway.viewAttachmentDeleteTitle'),
+            text: t('admin.paymentGetway.viewAttachmentDeleteText', { name: attachmentName }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.paymentGetway.productsYesDeleteIt'),
+            cancelButtonText: t('admin.common.cancel'),
         });
 
         if (!result.isConfirmed) return;
@@ -262,7 +272,7 @@ const AdminContentProviderView = () => {
             const attachmentUrl = resolveAuthAssetUrl(attachment?.url || attachment?.path || attachment?.attachment_url);
 
             if (!attachmentId && !attachmentUrl) {
-                toast.error('Cannot delete attachment: missing ID or URL');
+                toast.error(t('admin.paymentGetway.viewErrDeleteAttachmentMissing'));
                 return;
             }
 
@@ -280,13 +290,13 @@ const AdminContentProviderView = () => {
 
             const isSuccess = response.data?.status || response.data?.success;
             if (isSuccess) {
-                toast.success('Attachment deleted successfully');
+                toast.success(t('admin.paymentGetway.viewAttachmentDeleted'));
                 fetchAttachments();
             } else {
-                toast.error(response.data?.message || 'Failed to delete attachment');
+                toast.error(response.data?.message || t('admin.paymentGetway.viewErrDeleteAttachment'));
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to delete attachment');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.viewErrDeleteAttachment'));
             console.error(error);
         }
     };
@@ -339,15 +349,15 @@ const AdminContentProviderView = () => {
                     }));
                 } else {
                     setContentProvider(null);
-                    toast.error('Failed to load partner');
+                    toast.error(t('admin.paymentGetway.cpErrLoadPartner'));
                 }
             } else {
                 setContentProvider(null);
-                toast.error(responseData?.message || 'Failed to load partner');
+                toast.error(responseData?.message || t('admin.paymentGetway.cpErrLoadPartner'));
             }
         } catch (error) {
             setContentProvider(null);
-            toast.error('Failed to load partner');
+            toast.error(t('admin.paymentGetway.cpErrLoadPartner'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -419,10 +429,11 @@ const AdminContentProviderView = () => {
 
     const handleApprove = async () => {
         const res = await Swal.fire({
-            title: 'Approve partner?',
+            title: t('admin.paymentGetway.viewApprovePartnerTitle'),
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Approve',
+            confirmButtonText: t('admin.paymentGetway.viewApprove'),
+            cancelButtonText: t('admin.common.cancel'),
         });
         if (!res.isConfirmed) return;
         try {
@@ -431,10 +442,10 @@ const AdminContentProviderView = () => {
                 toast.error(result.error);
                 return;
             }
-            toast.success('Partner approved successfully');
+            toast.success(t('admin.paymentGetway.viewPartnerApproved'));
             fetchContentProvider();
         } catch {
-            toast.error('Failed to approve partner');
+            toast.error(t('admin.paymentGetway.viewErrApprovePartner'));
         }
     };
 
@@ -446,17 +457,18 @@ const AdminContentProviderView = () => {
                     toast.error(result.error);
                     return;
                 }
-                toast.success('Partner unsuspended successfully');
+                toast.success(t('admin.paymentGetway.viewPartnerUnsuspended'));
             } else {
                 const res = await Swal.fire({
-                    title: 'Suspend partner',
+                    title: t('admin.paymentGetway.viewSuspendPartnerTitle'),
                     input: 'textarea',
-                    inputPlaceholder: 'Enter reason (min 10 characters)',
+                    inputPlaceholder: t('admin.paymentGetway.viewSuspendReasonPlaceholder'),
                     showCancelButton: true,
-                    confirmButtonText: 'Suspend',
+                    confirmButtonText: t('admin.paymentGetway.viewConfirmSuspend'),
+                    cancelButtonText: t('admin.common.cancel'),
                     preConfirm: (value) => {
                         if (!value || value.trim().length < 10) {
-                            Swal.showValidationMessage('Reason must be at least 10 characters');
+                            Swal.showValidationMessage(t('admin.paymentGetway.viewSuspendReasonMin'));
                             return false;
                         }
                         return value.trim();
@@ -468,16 +480,16 @@ const AdminContentProviderView = () => {
                     toast.error(result.error);
                     return;
                 }
-                toast.success('Partner suspended successfully');
+                toast.success(t('admin.paymentGetway.viewPartnerSuspended'));
             }
             fetchContentProvider();
         } catch {
-            toast.error('Failed to update partner status');
+            toast.error(t('admin.paymentGetway.viewErrPartnerStatus'));
         }
     };
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this partner? This action cannot be undone.')) {
+        if (!window.confirm(t('admin.paymentGetway.viewDeletePartnerConfirm'))) {
             return;
         }
         try {
@@ -486,10 +498,10 @@ const AdminContentProviderView = () => {
                 toast.error(result.error);
                 return;
             }
-            toast.success('Partner deleted successfully');
+            toast.success(t('admin.paymentGetway.viewPartnerDeleted'));
             navigate(PARTNERS_PATH);
         } catch {
-            toast.error('Failed to delete partner');
+            toast.error(t('admin.paymentGetway.viewErrDeletePartner'));
         }
     };
 
@@ -569,9 +581,9 @@ const AdminContentProviderView = () => {
     if (!contentProvider) {
         return (
             <div className="text-center py-10">
-                <p className="text-muted">Partner not found</p>
+                <p className="text-muted">{t('admin.paymentGetway.viewPartnerNotFound')}</p>
                 <Link to={PARTNERS_PATH} className="btn btn-primary mt-3">
-                    Back to Partners
+                    {t('admin.paymentGetway.viewBackToPartners')}
                 </Link>
             </div>
         );
@@ -604,7 +616,7 @@ const AdminContentProviderView = () => {
                         <div className="card mb-5">
                             <div className="card-header border-0">
                                 <div className="card-title m-0">
-                                    <h3 className="fw-bolder m-0">Quick Actions</h3>
+                                    <h3 className="fw-bolder m-0">{t('admin.paymentGetway.viewQuickActions')}</h3>
                                 </div>
                             </div>
                             <div className="card-body border-top p-9">
@@ -614,7 +626,7 @@ const AdminContentProviderView = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Edit Partner
+                                        {t('admin.paymentGetway.viewEditPartner')}
                                     </Link>
                                     {canApprove && (
                                         <button className="btn btn-success" onClick={handleApprove}>
@@ -622,7 +634,7 @@ const AdminContentProviderView = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Approve
+                                            {t('admin.paymentGetway.viewApprove')}
                                         </button>
                                     )}
                                     <button className={`btn btn-${isSuspended ? 'success' : 'warning'}`} onClick={handleSuspendToggle}>
@@ -633,7 +645,7 @@ const AdminContentProviderView = () => {
                                             <span className="path2"></span>
                                             <span className="path3"></span>
                                         </i>
-                                        {isSuspended ? 'Unsuspend' : 'Suspend'}
+                                        {isSuspended ? t('admin.paymentGetway.viewUnsuspend') : t('admin.common.suspend')}
                                     </button>
                                     <button className="btn btn-danger" onClick={handleDelete}>
                                         <i className="ki-duotone ki-trash fs-3 me-2">
@@ -643,7 +655,7 @@ const AdminContentProviderView = () => {
                                             <span className="path4"></span>
                                             <span className="path5"></span>
                                         </i>
-                                        Delete Partner
+                                        {t('admin.paymentGetway.viewDeletePartner')}
                                     </button>
                                 </div>
 
@@ -651,12 +663,12 @@ const AdminContentProviderView = () => {
 
                                 <div className="d-flex flex-column gap-3 text-gray-600 fs-7">
                                     <div className="d-flex justify-content-between">
-                                        <span>Partner ID</span>
+                                        <span>{t('admin.paymentGetway.viewPartnerId')}</span>
                                         <span className="fw-bold text-gray-900">{contentProvider.id}</span>
                                     </div>
                                     {contentProvider.created_at && (
                                         <div className="d-flex justify-content-between">
-                                            <span>Created At</span>
+                                            <span>{t('admin.paymentGetway.viewCreatedAtLabel')}</span>
                                             <span className="fw-bold text-gray-900">
                                                 {new Date(contentProvider.created_at).toLocaleString()}
                                             </span>
@@ -664,7 +676,7 @@ const AdminContentProviderView = () => {
                                     )}
                                     {contentProvider.updated_at && (
                                         <div className="d-flex justify-content-between">
-                                            <span>Last Updated</span>
+                                            <span>{t('admin.paymentGetway.viewLastUpdated')}</span>
                                             <span className="fw-bold text-gray-900">
                                                 {new Date(contentProvider.updated_at).toLocaleString()}
                                             </span>

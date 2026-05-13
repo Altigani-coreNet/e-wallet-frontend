@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { importServiceFees, exportServiceFeesTemplate } from '../../../../services/adminServiceFeesService';
 import { toast } from 'react-toastify';
 
 const ServiceFeeImportModal = ({ show, onClose, onImportSuccess }) => {
+    const { t } = useTranslation();
     const [file, setFile] = useState(null);
     const [importing, setImporting] = useState(false);
 
@@ -17,7 +19,7 @@ const ServiceFeeImportModal = ({ show, onClose, onImportSuccess }) => {
         e.preventDefault();
         
         if (!file) {
-            toast.warning('Please select a file to import');
+            toast.warning(t('admin.settings.serviceFees.importPickFile'));
             return;
         }
 
@@ -26,19 +28,19 @@ const ServiceFeeImportModal = ({ show, onClose, onImportSuccess }) => {
         setImporting(false);
 
         if (response.success) {
-            toast.success(response.data?.message || 'Service fees imported successfully');
+            toast.success(response.data?.message || t('admin.settings.serviceFees.importSuccessDefault'));
             setFile(null);
             onClose();
             onImportSuccess();
         } else {
-            toast.error(response.error || 'Import failed');
+            toast.error(response.error || t('admin.settings.serviceFees.importFailed'));
         }
     };
 
     const handleDownloadTemplate = async () => {
         const response = await exportServiceFeesTemplate();
         if (!response.success) {
-            toast.error(response.error || 'Failed to download template');
+            toast.error(response.error || t('admin.settings.serviceFees.templateDownloadFailed'));
         }
     };
 
@@ -54,14 +56,14 @@ const ServiceFeeImportModal = ({ show, onClose, onImportSuccess }) => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Import Service Fees
+                            {t('admin.settings.serviceFees.importModalTitle')}
                         </h5>
-                        <button type="button" className="btn-close" onClick={onClose}></button>
+                        <button type="button" className="btn-close" onClick={onClose} aria-label={t('admin.common.close')}></button>
                     </div>
                     <form onSubmit={handleSubmit}>
                         <div className="modal-body">
                             <div className="mb-3">
-                                <label htmlFor="import_file" className="form-label">Select File</label>
+                                <label htmlFor="import_file" className="form-label">{t('admin.settings.serviceFees.importSelectFile')}</label>
                                 <input 
                                     type="file" 
                                     className="form-control" 
@@ -70,7 +72,7 @@ const ServiceFeeImportModal = ({ show, onClose, onImportSuccess }) => {
                                     onChange={handleFileChange}
                                     required
                                 />
-                                <div className="form-text">Supported formats: .xlsx, .xls, .csv</div>
+                                <div className="form-text">{t('admin.settings.serviceFees.importFormats')}</div>
                             </div>
                             
                             <div className="alert alert-info">
@@ -81,8 +83,8 @@ const ServiceFeeImportModal = ({ show, onClose, onImportSuccess }) => {
                                         <span className="path3"></span>
                                     </i>
                                     <div className="d-flex flex-column">
-                                        <h5 className="mb-1">Import Instructions</h5>
-                                        <span>Please ensure your file contains columns: Name, Type, Fees. The Type field should contain the service fee type as text.</span>
+                                        <h5 className="mb-1">{t('admin.settings.serviceFees.importInstructionsTitle')}</h5>
+                                        <span>{t('admin.settings.serviceFees.importInstructionsBody')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -97,19 +99,19 @@ const ServiceFeeImportModal = ({ show, onClose, onImportSuccess }) => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Download Template
+                                    {t('admin.settings.downloadTemplate')}
                                 </button>
                             </div>
                         </div>
                         <div className="modal-footer">
                             <button type="button" className="btn btn-secondary" onClick={onClose}>
-                                Cancel
+                                {t('admin.common.cancel')}
                             </button>
                             <button type="submit" className="btn btn-primary" disabled={importing}>
                                 {importing ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2"></span>
-                                        Importing...
+                                        {t('admin.settings.serviceFees.importing')}
                                     </>
                                 ) : (
                                     <>
@@ -117,7 +119,7 @@ const ServiceFeeImportModal = ({ show, onClose, onImportSuccess }) => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Import
+                                        {t('admin.settings.serviceFees.importBtn')}
                                     </>
                                 )}
                             </button>
@@ -130,5 +132,3 @@ const ServiceFeeImportModal = ({ show, onClose, onImportSuccess }) => {
 };
 
 export default ServiceFeeImportModal;
-
-

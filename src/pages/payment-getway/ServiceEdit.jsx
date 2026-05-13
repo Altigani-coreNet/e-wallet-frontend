@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from '../../utils/axiosConfig';
@@ -6,6 +7,8 @@ import { useToolbar } from '../../contexts/ToolbarContext';
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../utils/constants';
 import { getToken } from '../../utils/api';
 import { getPartnersSelect } from '../../services/adminPartnersService';
+import ServiceModel from '../../services/ServiceModel';
+import ContentProviderModel from '../../services/ContentProviderModel';
 import SearchableDropdown from '../../common/filters/SearchableDropdown';
 
 // Debounce function
@@ -57,6 +60,7 @@ const parseTranslatableDescription = (value) => {
 };
 
 const ServiceEdit = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const { setTitle, setBreadcrumbs } = useToolbar();
     const navigate = useNavigate();
@@ -114,17 +118,17 @@ const ServiceEdit = () => {
     const [loadingCountries, setLoadingCountries] = useState(false);
 
     useEffect(() => {
-        setTitle('Edit Service');
+        setTitle(t('admin.paymentGetway.titlesEditService'));
         setBreadcrumbs([
-            { label: 'Home', path: '/admin' },
-            { label: 'Services', path: '/admin/services' },
-            { label: 'Edit Service', path: `/admin/services/${id}/edit`, active: true }
+            { label: t('admin.paymentGetway.breadcrumbsHome'), path: '/admin' },
+            { label: t('admin.paymentGetway.breadcrumbsServices'), path: '/admin/services' },
+            { label: t('admin.paymentGetway.titlesEditService'), path: `/admin/services/${id}/edit`, active: true },
         ]);
 
         return () => {
             setBreadcrumbs([]);
         };
-    }, [id, setTitle, setBreadcrumbs]);
+    }, [id, setTitle, setBreadcrumbs, t]);
 
     // Load countries
     const fetchCountries = useCallback(
@@ -225,11 +229,12 @@ const ServiceEdit = () => {
             label:
                 getTextValue(src.text) ||
                 getTextValue(src.name) ||
+                getTextValue(service?.country_name) ||
                 getTextValue(service?.country?.name) ||
-                'Selected country',
-            code: src.code || src.short_name || src.code_iso2 || service?.country?.code
+                t('admin.paymentGetway.svcSelectedCountryFallback'),
+            code: src.code || src.short_name || src.code_iso2 || service?.country_short_name || service?.country?.code
         };
-    }, [selectedCountry, countryOptions, formData.country_id, service]);
+    }, [selectedCountry, countryOptions, formData.country_id, service, t]);
 
     const handleServiceImageChange = (e) => {
         const file = e.target.files?.[0];
@@ -267,114 +272,103 @@ const ServiceEdit = () => {
                 if (!serviceData) {
                     throw new Error('Service data not found in response');
                 }
-                
-                setService(serviceData);
 
-                let nameEn = serviceData.service_name_en ?? '';
-                let nameAr = serviceData.service_name_ar ?? '';
-                if (nameEn === '' && nameAr === '') {
-                    const sn = serviceData.service_name;
-                    if (sn && typeof sn === 'object' && !Array.isArray(sn)) {
-                        nameEn = sn.en ?? '';
-                        nameAr = sn.ar ?? '';
-                    } else if (typeof sn === 'string') {
-                        nameEn = sn;
-                        nameAr = sn;
-                    } else if (serviceData.service_name_text) {
-                        nameEn = serviceData.service_name_text;
-                        nameAr = serviceData.service_name_text;
-                    }
-                }
+                const svc = ServiceModel.fromApiResponse(serviceData);
+                setService(svc);
 
                 setFormData({
-                    operator_id: serviceData.operator?.id || "",
-                    // Always prefer API `partner_id` (may be present even when `partner` relation isn't loaded)
-                    partner_id: serviceData.partner_id || serviceData.partner?.id || serviceData.merchant?.id || "",
-                    country_id: serviceData.country_id || "",
-                    service_type: serviceData.service_type || "digital",
-                    category_id: serviceData.category?.id || "",
-                    sub_category_id: serviceData.sub_category?.id || "",
-                    service_name_en: nameEn,
-                    service_name_ar: nameAr,
+                    operator_id: svc.operator?.id || "",
+                    partner_id: svc.partner_id || svc.partner?.id || svc.merchant?.id || "",
+                    country_id: svc.country_id || "",
+                    service_type: svc.service_type || "digital",
+                    category_id: svc.category_id || svc.category?.id || "",
+                    sub_category_id: svc.sub_category_id || svc.sub_category?.id || "",
+                    service_name_en: svc.service_name_en,
+                    service_name_ar: svc.service_name_ar,
                     ...(() => {
-                        const parsed = parseTranslatableDescription(serviceData.description);
+                        const parsed = parseTranslatableDescription(svc.description);
                         return {
                             description_en: parsed.en,
                             description_ar: parsed.ar,
                         };
                     })(),
-                    status: serviceData.status || "active",
-                    is_active: serviceData.is_active !== undefined ? serviceData.is_active : true,
+                    status: svc.status || "active",
+                    is_active: svc.is_active !== undefined ? svc.is_active : true,
                 });
 
-                // Preview existing image: prefer API `image_url` then fallback to `image`
-                setServiceImagePreview(() => {
-                    if (serviceData.image_url) return serviceData.image_url;
-                    if (!serviceData.image) return null;
-                    const img = String(serviceData.image);
-                    if (img.startsWith('http')) return img;
-                    if (img.startsWith('/')) return img;
-                    // backend stores something like "uploads/services/<file>"
-                    return `/${img}`;
-                });
+                setServiceImagePreview(svc.getImagePreviewUrl());
 
-                // Set selected country if available (normalize so dropdown never receives object labels)
-                if (serviceData.country) {
-                    const c = serviceData.country;
+                if (svc.country) {
+                    const c = svc.country;
                     setSelectedCountry({
                         ...c,
                         id: c.id,
                         text: getTextValue(c.text) || getTextValue(c.name),
                         name: c.name
                     });
+                } else if (svc.country_id && (svc.country_name || svc.country_short_name)) {
+                    setSelectedCountry({
+                        id: svc.country_id,
+                        text: svc.country_name || svc.country_short_name || '',
+                        name: svc.country_name || svc.country_short_name || '',
+                        short_name: svc.country_short_name,
+                    });
                 }
-                // Load countries to ensure dropdown works
-                if (serviceData.country_id || serviceData.country) {
+                if (svc.country_id || svc.country) {
                     fetchCountries();
                 }
 
-                // Set selected options if available
-                if (serviceData.operator) {
+                if (svc.operator) {
                     setSelectedOperatorOption({
-                        value: serviceData.operator.id,
-                        label: serviceData.operator.name,
+                        value: svc.operator.id,
+                        label: svc.operator.name,
                     });
-                    // Load operators list to ensure dropdown works
-                    if (serviceData.country_id) {
-                        loadOperators('', serviceData.country_id);
+                    if (svc.country_id) {
+                        loadOperators('', svc.country_id);
                     }
                 }
-                if (serviceData.category) {
+                if (svc.category_id || svc.category) {
+                    const catId = svc.category_id || svc.category?.id;
+                    const catLabel =
+                        svc.category_name ||
+                        svc.category?.name_en ||
+                        svc.category?.name ||
+                        String(catId || '');
                     setSelectedCategoryOption({
-                        value: serviceData.category.id,
-                        label: serviceData.category.name_en,
+                        value: catId,
+                        label: catLabel,
                     });
-                    // Load categories list to ensure dropdown works
                     loadCategories('');
                 }
-                if (serviceData.sub_category) {
+                if (svc.sub_category_id || svc.sub_category) {
+                    const subId = svc.sub_category_id || svc.sub_category?.id;
+                    const subLabel =
+                        svc.sub_category_name ||
+                        svc.sub_category?.name_en ||
+                        svc.sub_category?.name ||
+                        String(subId || '');
                     setSelectedSubCategoryOption({
-                        value: serviceData.sub_category.id,
-                        label: serviceData.sub_category.name_en,
+                        value: subId,
+                        label: subLabel,
                     });
                 }
-                // Handle content provider - load list first, then set selected option
-                if (serviceData.partner || serviceData.merchant) {
-                    const cp = serviceData.partner || serviceData.merchant;
-                    const cpId = serviceData.partner_id || cp?.id;
-                    const cpName = cp?.name || cp?.business_name || String(cpId);
-                    
-                    // Load content providers if we have operator and country (only once on initial load)
-                    if (serviceData.operator?.id && serviceData.country_id && !contentProvidersLoadedRef.current) {
+                if (svc.partner || svc.merchant || svc.partner_id) {
+                    const cp = svc.partner || svc.merchant;
+                    const cpId = svc.partner_id || cp?.id;
+                    const cpName =
+                        svc.partner_name ||
+                        cp?.name ||
+                        cp?.business_name ||
+                        String(cpId);
+
+                    if (svc.operator?.id && svc.country_id && !contentProvidersLoadedRef.current) {
                         try {
                             contentProvidersLoadedRef.current = true;
-                            const providersList = await loadContentProviders('', serviceData.country_id);
-                            // After loading, find and set the selected option from the loaded list
+                            const providersList = await loadContentProviders('', svc.country_id);
                             const foundProvider = providersList.find(p => String(p.value) === String(cpId));
                             if (foundProvider) {
                                 setSelectedContentProviderOption(foundProvider);
                             } else {
-                                // If not found in list, create option from service data
                                 setSelectedContentProviderOption({
                                     value: cpId,
                                     label: cpName,
@@ -382,14 +376,12 @@ const ServiceEdit = () => {
                             }
                         } catch (error) {
                             console.error('Error loading content providers:', error);
-                            // Still set the option even if loading fails
                             setSelectedContentProviderOption({
                                 value: cpId,
                                 label: cpName,
                             });
                         }
                     } else {
-                        // Set option even if we can't load the list yet
                         setSelectedContentProviderOption({
                             value: cpId,
                             label: cpName,
@@ -398,7 +390,8 @@ const ServiceEdit = () => {
                 }
             } catch (error) {
                 console.error('Error loading service details', error);
-                const errorMessage = error.response?.data?.message || error.message || 'Failed to load service details';
+                const errorMessage =
+                    error.response?.data?.message || error.message || t('admin.paymentGetway.svcEditLoadDetailsFailed');
                 toast.error(errorMessage);
                 
                 // Only navigate away if it's a 404 or permission error
@@ -493,9 +486,9 @@ const ServiceEdit = () => {
                 const body = result.data;
                 if (body && (body.status === true || body.success === true)) {
                     const list = Array.isArray(body.data) ? body.data : [];
-                    const providersList = list.map(cp => ({
+                    const providersList = list.map((cp) => ({
                         value: cp.id,
-                        label: cp.name || cp.text || cp.business_name || String(cp.id),
+                        label: ContentProviderModel.displayName(cp) || String(cp.id),
                         ...cp,
                     }));
                     setContentProviders(providersList);
@@ -700,32 +693,32 @@ const ServiceEdit = () => {
 
         // Validation - All fields are required
         if (!formData.country_id) {
-            toast.error("Country is required");
+            toast.error(t('admin.paymentGetway.svcEditErrCountryRequired'));
             return;
         }
 
         if (!formData.partner_id) {
-            toast.error("Partner is required");
+            toast.error(t('admin.paymentGetway.svcEditErrPartnerRequired'));
             return;
         }
 
         if (!formData.service_type) {
-            toast.error("Service Type is required");
+            toast.error(t('admin.paymentGetway.svcEditErrServiceTypeRequired'));
             return;
         }
 
         if (!formData.category_id) {
-            toast.error("Service Category is required");
+            toast.error(t('admin.paymentGetway.svcEditErrCategoryRequired'));
             return;
         }
 
         if (!formData.service_name_en?.trim() || !formData.service_name_ar?.trim()) {
-            toast.error("Service name (English and Arabic) is required");
+            toast.error(t('admin.paymentGetway.svcEditErrNameBilingual'));
             return;
         }
 
         if (!formData.description_en?.trim() || !formData.description_ar?.trim()) {
-            toast.error("Description (English and Arabic) is required");
+            toast.error(t('admin.paymentGetway.svcEditErrDescBilingual'));
             return;
         }
 
@@ -788,7 +781,10 @@ const ServiceEdit = () => {
                 navigate('/admin/services');
             } else {
                 // Handle case where response doesn't have success flag
-                const errorMessage = response.data?.message || response.data?.error || "Service update completed but response format was unexpected";
+                const errorMessage =
+                    response.data?.message ||
+                    response.data?.error ||
+                    t('admin.paymentGetway.svcEditUnexpectedResponse');
                 toast.warning(errorMessage);
                 // Still navigate away since update likely succeeded
                 navigate('/admin/services');
@@ -800,9 +796,11 @@ const ServiceEdit = () => {
             if (error.response?.status === 422 && error.response?.data?.errors) {
                 const errors = error.response.data.errors;
                 const errorMessages = Object.values(errors).flat().join(', ');
-                toast.error(errorMessages || "Validation failed. Please check your input.");
+                toast.error(errorMessages || t('admin.paymentGetway.svcEditValidationFailed'));
             } else {
-                toast.error(error.response?.data?.message || error.message || "Failed to update service");
+                toast.error(
+                    error.response?.data?.message || error.message || t('admin.paymentGetway.svcEditUpdateFailed')
+                );
             }
         } finally {
             setSubmitting(false);
@@ -811,7 +809,7 @@ const ServiceEdit = () => {
 
     const handleOperatorOpen = useCallback(() => {
         if (!formData.country_id) {
-            toast.warning("Please select a country first");
+            toast.warning(t('admin.paymentGetway.wizSelectCountryFirst'));
             return;
         }
         setOperatorsEnabled(true);
@@ -839,7 +837,7 @@ const ServiceEdit = () => {
 
     const handleSubCategoryOpen = useCallback(() => {
         if (!formData.category_id) {
-            toast.warning("Please select a category first");
+            toast.warning(t('admin.paymentGetway.svcWarnSelectCategoryFirst'));
             return;
         }
         setSubCategoriesEnabled(true);
@@ -855,7 +853,7 @@ const ServiceEdit = () => {
 
     const handleContentProviderOpen = useCallback(() => {
         if (!formData.country_id) {
-            toast.warning("Please select a country first");
+            toast.warning(t('admin.paymentGetway.wizSelectCountryFirst'));
             return;
         }
         setContentProvidersEnabled(true);
@@ -876,7 +874,7 @@ const ServiceEdit = () => {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
                 <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading service...</span>
+                    <span className="visually-hidden">{t('admin.paymentGetway.svcLoadingServiceAria')}</span>
                 </div>
             </div>
         );
@@ -885,7 +883,7 @@ const ServiceEdit = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Edit Service</h3>
+                <h3 className="card-title">{t('admin.paymentGetway.titlesEditService')}</h3>
             </div>
             <form onSubmit={handleSubmit}>
                 <div className="card-body">
@@ -894,7 +892,7 @@ const ServiceEdit = () => {
                             <div className="card card-flush">
                                 <div className="card-header">
                                     <div className="card-title">
-                                        <h2>Service Image</h2>
+                                        <h2>{t('admin.paymentGetway.svcLabelServiceImage')}</h2>
                                     </div>
                                 </div>
                                 <div className="card-body text-center pt-0">
@@ -931,7 +929,9 @@ const ServiceEdit = () => {
                                             </label>
                                         </div>
                                     </div>
-                                    <div className="text-muted fs-7">Upload service image</div>
+                                    <div className="text-muted fs-7">
+                                        {t('admin.paymentGetway.svcUploadServiceImageHint')}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -939,7 +939,7 @@ const ServiceEdit = () => {
                             <div className="row g-4">
                         {/* Country */}
                         <div className="col-md-6">
-                            <label className="form-label required">Country</label>
+                            <label className="form-label required">{t('admin.paymentGetway.cpCountry')}</label>
                             <SearchableDropdown
                                 options={countryOptions}
                                 selected={selectedCountryOption}
@@ -947,11 +947,11 @@ const ServiceEdit = () => {
                                 onClear={handleCountryClear}
                                 onOpen={handleCountryOpen}
                                 onSearchChange={handleCountrySearchChange}
-                                placeholder="Select Country"
+                                placeholder={t('admin.paymentGetway.wizPlaceholderCountry')}
                                 loading={loadingCountries}
                                 required={true}
                                 renderSelected={(option) => {
-                                    if (!option) return <span className="text-muted">Select Country</span>;
+                                    if (!option) return <span className="text-muted">{t('admin.paymentGetway.wizPlaceholderCountry')}</span>;
                                     const label = getTextValue(option.label);
                                     const flagCode = option.code?.toLowerCase() || option.short_name?.toLowerCase() || option.code_iso2?.toLowerCase();
                                     return (
@@ -993,8 +993,8 @@ const ServiceEdit = () => {
                         {/* Partner */}
                         <div className="col-md-6">
                             <SearchableDropdown
-                                label="Partner *"
-                                placeholder="Select partner"
+                                label={`${t('admin.paymentGetway.viewPartnerCol')} *`}
+                                placeholder={t('admin.paymentGetway.wizPlaceholderParentPartner')}
                                 options={contentProviderOptions}
                                 selected={selectedContentProviderOption}
                                 onSelect={(option) => {
@@ -1007,7 +1007,7 @@ const ServiceEdit = () => {
                                 }}
                                 required={true}
                                 loading={loadingContentProviders}
-                                searchPlaceholder="Search partners..."
+                                searchPlaceholder={t('admin.paymentGetway.productsSearchPartners')}
                                 onOpen={handleContentProviderOpen}
                                 onSearchChange={handleContentProviderSearchChange}
                                 showClear={false}
@@ -1016,24 +1016,24 @@ const ServiceEdit = () => {
 
                         {/* Service Type (hidden; value still submitted) */}
                         <div className="col-md-6 d-none">
-                            <label className="form-label required">Service Type</label>
+                            <label className="form-label required">{t('admin.paymentGetway.wizLabelServiceType')}</label>
                             <select
                                 className="form-select"
                                 value={formData.service_type}
                                 onChange={(e) => setFormData({ ...formData, service_type: e.target.value })}
                                 required
                             >
-                                <option value="digital">Digital</option>
-                                <option value="ivr">IVR</option>
-                                <option value="sms">SMS</option>
+                                <option value="digital">{t('admin.paymentGetway.svcTypeDigital')}</option>
+                                <option value="ivr">{t('admin.paymentGetway.svcTypeIvr')}</option>
+                                <option value="sms">{t('admin.paymentGetway.svcTypeSms')}</option>
                             </select>
                         </div>
 
                         {/* Category */}
                         <div className="col-md-6">
                             <SearchableDropdown
-                                label="Service Category *"
-                                placeholder="Select category"
+                                label={`${t('admin.paymentGetway.wizLabelServiceCategory')} *`}
+                                placeholder={t('admin.paymentGetway.svcPlaceholderSelectCategory')}
                                 options={categoryOptions}
                                 selected={selectedCategoryOption}
                                 onSelect={(option) => {
@@ -1048,7 +1048,7 @@ const ServiceEdit = () => {
                                 }}
                                 required={true}
                                 loading={loadingCategories}
-                                searchPlaceholder="Search categories..."
+                                searchPlaceholder={t('admin.paymentGetway.catSearchPlaceholder')}
                                 onOpen={handleCategoryOpen}
                                 onSearchChange={handleCategorySearchChange}
                                 showClear={false}
@@ -1058,8 +1058,8 @@ const ServiceEdit = () => {
                         {/* Sub-Category */}
                         <div className="col-md-6">
                             <SearchableDropdown
-                                label="Sub-Category"
-                                placeholder="Select sub-category"
+                                label={t('admin.paymentGetway.svcLabelSubCategory')}
+                                placeholder={t('admin.paymentGetway.svcPlaceholderSelectSubCategory')}
                                 options={subCategoryOptions}
                                 selected={selectedSubCategoryOption}
                                 onSelect={(option) => {
@@ -1071,7 +1071,7 @@ const ServiceEdit = () => {
                                     setFormData({ ...formData, sub_category_id: "" });
                                 }}
                                 loading={loadingSubCategories}
-                                searchPlaceholder="Search sub-categories..."
+                                searchPlaceholder={t('admin.paymentGetway.subCatSearchPlaceholder')}
                                 onOpen={handleSubCategoryOpen}
                                 onSearchChange={handleSubCategorySearchChange}
                                 showClear={true}
@@ -1080,22 +1080,22 @@ const ServiceEdit = () => {
 
                         {/* Service Name (translatable) */}
                         <div className="col-md-6">
-                            <label className="form-label required">Service Name (English)</label>
+                            <label className="form-label required">{t('admin.paymentGetway.wizLabelServiceNameEn')}</label>
                             <input
                                 type="text"
                                 className="form-control"
-                                placeholder="Enter service name (English)"
+                                placeholder={t('admin.paymentGetway.wizPlaceholderServiceNameEn')}
                                 value={formData.service_name_en}
                                 onChange={(e) => setFormData({ ...formData, service_name_en: e.target.value })}
                                 required
                             />
                         </div>
                         <div className="col-md-6">
-                            <label className="form-label required">Service Name (Arabic)</label>
+                            <label className="form-label required">{t('admin.paymentGetway.wizLabelServiceNameAr')}</label>
                             <input
                                 type="text"
                                 className="form-control"
-                                placeholder="ادخل اسم الخدمة بالعربية"
+                                placeholder={t('admin.paymentGetway.wizPlaceholderServiceNameAr')}
                                 value={formData.service_name_ar}
                                 onChange={(e) => setFormData({ ...formData, service_name_ar: e.target.value })}
                                 required
@@ -1104,23 +1104,23 @@ const ServiceEdit = () => {
 
                         {/* Description */}
                         <div className="col-md-6">
-                            <label className="form-label required">Description (English)</label>
+                            <label className="form-label required">{t('admin.paymentGetway.wizLabelDescEn')}</label>
                             <textarea
                                 className="form-control"
                                 rows="3"
-                                placeholder="Enter service description (English)"
+                                placeholder={t('admin.paymentGetway.wizPlaceholderDescEn')}
                                 value={formData.description_en}
                                 onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
                                 required
                             />
                         </div>
                         <div className="col-md-6">
-                            <label className="form-label required">Description (Arabic)</label>
+                            <label className="form-label required">{t('admin.paymentGetway.wizLabelDescAr')}</label>
                             <textarea
                                 className="form-control"
                                 rows="3"
                                 dir="rtl"
-                                placeholder="أدخل وصف الخدمة بالعربية"
+                                placeholder={t('admin.paymentGetway.wizPlaceholderDescAr')}
                                 value={formData.description_ar}
                                 onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
                                 required
@@ -1138,29 +1138,29 @@ const ServiceEdit = () => {
                                 disabled
                                 style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
                             />
-                            <small className="text-muted">The service primary key is a UUID and cannot be changed</small>
+                            <small className="text-muted">{t('admin.paymentGetway.svcEditUuidReadonlyHint')}</small>
                         </div>
 
                         {/* Status */}
                         <div className="col-md-6">
-                            <label className="form-label required">Status</label>
+                            <label className="form-label required">{t('admin.paymentGetway.svcLabelStatusField')}</label>
                             <select
                                 className="form-select"
                                 value={formData.status}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                                 required
                             >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="pending">Pending</option>
-                                <option value="staging">Staging</option>
-                                <option value="testing">Testing</option>
+                                <option value="active">{t('admin.common.active')}</option>
+                                <option value="inactive">{t('admin.common.inactive')}</option>
+                                <option value="pending">{t('admin.common.pending')}</option>
+                                <option value="staging">{t('admin.paymentGetway.wizStatusStaging')}</option>
+                                <option value="testing">{t('admin.common.testing')}</option>
                             </select>
                         </div>
 
                         {/* Is Active */}
                         <div className="col-md-6">
-                            <label className="form-label">Active Status</label>
+                            <label className="form-label">{t('admin.paymentGetway.cpLabelActiveStatus')}</label>
                             <div className="form-check form-switch form-check-custom form-check-solid mt-2">
                                 <input
                                     className="form-check-input"
@@ -1169,7 +1169,7 @@ const ServiceEdit = () => {
                                     onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                                 />
                                 <label className="form-check-label">
-                                    {formData.is_active ? "Active" : "Inactive"}
+                                    {formData.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                 </label>
                             </div>
                         </div>
@@ -1184,7 +1184,7 @@ const ServiceEdit = () => {
                         onClick={handleCancel}
                         disabled={submitting}
                     >
-                        Cancel
+                        {t('admin.common.cancel')}
                     </button>
                     <button 
                         type="submit" 
@@ -1194,10 +1194,10 @@ const ServiceEdit = () => {
                         {submitting ? (
                             <>
                                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                Updating...
+                                {t('admin.paymentGetway.svcEditUpdating')}
                             </>
                         ) : (
-                            'Update Service'
+                            t('admin.paymentGetway.svcEditSubmit')
                         )}
                     </button>
                 </div>

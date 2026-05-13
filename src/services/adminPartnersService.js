@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { ADMIN_ENDPOINTS } from '../utils/constants';
 import { getToken } from '../utils/api';
+import ContentProviderModel from './ContentProviderModel';
 
 const getApiToken = () => getToken();
 
@@ -304,3 +305,24 @@ export const downloadPartnersImportTemplate = async () => {
         return { success: false, error: error.response?.data?.message || 'Failed to download template' };
     }
 };
+
+/**
+ * Maps `getPartners` / sub-partners list envelope (`response.data` from axios) into models + pagination meta.
+ * @param {Record<string, unknown>|null|undefined} envelope
+ * @returns {{ partners: import('./ContentProviderModel').ContentProviderModel[], pagination: { current_page: number, per_page: number, total: number, last_page: number } | null }}
+ */
+export function mapAdminPartnersPaginatedResponse(envelope) {
+    const paginator = envelope?.data;
+    if (!paginator || !Array.isArray(paginator.data)) {
+        return { partners: [], pagination: null };
+    }
+    return {
+        partners: ContentProviderModel.fromApiResponseArray(paginator.data),
+        pagination: {
+            current_page: paginator.current_page ?? 1,
+            per_page: paginator.per_page ?? 15,
+            total: paginator.total ?? 0,
+            last_page: paginator.last_page ?? 1,
+        },
+    };
+}

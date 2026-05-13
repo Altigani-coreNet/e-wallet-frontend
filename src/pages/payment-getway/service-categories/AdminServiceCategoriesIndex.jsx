@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
@@ -10,6 +11,7 @@ import ServiceCategoryFiltersPanel from './ServiceCategoryFiltersPanel';
 import BulkActionBar from '../../../common/BulkActionBar';
 
 const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'service' }) => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -53,10 +55,10 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
     useEffect(() => {
         const pageTitle =
             fixedHierarchy === 'children'
-                ? 'Sub-Categories Management'
+                ? t('admin.paymentGetway.titlesSubCategoriesManagement')
                 : categoryType === 'partner'
-                    ? 'Partner categories'
-                    : 'Service categories';
+                    ? t('admin.paymentGetway.titlesPartnerCategories')
+                    : t('admin.paymentGetway.titlesServiceCategories');
         setTitle(pageTitle);
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
@@ -69,7 +71,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    {showFilters ? 'Hide Filters' : 'Show Filters'}
+                    {showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}
                 </button>
                 <button
                     type="button"
@@ -80,12 +82,12 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">{fixedHierarchy === 'children' ? 'Add Sub-Category' : 'Add Category'}</span>
+                    <span className="d-none d-md-inline ms-1">{fixedHierarchy === 'children' ? t('admin.paymentGetway.catAddSubCategory') : t('admin.paymentGetway.catAddCategory')}</span>
                 </button>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters, fixedHierarchy, categoryType]);
+    }, [setTitle, setActions, showFilters, fixedHierarchy, categoryType, t]);
 
     // Debounced search
     useEffect(() => {
@@ -315,7 +317,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
             if (error.response?.data?.errors) {
                 setFormErrors(error.response.data.errors);
             }
-            toast.error(error.response?.data?.message || 'Failed to save category');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.catSaveFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -347,7 +349,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
             toast.success('Category deleted successfully');
             fetchCategories();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to delete category');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.catDeleteFailed'));
         }
     };
 
@@ -361,10 +363,10 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                 {},
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
-            toast.success('Status updated successfully');
+            toast.success(t('admin.paymentGetway.catStatusUpdated'));
             fetchCategories();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to update status');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.catStatusFailed'));
         } finally {
             setTogglingStatusId(null);
         }
@@ -390,12 +392,12 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
         if (selectedIds.length === 0) return;
 
         const confirmation = await Swal.fire({
-            title: 'Delete categories?',
-            text: `Are you sure you want to delete ${selectedIds.length} category(s)?`,
+            title: t('admin.paymentGetway.catBulkDeleteTitle'),
+            text: t('admin.paymentGetway.catBulkDeleteText', { count: selectedIds.length }),
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.paymentGetway.catYesDelete'),
+            cancelButtonText: t('admin.common.cancel'),
             customClass: {
                 confirmButton: 'btn btn-danger',
                 cancelButton: 'btn btn-light'
@@ -412,11 +414,11 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                 { ids: selectedIds },
                 { headers: { 'Authorization': `Bearer ${token}` } }
             );
-            toast.success(`${selectedIds.length} category(s) deleted successfully`);
+            toast.success(t('admin.paymentGetway.catBulkDeleted', { count: selectedIds.length }));
             setSelectedIds([]);
             fetchCategories();
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to delete categories');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.catBulkDeleteFailed'));
         }
     };
 
@@ -441,13 +443,41 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
         <>
             {[...Array(pagination.per_page)].map((_, index) => (
                 <tr key={index}>
-                    <td className="text-center"><div className="placeholder-glow"><span className="placeholder col-12"></span></div></td>
-                    <td><div className="placeholder-glow"><span className="placeholder col-8"></span></div></td>
-                    <td><div className="placeholder-glow"><span className="placeholder col-12"></span></div></td>
-                    <td><div className="placeholder-glow"><span className="placeholder col-8"></span></div></td>
-                    <td className="text-center"><div className="placeholder-glow"><span className="placeholder col-6"></span></div></td>
-                    <td className="text-center"><div className="placeholder-glow"><span className="placeholder col-6"></span></div></td>
-                    <td className="text-end"><div className="placeholder-glow"><span className="placeholder col-12"></span></div></td>
+                    <td className="w-10px px-2 align-middle text-center">
+                        <div className="d-flex justify-content-center align-items-center w-100 min-w-0">
+                            <div className="placeholder-glow w-100"><span className="placeholder col-12"></span></div>
+                        </div>
+                    </td>
+                    <td className="min-w-80px align-middle text-center">
+                        <div className="d-flex justify-content-center align-items-center w-100 min-w-0">
+                            <div className="placeholder-glow w-100"><span className="placeholder col-8"></span></div>
+                        </div>
+                    </td>
+                    <td className="min-w-150px align-middle text-start">
+                        <div className="d-flex justify-content-start align-items-center w-100 min-w-0">
+                            <div className="placeholder-glow w-100"><span className="placeholder col-12"></span></div>
+                        </div>
+                    </td>
+                    <td className="min-w-200px align-middle text-start">
+                        <div className="d-flex justify-content-start align-items-center w-100 min-w-0">
+                            <div className="placeholder-glow w-100"><span className="placeholder col-8"></span></div>
+                        </div>
+                    </td>
+                    <td className="min-w-100px align-middle text-center">
+                        <div className="d-flex justify-content-center align-items-center w-100 min-w-0">
+                            <div className="placeholder-glow w-100"><span className="placeholder col-6"></span></div>
+                        </div>
+                    </td>
+                    <td className="min-w-100px align-middle text-center">
+                        <div className="d-flex justify-content-center align-items-center w-100 min-w-0">
+                            <div className="placeholder-glow w-100"><span className="placeholder col-6"></span></div>
+                        </div>
+                    </td>
+                    <td className="min-w-100px align-middle text-end">
+                        <div className="d-flex justify-content-end align-items-center w-100 min-w-0">
+                            <div className="placeholder-glow w-100"><span className="placeholder col-12"></span></div>
+                        </div>
+                    </td>
                 </tr>
             ))}
         </>
@@ -488,7 +518,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                 setSelectedIds([]);
                             }}
                         >
-                            Parent Categories
+                            {t('admin.paymentGetway.catParentCategories')}
                         </button>
                         <button
                             type="button"
@@ -499,7 +529,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                 setSelectedIds([]);
                             }}
                         >
-                            Sub-Categories
+                            {t('admin.paymentGetway.catSubCategories')}
                         </button>
                     </div>
                 </div>}
@@ -513,7 +543,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                             <input
                                 type="text"
                                 className="form-control form-control-solid w-250px ps-13"
-                                placeholder="Search categories..."
+                                placeholder={t('admin.paymentGetway.catSearchPlaceholder')}
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
                             />
@@ -521,7 +551,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                     </div>
                     <div className="card-toolbar">
                         <div className="d-flex justify-content-end align-items-center gap-2">
-                            <label className="form-label mb-0 text-nowrap">Show:</label>
+                            <label className="form-label mb-0 text-nowrap">{t('admin.paymentGetway.catShow')}</label>
                             <select 
                                 className="form-select form-select-sm" 
                                 value={pagination.per_page}
@@ -542,9 +572,9 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                     <div className="table-responsive">
                         <table className="table align-middle table-row-dashed fs-6 gy-5">
                             <thead>
-                                <tr className="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th className="w-10px pe-2">
-                                        <div className="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                <tr className="text-muted fw-bold fs-7 text-uppercase gs-0">
+                                    <th className="w-10px px-2 align-middle text-center">
+                                        <div className="form-check form-check-sm form-check-custom form-check-solid d-flex justify-content-center mb-0">
                                             <input
                                                 className="form-check-input"
                                                 type="checkbox"
@@ -553,12 +583,36 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                             />
                                         </div>
                                     </th>
-                                    <th className="min-w-80px">Image</th>
-                                    <th className="min-w-150px">Name</th>
-                                    <th className="min-w-200px">Description</th>
-                                    <th className="text-center min-w-100px">Status</th>
-                                    <th className="text-center min-w-100px">Services Count</th>
-                                    <th className="text-end min-w-100px">Actions</th>
+                                    <th className="min-w-80px align-middle text-center">
+                                        <div className="d-flex justify-content-center align-items-center w-100 min-w-0">
+                                            <span className="text-center text-nowrap">{t('admin.paymentGetway.catColImage')}</span>
+                                        </div>
+                                    </th>
+                                    <th className="min-w-150px align-middle text-start">
+                                        <div className="d-flex justify-content-start align-items-center w-100 min-w-0">
+                                            <span className="text-start text-nowrap w-100">{t('admin.paymentGetway.catColName')}</span>
+                                        </div>
+                                    </th>
+                                    <th className="min-w-200px align-middle text-start">
+                                        <div className="d-flex justify-content-start align-items-center w-100 min-w-0">
+                                            <span className="text-start text-break w-100">{t('admin.paymentGetway.catColDescription')}</span>
+                                        </div>
+                                    </th>
+                                    <th className="min-w-100px align-middle text-center">
+                                        <div className="d-flex justify-content-center align-items-center w-100 min-w-0">
+                                            <span className="text-center text-nowrap">{t('admin.paymentGetway.status')}</span>
+                                        </div>
+                                    </th>
+                                    <th className="min-w-100px align-middle text-center">
+                                        <div className="d-flex justify-content-center align-items-center w-100 min-w-0">
+                                            <span className="text-center text-nowrap">{t('admin.paymentGetway.catColServicesCount')}</span>
+                                        </div>
+                                    </th>
+                                    <th className="min-w-100px align-middle text-end">
+                                        <div className="d-flex justify-content-end align-items-center w-100 min-w-0">
+                                            <span className="text-end text-nowrap">{t('admin.common.actions')}</span>
+                                        </div>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody className="text-gray-600 fw-semibold">
@@ -567,7 +621,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                 ) : categories.length === 0 ? (
                                     <tr>
                                         <td colSpan="7" className="text-center py-10">
-                                            <div className="text-gray-600 fs-5">No categories found</div>
+                                            <div className="text-gray-600 fs-5">{t('admin.paymentGetway.catNoCategoriesFound')}</div>
                                         </td>
                                     </tr>
                                 ) : (
@@ -592,9 +646,11 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                     {pagination.total > pagination.per_page && (
                         <div className="d-flex justify-content-between align-items-center flex-wrap pt-5">
                             <div className="fs-6 fw-semibold text-gray-700">
-                                Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to{' '}
-                                {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of{' '}
-                                {pagination.total} entries
+                                {t('admin.paymentGetway.catShowingEntries', {
+                                    from: ((pagination.current_page - 1) * pagination.per_page) + 1,
+                                    to: Math.min(pagination.current_page * pagination.per_page, pagination.total),
+                                    total: pagination.total,
+                                })}
                             </div>
                             <ul className="pagination">
                                 <li className={`page-item previous ${pagination.current_page === 1 ? 'disabled' : ''}`}>
@@ -639,41 +695,41 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                             <div className="modal-header">
                                 <h5 className="modal-title">
                                     {isEditing
-                                        ? (fixedHierarchy === 'children' ? 'Edit Sub-Category' : 'Edit Category')
-                                        : (fixedHierarchy === 'children' ? 'Create Sub-Category' : 'Create Category')}
+                                        ? (fixedHierarchy === 'children' ? t('admin.paymentGetway.catEditSubCategory') : t('admin.paymentGetway.catEditCategory'))
+                                        : (fixedHierarchy === 'children' ? t('admin.paymentGetway.catCreateSubCategory') : t('admin.paymentGetway.catCreateCategory'))}
                                 </h5>
                                 <button
                                     type="button"
                                     className="btn-close"
                                     onClick={handleCloseModal}
-                                    aria-label="Close"
+                                    aria-label={t('admin.paymentGetway.catCloseAria')}
                                 ></button>
                             </div>
                             <form onSubmit={handleSubmit}>
                                 <div className="modal-body">
                                     <div className="mb-5">
-                                        <label className="form-label required">Name</label>
+                                        <label className="form-label required">{t('admin.paymentGetway.catLabelName')}</label>
                                         <input
                                             type="text"
                                             className={`form-control ${formErrors.name_en ? 'is-invalid' : ''}`}
                                             name="name_en"
                                             value={formData.name_en}
                                             onChange={handleInputChange}
-                                            placeholder="Enter category name"
+                                            placeholder={t('admin.paymentGetway.catPlaceholderName')}
                                         />
                                         {formErrors.name_en && (
                                             <div className="invalid-feedback">{getErrorMessage(formErrors.name_en)}</div>
                                         )}
                                     </div>
                                     <div className="mb-5">
-                                        <label className="form-label required">Arabic Name</label>
+                                        <label className="form-label required">{t('admin.paymentGetway.catLabelArabicName')}</label>
                                         <input
                                             type="text"
                                             className={`form-control ${formErrors.name_ar ? 'is-invalid' : ''}`}
                                             name="name_ar"
                                             value={formData.name_ar}
                                             onChange={handleInputChange}
-                                            placeholder="Enter Arabic category name"
+                                            placeholder={t('admin.paymentGetway.catPlaceholderArabicName')}
                                         />
                                         {formErrors.name_ar && (
                                             <div className="invalid-feedback">{getErrorMessage(formErrors.name_ar)}</div>
@@ -681,14 +737,14 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                     </div>
                                     {activeHierarchy === 'children' && (
                                         <div className="mb-5">
-                                            <label className="form-label required">Parent Category</label>
+                                            <label className="form-label required">{t('admin.paymentGetway.catLabelParentCategory')}</label>
                                             <select
                                                 className={`form-select ${formErrors.parent_id ? 'is-invalid' : ''}`}
                                                 name="parent_id"
                                                 value={formData.parent_id}
                                                 onChange={handleInputChange}
                                             >
-                                                <option value="">Select parent category</option>
+                                                <option value="">{t('admin.paymentGetway.catSelectParent')}</option>
                                                 {parentCategories
                                                     .filter((item) => !isEditing || item.id !== currentCategory?.id)
                                                     .map((item) => (
@@ -703,7 +759,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                         </div>
                                     )}
                                     <div className="mb-5">
-                                        <label className="form-label">Image</label>
+                                        <label className="form-label">{t('admin.paymentGetway.catLabelImage')}</label>
                                         <input
                                             type="file"
                                             className={`form-control ${formErrors.image ? 'is-invalid' : ''}`}
@@ -717,7 +773,7 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                             <div className="mt-3">
                                                 <img
                                                     src={formData.image_preview}
-                                                    alt="Category preview"
+                                                    alt={t('admin.paymentGetway.catAltPreview')}
                                                     className="img-fluid rounded border"
                                                     style={{ maxHeight: '120px' }}
                                                 />
@@ -725,14 +781,14 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                         )}
                                     </div>
                                     <div className="mb-5">
-                                        <label className="form-label">Description</label>
+                                        <label className="form-label">{t('admin.paymentGetway.catLabelDescription')}</label>
                                         <textarea
                                             className="form-control"
                                             name="description"
                                             rows="3"
                                             value={formData.description}
                                             onChange={handleInputChange}
-                                            placeholder="Enter category description (optional)"
+                                            placeholder={t('admin.paymentGetway.catPlaceholderDesc')}
                                         ></textarea>
                                     </div>
                                     <div className="mb-0">
@@ -750,15 +806,15 @@ const AdminServiceCategoriesIndex = ({ fixedHierarchy = null, categoryType = 'se
                                 </div>
                                 <div className="modal-footer">
                                     <button type="button" className="btn btn-light" onClick={handleCloseModal}>
-                                        Cancel
+                                        {t('admin.common.cancel')}
                                     </button>
                                     <button type="submit" className="btn btn-primary" disabled={submitting}>
                                         {submitting && (
                                             <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
                                         )}
                                         {submitting
-                                            ? (isEditing ? 'Saving...' : 'Creating...')
-                                            : (isEditing ? 'Update' : 'Create')}
+                                            ? (isEditing ? t('admin.paymentGetway.catSaving') : t('admin.paymentGetway.catCreating'))
+                                            : (isEditing ? t('admin.paymentGetway.catUpdateBtn') : t('admin.paymentGetway.catCreateBtn'))}
                                     </button>
                                 </div>
                             </form>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { ADMIN_ENDPOINTS } from '../../utils/constants';
@@ -8,6 +9,7 @@ import { useToolbar } from '../../contexts/ToolbarContext';
 import BulkActionBar from '../../common/BulkActionBar';
 
 const ServiceTypesPage = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const [types, setTypes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -32,18 +34,18 @@ const ServiceTypesPage = () => {
     });
 
     useEffect(() => {
-        setTitle('Type Management');
+        setTitle(t('admin.paymentGetway.titlesTypeManagement'));
         setActions(
             <button type="button" className="btn btn-sm fw-bold btn-primary" onClick={openCreateModal}>
                 <i className="ki-duotone ki-plus fs-3">
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                <span className="d-none d-md-inline ms-1">Add Type</span>
+                <span className="d-none d-md-inline ms-1">{t('admin.paymentGetway.svcTypeAddType')}</span>
             </button>
         );
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -81,7 +83,7 @@ const ServiceTypesPage = () => {
                 last_page: meta.last_page || 1,
             });
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Failed to fetch service types');
+            toast.error(error?.response?.data?.message || t('admin.paymentGetway.svcTypeFetchFailed'));
         } finally {
             setLoading(false);
         }
@@ -129,22 +131,22 @@ const ServiceTypesPage = () => {
                 });
             }
 
-            toast.success(isEditing ? 'Type updated successfully' : 'Type created successfully');
+            toast.success(isEditing ? t('admin.paymentGetway.svcTypeUpdated') : t('admin.paymentGetway.svcTypeCreated'));
             setShowModal(false);
             fetchTypes();
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Failed to save type');
+            toast.error(error?.response?.data?.message || t('admin.paymentGetway.svcTypeSaveFailed'));
         }
     };
 
     const deleteType = async (item) => {
         const result = await Swal.fire({
-            title: 'Delete Type?',
-            text: `Delete "${item.name_en || item.code}"?`,
+            title: t('admin.paymentGetway.svcTypeDeleteTitle'),
+            text: t('admin.paymentGetway.svcTypeDeleteText', { name: item.name_en || item.code }),
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.paymentGetway.catYesDelete'),
+            cancelButtonText: t('admin.common.cancel'),
         });
         if (!result.isConfirmed) return;
 
@@ -153,10 +155,10 @@ const ServiceTypesPage = () => {
             await axios.delete(ADMIN_ENDPOINTS.SERVICE_TYPE_DETAILS(item.id), {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            toast.success('Type deleted successfully');
+            toast.success(t('admin.paymentGetway.svcTypeDeleted'));
             fetchTypes();
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Failed to delete type');
+            toast.error(error?.response?.data?.message || t('admin.paymentGetway.svcTypeDeleteFailed'));
         }
     };
 
@@ -166,10 +168,10 @@ const ServiceTypesPage = () => {
             await axios.patch(ADMIN_ENDPOINTS.SERVICE_TYPE_TOGGLE_STATUS(item.id), {}, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            toast.success('Status updated successfully');
+            toast.success(t('admin.paymentGetway.svcTypeStatusUpdated'));
             fetchTypes();
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Failed to toggle status');
+            toast.error(error?.response?.data?.message || t('admin.paymentGetway.svcTypeToggleFailed'));
         }
     };
 
@@ -184,11 +186,11 @@ const ServiceTypesPage = () => {
             await axios.post(ADMIN_ENDPOINTS.SERVICE_TYPE_BULK_DELETE, { ids: selectedIds }, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            toast.success('Types deleted successfully');
+            toast.success(t('admin.paymentGetway.svcTypeBulkDeleted'));
             setSelectedIds([]);
             fetchTypes();
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Failed to delete selected types');
+            toast.error(error?.response?.data?.message || t('admin.paymentGetway.svcTypeBulkDeleteFailed'));
         }
     };
 
@@ -208,7 +210,7 @@ const ServiceTypesPage = () => {
                         <input
                             type="text"
                             className="form-control form-control-solid w-250px"
-                            placeholder="Search types..."
+                            placeholder={t('admin.paymentGetway.svcTypeSearchPlaceholder')}
                             value={searchInput}
                             onChange={(e) => setSearchInput(e.target.value)}
                         />
@@ -222,17 +224,17 @@ const ServiceTypesPage = () => {
                                     <th className="w-10px pe-2">
                                         <input type="checkbox" className="form-check-input" checked={types.length > 0 && selectedIds.length === types.length} onChange={handleSelectAll} />
                                     </th>
-                                    <th>Name</th>
-                                    <th>Code</th>
-                                    <th>Status</th>
-                                    <th>Services Count</th>
-                                    <th className="text-end">Actions</th>
+                                    <th>{t('admin.paymentGetway.catColName')}</th>
+                                    <th>{t('admin.paymentGetway.svcTypeLabelCode')}</th>
+                                    <th>{t('admin.paymentGetway.status')}</th>
+                                    <th>{t('admin.paymentGetway.catColServicesCount')}</th>
+                                    <th className="text-end">{t('admin.common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {!loading && types.length === 0 && (
                                     <tr>
-                                        <td colSpan="6" className="text-center py-8">No types found</td>
+                                        <td colSpan="6" className="text-center py-8">{t('admin.paymentGetway.svcTypeNoRows')}</td>
                                     </tr>
                                 )}
                                 {types.map((item) => (
@@ -247,11 +249,11 @@ const ServiceTypesPage = () => {
                                                 }}
                                             />
                                         </td>
-                                        <td>{item.name_en || 'N/A'}</td>
-                                        <td>{item.code || 'N/A'}</td>
+                                        <td>{item.name_en || t('admin.paymentGetway.na')}</td>
+                                        <td>{item.code || t('admin.paymentGetway.na')}</td>
                                         <td>
                                             <button className={`badge badge-light-${item.is_active ? 'success' : 'danger'} border-0`} onClick={() => toggleStatus(item)}>
-                                                {item.is_active ? 'Active' : 'Inactive'}
+                                                {item.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                             </button>
                                         </td>
                                         <td>
@@ -278,35 +280,35 @@ const ServiceTypesPage = () => {
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title">{isEditing ? 'Edit Type' : 'Create Type'}</h5>
+                                <h5 className="modal-title">{isEditing ? t('admin.paymentGetway.svcTypeEditType') : t('admin.paymentGetway.svcTypeCreateType')}</h5>
                                 <button type="button" className="btn-close" onClick={() => setShowModal(false)}></button>
                             </div>
                             <form onSubmit={submitForm}>
                                 <div className="modal-body">
                                     <div className="mb-5">
-                                        <label className="form-label required">Name (English)</label>
+                                        <label className="form-label required">{t('admin.paymentGetway.subCatLabelNameEn')}</label>
                                         <input className="form-control" value={formData.name_en} onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} required />
                                     </div>
                                     <div className="mb-5">
-                                        <label className="form-label required">Name (Arabic)</label>
+                                        <label className="form-label required">{t('admin.paymentGetway.subCatLabelNameAr')}</label>
                                         <input className="form-control" value={formData.name_ar} onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })} required />
                                     </div>
                                     <div className="mb-5">
-                                        <label className="form-label">Code</label>
-                                        <input className="form-control" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} placeholder="Optional" />
+                                        <label className="form-label">{t('admin.paymentGetway.svcTypeLabelCode')}</label>
+                                        <input className="form-control" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} placeholder={t('admin.paymentGetway.svcTypeCodeOptional')} />
                                     </div>
                                     <div className="mb-5">
-                                        <label className="form-label">Description</label>
+                                        <label className="form-label">{t('admin.paymentGetway.catLabelDescription')}</label>
                                         <textarea className="form-control" rows="3" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}></textarea>
                                     </div>
                                     <div className="form-check form-switch">
                                         <input type="checkbox" className="form-check-input" checked={formData.is_active} onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} />
-                                        <label className="form-check-label">Active</label>
+                                        <label className="form-check-label">{t('admin.paymentGetway.catLabelActive')}</label>
                                     </div>
                                 </div>
                                 <div className="modal-footer">
-                                    <button type="button" className="btn btn-light" onClick={() => setShowModal(false)}>Cancel</button>
-                                    <button type="submit" className="btn btn-primary">{isEditing ? 'Update' : 'Create'}</button>
+                                    <button type="button" className="btn btn-light" onClick={() => setShowModal(false)}>{t('admin.common.cancel')}</button>
+                                    <button type="submit" className="btn btn-primary">{isEditing ? t('admin.paymentGetway.catUpdateBtn') : t('admin.paymentGetway.catCreateBtn')}</button>
                                 </div>
                             </form>
                         </div>

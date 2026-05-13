@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { createRole, getPermissions } from '../../../../services/adminRolesService';
 
 const AdminRoleCreate = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -16,10 +18,10 @@ const AdminRoleCreate = () => {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        setTitle('Create Role');
+        setTitle(t('admin.systemRoles.createTitle'));
         setActions(null);
         fetchPermissions();
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t]);
 
     const fetchPermissions = async () => {
         try {
@@ -29,7 +31,7 @@ const AdminRoleCreate = () => {
             }
         } catch (error) {
             console.error('Error fetching permissions:', error);
-            toast.error('Failed to fetch permissions');
+            toast.error(t('admin.systemRoles.permissionsFetchFailed'));
         }
     };
 
@@ -108,17 +110,17 @@ const AdminRoleCreate = () => {
         try {
             const response = await createRole(formData);
             if (response.success) {
-                toast.success('Role created successfully');
+                toast.success(t('admin.systemRoles.roleCreated'));
                 navigate('/admin/system/roles');
             } else {
                 if (response.errors) {
                     setErrors(response.errors);
                 }
-                toast.error(response.error || 'Failed to create role');
+                toast.error(response.error || t('admin.systemRoles.roleCreateFailed'));
             }
         } catch (error) {
             console.error('Error creating role:', error);
-            toast.error('Failed to create role');
+            toast.error(t('admin.systemRoles.roleCreateFailed'));
         } finally {
             setLoading(false);
         }
@@ -161,31 +163,31 @@ const AdminRoleCreate = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Create New Role</h3>
+                <h3 className="card-title">{t('admin.systemRoles.createCardTitle')}</h3>
             </div>
 
             <form onSubmit={handleSubmit}>
                 <div className="card-body">
                     <div className="mb-5">
-                        <label className="form-label required">Role Name</label>
+                        <label className="form-label required">{t('admin.systemRoles.labelRoleName')}</label>
                         <input
                             type="text"
                             className={`form-control ${errors.name ? 'is-invalid' : ''}`}
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="Enter role name"
+                            placeholder={t('admin.systemRoles.placeholderRoleName')}
                         />
                         {errors.name && <div className="invalid-feedback">{errors.name[0]}</div>}
                     </div>
 
                     <div className="mb-5">
-                        <label className="form-label required">Permissions</label>
+                        <label className="form-label required">{t('admin.systemRoles.labelPermissionsRequired')}</label>
                         <div className="d-flex gap-2 mb-3">
                             <button type="button" className="btn btn-sm btn-light" onClick={handleSelectAll}>
-                                Select All
+                                {t('admin.common.selectAll')}
                             </button>
                             <button type="button" className="btn btn-sm btn-light" onClick={handleDeselectAll}>
-                                Deselect All
+                                {t('admin.common.deselectAll')}
                             </button>
                         </div>
 
@@ -271,10 +273,10 @@ const AdminRoleCreate = () => {
                         onClick={() => navigate('/admin/system/roles')}
                         disabled={loading}
                     >
-                        Cancel
+                        {t('admin.common.cancel')}
                     </button>
                     <button type="submit" className="btn btn-primary" disabled={loading}>
-                        {loading ? 'Creating...' : 'Create Role'}
+                        {loading ? t('admin.systemRoles.creating') : t('admin.systemRoles.createRole')}
                     </button>
                 </div>
             </form>

@@ -1,17 +1,20 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Reusable Bulk Action Bar Component
  * Shows selection count and provides actions for selected items
  */
-const BulkActionBar = ({ selectedCount, onClear, onDelete, deleteLabel = 'Delete Selected' }) => {
+const BulkActionBar = ({ selectedCount, onClear, onDelete, deleteLabel }) => {
+    const { t } = useTranslation();
+    const resolvedDeleteLabel = deleteLabel ?? t('admin.common.bulkDeleteSelected');
+
     if (selectedCount === 0) return null;
 
     return (
         <div className="d-flex justify-content-end align-items-center" data-kt-customer-table-toolbar="selected">
             <div className="fw-bold me-5">
-                <span className="me-2">{selectedCount}</span>
-                Selected
+                {t('admin.common.bulkSelected', { count: selectedCount })}
             </div>
             {onClear && (
                 <button
@@ -23,7 +26,7 @@ const BulkActionBar = ({ selectedCount, onClear, onDelete, deleteLabel = 'Delete
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Clear Selection
+                    {t('admin.common.bulkClearSelection')}
                 </button>
             )}
             {onDelete && (
@@ -39,7 +42,7 @@ const BulkActionBar = ({ selectedCount, onClear, onDelete, deleteLabel = 'Delete
                         <span className="path4"></span>
                         <span className="path5"></span>
                     </i>
-                    {deleteLabel}
+                    {resolvedDeleteLabel}
                 </button>
             )}
         </div>
@@ -47,5 +50,3 @@ const BulkActionBar = ({ selectedCount, onClear, onDelete, deleteLabel = 'Delete
 };
 
 export default BulkActionBar;
-
-

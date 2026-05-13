@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
@@ -53,18 +54,18 @@ const AdminMerchantEdit = () => {
     });
 
     useEffect(() => {
-        setTitle('Edit Merchant');
+        setTitle(t('admin.merchantsUI.editTitle'));
         setActions(
             <Link to="/admin/merchants" className="btn btn-sm btn-light-danger">
                 <i className="ki-duotone ki-arrow-left fs-2">
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back
+                {t('admin.merchantsUI.back')}
             </Link>
         );
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t, i18n.language]);
 
     useEffect(() => {
         fetchMerchant();
@@ -122,7 +123,7 @@ const AdminMerchantEdit = () => {
                 }
             }
         } catch (error) {
-            toast.error('Failed to load merchant');
+            toast.error(t('admin.merchantsUI.loadMerchantFailed'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -323,7 +324,7 @@ const AdminMerchantEdit = () => {
         } catch (error) {
             console.error('Failed to fetch business types:', error);
             console.error('Error response:', error.response?.data);
-            toast.error('Failed to load business types');
+            toast.error(t('admin.merchantsUI.loadBusinessTypesFailed'));
             setBusinessTypes([]);
         } finally {
             setLoadingBusinessTypes(false);
@@ -381,11 +382,11 @@ const AdminMerchantEdit = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('Merchant updated successfully');
+                toast.success(t('admin.merchantsUI.updateSuccess'));
                 navigate(`/admin/merchants/${id}`);
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to update merchant');
+            toast.error(error.response?.data?.message || t('admin.merchantsUI.updateFailed'));
             console.error(error);
         } finally {
             setSaving(false);
@@ -409,7 +410,7 @@ const AdminMerchantEdit = () => {
                             <div className="card">
                                 <div className="card-header border-0">
                                     <div className="card-title">
-                                        <h2>Edit Merchant: {formData.name}</h2>
+                                        <h2>{t('admin.merchantsUI.editCardTitle')}: {formData.name}</h2>
                                     </div>
                                 </div>
 
@@ -417,7 +418,7 @@ const AdminMerchantEdit = () => {
                                     <div className="row">
                                         {/* Name */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Merchant Name</label>
+                                            <label className="form-label fw-bold required">{t('admin.merchantsUI.labelMerchantName')}</label>
                                             <input
                                                 type="text"
                                                 name="name"
@@ -430,7 +431,7 @@ const AdminMerchantEdit = () => {
 
                                         {/* Business Name */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Business Name</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelBusinessNameField')}</label>
                                             <input
                                                 type="text"
                                                 name="business_name"
@@ -442,7 +443,7 @@ const AdminMerchantEdit = () => {
 
                                         {/* Owner Name */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Owner Name</label>
+                                            <label className="form-label fw-bold required">{t('admin.merchantsUI.labelOwnerName')}</label>
                                             <input
                                                 type="text"
                                                 name="owner_name"
@@ -455,7 +456,7 @@ const AdminMerchantEdit = () => {
 
                                         {/* Email */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Email</label>
+                                            <label className="form-label fw-bold required">{t('admin.merchantsUI.labelEmail')}</label>
                                             <input
                                                 type="email"
                                                 name="email"
@@ -468,7 +469,7 @@ const AdminMerchantEdit = () => {
 
                                         {/* Phone */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Phone</label>
+                                            <label className="form-label fw-bold required">{t('admin.merchantsUI.labelPhone')}</label>
                                             <input
                                                 type="text"
                                                 name="phone"
@@ -481,7 +482,7 @@ const AdminMerchantEdit = () => {
 
                                         {/* Business Phone */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Business Phone</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelBusinessPhone')}</label>
                                             <input
                                                 type="text"
                                                 name="business_phone"
@@ -493,7 +494,7 @@ const AdminMerchantEdit = () => {
 
                                         {/* Business Type */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Business Type</label>
+                                            <label className="form-label fw-bold required">{t('admin.merchantsUI.labelBusinessType')}</label>
                                             <select
                                                 name="business_type"
                                                 className="form-select"
@@ -503,7 +504,7 @@ const AdminMerchantEdit = () => {
                                                 disabled={loadingBusinessTypes}
                                             >
                                                 <option value="">
-                                                    {loadingBusinessTypes ? 'Loading business types...' : 'Select Business Type'}
+                                                    {loadingBusinessTypes ? t('admin.merchantsUI.loadingBusinessTypes') : t('admin.merchantsUI.selectBusinessType')}
                                                 </option>
                                                 {businessTypes.map((businessType) => (
                                                     <option key={businessType.id || businessType.value} value={businessType.value || businessType.id}>
@@ -512,13 +513,13 @@ const AdminMerchantEdit = () => {
                                                 ))}
                                             </select>
                                             {!loadingBusinessTypes && businessTypes.length === 0 && (
-                                                <div className="form-text text-warning">No business types available</div>
+                                                <div className="form-text text-warning">{t('admin.merchantsUI.noBusinessTypes')}</div>
                                             )}
                                         </div>
 
                                         {/* Country */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Country</label>
+                                            <label className="form-label fw-bold required">{t('admin.merchantsUI.labelCountry')}</label>
                                             <div className="position-relative">
                                                 <div 
                                                     className="form-control h-50px d-flex align-items-center justify-content-between"
@@ -538,7 +539,7 @@ const AdminMerchantEdit = () => {
                                                                 <span className="text-gray-800">{selectedCountry.text || selectedCountry.name}</span>
                                                             </>
                                                         ) : (
-                                                            <span className="text-muted">Select Country</span>
+                                                            <span className="text-muted">{t('admin.merchantsUI.selectCountry')}</span>
                                                         )}
                                                     </div>
                                                     <div className="d-flex align-items-center">
@@ -567,7 +568,7 @@ const AdminMerchantEdit = () => {
                                                             <input 
                                                                 type="text" 
                                                                 className="form-control form-control-sm mb-2" 
-                                                                placeholder="Search countries..."
+                                                                placeholder={t('admin.merchantsUI.searchCountries')}
                                                                 value={countrySearchTerm}
                                                                 onChange={(e) => handleCountrySearch(e.target.value)}
                                                                 onClick={(e) => e.stopPropagation()}
@@ -593,7 +594,7 @@ const AdminMerchantEdit = () => {
                                                                 </div>
                                                             ))
                                                         ) : (
-                                                            <div className="p-3 text-muted text-center">No countries found</div>
+                                                            <div className="p-3 text-muted text-center">{t('admin.merchantsUI.noCountriesFound')}</div>
                                                         )}
                                                     </div>
                                                 )}
@@ -602,7 +603,7 @@ const AdminMerchantEdit = () => {
 
                                         {/* City */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">City</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelCityOptional')}</label>
                                             <div className="position-relative">
                                                 <div 
                                                     className="form-control h-50px d-flex align-items-center justify-content-between"
@@ -617,7 +618,7 @@ const AdminMerchantEdit = () => {
                                                             <span className="text-gray-800">{selectedCity.text || selectedCity.name}</span>
                                                         ) : (
                                                             <span className="text-muted">
-                                                                {!(selectedCountry || formData.country_id) ? 'Please select a country first' : 'Select City'}
+                                                                {!(selectedCountry || formData.country_id) ? t('admin.merchantsUI.selectCityFirst') : t('admin.merchantsUI.selectCity')}
                                                             </span>
                                                         )}
                                                     </div>
@@ -647,7 +648,7 @@ const AdminMerchantEdit = () => {
                                                             <input 
                                                                 type="text" 
                                                                 className="form-control form-control-sm mb-2" 
-                                                                placeholder="Search cities..."
+                                                                placeholder={t('admin.merchantsUI.searchCities')}
                                                                 value={citySearchTerm}
                                                                 onChange={(e) => handleCitySearch(e.target.value)}
                                                                 onClick={(e) => e.stopPropagation()}
@@ -666,17 +667,17 @@ const AdminMerchantEdit = () => {
                                                                 </div>
                                                             ))
                                                         ) : (
-                                                            <div className="p-3 text-muted text-center">No cities found</div>
+                                                            <div className="p-3 text-muted text-center">{t('admin.merchantsUI.noCitiesFound')}</div>
                                                         )}
                                                     </div>
                                                 )}
                                             </div>
-                                            <div className="form-text">Optional</div>
+                                            <div className="form-text">{t('admin.merchantsUI.cityOptionalHint')}</div>
                                         </div>
 
                                         {/* Address */}
                                         <div className="col-md-12 mb-7">
-                                            <label className="form-label fw-bold">Address</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelAddress')}</label>
                                             <textarea
                                                 name="address"
                                                 className="form-control"
@@ -688,7 +689,7 @@ const AdminMerchantEdit = () => {
 
                                         {/* Trade License Number */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Trade License Number</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelTradeLicenseNumber')}</label>
                                             <input
                                                 type="text"
                                                 name="trade_license_number"
@@ -700,7 +701,7 @@ const AdminMerchantEdit = () => {
 
                                         {/* Tax Number */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Tax Number</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelTaxNumber')}</label>
                                             <input
                                                 type="text"
                                                 name="tax_number"
@@ -712,26 +713,26 @@ const AdminMerchantEdit = () => {
 
                                         {/* Plan Selection */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Plan</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelPlan')}</label>
                                             <select
                                                 name="plan_id"
                                                 className="form-select"
                                                 value={formData.plan_id}
                                                 onChange={handleInputChange}
                                             >
-                                                <option value="">Select Plan</option>
+                                                <option value="">{t('admin.merchantsUI.selectPlan')}</option>
                                                 {plans.map((plan) => (
                                                     <option key={plan.id} value={plan.id}>
-                                                        {plan.name || plan.text} - ${plan.price ? parseFloat(plan.price).toFixed(2) : '0.00'} / {plan.plan_type || 'Monthly'}
+                                                        {plan.name || plan.text} - ${plan.price ? parseFloat(plan.price).toFixed(2) : '0.00'}{t('admin.merchantsUI.planPriceSuffix', { type: plan.plan_type || t('admin.merchantsUI.monthly') })}
                                                     </option>
                                                 ))}
                                             </select>
-                                            <div className="form-text">Select a plan to assign to this merchant</div>
+                                            <div className="form-text">{t('admin.merchantsUI.planAssignHint')}</div>
                                         </div>
 
                                         {/* Is Active */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Active Status</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelActiveStatus')}</label>
                                             <div className="form-check form-switch form-check-custom form-check-solid mt-2">
                                                 <input
                                                     className="form-check-input"
@@ -741,14 +742,14 @@ const AdminMerchantEdit = () => {
                                                     onChange={handleInputChange}
                                                 />
                                                 <label className="form-check-label">
-                                                    {formData.is_active ? 'Active' : 'Inactive'}
+                                                    {formData.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                                 </label>
                                             </div>
                                         </div>
 
                                         {/* Scopes */}
                                         <div className="col-md-12 mb-7">
-                                            <label className="form-label fw-bold">Scopes</label>
+                                            <label className="form-label fw-bold">{t('admin.merchantsUI.labelScopes')}</label>
                                             <div className="row">
                                                 {availableScopes.map((scope) => (
                                                     <div key={scope.id || scope.key} className="col-md-6 mb-3">
@@ -771,7 +772,7 @@ const AdminMerchantEdit = () => {
                                                 ))}
                                             </div>
                                             {availableScopes.length === 0 && (
-                                                <div className="text-muted">No scopes available</div>
+                                                <div className="text-muted">{t('admin.merchantsUI.noScopesAvailable')}</div>
                                             )}
                                         </div>
                                     </div>
@@ -781,7 +782,7 @@ const AdminMerchantEdit = () => {
                                         <div className="col-12">
                                             <div className="d-flex justify-content-end gap-3">
                                                 <Link to={`/admin/merchants/${id}`} className="btn btn-light">
-                                                    Cancel
+                                                    {t('admin.merchantsUI.cancel')}
                                                 </Link>
                                                 <button
                                                     type="submit"
@@ -791,7 +792,7 @@ const AdminMerchantEdit = () => {
                                                     {saving ? (
                                                         <>
                                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                                            Saving...
+                                                            {t('admin.merchantsUI.saving')}
                                                         </>
                                                     ) : (
                                                         <>
@@ -799,7 +800,7 @@ const AdminMerchantEdit = () => {
                                                                 <span className="path1"></span>
                                                                 <span className="path2"></span>
                                                             </i>
-                                                            Save Changes
+                                                            {t('admin.merchantsUI.saveChanges')}
                                                         </>
                                                     )}
                                                 </button>

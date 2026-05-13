@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FilePond, registerPlugin } from 'react-filepond';
 import FilePondPluginFileValidateType from 'filepond-plugin-file-validate-type';
 import FilePondPluginFileValidateSize from 'filepond-plugin-file-validate-size';
@@ -29,6 +30,7 @@ const FilePondUpload = ({
     fieldErrors = {},
     isImage = false
 }) => {
+    const { t } = useTranslation();
     const [files, setFiles] = useState([]);
     const [uploadedFileId, setUploadedFileId] = useState(null);
     const [modalImageUrl, setModalImageUrl] = useState(null);
@@ -423,12 +425,12 @@ const FilePondUpload = ({
                     onremovefile={handleRemoveFile}
                     name="file"
                     id={name}
-                    labelIdle={`Drag & Drop your file here or <span class="filepond--label-action">Browse</span>`}
-                    labelFileProcessing="Uploading..."
-                    labelFileProcessingComplete="Upload complete"
-                    labelFileProcessingError="Upload failed"
-                    labelButtonRemoveItem="Remove"
-                    labelButtonProcessItem="Upload"
+                    labelIdle={t('auth.filePond.labelIdle')}
+                    labelFileProcessing={t('auth.filePond.processing')}
+                    labelFileProcessingComplete={t('auth.filePond.processingComplete')}
+                    labelFileProcessingError={t('auth.filePond.processingError')}
+                    labelButtonRemoveItem={t('auth.filePond.remove')}
+                    labelButtonProcessItem={t('auth.filePond.upload')}
                 />
             </div>
 
@@ -441,7 +443,7 @@ const FilePondUpload = ({
 
             <small className="form-text text-muted mt-2">
                 <i className="fas fa-info-circle me-1"></i>
-                Files are uploaded to the server immediately for processing. Click on the file to view it.
+                {t('auth.filePond.hint')}
             </small>
             
             </div>
@@ -464,14 +466,14 @@ const FilePondUpload = ({
                                     type="button" 
                                     className="btn-close btn-close-white" 
                                     onClick={() => setModalImageUrl(null)}
-                                    aria-label="Close"
+                                    aria-label={t('auth.common.close')}
                                     style={{ filter: 'invert(1)' }}
                                 ></button>
                             </div>
                             <div className="modal-body p-0" style={{ textAlign: 'center', padding: '20px' }}>
                                 <img 
                                     src={modalImageUrl} 
-                                    alt="Preview" 
+                                    alt={t('auth.common.previewAlt')} 
                                     style={{ 
                                         maxWidth: '100%', 
                                         maxHeight: '90vh', 

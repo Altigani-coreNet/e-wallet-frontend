@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { AUTH_ENDPOINTS } from '../../../utils/constants';
 
 const ResetPasswordFromEmail = () => {
+    const { t } = useTranslation();
     const { token: tokenParam } = useParams();
     const token = (() => {
         if (!tokenParam) return '';
@@ -40,18 +42,18 @@ const ResetPasswordFromEmail = () => {
                 const isSuccess = payload.success === true || payload.status === true;
                 setTokenValid(isSuccess);
                 if (!isSuccess) {
-                    toast.error(payload.message || 'Invalid or expired reset token.');
+                    toast.error(payload.message || t('auth.resetFromEmail.toastInvalidToken'));
                 }
             } catch (error) {
                 setTokenValid(false);
-                toast.error(error.response?.data?.message || 'Invalid or expired reset token.');
+                toast.error(error.response?.data?.message || t('auth.resetFromEmail.toastInvalidToken'));
             } finally {
                 setCheckingToken(false);
             }
         };
 
         validateToken();
-    }, [token]);
+    }, [token, t]);
 
     const passwordValidation = useMemo(() => ({
         length: password.length >= 8,
@@ -68,7 +70,7 @@ const ResetPasswordFromEmail = () => {
         e.preventDefault();
 
         if (!isPasswordValid) {
-            toast.error('Please meet all password requirements.');
+            toast.error(t('auth.resetFromEmail.toastMeetAll'));
             return;
         }
 
@@ -91,14 +93,14 @@ const ResetPasswordFromEmail = () => {
             const payload = response.data || {};
             const isSuccess = payload.success === true || payload.status === true;
             if (isSuccess) {
-                toast.success(payload.message || 'Password reset successfully.');
+                toast.success(payload.message || t('auth.resetFromEmail.toastSuccess'));
                 navigate('/login');
                 return;
             }
 
-            toast.error(payload.message || 'Failed to reset password.');
+            toast.error(payload.message || t('auth.resetFromEmail.toastFailed'));
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to reset password.');
+            toast.error(error.response?.data?.message || t('auth.resetFromEmail.toastFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -129,12 +131,12 @@ const ResetPasswordFromEmail = () => {
                             <img
                                 className="theme-light-show mx-auto mw-100 w-150px w-lg-300px mb-10 mb-lg-20"
                                 src="/FastPOS_logo-03.png"
-                                alt="FastPOS Logo"
+                                alt={t('auth.common.fastPosLogoAlt')}
                             />
                             <img
                                 className="theme-dark-show mx-auto mw-100 w-150px w-lg-300px mb-10 mb-lg-20"
                                 src="/FastPOS_logo-03.png"
-                                alt="FastPOS Logo"
+                                alt={t('auth.common.fastPosLogoAlt')}
                             />
                         </div>
                     </div>
@@ -146,14 +148,14 @@ const ResetPasswordFromEmail = () => {
                             <img
                                 className="mx-auto mw-100 w-150px"
                                 src="/FastPOS_logo-03.png"
-                                alt="FastPOS Logo"
+                                alt={t('auth.common.fastPosLogoAlt')}
                             />
                         </div>
 
                         <div className="bg-body d-flex flex-column flex-center rounded-4 w-md-600px py-15 px-5">
                             <div className="d-flex flex-center flex-column align-items-stretch w-md-400px">
                         {checkingToken ? (
-                            <div className="form w-100" aria-busy="true" aria-label="Loading">
+                            <div className="form w-100" aria-busy="true" aria-label={t('auth.common.ariaLoading')}>
                                 <div className="text-center mb-10">
                                     <div className="placeholder-glow mb-3 d-flex justify-content-center">
                                         <span className="placeholder col-8 col-lg-6 rounded" style={{ height: '2rem' }}></span>
@@ -200,23 +202,23 @@ const ResetPasswordFromEmail = () => {
                             </div>
                         ) : !tokenValid ? (
                             <div className="text-center">
-                                <h1 className="text-gray-900 fw-bolder mb-3">Reset Link Invalid</h1>
+                                <h1 className="text-gray-900 fw-bolder mb-3">{t('auth.resetFromEmail.invalidTitle')}</h1>
                                 <div className="text-gray-500 fw-semibold fs-6 mb-8">
-                                    This link is invalid or expired. Please request a new password reset link.
+                                    {t('auth.resetFromEmail.invalidSubtitle')}
                                 </div>
-                                <Link to="/forgot-password" className="btn btn-primary">Go to Forgot Password</Link>
+                                <Link to="/forgot-password" className="btn btn-primary">{t('auth.resetFromEmail.goToForgot')}</Link>
                             </div>
                         ) : (
                             <form className="form w-100" onSubmit={handleSubmit} noValidate>
                                 <div className="text-center mb-10">
-                                    <h1 className="text-gray-900 fw-bolder mb-3">Set New Password</h1>
+                                    <h1 className="text-gray-900 fw-bolder mb-3">{t('auth.resetFromEmail.setNewTitle')}</h1>
                                     <div className="text-gray-500 fw-semibold fs-6">
-                                        Enter your new password and confirmation.
+                                        {t('auth.resetFromEmail.setNewSubtitle')}
                                     </div>
                                 </div>
 
                                 <div className="fv-row mb-8">
-                                    <label className="form-label fw-bolder text-dark fs-6">Password</label>
+                                    <label className="form-label fw-bolder text-dark fs-6">{t('auth.common.password')}</label>
                                     <div className="position-relative">
                                         <input
                                             type={showPassword ? 'text' : 'password'}
@@ -238,7 +240,7 @@ const ResetPasswordFromEmail = () => {
                                 </div>
 
                                 <div className="fv-row mb-8">
-                                    <label className="form-label fw-bolder text-dark fs-6">Confirm Password</label>
+                                    <label className="form-label fw-bolder text-dark fs-6">{t('auth.common.confirmPassword')}</label>
                                     <div className="position-relative">
                                         <input
                                             type={showPasswordConfirmation ? 'text' : 'password'}
@@ -260,19 +262,19 @@ const ResetPasswordFromEmail = () => {
                                 </div>
 
                                 <div className="mb-8 fs-7">
-                                    <div className={passwordValidation.length ? 'text-success' : 'text-gray-500'}>At least 8 characters</div>
-                                    <div className={passwordValidation.uppercase ? 'text-success' : 'text-gray-500'}>One uppercase letter</div>
-                                    <div className={passwordValidation.lowercase ? 'text-success' : 'text-gray-500'}>One lowercase letter</div>
-                                    <div className={passwordValidation.number ? 'text-success' : 'text-gray-500'}>One number</div>
-                                    <div className={passwordValidation.special ? 'text-success' : 'text-gray-500'}>One special character</div>
-                                    <div className={passwordValidation.match ? 'text-success' : 'text-gray-500'}>Password and confirmation must match</div>
+                                    <div className={passwordValidation.length ? 'text-success' : 'text-gray-500'}>{t('auth.passwordRules.atLeast8')}</div>
+                                    <div className={passwordValidation.uppercase ? 'text-success' : 'text-gray-500'}>{t('auth.passwordRules.uppercase')}</div>
+                                    <div className={passwordValidation.lowercase ? 'text-success' : 'text-gray-500'}>{t('auth.passwordRules.lowercase')}</div>
+                                    <div className={passwordValidation.number ? 'text-success' : 'text-gray-500'}>{t('auth.passwordRules.number')}</div>
+                                    <div className={passwordValidation.special ? 'text-success' : 'text-gray-500'}>{t('auth.passwordRules.special')}</div>
+                                    <div className={passwordValidation.match ? 'text-success' : 'text-gray-500'}>{t('auth.passwordRules.match')}</div>
                                 </div>
 
                                 <div className="d-flex flex-wrap justify-content-center pb-lg-0">
                                     <button type="submit" className="btn btn-primary me-4" disabled={submitting || !isPasswordValid}>
-                                        {submitting ? 'Resetting...' : 'Reset Password'}
+                                        {submitting ? t('auth.common.resetting') : t('auth.forgotPassword.resetPassword')}
                                     </button>
-                                    <Link to="/login" className="btn btn-light">Cancel</Link>
+                                    <Link to="/login" className="btn btn-light">{t('auth.common.cancel')}</Link>
                                 </div>
                             </form>
                         )}

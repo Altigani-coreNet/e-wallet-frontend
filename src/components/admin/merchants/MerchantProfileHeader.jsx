@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AUTH_SERVICE_BASE } from '../../../utils/constants';
 
 const resolveAuthAssetUrl = (path) => {
@@ -27,6 +28,7 @@ const MerchantProfileHeader = ({
     onDelete,
     disableActions = false
 }) => {
+    const { t } = useTranslation();
     const [logoError, setLogoError] = useState(false);
 
     useEffect(() => {
@@ -68,42 +70,42 @@ const MerchantProfileHeader = ({
         </li>
     );
 
-    const stats = [
+    const stats = useMemo(() => [
         {
             value: statistics.total_branches ?? merchant?.branches?.length ?? 0,
-            label: 'Branches',
+            label: t('admin.merchantsUI.statsBranches'),
             iconClass: 'svg-icon-success'
         },
         {
             value: statistics.total_terminals ?? merchant?.terminals?.length ?? 0,
-            label: 'Terminals',
+            label: t('admin.merchantsUI.statsTerminals'),
             iconClass: 'svg-icon-primary'
         },
         {
             value: statistics.total_users ?? merchant?.users?.length ?? 0,
-            label: 'Users',
+            label: t('admin.merchantsUI.statsUsers'),
             iconClass: 'svg-icon-dark'
         },
         {
             value: statistics.total_transactions ?? merchant?.transactions_count ?? 0,
-            label: 'Transactions',
+            label: t('admin.merchantsUI.statsTransactions'),
             iconClass: 'svg-icon-danger'
         }
-    ];
+    ], [statistics.total_branches, statistics.total_terminals, statistics.total_users, statistics.total_transactions, merchant?.branches?.length, merchant?.terminals?.length, merchant?.users?.length, merchant?.transactions_count, t]);
 
     const latestLogs = merchant.latest_logs || merchant.logs || [];
     const missingTooltip = missing.length > 0 ? missing.join('\n') : '';
 
-    const navItems = [
-        { key: 'overview', label: 'Overview', path: basePath },
-        { key: 'events', label: 'Events', path: `${basePath}/events` },
-        { key: 'transactions', label: 'Transactions', path: `${basePath}/transactions` },
-        { key: 'users', label: 'Users', path: `${basePath}/users` },
-        { key: 'terminals', label: 'Terminals', path: `${basePath}/terminals` },
-        { key: 'branches', label: 'Branches', path: `${basePath}/branches` },
-        { key: 'attachments', label: 'Attachments', path: `${basePath}/attachments` },
-        { key: 'change-requests', label: 'Change Requests', path: `${basePath}/change-requests` },
-    ];
+    const navItems = useMemo(() => [
+        { key: 'overview', label: t('admin.merchantsUI.tabOverview'), path: basePath },
+        { key: 'events', label: t('admin.merchantsUI.tabEvents'), path: `${basePath}/events` },
+        { key: 'transactions', label: t('admin.merchantsUI.tabTransactions'), path: `${basePath}/transactions` },
+        { key: 'users', label: t('admin.merchantsUI.tabUsers'), path: `${basePath}/users` },
+        { key: 'terminals', label: t('admin.merchantsUI.tabTerminals'), path: `${basePath}/terminals` },
+        { key: 'branches', label: t('admin.merchantsUI.tabBranches'), path: `${basePath}/branches` },
+        { key: 'attachments', label: t('admin.merchantsUI.tabAttachments'), path: `${basePath}/attachments` },
+        { key: 'change-requests', label: t('admin.merchantsUI.tabChangeRequests'), path: `${basePath}/change-requests` },
+    ], [basePath, t]);
 
     return (
         <div className={`card mb-5 ${pendingChangeRequests > 0 ? 'mb-xl-10' : ''}`}>
@@ -179,7 +181,7 @@ const MerchantProfileHeader = ({
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Edit
+                                            {t('admin.common.edit')}
                                         </Link>
                                         <button
                                             type="button"
@@ -187,33 +189,33 @@ const MerchantProfileHeader = ({
                                             data-kt-menu-trigger="click"
                                             data-kt-menu-placement="bottom-end"
                                         >
-                                            Actions
+                                            {t('admin.merchantsIndex.colActions')}
                                             <i className="ki-duotone ki-down fs-5 ms-1"></i>
                                         </button>
                                         <div className="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-150px py-4">
                                             {canApprove && (
                                                 <button className="menu-link px-3 bg-light-success text-success border-0 w-100 text-start" onClick={() => handleAction(onApprove)} disabled={disableActions}>
-                                                    Approve
+                                                    {t('admin.common.approve')}
                                                 </button>
                                             )}
                                             {canReject && (
                                                 <button className="menu-link px-3 bg-light-danger text-danger border-0 w-100 text-start" onClick={() => handleAction(onReject)} disabled={disableActions}>
-                                                    Reject
+                                                    {t('admin.common.reject')}
                                                 </button>
                                             )}
                                             {canSuspend && (
                                                 <button className="menu-link px-3 text-warning border-0 w-100 text-start" onClick={() => handleAction(onSuspend)} disabled={disableActions}>
-                                                    Suspend
+                                                    {t('admin.common.suspend')}
                                                 </button>
                                             )}
                                             {canUnsuspend && (
                                                 <button className="menu-link px-3 text-success border-0 w-100 text-start" onClick={() => handleAction(onUnsuspend)} disabled={disableActions}>
-                                                    Unsuspend
+                                                    {t('admin.common.unsuspend')}
                                                 </button>
                                             )}
                                             <div className="menu-item px-3">
                                                 <button className="menu-link px-3 text-danger border-0 w-100 text-start" onClick={() => handleAction(onDelete)} disabled={disableActions}>
-                                                    Delete
+                                                    {t('admin.common.delete')}
                                                 </button>
                                             </div>
                                         </div>
@@ -242,23 +244,23 @@ const MerchantProfileHeader = ({
                                     className="d-flex justify-content-between w-100 mt-auto mb-2"
                                     title={missingTooltip}
                                 >
-                                    <span className="fw-bold fs-6 text-gray-400">Profile Completion</span>
+                                    <span className="fw-bold fs-6 text-gray-400">{t('admin.merchantsUI.profileCompletion')}</span>
                                     <span className="fw-bolder fs-6">{completion}%</span>
                                 </div>
                                 <div className="h-5px mx-3 w-100 bg-light mb-3" title={missingTooltip}>
                                     <div className="bg-success rounded h-5px" role="progressbar" style={{ width: `${completion}%` }} aria-valuenow={completion} aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
                                 {missing.length === 0 ? (
-                                    <div className="text-success fw-semibold">Profile complete</div>
+                                    <div className="text-success fw-semibold">{t('admin.merchantsUI.profileComplete')}</div>
                                 ) : (
-                                    <div className="text-muted small">Hover to view missing requirements.</div>
+                                    <div className="text-muted small">{t('admin.merchantsUI.hoverMissingHint')}</div>
                                 )}
                                 <div className="text-center w-100 mt-3">
                                     {statusBadge ? (
                                         <span dangerouslySetInnerHTML={{ __html: statusBadge }}></span>
                                     ) : (
                                         <span className={`btn btn-sm btn-${merchant.status === 'approved' ? 'light-success' : 'light-warning'} px-9 py-4`}>
-                                            <span className="indicator-label">{merchant.status ? merchant.status.charAt(0).toUpperCase() + merchant.status.slice(1) : 'Pending'}</span>
+                                            <span className="indicator-label">{merchant.status ? merchant.status.charAt(0).toUpperCase() + merchant.status.slice(1) : t('admin.common.pending')}</span>
                                         </span>
                                     )}
                                 </div>
@@ -275,8 +277,8 @@ const MerchantProfileHeader = ({
                             <span className="path3"></span>
                         </i>
                         <div className="d-flex flex-column">
-                            <h4 className="mb-1 text-warning">Pending Change Requests</h4>
-                            <span>This merchant has {pendingChangeRequests} change request(s) awaiting review.</span>
+                            <h4 className="mb-1 text-warning">{t('admin.merchantsUI.pendingChangeRequestsTitle')}</h4>
+                            <span>{t('admin.merchantsUI.pendingChangeRequestsProfile', { count: pendingChangeRequests })}</span>
                             <div className="mt-2">
                                 <a href="#change-requests" className="btn btn-warning btn-sm">
                                     <i className="ki-duotone ki-eye fs-5">
@@ -284,7 +286,7 @@ const MerchantProfileHeader = ({
                                         <span className="path2"></span>
                                         <span className="path3"></span>
                                     </i>
-                                    Review Changes
+                                    {t('admin.merchantsUI.reviewChanges')}
                                 </a>
                             </div>
                         </div>

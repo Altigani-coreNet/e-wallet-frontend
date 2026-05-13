@@ -1,22 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import QRCode from 'react-qr-code';
+import html2pdf from 'html2pdf.js';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { SOFTPOS_ENDPOINTS } from '../../utils/constants';
+import {
+    buildReceiptPdfPageSizeMm,
+    RECEIPT_PDF_MARGIN_MM,
+    formatInvoicePdfFilenameDate,
+} from './PosLinkInvoicePrint';
 
 const PosInvoicePrint = () => {
-    const { id, uuid } = useParams(); // id = encrypted POS token, uuid = payment-link UUID
+    const { t } = useTranslation();
+    const { id } = useParams(); // encrypted POS token for /pos-invoice/:id (payment-link invoices use PosLinkInvoicePrint)
+    const receiptPdfRef = useRef(null);
+    const pdfBusyRef = useRef(false);
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [pdfBusy, setPdfBusy] = useState(false);
 
     useEffect(() => {
         const fetchInvoice = async () => {
             try {
                 setLoading(true);
-                const endpoint = uuid
-                    ? SOFTPOS_ENDPOINTS.LINK_INVOICE_PUBLIC(uuid)
-                    : SOFTPOS_ENDPOINTS.POS_INVOICE_PUBLIC(id);
+                const endpoint = SOFTPOS_ENDPOINTS.POS_INVOICE_PUBLIC(id);
                 const response = await fetch(endpoint);
                 const result = await response.json();
 
@@ -25,22 +34,57 @@ const PosInvoicePrint = () => {
                 if (response.ok && result.data) {
                     setInvoice(result.data);
                 } else {
-                    setError(result.message || 'Failed to load invoice');
+                    setError(result.message || t('posInvoicePrint.errors.failedToLoad'));
                 }
             } catch (err) {
                 console.error('Error fetching POS invoice:', err);
-                setError('Failed to load invoice. Please try again.');
+                setError(t('posInvoicePrint.errors.failedToLoadRetry'));
             } finally {
                 setLoading(false);
             }
         };
 
-        if (id || uuid) fetchInvoice();
-    }, [id, uuid]);
+        if (id) fetchInvoice();
+    }, [id, t]);
 
     const handlePrint = () => {
         window.print();
     };
+
+    const handleDownloadPdf = useCallback(async () => {
+        const el = receiptPdfRef.current;
+        if (!el || pdfBusyRef.current) return;
+        pdfBusyRef.current = true;
+        setPdfBusy(true);
+        try {
+            const { widthMm, heightMm } = buildReceiptPdfPageSizeMm(el);
+            const options = {
+                margin: RECEIPT_PDF_MARGIN_MM,
+                filename: `invoice-${formatInvoicePdfFilenameDate(invoice)}.pdf`,
+                image: { type: 'jpeg', quality: 0.95 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: false,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: [widthMm, heightMm],
+                    orientation: 'portrait',
+                },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+            };
+            await html2pdf().set(options).from(el).save();
+        } catch (e) {
+            console.error('PDF generation failed:', e);
+            window.alert(t('posInvoicePrint.errors.pdfGenerationFailed'));
+        } finally {
+            pdfBusyRef.current = false;
+            setPdfBusy(false);
+        }
+    }, [invoice, t]);
 
     const getCurrencySymbol = () => {
         return invoice?.currency_symbol || invoice?.currency_object?.symbol || '$';
@@ -82,7 +126,7 @@ const PosInvoicePrint = () => {
         return (
             <div className="container mt-5">
                 <div className="alert alert-danger" role="alert">
-                    <h4 className="alert-heading">Error</h4>
+                    <h4 className="alert-heading">{t('posInvoicePrint.errors.title')}</h4>
                     <p>{error}</p>
                 </div>
             </div>
@@ -94,20 +138,31 @@ const PosInvoicePrint = () => {
     return (
         <div className="invoice-container">
             {/* Print Controls */}
-            <div className="no-print mb-4 d-flex justify-content-end align-items-center" style={{ padding: '20px' }}>
-                <button className="btn btn-primary" onClick={handlePrint}>
+            <div
+                className="no-print mb-4 d-flex justify-content-end align-items-center flex-wrap gap-2"
+                style={{ padding: '20px' }}
+            >
+                <button
+                    type="button"
+                    className="btn btn-outline-primary"
+                    onClick={() => void handleDownloadPdf()}
+                    disabled={pdfBusy}
+                >
+                    {pdfBusy ? t('posInvoicePrint.actions.generatingPdf') : t('posInvoicePrint.actions.downloadPdf')}
+                </button>
+                <button type="button" className="btn btn-primary" onClick={handlePrint}>
                     <i className="ki-duotone ki-printer fs-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                         <span className="path3"></span>
                     </i>
-                    Print Invoice
+                    {t('posInvoicePrint.actions.printInvoice')}
                 </button>
             </div>
 
             {/* Receipt Content */}
             <div className="receipt-wrapper">
-                <div className="receipt-content">
+                <div ref={receiptPdfRef} className="receipt-content">
                     {/* Logo & Branding */}
                     <div className="receipt-header">
                         <div className="receipt-logo">
@@ -118,13 +173,13 @@ const PosInvoicePrint = () => {
 
                     {/* Merchant Info */}
                     <div className="merchant-info">
-                        <div className="merchant-name">{invoice.shop?.name || 'Shop'}</div>
+                        <div className="merchant-name">{invoice.shop?.name || t('posInvoicePrint.placeholders.shop')}</div>
                     </div>
 
                     {/* Merchant Address */}
                     <div className="merchant-address-section">
                         <div className="merchant-address">
-                            {invoice.shop?.address || 'Merchant Address'}
+                            {invoice.shop?.address || t('posInvoicePrint.placeholders.merchantAddress')}
                         </div>
                     </div>
 
@@ -135,12 +190,14 @@ const PosInvoicePrint = () => {
                     {(invoice.customer?.name || invoice.customer?.phone) && (
                         <div className="customer-info">
                             <div className="customer-line">
-                                <span className="customer-label">Customer:</span>
-                                <span className="customer-value">{invoice.customer?.name || 'Customer'}</span>
+                                <span className="customer-label">{t('posInvoicePrint.labels.customer')}</span>
+                                <span className="customer-value">
+                                    {invoice.customer?.name || t('posInvoicePrint.placeholders.customer')}
+                                </span>
                             </div>
                             {invoice.customer?.phone && (
                                 <div className="customer-line">
-                                    <span className="customer-label">Phone No:</span>
+                                    <span className="customer-label">{t('posInvoicePrint.labels.phoneNo')}</span>
                                     <span className="customer-value">{invoice.customer.phone}</span>
                                 </div>
                             )}
@@ -150,7 +207,13 @@ const PosInvoicePrint = () => {
                     {/* Status & Amount Block */}
                     <div className="status-amount-section">
                         <div className="status-text">
-                            {String(invoice.payment_status || 'APPROVED').toUpperCase()}
+                            {t(
+                                `posInvoicePrint.paymentStatus.${String(invoice.payment_status ?? 'APPROVED')
+                                    .trim()
+                                    .toLowerCase()
+                                    .replace(/\s+/g, '_')}`,
+                                { defaultValue: String(invoice.payment_status ?? 'APPROVED').toUpperCase() }
+                            )}
                         </div>
                         <div className="amount-text">
                             {formatCurrency(invoice.footer?.grand_total ?? invoice.amount)}
@@ -163,16 +226,24 @@ const PosInvoicePrint = () => {
                         <>
                             <div className="receipt-divider"></div>
                             <div className="split-payments-section">
-                                <div className="split-payments-title">Payment Breakdown:</div>
+                                <div className="split-payments-title">{t('posInvoicePrint.labels.paymentBreakdown')}</div>
                                 {((invoice.footer?.split_payments?.paid || invoice.split_payments?.paid) || []).map((payment, index) => (
                                     <div key={index} className="split-payment-row">
-                                        <span>{payment.payment_method}:</span>
+                                        <span>
+                                            {t('posInvoicePrint.splitPayment.methodLine', {
+                                                method: payment.payment_method,
+                                            })}
+                                        </span>
                                         <span>{formatCurrency(payment.amount)}</span>
                                     </div>
                                 ))}
                                 {((invoice.footer?.split_payments?.unpaid || invoice.split_payments?.unpaid) || []).map((payment, index) => (
                                     <div key={`unpaid-${index}`} className="split-payment-row split-payment-unpaid">
-                                        <span>{payment.payment_method} (Pending):</span>
+                                        <span>
+                                            {t('posInvoicePrint.splitPayment.pendingLine', {
+                                                method: payment.payment_method,
+                                            })}
+                                        </span>
                                         <span>{formatCurrency(payment.amount)}</span>
                                     </div>
                                 ))}
@@ -186,7 +257,7 @@ const PosInvoicePrint = () => {
                         <>
                             <div className="receipt-divider"></div>
                             <div className="due-amount-section">
-                                <div className="due-amount-label">Due Amount:</div>
+                                <div className="due-amount-label">{t('posInvoicePrint.labels.dueAmount')}</div>
                                 <div className="due-amount-value">
                                     {formatCurrency(
                                         invoice.footer?.due_amount ?? 
@@ -200,47 +271,55 @@ const PosInvoicePrint = () => {
                     {/* Transaction Details Footer */}
                     <div className="transaction-details-footer">
                         <div className="receipt-divider"></div>
-                        <div className="transaction-details-title">Transaction Details</div>
+                        <div className="transaction-details-title">{t('posInvoicePrint.labels.transactionDetails')}</div>
                         <div className="receipt-divider"></div>
                         <div className="detail-row">
-                            <span className="detail-label">Date:</span>
+                            <span className="detail-label">{t('posInvoicePrint.labels.date')}</span>
                             <span className="detail-value">{invoice.date ? formatDate(invoice.date) : formatDate(invoice.created_at)}</span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Time:</span>
+                            <span className="detail-label">{t('posInvoicePrint.labels.time')}</span>
                             <span className="detail-value">{invoice.time || formatTime(invoice.created_at)}</span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Merchant Code:</span>
-                            <span className="detail-value">{invoice.shop?.merchant_code || invoice.merchant_code || 'N/A'}</span>
+                            <span className="detail-label">{t('posInvoicePrint.labels.merchantCode')}</span>
+                            <span className="detail-value">
+                                {invoice.shop?.merchant_code || invoice.merchant_code || t('posInvoicePrint.placeholders.na')}
+                            </span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Terminal ID:</span>
-                            <span className="detail-value">{invoice.terminal_id || 'N/A'}</span>
+                            <span className="detail-label">{t('posInvoicePrint.labels.terminalId')}</span>
+                            <span className="detail-value">{invoice.terminal_id || t('posInvoicePrint.placeholders.na')}</span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Card Number:</span>
-                            <span className="detail-value">{invoice.card_number || 'N/A'}</span>
+                            <span className="detail-label">{t('posInvoicePrint.labels.cardNumber')}</span>
+                            <span className="detail-value">{invoice.card_number || t('posInvoicePrint.placeholders.na')}</span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Expiry:</span>
-                            <span className="detail-value">{invoice.expiry || 'N/A'}</span>
+                            <span className="detail-label">{t('posInvoicePrint.labels.expiry')}</span>
+                            <span className="detail-value">{invoice.expiry || t('posInvoicePrint.placeholders.na')}</span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Payment Method:</span>
-                            <span className="detail-value">{invoice.payment_method || 'N/A'}</span>
+                            <span className="detail-label">{t('posInvoicePrint.labels.paymentMethod')}</span>
+                            <span className="detail-value">{invoice.payment_method || t('posInvoicePrint.placeholders.na')}</span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Payment Type:</span>
-                            <span className="detail-value">{invoice.transaction_type || invoice.payment_type || 'Purchase'}</span>
+                            <span className="detail-label">{t('posInvoicePrint.labels.paymentType')}</span>
+                            <span className="detail-value">
+                                {invoice.transaction_type ||
+                                    invoice.payment_type ||
+                                    t('posInvoicePrint.placeholders.purchase')}
+                            </span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Transaction:</span>
-                            <span className="detail-value">{invoice.transaction_id || invoice.id || 'N/A'}</span>
+                            <span className="detail-label">{t('posInvoicePrint.labels.transaction')}</span>
+                            <span className="detail-value">
+                                {invoice.transaction_id || invoice.id || t('posInvoicePrint.placeholders.na')}
+                            </span>
                         </div>
                         <div className="detail-row">
-                            <span className="detail-label">Ref. No:</span>
-                            <span className="detail-value">{invoice.ref_number || 'N/A'}</span>
+                            <span className="detail-label">{t('posInvoicePrint.labels.refNo')}</span>
+                            <span className="detail-value">{invoice.ref_number || t('posInvoicePrint.placeholders.na')}</span>
                         </div>
                         {Array.isArray(invoice.meta) && invoice.meta.length > 0 && (
                             <>
@@ -253,7 +332,7 @@ const PosInvoicePrint = () => {
                                         <span className="detail-value">
                                             {metaItem?.value !== null && metaItem?.value !== undefined && metaItem?.value !== ''
                                                 ? metaItem.value.toString()
-                                                : 'N/A'}
+                                                : t('posInvoicePrint.placeholders.na')}
                                         </span>
                                     </div>
                                 ))}
@@ -266,8 +345,8 @@ const PosInvoicePrint = () => {
 
                     {/* QR Code Section */}
                     <div className="qr-section">
-                        <div className="qr-title">Scan QR For E-Receipt</div>
-                        <div className="qr-code" role="img" aria-label="Receipt QR Code">
+                        <div className="qr-title">{t('posInvoicePrint.qr.title')}</div>
+                        <div className="qr-code" role="img" aria-label={t('posInvoicePrint.qr.ariaLabel')}>
                             <QRCode
                                 value={
                                     invoice.invoice_url ||
@@ -277,15 +356,17 @@ const PosInvoicePrint = () => {
                                 level="M"
                             />
                         </div>
-                        <div className="qr-instruction">
-                            Use your phone camera to download the receipt.
-                        </div>
+                        <div className="qr-instruction">{t('posInvoicePrint.qr.instruction')}</div>
                     </div>
 
                     {/* Thank You Message */}
                     <div className="thank-you-section">
-                        <div className="thank-you-message">Thank you for your purchase!</div>
-                        <div className="powered-by">Powered by {invoice.powered_by || 'CoreNet Technologies'}</div>
+                        <div className="thank-you-message">{t('posInvoicePrint.footer.thankYou')}</div>
+                        <div className="powered-by">
+                            {t('posInvoicePrint.footer.poweredBy', {
+                                brand: invoice.powered_by || t('posInvoicePrint.footer.defaultBrand'),
+                            })}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -330,7 +411,6 @@ const PosInvoicePrint = () => {
                     font-size: 16px;
                     font-weight: 700;
                     letter-spacing: 0.5px;
-                    text-transform: uppercase;
                     margin-bottom: 4px;
                 }
                 .amount-text {

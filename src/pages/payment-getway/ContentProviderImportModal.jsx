@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { previewPartnersImport, importPartners, downloadPartnersImportTemplate } from '../../services/adminPartnersService';
 import { validateFile } from '../../utils/fileHelpers';
 
 const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
+    const { t } = useTranslation();
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewData, setPreviewData] = useState(null);
     const [isPreviewMode, setIsPreviewMode] = useState(false);
@@ -39,7 +41,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 
     const handlePreview = async () => {
         if (!selectedFile) {
-            toast.error('Please select a file first');
+            toast.error(t('admin.paymentGetway.cpImportSelectFileFirst'));
             return;
         }
 
@@ -55,10 +57,10 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
             if (isSuccess) {
                 setPreviewData(responseData.data);
                 setIsPreviewMode(true);
-                toast.success('Preview generated successfully');
+                toast.success(t('admin.paymentGetway.cpImportPreviewOk'));
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to preview import');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.cpImportPreviewFailed'));
             console.error(error);
         } finally {
             setIsLoading(false);
@@ -67,18 +69,18 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 
     const handleImport = async () => {
         if (!selectedFile) {
-            toast.error('Please select a file first');
+            toast.error(t('admin.paymentGetway.cpImportSelectFileFirst'));
             return;
         }
 
         try {
             setIsLoading(true);
-            setImportProgress({ status: 'importing', message: 'Importing content providers...' });
+            setImportProgress({ status: 'importing', message: t('admin.paymentGetway.cpImportInProgress') });
             
             const result = await importPartners(selectedFile);
             if (!result.success) {
-                setImportProgress({ status: 'error', message: result.error || 'Import failed' });
-                toast.error(result.error || 'Failed to import content providers');
+                setImportProgress({ status: 'error', message: result.error || t('admin.paymentGetway.cpImportFailedGeneric') });
+                toast.error(result.error || t('admin.paymentGetway.cpImportFailedProviders'));
                 return;
             }
             const responseData = result.data;
@@ -92,7 +94,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                     errors: responseData.data.errors
                 });
                 
-                toast.success(`Import completed: ${responseData.data.imported_count} imported, ${responseData.data.failed_count} failed`);
+                toast.success(t('admin.paymentGetway.cpImportCompletedToast', { imported: responseData.data.imported_count, failed: responseData.data.failed_count }));
                 
                 // Call success callback after a delay
                 setTimeout(() => {
@@ -101,8 +103,8 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                 }, 2000);
             }
         } catch (error) {
-            setImportProgress({ status: 'error', message: error.response?.data?.message || 'Import failed' });
-            toast.error(error.response?.data?.message || 'Failed to import content providers');
+            setImportProgress({ status: 'error', message: error.response?.data?.message || t('admin.paymentGetway.cpImportFailedGeneric') });
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.cpImportFailedProviders'));
             console.error(error);
         } finally {
             setIsLoading(false);
@@ -113,12 +115,12 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
         try {
             const result = await downloadPartnersImportTemplate();
             if (result.success) {
-                toast.success('Template downloaded successfully');
+                toast.success(t('admin.paymentGetway.cpImportTemplateDownloaded'));
             } else {
-                toast.error(result.error || 'Failed to download template');
+                toast.error(result.error || t('admin.paymentGetway.cpImportTemplateFailed'));
             }
         } catch (error) {
-            toast.error('Failed to download template');
+            toast.error(t('admin.paymentGetway.cpImportTemplateFailed'));
             console.error(error);
         }
     };
@@ -143,7 +145,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Import Content Providers
+                            {t('admin.paymentGetway.cpImportTitle')}
                         </h5>
                         <button type="button" className="btn-close" onClick={handleClose} disabled={isLoading}></button>
                     </div>
@@ -153,7 +155,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                             <>
                                 {/* File Upload Section */}
                                 <div className="mb-5">
-                                    <label htmlFor="import_file" className="form-label fw-bold">Select File</label>
+                                    <label htmlFor="import_file" className="form-label fw-bold">{t('admin.paymentGetway.cpImportSelectFile')}</label>
                                     <input
                                         type="file"
                                         className="form-control"
@@ -162,7 +164,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                         onChange={handleFileSelect}
                                         disabled={isLoading}
                                     />
-                                    <div className="form-text">Supported formats: .xlsx, .xls, .csv (Max 10MB)</div>
+                                    <div className="form-text">{t('admin.paymentGetway.cpImportSupportedFormats')}</div>
                                 </div>
 
                                 {/* Instructions */}
@@ -173,8 +175,8 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                         <span className="path3"></span>
                                     </i>
                                     <div className="d-flex flex-column">
-                                        <h5 className="mb-1">Import Instructions</h5>
-                                        <span>Download the template, fill in content provider data, and upload the file. Click Preview to validate before importing.</span>
+                                        <h5 className="mb-1">{t('admin.paymentGetway.cpImportInstructionsTitle')}</h5>
+                                        <span>{t('admin.paymentGetway.cpImportInstructionsText')}</span>
                                     </div>
                                 </div>
 
@@ -189,7 +191,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Download Template
+                                        {t('admin.paymentGetway.cpImportDownloadTemplate')}
                                     </button>
                                 </div>
                             </>
@@ -200,11 +202,11 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                             <div>
                                 <div className="alert alert-light-primary d-flex align-items-center mb-5">
                                     <div className="d-flex flex-column">
-                                        <h5 className="mb-1">Preview Summary</h5>
+                                        <h5 className="mb-1">{t('admin.paymentGetway.cpImportPreviewSummary')}</h5>
                                         <span>
-                                            Total: {previewData.summary.total} | 
-                                            Valid: <span className="text-success fw-bold">{previewData.summary.valid}</span> | 
-                                            Invalid: <span className="text-danger fw-bold">{previewData.summary.invalid}</span>
+                                            {t('admin.paymentGetway.cpImportTotal')}: {previewData.summary.total} | 
+                                            {t('admin.paymentGetway.cpImportValid')}: <span className="text-success fw-bold">{previewData.summary.valid}</span> | 
+                                            {t('admin.paymentGetway.cpImportInvalid')}: <span className="text-danger fw-bold">{previewData.summary.invalid}</span>
                                         </span>
                                     </div>
                                 </div>
@@ -213,13 +215,13 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     <table className="table table-sm table-row-bordered">
                                         <thead className="sticky-top bg-light">
                                             <tr>
-                                                <th>Row</th>
-                                                <th>Name</th>
-                                                <th>Email</th>
-                                                <th>Phone</th>
-                                                <th>Country</th>
-                                                <th>Status</th>
-                                                <th>Errors</th>
+                                                <th>{t('admin.paymentGetway.cpImportRow')}</th>
+                                                <th>{t('admin.paymentGetway.cpImportName')}</th>
+                                                <th>{t('admin.paymentGetway.cpImportEmail')}</th>
+                                                <th>{t('admin.paymentGetway.cpImportPhone')}</th>
+                                                <th>{t('admin.paymentGetway.cpCountry')}</th>
+                                                <th>{t('admin.paymentGetway.status')}</th>
+                                                <th>{t('admin.paymentGetway.cpImportErrors')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -232,9 +234,9 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                     <td>{row.data.country || '-'}</td>
                                                     <td>
                                                         {row.valid ? (
-                                                            <span className="badge badge-light-success">Valid</span>
+                                                            <span className="badge badge-light-success">{t('admin.paymentGetway.cpImportValidStatus')}</span>
                                                         ) : (
-                                                            <span className="badge badge-light-danger">Invalid</span>
+                                                            <span className="badge badge-light-danger">{t('admin.paymentGetway.cpImportInvalidStatus')}</span>
                                                         )}
                                                     </td>
                                                     <td>
@@ -264,24 +266,24 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                         {/* Import Progress */}
                         {importProgress && (
                             <div className={`alert ${importProgress.status === 'error' ? 'alert-danger' : 'alert-info'}`}>
-                                <h5>{importProgress.status === 'error' ? 'Import Failed' : 'Import Status'}</h5>
+                                <h5>{importProgress.status === 'error' ? t('admin.paymentGetway.cpImportFailedTitle') : t('admin.paymentGetway.cpImportStatusTitle')}</h5>
                                 <p>{importProgress.message}</p>
                                 {importProgress.imported !== undefined && (
                                     <div>
-                                        <p>Imported: {importProgress.imported}</p>
-                                        <p>Failed: {importProgress.failed}</p>
+                                        <p>{t('admin.paymentGetway.cpImportImported')}: {importProgress.imported}</p>
+                                        <p>{t('admin.paymentGetway.cpImportFailed')}: {importProgress.failed}</p>
                                     </div>
                                 )}
                                 {importProgress.errors && importProgress.errors.length > 0 && (
                                     <div className="mt-3">
-                                        <h6>Errors:</h6>
+                                        <h6>{t('admin.paymentGetway.cpImportErrors')}:</h6>
                                         <ul>
                                             {importProgress.errors.slice(0, 10).map((error, idx) => (
                                                 <li key={idx}>{error}</li>
                                             ))}
                                         </ul>
                                         {importProgress.errors.length > 10 && (
-                                            <p>... and {importProgress.errors.length - 10} more errors</p>
+                                            <p>{t('admin.paymentGetway.cpImportMoreErrors', { count: importProgress.errors.length - 10 })}</p>
                                         )}
                                     </div>
                                 )}
@@ -296,7 +298,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                             onClick={handleClose}
                             disabled={isLoading}
                         >
-                            Close
+                            {t('admin.paymentGetway.cpImportClose')}
                         </button>
                         
                         {!isPreviewMode && !importProgress && (
@@ -310,7 +312,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     {isLoading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Loading...
+                                            {t('admin.paymentGetway.cpImportLoading')}
                                         </>
                                     ) : (
                                         <>
@@ -319,7 +321,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                 <span className="path2"></span>
                                                 <span className="path3"></span>
                                             </i>
-                                            Preview
+                                            {t('admin.paymentGetway.cpImportPreview')}
                                         </>
                                     )}
                                 </button>
@@ -332,7 +334,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     {isLoading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Importing...
+                                            {t('admin.paymentGetway.cpImporting')}
                                         </>
                                     ) : (
                                         <>
@@ -340,7 +342,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Import Now
+                                            {t('admin.paymentGetway.cpImportNow')}
                                         </>
                                     )}
                                 </button>
@@ -354,7 +356,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     className="btn btn-secondary"
                                     onClick={() => setIsPreviewMode(false)}
                                 >
-                                    Back
+                                    {t('admin.paymentGetway.cpImportBack')}
                                 </button>
                                 <button
                                     type="button"
@@ -365,7 +367,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     {isLoading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Importing...
+                                            {t('admin.paymentGetway.cpImporting')}
                                         </>
                                     ) : (
                                         <>
@@ -373,7 +375,7 @@ const ContentProviderImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Import {previewData?.summary.valid} Valid Rows
+                                            {t('admin.paymentGetway.cpImportValidRows', { count: previewData?.summary.valid })}
                                         </>
                                     )}
                                 </button>

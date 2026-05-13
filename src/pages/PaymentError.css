@@ -1,25 +1,51 @@
-.pe-page {
-    min-height: 100vh;
+/*
+ * Error / cancel receipt layout — matches PaymentSuccess (flat bg, card rhythm, mobile key:value rows).
+ */
+main.pl-main.pl-main--result.pe-result-layout {
+    display: block;
+    max-width: min(920px, calc(100% - 24px));
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 16px 14px 28px;
+    box-sizing: border-box;
+}
+
+.pe-page.pe-result-page {
+    min-height: calc(100vh - 180px);
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 24px 16px;
-    background:
-        radial-gradient(circle at 50% -10%, rgba(230, 11, 18, 0.28) 0%, rgba(230, 11, 18, 0.14) 28%, rgba(230, 11, 18, 0.04) 52%, rgba(230, 11, 18, 0) 72%),
-        radial-gradient(circle at 50% 0%, #fff0f1 0%, #fff5f5 28%, #f8f9fc 60%, #eef1f6 100%);
+    align-items: flex-start;
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 12px 20px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    background: #f0f2f5;
     font-family: 'Poppins', 'Inter', sans-serif;
 }
 
 .pe-card {
-    width: min(100%, 520px);
+    width: 100%;
+    max-width: 100%;
     background: #fff;
-    box-shadow: 0 13px 40px rgba(170, 170, 170, 0.12);
-    border-radius: 30px;
-    padding: 28px;
+    box-shadow: 0 8px 28px rgba(55, 65, 80, 0.1);
+    border-radius: 18px;
+    padding: 22px 18px 26px;
     display: flex;
     flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+    box-sizing: border-box;
+    min-height: 0;
+    margin: 0 auto;
+}
+
+.pe-card.pe-card--loading {
+    justify-content: center;
     align-items: center;
-    gap: 20px;
+    min-height: 200px;
+    padding: 36px 20px;
 }
 
 .pe-header {
@@ -61,20 +87,24 @@
 }
 
 .pe-header-text p {
-    margin: 0;
+    margin: 12px 0 0;
     font-size: 14px;
     color: #6e6e6e;
+    line-height: 1.5;
 }
 
 .pe-line {
     width: 100%;
+    border: none;
     border-top: 1.7px solid #ededed;
+    margin: 0;
 }
 
 .pe-content {
     width: 100%;
-    display: grid;
-    gap: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .pe-reason-text {
@@ -87,8 +117,8 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 4px 0;
+    gap: 12px;
+    padding: 0;
 }
 
 .pe-detail-row {
@@ -97,19 +127,21 @@
     justify-content: space-between;
     gap: 16px;
     align-items: flex-start;
-    font-size: 14px;
+    padding: 2px 0;
 }
 
 .pe-detail-row span {
     color: #707070;
-    flex-shrink: 0;
+    font-size: 15px;
 }
 
 .pe-detail-row strong {
     color: #121212;
+    font-size: 15px;
     font-weight: 600;
     text-align: right;
     word-break: break-word;
+    max-width: 58%;
 }
 
 .pe-note {
@@ -119,6 +151,11 @@
     border-radius: 12px;
     padding: 12px;
     font-size: 13px;
+}
+
+.pe-note strong {
+    display: block;
+    margin-bottom: 2px;
 }
 
 .pe-note-muted {
@@ -132,10 +169,16 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+    margin-top: 4px;
+    padding-top: 8px;
+}
+
+.pe-actions.pe-actions--single {
+    grid-template-columns: 1fr;
 }
 
 .pe-btn {
-    height: 42px;
+    height: 44px;
     border-radius: 10px;
     border: none;
     display: inline-flex;
@@ -158,30 +201,139 @@
     color: #fff;
 }
 
-@media (max-width: 640px) {
-    .pe-card {
+@keyframes pe-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.pe-loading-spin {
+    animation: pe-spin 0.9s linear infinite;
+    color: #e60b12;
+}
+
+@media (min-width: 768px) {
+    main.pl-main.pl-main--result.pe-result-layout {
+        max-width: min(920px, calc(100% - 40px));
+        padding: 24px 24px 40px;
+    }
+
+    .pe-page.pe-result-page {
+        padding: 20px 20px 32px;
+    }
+
+    .pe-card:not(.pe-card--loading) {
+        padding: 32px 36px 36px;
+        gap: 22px;
         border-radius: 22px;
-        padding: 24px 18px;
+    }
+}
+
+@media (min-width: 1100px) {
+    main.pl-main.pl-main--result.pe-result-layout {
+        max-width: min(960px, calc(100% - 48px));
+    }
+}
+
+@media (max-width: 640px) {
+    main.pl-main.pl-main--result.pe-result-layout {
+        padding: 8px 8px 15px;
+        max-width: 100%;
+    }
+
+    .pe-page.pe-result-page {
+        padding: 6px 6px 12px;
+        min-height: auto;
+    }
+
+    .pe-card:not(.pe-card--loading) {
+        border-radius: 14px;
+        padding: 14px 11px 17px;
+        gap: 12px;
+        box-shadow: 0 4px 18px rgba(55, 65, 80, 0.08);
+    }
+
+    .pe-card.pe-card--loading {
+        padding: 24px 12px;
+        min-height: 140px;
+    }
+
+    .pe-header {
+        gap: 10px;
+    }
+
+    .pe-error-icon {
+        width: 64px;
+        height: 64px;
+    }
+
+    .pe-error-icon svg {
+        width: 44px;
+        height: 44px;
     }
 
     .pe-header-text h1 {
-        font-size: 24px;
+        font-size: 22px;
     }
 
     .pe-header-text h2 {
-        font-size: 30px;
+        font-size: 28px;
+    }
+
+    .pe-header-text p {
+        margin: 8px 0 0;
+        font-size: 13px;
+    }
+
+    .pe-content {
+        gap: 9px;
+    }
+
+    .pe-note {
+        padding: 10px;
+        font-size: 12px;
+        border-radius: 10px;
+    }
+
+    .pe-details {
+        gap: 9px;
     }
 
     .pe-detail-row {
-        flex-direction: column;
-        gap: 4px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .pe-detail-row span {
+        flex: 0 1 auto;
+        min-width: 0;
+        font-size: 13px;
+        line-height: 1.35;
+        padding-right: 6px;
     }
 
     .pe-detail-row strong {
-        text-align: left;
+        flex: 1;
+        min-width: 0;
+        max-width: 58%;
+        text-align: right;
+        font-size: 13px;
+        line-height: 1.35;
     }
 
     .pe-actions {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 2px;
+        padding-top: 6px;
+    }
+
+    .pe-btn {
+        height: 40px;
+        font-size: 12px;
+        padding-left: 8px;
+        padding-right: 8px;
     }
 }

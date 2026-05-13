@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
+import { useTranslation } from 'react-i18next';
 import {
     DndContext,
     PointerSensor,
@@ -16,6 +17,7 @@ import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import IPhoneMockup from '../../../common/IPhoneMockup';
+import ServiceModel from '../../../services/ServiceModel';
 
 const DraggableItem = ({ id, children, className = '' }) => {
     const { attributes, listeners, setNodeRef: setDraggableRef, transform, isDragging } = useDraggable({ id });
@@ -100,8 +102,11 @@ const isPreviewRequiredMissing = (field, value) => {
 };
 
 const LivePreviewFormFields = ({ form, values, errors, onChange }) => {
+    const { t } = useTranslation();
     const fields = getPreviewFormFields(form);
-    if (!fields.length) return <div className="text-muted fs-8">No form fields for this product.</div>;
+    if (!fields.length) {
+        return <div className="text-muted fs-8">{t('admin.paymentGetway.homeCfgPreviewNoFormFields')}</div>;
+    }
 
     return (
         <div>
@@ -111,7 +116,7 @@ const LivePreviewFormFields = ({ form, values, errors, onChange }) => {
                 const options = getPreviewOptions(field);
                 const value = values[key] ?? (type === 'checkbox' ? [] : '');
                 const hasErr = Boolean(errors[key]);
-                const label = field?.label || field?.label_en || field?.label_ar || `Field ${idx + 1}`;
+                const label = field?.label || field?.label_en || field?.label_ar || t('admin.paymentGetway.homeCfgPreviewFieldFallback', { n: idx + 1 });
                 const invalidClass = hasErr ? ' is-invalid' : '';
 
                 return (
@@ -141,7 +146,7 @@ const LivePreviewFormFields = ({ form, values, errors, onChange }) => {
                         )}
                         {['dropdown', 'selection', 'telecom providers'].includes(type) && (
                             <select className={`form-select form-select-sm${invalidClass}`} value={value} onChange={(e) => onChange(key, e.target.value)}>
-                                <option value="">Select</option>
+                                <option value="">{t('admin.paymentGetway.homeCfgSelectPlaceholder')}</option>
                                 {options.map((opt, i) => {
                                     const optVal = opt?.value != null ? String(opt.value) : `${i}`;
                                     const optLabel = opt?.label || opt?.label_en || opt?.label_ar || optVal;
@@ -191,7 +196,7 @@ const LivePreviewFormFields = ({ form, values, errors, onChange }) => {
                                 })}
                             </div>
                         )}
-                        {hasErr && <div className="invalid-feedback d-block fs-8">This field is required.</div>}
+                        {hasErr && <div className="invalid-feedback d-block fs-8">{t('admin.paymentGetway.homeCfgFieldRequired')}</div>}
                     </div>
                 );
             })}
@@ -200,8 +205,20 @@ const LivePreviewFormFields = ({ form, values, errors, onChange }) => {
 };
 
 const HomeScreenServicesConfigPage = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
+
+    const translateItemType = useCallback(
+        (type) => {
+            const key = `${type || ''}`.toLowerCase();
+            if (key === 'category') return t('admin.paymentGetway.homeCfgItemTypeCategory');
+            if (key === 'service') return t('admin.paymentGetway.homeCfgItemTypeService');
+            if (key === 'product') return t('admin.paymentGetway.homeCfgItemTypeProduct');
+            return type ? String(type) : t('admin.common.unknown');
+        },
+        [t]
+    );
     const [homeConfigItems, setHomeConfigItems] = useState([]);
     const [initialItems, setInitialItems] = useState([]);
     const [homeConfigSearch, setHomeConfigSearch] = useState('');
@@ -255,7 +272,7 @@ const HomeScreenServicesConfigPage = () => {
                     <input
                         type="text"
                         className="form-control form-control-solid border-0 py-3"
-                        placeholder="Search categories, services, products"
+                        placeholder={t('admin.paymentGetway.homeCfgSearchPlaceholder')}
                         value={homeConfigSearch}
                         onFocus={() => setIsSearchDropdownOpen(true)}
                         onChange={(e) => {
@@ -273,10 +290,10 @@ const HomeScreenServicesConfigPage = () => {
                         }}
                         style={{ maxWidth: '130px' }}
                     >
-                        <option value="all">All</option>
-                        <option value="category">Categories</option>
-                        <option value="service">Services</option>
-                        <option value="product">Products</option>
+                        <option value="all">{t('admin.common.all')}</option>
+                        <option value="category">{t('admin.paymentGetway.homeCfgCategories')}</option>
+                        <option value="service">{t('admin.paymentGetway.homeCfgServices')}</option>
+                        <option value="product">{t('admin.paymentGetway.homeCfgProducts')}</option>
                     </select>
                 </div>
                 {isSearchDropdownOpen && (homeConfigLoading || homeConfigResults.length > 0) && (
@@ -293,7 +310,7 @@ const HomeScreenServicesConfigPage = () => {
                         }}
                     >
                         {homeConfigLoading ? (
-                            <div className="menu-item px-4 py-3 text-muted">Searching...</div>
+                            <div className="menu-item px-4 py-3 text-muted">{t('admin.paymentGetway.homeCfgSearching')}</div>
                         ) : (
                             homeConfigResults.map((item) => {
                                 const selected = homeConfigItems.some((entry) => homeConfigKey(entry) === homeConfigKey(item));
@@ -315,7 +332,7 @@ const HomeScreenServicesConfigPage = () => {
                                                 </div>
                                                 <div>
                                                     <span className="fw-semibold">{item.label}</span>
-                                                    <span className="badge badge-light ms-2 text-capitalize">{item.type}</span>
+                                                    <span className="badge badge-light ms-2">{translateItemType(item.type)}</span>
                                                     {item.subtitle ? <div className="text-muted fs-8">{item.subtitle}</div> : null}
                                                 </div>
                                             </div>
@@ -324,7 +341,7 @@ const HomeScreenServicesConfigPage = () => {
                                                 className={`btn btn-sm ${selected ? 'btn-light-danger' : 'btn-light-primary'}`}
                                                 onClick={() => (selected ? removeHomeConfigItem(item) : addHomeConfigItem(item))}
                                             >
-                                                {selected ? 'Remove' : 'Add'}
+                                                {selected ? t('admin.common.remove') : t('admin.common.add')}
                                             </button>
                                         </div>
                                     </div>
@@ -335,9 +352,9 @@ const HomeScreenServicesConfigPage = () => {
                 )}
             </div>
             {[
-                { id: 'cards', icon: 'ki-element-11', label: 'Cards' },
-                { id: 'list', icon: 'ki-row-horizontal', label: 'Table' },
-                { id: 'preview', icon: 'ki-eye', label: 'Preview' },
+                { id: 'cards', icon: 'ki-element-11', label: t('admin.paymentGetway.homeCfgCards') },
+                { id: 'list', icon: 'ki-row-horizontal', label: t('admin.paymentGetway.homeCfgTable') },
+                { id: 'preview', icon: 'ki-eye', label: t('admin.paymentGetway.homeCfgPreview') },
             ].map((mode) => (
                 <button
                     key={mode.id}
@@ -359,7 +376,7 @@ const HomeScreenServicesConfigPage = () => {
     );
 
     useEffect(() => {
-        setTitle('Home Services Configuration');
+        setTitle(t('admin.paymentGetway.homeCfgTitle'));
         setActions(<div className="d-none d-lg-flex w-100">{renderSearchAndViewControls(searchContainerRef)}</div>);
         return () => setActions(null);
     }, [
@@ -372,6 +389,8 @@ const HomeScreenServicesConfigPage = () => {
         homeConfigResults,
         homeConfigItems,
         isSearchDropdownOpen,
+        t,
+        translateItemType,
     ]);
 
     useEffect(() => {
@@ -437,7 +456,7 @@ const HomeScreenServicesConfigPage = () => {
             setHomeConfigItems(items);
             setInitialItems(items);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to load home screen configuration');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.homeCfgFailedLoad'));
         } finally {
             setHomeConfigItemsLoading(false);
         }
@@ -463,7 +482,7 @@ const HomeScreenServicesConfigPage = () => {
             });
         } catch (error) {
             setPreviewPayload({ quick_actions: [], items: [] });
-            toast.error(error.response?.data?.message || 'Failed to load services preview');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.homeCfgFailedPreviewLoad'));
         } finally {
             setPreviewLoading(false);
         }
@@ -488,7 +507,7 @@ const HomeScreenServicesConfigPage = () => {
                 searchType === 'all' ? items : items.filter((item) => item.type === searchType)
             );
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to search services, categories, and products');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.homeCfgFailedSearch'));
         } finally {
             setHomeConfigLoading(false);
         }
@@ -511,17 +530,17 @@ const HomeScreenServicesConfigPage = () => {
     };
 
     const getRemovalInfoMessage = () =>
-        'Removed from services list. To apply this change click Save. To rollback click Cancel.';
+        t('admin.paymentGetway.homeCfgRemovedHint');
 
     const confirmAndRemoveHomeConfigItem = async (item) => {
-        const label = item?.label || 'this item';
+        const label = item?.label || t('admin.paymentGetway.homeCfgThisItem');
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `Do you want to delete "${label}" from the services list?`,
+            title: t('admin.common.areYouSure'),
+            text: t('admin.paymentGetway.homeCfgDeleteSingleConfirm', { label }),
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete it',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.paymentGetway.homeCfgYesDeleteIt'),
+            cancelButtonText: t('admin.common.cancel'),
             reverseButtons: true,
         });
         if (!result.isConfirmed) return;
@@ -568,9 +587,9 @@ const HomeScreenServicesConfigPage = () => {
                         : entry
                 )
             );
-            toast.success('Status updated successfully');
+            toast.success(t('admin.paymentGetway.homeCfgStatusUpdated'));
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to update status');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.homeCfgFailedStatusUpdate'));
         }
     };
 
@@ -587,7 +606,7 @@ const HomeScreenServicesConfigPage = () => {
             }))
         );
         setOpenActionMenuKey(null);
-        toast.success('Item added to quick actions');
+        toast.success(t('admin.paymentGetway.homeCfgAddedQuickActions'));
     };
 
     const handleRemoveFromQuickAction = (item) => {
@@ -599,7 +618,7 @@ const HomeScreenServicesConfigPage = () => {
             }))
         );
         setOpenActionMenuKey(null);
-        toast.success('Item removed from quick actions');
+        toast.success(t('admin.paymentGetway.homeCfgRemovedQuickActions'));
     };
 
     const toggleSelectItem = (itemKey, checked) => {
@@ -623,12 +642,12 @@ const HomeScreenServicesConfigPage = () => {
     const handleBulkRemove = async () => {
         if (selectedItemKeys.length === 0) return;
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `Do you want to delete ${selectedItemKeys.length} selected item(s) from the services list?`,
+            title: t('admin.common.areYouSure'),
+            text: t('admin.paymentGetway.homeCfgDeleteBulkConfirm', { count: selectedItemKeys.length }),
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete them',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.paymentGetway.homeCfgYesDeleteThem'),
+            cancelButtonText: t('admin.common.cancel'),
             reverseButtons: true,
         });
         if (!result.isConfirmed) return;
@@ -650,7 +669,7 @@ const HomeScreenServicesConfigPage = () => {
                 type="button"
                 className="btn btn-sm btn-icon btn-bg-light btn-active-light-primary"
                 aria-expanded={isOpen}
-                title="Actions"
+                title={t('admin.common.actions')}
                 onClick={() =>
                     setOpenActionMenuKey((prev) => (prev === actionMenuKey ? null : actionMenuKey))
                 }
@@ -683,7 +702,7 @@ const HomeScreenServicesConfigPage = () => {
                                 <span className="path2" />
                                 <span className="path3" />
                             </i>
-                            Show
+                            {t('admin.common.show')}
                         </button>
                     )}
                 </li>
@@ -694,7 +713,7 @@ const HomeScreenServicesConfigPage = () => {
                                 <span className="path1" />
                                 <span className="path2" />
                             </i>
-                            Remove from quick actions
+                            {t('admin.paymentGetway.homeCfgRemoveFromQuickActions')}
                         </button>
                     ) : (
                         <button type="button" className="dropdown-item py-2 px-3 fs-7" onClick={() => handleSetQuickAction(item)}>
@@ -703,7 +722,7 @@ const HomeScreenServicesConfigPage = () => {
                                 <span className="path2" />
                                 <span className="path3" />
                             </i>
-                            Set as quick action
+                            {t('admin.paymentGetway.homeCfgSetAsQuickAction')}
                         </button>
                     )}
                 </li>
@@ -716,7 +735,7 @@ const HomeScreenServicesConfigPage = () => {
                             <span className="path1" />
                             <span className="path2" />
                         </i>
-                        {item.is_active ? 'Deactivate' : 'Activate'}
+                        {item.is_active ? t('admin.common.deactivate') : t('admin.common.activate')}
                     </button>
                 </li>
                 <li>
@@ -726,7 +745,7 @@ const HomeScreenServicesConfigPage = () => {
                             <span className="path2" />
                             <span className="path3" />
                         </i>
-                        Set order
+                        {t('admin.paymentGetway.homeCfgSetOrder')}
                     </button>
                 </li>
                 <li>
@@ -735,7 +754,7 @@ const HomeScreenServicesConfigPage = () => {
                             <span className="path1" />
                             <span className="path2" />
                         </i>
-                        Edit
+                        {t('admin.common.edit')}
                     </button>
                 </li>
                 <li>
@@ -750,7 +769,7 @@ const HomeScreenServicesConfigPage = () => {
                             <span className="path4" />
                             <span className="path5" />
                         </i>
-                        Remove from home
+                        {t('admin.paymentGetway.homeCfgRemoveFromHome')}
                     </button>
                 </li>
             </ul>
@@ -760,7 +779,7 @@ const HomeScreenServicesConfigPage = () => {
 
     const statusBadge = (isActive) => (
         <span className={`badge ${isActive ? 'badge-light-success' : 'badge-light-danger'}`}>
-            {isActive ? 'Active' : 'Inactive'}
+            {isActive ? t('admin.common.active') : t('admin.common.inactive')}
         </span>
     );
 
@@ -842,7 +861,7 @@ const HomeScreenServicesConfigPage = () => {
         setShowSetOrderModal(false);
         setSetOrderTargetKey(null);
         setSetOrderPosition('');
-        toast.success('Order updated');
+        toast.success(t('admin.paymentGetway.homeCfgOrderUpdated'));
     };
 
     const saveHomeScreenConfig = async () => {
@@ -864,10 +883,10 @@ const HomeScreenServicesConfigPage = () => {
             const items = response?.data?.data?.items || [];
             setHomeConfigItems(items);
             setInitialItems(items);
-            toast.success('Home page services configuration saved');
+            toast.success(t('admin.paymentGetway.homeCfgSaveSuccess'));
             fetchPreviewPayload(previewMode);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to save home page services configuration');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.homeCfgSaveFailed'));
         } finally {
             setHomeConfigSaving(false);
         }
@@ -875,12 +894,17 @@ const HomeScreenServicesConfigPage = () => {
 
     const cancelChanges = () => {
         setHomeConfigItems(initialItems);
-        toast.info('Unsaved changes cancelled');
+        toast.info(t('admin.paymentGetway.homeCfgChangesCancelled'));
         fetchPreviewPayload(previewMode);
     };
 
     const getPreviewItemLabel = (item) =>
-        item?.label || item?.name_en || item?.service_name_en || item?.name || item?.id || 'Item';
+        item?.label ||
+        item?.name_en ||
+        ServiceModel.displayName(item) ||
+        item?.name ||
+        item?.id ||
+        t('admin.paymentGetway.homeCfgItemLabelFallback');
 
     const getPreviewItemImage = (item) => item?.image || item?.category_image || item?.image_url || null;
 
@@ -958,7 +982,7 @@ const HomeScreenServicesConfigPage = () => {
         });
         if (Object.keys(errors).length > 0) {
             setPreviewFormErrors(errors);
-            toast.error('Please fill in all required fields.');
+            toast.error(t('admin.paymentGetway.homeCfgPreviewRequiredFields'));
             return;
         }
         setPreviewFormErrors({});
@@ -969,7 +993,7 @@ const HomeScreenServicesConfigPage = () => {
                 setPreviewFormSubmitting(true);
                 await axios.post(formUrl, activePreviewFormValues);
             } catch (error) {
-                toast.error(error.response?.data?.message || 'Failed to submit form.');
+                toast.error(error.response?.data?.message || t('admin.paymentGetway.homeCfgFormSubmitFailed'));
                 return;
             } finally {
                 setPreviewFormSubmitting(false);
@@ -986,7 +1010,7 @@ const HomeScreenServicesConfigPage = () => {
 
     const renderPreviewItems = (items, clickable = false) => {
         if (!Array.isArray(items) || items.length === 0) {
-            return <div className="text-muted fs-8">No items found.</div>;
+            return <div className="text-muted fs-8">{t('admin.paymentGetway.homeCfgNoItemsFound')}</div>;
         }
         return (
             <div
@@ -1055,7 +1079,7 @@ const HomeScreenServicesConfigPage = () => {
                             />
                         </div>
                         {!!item.is_quick_action && (
-                            <span className="badge badge-light-warning">Quick Action</span>
+                            <span className="badge badge-light-warning">{t('admin.paymentGetway.homeCfgQuickActionBadge')}</span>
                         )}
                     </div>
                     <div className="d-flex align-items-center gap-2">
@@ -1063,8 +1087,8 @@ const HomeScreenServicesConfigPage = () => {
                             <button
                                 type="button"
                                 className="btn btn-light btn-active-light-primary btn-sm btn-icon"
-                                title="Reorder by drag and drop"
-                                aria-label="Reorder by drag and drop"
+                                title={t('admin.paymentGetway.homeCfgReorderAria')}
+                                aria-label={t('admin.paymentGetway.homeCfgReorderAria')}
                                 {...dragProps.listeners}
                                 {...dragProps.attributes}
                             >
@@ -1092,16 +1116,20 @@ const HomeScreenServicesConfigPage = () => {
                     </div>
                     <div className="d-flex flex-column flex-grow-1">
                         <span className="text-gray-900 fs-6 fw-bold">{item.label}</span>
-                        <span className="text-muted fw-bold">{item.subtitle || `${item.type} item`}</span>
+                        <span className="text-muted fw-bold">
+                            {item.subtitle || t('admin.paymentGetway.homeCfgItemTypeSubtitle', { type: translateItemType(item.type) })}
+                        </span>
                     </div>
                 </div>
                 <div className="d-flex justify-content-between align-items-center">
                     <div className="d-flex align-items-center gap-2">
                         <span className="badge badge-light-dark">#{getItemOrder(item)}</span>
-                        <span className="badge badge-light-primary text-capitalize">{item.type}</span>
+                        <span className="badge badge-light-primary">{translateItemType(item.type)}</span>
                         {statusBadge(item.is_active ?? true)}
                     </div>
-                    <button type="button" className="btn btn-sm btn-light-danger" onClick={() => confirmAndRemoveHomeConfigItem(item)}>Remove</button>
+                    <button type="button" className="btn btn-sm btn-light-danger" onClick={() => confirmAndRemoveHomeConfigItem(item)}>
+                        {t('admin.common.remove')}
+                    </button>
                 </div>
             </div>
         </div>
@@ -1115,8 +1143,8 @@ const HomeScreenServicesConfigPage = () => {
                 <div className="card">
                     <div className="card-header d-flex align-items-center justify-content-between flex-wrap gap-3">
                         <div>
-                            <h3 className="card-title mb-0">Mobile Preview</h3>
-                            <div className="text-muted fs-7 mt-1">Live preview from admin services APIs</div>
+                            <h3 className="card-title mb-0">{t('admin.paymentGetway.homeCfgMobilePreviewTitle')}</h3>
+                            <div className="text-muted fs-7 mt-1">{t('admin.paymentGetway.homeCfgMobilePreviewSubtitle')}</div>
                         </div>
                         <div className="btn-group">
                             <button
@@ -1124,14 +1152,14 @@ const HomeScreenServicesConfigPage = () => {
                                 className={`btn btn-sm ${previewMode === 'home' ? 'btn-primary' : 'btn-light-primary'}`}
                                 onClick={() => setPreviewMode('home')}
                             >
-                                Home
+                                {t('admin.common.home')}
                             </button>
                             <button
                                 type="button"
                                 className={`btn btn-sm ${previewMode === 'catalog' ? 'btn-primary' : 'btn-light-primary'}`}
                                 onClick={() => setPreviewMode('catalog')}
                             >
-                                Catalog
+                                {t('admin.paymentGetway.homeCfgPreviewCatalogTab')}
                             </button>
                         </div>
                     </div>
@@ -1145,7 +1173,8 @@ const HomeScreenServicesConfigPage = () => {
                                                 type="button"
                                                 className="btn btn-icon btn-sm btn-light"
                                                 onClick={goPreviewBack}
-                                                title="Back"
+                                                title={t('admin.common.back')}
+                                                aria-label={t('admin.common.back')}
                                             >
                                                 <i className="ki-duotone ki-arrow-left fs-4">
                                                     <span className="path1"></span>
@@ -1154,7 +1183,10 @@ const HomeScreenServicesConfigPage = () => {
                                             </button>
                                         )}
                                         <div className="fw-bold" style={{ fontSize: 14 }}>
-                                            {previewStep === 'root' && (previewMode === 'home' ? 'Home Services' : 'Catalog Services')}
+                                            {previewStep === 'root' &&
+                                                (previewMode === 'home'
+                                                    ? t('admin.paymentGetway.homeCfgPreviewHomeServicesTitle')
+                                                    : t('admin.paymentGetway.homeCfgPreviewCatalogServicesTitle'))}
                                             {previewStep === 'services' && getPreviewItemLabel(previewSelectedCategory)}
                                             {previewStep === 'products' && getPreviewItemLabel(previewSelectedService)}
                                             {previewStep === 'form' && getPreviewItemLabel(previewSelectedProduct)}
@@ -1168,30 +1200,38 @@ const HomeScreenServicesConfigPage = () => {
                                     </span>
                                 </div>
                                 {previewLoading ? (
-                                    <div className="text-center text-muted py-10 fs-7">Loading preview...</div>
+                                    <div className="text-center text-muted py-10 fs-7">{t('admin.paymentGetway.homeCfgPreviewLoading')}</div>
                                 ) : (
                                     <>
                                         {previewStep === 'root' && (
                                             <>
                                                 <div className="mb-3">
-                                                    <div className="fw-semibold mb-2" style={{ fontSize: 12 }}>Quick Actions</div>
+                                                    <div className="fw-semibold mb-2" style={{ fontSize: 12 }}>
+                                                        {t('admin.paymentGetway.homeCfgPreviewQuickActions')}
+                                                    </div>
                                                     {renderPreviewItems(previewPayload?.quick_actions || [], true)}
                                                 </div>
                                                 <div>
-                                                    <div className="fw-semibold mb-2" style={{ fontSize: 12 }}>Items</div>
+                                                    <div className="fw-semibold mb-2" style={{ fontSize: 12 }}>
+                                                        {t('admin.paymentGetway.homeCfgPreviewItemsSection')}
+                                                    </div>
                                                     {renderPreviewItems(previewPayload?.items || [], true)}
                                                 </div>
                                             </>
                                         )}
                                         {previewStep === 'services' && (
                                             <div>
-                                                <div className="fw-semibold mb-2" style={{ fontSize: 12 }}>Services</div>
+                                                <div className="fw-semibold mb-2" style={{ fontSize: 12 }}>
+                                                    {t('admin.paymentGetway.homeCfgPreviewServicesSection')}
+                                                </div>
                                                 {renderPreviewItems(getChildrenForCategory(previewSelectedCategory), true)}
                                             </div>
                                         )}
                                         {previewStep === 'products' && (
                                             <div>
-                                                <div className="fw-semibold mb-2" style={{ fontSize: 12 }}>Products</div>
+                                                <div className="fw-semibold mb-2" style={{ fontSize: 12 }}>
+                                                    {t('admin.paymentGetway.homeCfgPreviewProductsSection')}
+                                                </div>
                                                 {renderPreviewItems(getChildrenForService(previewSelectedService), true)}
                                             </div>
                                         )}
@@ -1199,16 +1239,21 @@ const HomeScreenServicesConfigPage = () => {
                                             <div className="rounded p-3" style={{ background: '#fff', border: '1px solid #edf1f7' }}>
                                                 {previewFormCompleted ? (
                                                     <div className="text-center py-5">
-                                                        <div className="fw-bold text-success mb-2">Success</div>
-                                                        <div className="text-muted fs-8">Form submitted successfully.</div>
+                                                        <div className="fw-bold text-success mb-2">{t('admin.paymentGetway.homeCfgPreviewSuccess')}</div>
+                                                        <div className="text-muted fs-8">{t('admin.paymentGetway.homeCfgPreviewFormSubmitted')}</div>
                                                     </div>
                                                 ) : (
                                                     <>
                                                         <div className="d-flex justify-content-between align-items-center mb-3">
                                                             <div className="fw-semibold" style={{ fontSize: 12 }}>
-                                                                Form {Math.min(previewActiveFormIndex + 1, Math.max(previewProductForms.length, 1))} / {Math.max(previewProductForms.length, 1)}
+                                                                {t('admin.paymentGetway.homeCfgPreviewFormProgress', {
+                                                                    current: Math.min(previewActiveFormIndex + 1, Math.max(previewProductForms.length, 1)),
+                                                                    total: Math.max(previewProductForms.length, 1),
+                                                                })}
                                                             </div>
-                                                            <span className="badge badge-light-info">Product form</span>
+                                                            <span className="badge badge-light-info">
+                                                                {t('admin.paymentGetway.homeCfgPreviewProductFormBadge')}
+                                                            </span>
                                                         </div>
                                                         <LivePreviewFormFields
                                                             form={activePreviewForm}
@@ -1223,7 +1268,11 @@ const HomeScreenServicesConfigPage = () => {
                                                                 onClick={handlePreviewFormProcess}
                                                                 disabled={previewFormSubmitting || !activePreviewForm}
                                                             >
-                                                                {previewFormSubmitting ? 'Processing...' : (previewActiveFormIndex + 1 < previewProductForms.length ? 'Next' : 'Process')}
+                                                                {previewFormSubmitting
+                                                                    ? t('admin.paymentGetway.processing')
+                                                                    : previewActiveFormIndex + 1 < previewProductForms.length
+                                                                        ? t('admin.common.next')
+                                                                        : t('admin.paymentGetway.homeCfgProcess')}
                                                             </button>
                                                         </div>
                                                     </>
@@ -1278,13 +1327,13 @@ const HomeScreenServicesConfigPage = () => {
                                 <thead>
                                     <tr className="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
                                         <th className="w-10px"></th>
-                                        <th>Order</th>
-                                        <th>Reorder</th>
-                                        <th>Label</th>
-                                        <th>Type</th>
-                                        <th>Status</th>
-                                        <th>Subtitle</th>
-                                        <th className="text-end">Action</th>
+                                        <th>{t('admin.paymentGetway.homeCfgColOrder')}</th>
+                                        <th>{t('admin.paymentGetway.homeCfgColReorder')}</th>
+                                        <th>{t('admin.paymentGetway.homeCfgColLabel')}</th>
+                                        <th>{t('admin.paymentGetway.homeCfgColType')}</th>
+                                        <th>{t('admin.common.status')}</th>
+                                        <th>{t('admin.paymentGetway.homeCfgColSubtitle')}</th>
+                                        <th className="text-end">{t('admin.paymentGetway.homeCfgColAction')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1309,7 +1358,7 @@ const HomeScreenServicesConfigPage = () => {
         }
 
         if (homeConfigItems.length === 0) {
-            return <div className="text-muted">No items selected yet.</div>;
+            return <div className="text-muted">{t('admin.paymentGetway.homeCfgNoItemsSelected')}</div>;
         }
 
         if (viewMode === 'cards') {
@@ -1318,7 +1367,7 @@ const HomeScreenServicesConfigPage = () => {
                     {quickActionItems.length > 0 && (
                         <div className="mb-8">
                             <div className="d-flex align-items-center justify-content-between mb-4">
-                                <h5 className="mb-0">Quick Actions</h5>
+                                <h5 className="mb-0">{t('admin.paymentGetway.homeCfgPreviewQuickActions')}</h5>
                                 <span className="badge badge-light-warning">{quickActionItems.length}</span>
                             </div>
                             <div className="row g-3">
@@ -1332,7 +1381,7 @@ const HomeScreenServicesConfigPage = () => {
                     )}
 
                     <div className="d-flex align-items-center justify-content-between mb-4">
-                        <h5 className="mb-0">Services</h5>
+                        <h5 className="mb-0">{t('admin.paymentGetway.homeCfgPreviewItemsSection')}</h5>
                         <span className="badge badge-light-primary">{homeConfigItems.length}</span>
                     </div>
                     <div className="row g-3" style={{ position: 'relative', zIndex: 1 }}>
@@ -1365,13 +1414,13 @@ const HomeScreenServicesConfigPage = () => {
                                             />
                                         </div>
                                     </th>
-                                    <th>Order</th>
-                                    <th>Reorder</th>
-                                    <th>Label</th>
-                                    <th>Type</th>
-                                    <th>Status</th>
-                                    <th>Subtitle</th>
-                                    <th className="text-end">Action</th>
+                                    <th>{t('admin.paymentGetway.homeCfgColOrder')}</th>
+                                    <th>{t('admin.paymentGetway.homeCfgColReorder')}</th>
+                                    <th>{t('admin.paymentGetway.homeCfgColLabel')}</th>
+                                    <th>{t('admin.paymentGetway.homeCfgColType')}</th>
+                                    <th>{t('admin.common.status')}</th>
+                                    <th>{t('admin.paymentGetway.homeCfgColSubtitle')}</th>
+                                    <th className="text-end">{t('admin.paymentGetway.homeCfgColAction')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1396,8 +1445,8 @@ const HomeScreenServicesConfigPage = () => {
                                                     <button
                                                         type="button"
                                                         className="btn btn-light btn-active-light-primary btn-sm btn-icon me-2"
-                                                        title="Reorder by drag and drop"
-                                                        aria-label="Reorder by drag and drop"
+                                                        title={t('admin.paymentGetway.homeCfgReorderAria')}
+                                                        aria-label={t('admin.paymentGetway.homeCfgReorderAria')}
                                                         {...listeners}
                                                         {...attributes}
                                                     >
@@ -1425,9 +1474,11 @@ const HomeScreenServicesConfigPage = () => {
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <span className="text-capitalize">{item.type}</span>
+                                                    <span>{translateItemType(item.type)}</span>
                                                     {!!item.is_quick_action && (
-                                                        <span className="badge badge-light-warning ms-2">Quick</span>
+                                                        <span className="badge badge-light-warning ms-2">
+                                                            {t('admin.paymentGetway.homeCfgQuickBadgeShort')}
+                                                        </span>
                                                     )}
                                                 </td>
                                                 <td>{statusBadge(item.is_active ?? true)}</td>
@@ -1455,7 +1506,9 @@ const HomeScreenServicesConfigPage = () => {
             <div className="pt-0">
                 {selectedItemKeys.length > 0 && (
                     <div className="d-flex align-items-center justify-content-between border rounded p-3 mb-5">
-                        <div className="fw-semibold">{selectedItemKeys.length} selected</div>
+                        <div className="fw-semibold">
+                            {t('admin.paymentGetway.homeCfgSelectedCount', { count: selectedItemKeys.length })}
+                        </div>
                         <div className="d-flex align-items-center gap-2">
                             <button
                                 type="button"
@@ -1463,7 +1516,7 @@ const HomeScreenServicesConfigPage = () => {
                                 onClick={() => toggleSelectAll(true)}
                                 disabled={selectedItemKeys.length === homeConfigItems.length}
                             >
-                                Select All
+                                {t('admin.common.selectAll')}
                             </button>
                             <button
                                 type="button"
@@ -1471,10 +1524,10 @@ const HomeScreenServicesConfigPage = () => {
                                 onClick={() => toggleSelectAll(false)}
                                 disabled={selectedItemKeys.length === 0}
                             >
-                                Deselect All
+                                {t('admin.common.deselectAll')}
                             </button>
                             <button type="button" className="btn btn-sm btn-light-danger" onClick={handleBulkRemove}>
-                                Bulk Remove
+                                {t('admin.paymentGetway.homeCfgBulkRemove')}
                             </button>
                         </div>
                     </div>
@@ -1500,7 +1553,7 @@ const HomeScreenServicesConfigPage = () => {
             <div className="mt-5 pt-4 border-top">
                 <div className="d-flex justify-content-end gap-2">
                     <button type="button" className="btn btn-light" onClick={cancelChanges} disabled={homeConfigSaving}>
-                        Cancel
+                        {t('admin.common.cancel')}
                     </button>
                     <button
                         type="button"
@@ -1508,7 +1561,7 @@ const HomeScreenServicesConfigPage = () => {
                         onClick={saveHomeScreenConfig}
                         disabled={homeConfigSaving}
                     >
-                        {homeConfigSaving ? 'Saving...' : 'Save Configuration'}
+                        {homeConfigSaving ? t('admin.common.saving') : t('admin.paymentGetway.homeCfgSaveConfiguration')}
                     </button>
                 </div>
             </div>
@@ -1518,7 +1571,7 @@ const HomeScreenServicesConfigPage = () => {
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title">Set Order Position</h5>
+                                <h5 className="modal-title">{t('admin.paymentGetway.homeCfgSetOrderModalTitle')}</h5>
                                 <button
                                     type="button"
                                     className="btn-close"
@@ -1527,11 +1580,13 @@ const HomeScreenServicesConfigPage = () => {
                                         setSetOrderTargetKey(null);
                                         setSetOrderPosition('');
                                     }}
-                                    aria-label="Close"
+                                    aria-label={t('admin.common.close')}
                                 />
                             </div>
                             <div className="modal-body">
-                                <label className="form-label">Position (1 to {homeConfigItems.length})</label>
+                                <label className="form-label">
+                                    {t('admin.paymentGetway.homeCfgSetOrderPositionLabel', { max: homeConfigItems.length })}
+                                </label>
                                 <input
                                     type="number"
                                     min="1"
@@ -1539,7 +1594,7 @@ const HomeScreenServicesConfigPage = () => {
                                     className="form-control"
                                     value={setOrderPosition}
                                     onChange={(e) => setSetOrderPosition(e.target.value)}
-                                    placeholder="Enter target position"
+                                    placeholder={t('admin.paymentGetway.homeCfgSetOrderPlaceholder')}
                                 />
                             </div>
                             <div className="modal-footer">
@@ -1552,10 +1607,10 @@ const HomeScreenServicesConfigPage = () => {
                                         setSetOrderPosition('');
                                     }}
                                 >
-                                    Cancel
+                                    {t('admin.common.cancel')}
                                 </button>
                                 <button type="button" className="btn btn-primary" onClick={handleConfirmSetOrder}>
-                                    Apply
+                                    {t('admin.common.apply')}
                                 </button>
                             </div>
                         </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const labelToClass = (label) => {
     switch (label) {
@@ -35,16 +36,20 @@ const labelToBadgeClass = (label) => {
 };
 
 const UserEventsTimeline = ({ latestLogs = [] }) => {
+    const { t } = useTranslation();
+
     return (
         <div className="row g-5 g-xl-8">
             <div className="col-xl-12">
                 <div className="card">
                     <div className="card-header border-0">
                         <div className="card-title m-0">
-                            <h3 className="fw-bolder m-0">Recent Activity</h3>
+                            <h3 className="fw-bolder m-0">{t('merchant.users.eventsTab.title')}</h3>
                         </div>
                         <div className="card-toolbar">
-                            <span className="badge badge-light-primary">{latestLogs.length} events</span>
+                            <span className="badge badge-light-primary">
+                                {t('merchant.users.eventsTab.eventsBadge', { count: latestLogs.length })}
+                            </span>
                         </div>
                     </div>
                     <div className="card-body pt-5">
@@ -84,10 +89,8 @@ const UserEventsTimeline = ({ latestLogs = [] }) => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                <h4 className="fw-bold text-gray-800 mb-3">No Activity Logged</h4>
-                                <p className="text-gray-500 fs-6 mb-0">
-                                    User activity events will appear here once actions are performed.
-                                </p>
+                                <h4 className="fw-bold text-gray-800 mb-3">{t('merchant.users.eventsTab.emptyTitle')}</h4>
+                                <p className="text-gray-500 fs-6 mb-0">{t('merchant.users.eventsTab.emptyHint')}</p>
                             </div>
                         )}
                     </div>
@@ -98,4 +101,3 @@ const UserEventsTimeline = ({ latestLogs = [] }) => {
 };
 
 export default UserEventsTimeline;
-

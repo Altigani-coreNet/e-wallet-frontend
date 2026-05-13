@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS } from '../../../../utils/constants';
@@ -14,6 +15,7 @@ const DEFAULT_PAGINATION = {
 };
 
 const MerchantTransactionsTab = ({ merchantId }) => {
+    const { t } = useTranslation();
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -86,7 +88,7 @@ const MerchantTransactionsTab = ({ merchantId }) => {
                 }
 
                 console.error('Failed to load transactions', err);
-                const message = err.response?.data?.message || 'Failed to load transactions';
+                const message = err.response?.data?.message || t('admin.merchantsUI.transactionsTab.loadFailed');
                 setError(message);
                 setTransactions([]);
                 setPagination((prev) => ({
@@ -107,7 +109,7 @@ const MerchantTransactionsTab = ({ merchantId }) => {
         return () => {
             isMounted = false;
         };
-    }, [merchantId, pagination.current_page, pagination.per_page]);
+    }, [merchantId, pagination.current_page, pagination.per_page, t]);
 
     const handlePageChange = (page) => {
         setPagination((prev) => {
@@ -140,26 +142,26 @@ const MerchantTransactionsTab = ({ merchantId }) => {
         <div className="card">
             <div className="card-header border-0">
                 <div className="card-title">
-                    <h3 className="fw-bold mb-0">Transactions</h3>
+                    <h3 className="fw-bold mb-0">{t('admin.merchantsUI.transactionsTab.title')}</h3>
                 </div>
             </div>
 
             <div className="card-body border-top py-5">
                 {!merchantId ? (
                     <div className="alert alert-info mb-0">
-                        Select a merchant to view their transactions.
+                        {t('admin.merchantsUI.transactionsTab.selectMerchant')}
                     </div>
                 ) : (
                     <div className="table-responsive">
                         <table className="table align-middle table-row-dashed fs-6 gy-5">
                             <thead>
                                 <tr className="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                                    <th className="min-w-150px">Transaction ID</th>
-                                    <th className="min-w-140px">Amount</th>
-                                    <th className="min-w-150px">Payment Method</th>
-                                    <th className="min-w-120px">Status</th>
-                                    <th className="min-w-180px">Created At</th>
-                                    <th className="text-end min-w-100px">Actions</th>
+                                    <th className="min-w-150px">{t('admin.merchantsUI.transactionsTab.colTransactionId')}</th>
+                                    <th className="min-w-140px">{t('admin.merchantsUI.transactionsTab.colAmount')}</th>
+                                    <th className="min-w-150px">{t('admin.merchantsUI.transactionsTab.colPaymentMethod')}</th>
+                                    <th className="min-w-120px">{t('admin.merchantsIndex.colStatus')}</th>
+                                    <th className="min-w-180px">{t('admin.merchantsUI.transactionsTab.colCreatedAt')}</th>
+                                    <th className="text-end min-w-100px">{t('admin.merchantsIndex.colActions')}</th>
                                 </tr>
                             </thead>
                             <tbody className="fw-semibold text-gray-600">
@@ -178,7 +180,7 @@ const MerchantTransactionsTab = ({ merchantId }) => {
                                 ) : !hasTransactions ? (
                                     <tr>
                                         <td colSpan={6} className="text-center py-10 text-gray-600">
-                                            No transactions found for this merchant.
+                                            {t('admin.merchantsUI.transactionsTab.noTransactions')}
                                         </td>
                                     </tr>
                                 ) : (
@@ -194,19 +196,19 @@ const MerchantTransactionsTab = ({ merchantId }) => {
                                                     : 'secondary';
                                         const statusLabel = normalizedStatus
                                             ? normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1)
-                                            : 'N/A';
+                                            : t('admin.common.na');
 
                                         return (
                                         <tr key={transaction.id}>
                                             <td className="text-gray-800 fw-semibold">
-                                                {transaction.transaction_id || transaction.id || 'N/A'}
+                                                {transaction.transaction_id || transaction.id || t('admin.common.na')}
                                             </td>
                                             <td className="text-gray-700">
                                                 {transaction.currency_symbol || ''}
                                                 {Number(transaction.amount ?? 0).toFixed(2)}
                                             </td>
                                             <td className="text-gray-700">
-                                                {transaction.payment_method?.name || transaction.payment_method || 'N/A'}
+                                                {transaction.payment_method?.name || transaction.payment_method || t('admin.common.na')}
                                             </td>
                                             <td>
                                                 <span className={`badge badge-light-${statusBadgeVariant}`}>
@@ -216,11 +218,11 @@ const MerchantTransactionsTab = ({ merchantId }) => {
                                             <td className="text-gray-700">
                                                 {transaction.created_at
                                                     ? new Date(transaction.created_at).toLocaleString()
-                                                    : 'N/A'}
+                                                    : t('admin.common.na')}
                                             </td>
                                             <td className="text-end">
                                                 <Link to={`/admin/transactions/${transaction.id}`} className="btn btn-sm btn-light-primary">
-                                                    View
+                                                    {t('admin.common.view')}
                                                 </Link>
                                             </td>
                                         </tr>
@@ -236,7 +238,7 @@ const MerchantTransactionsTab = ({ merchantId }) => {
             {merchantId && (
                 <div className="card-footer d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                     <div className="d-flex align-items-center gap-2">
-                        <span className="text-gray-600 small">Show</span>
+                        <span className="text-gray-600 small">{t('admin.merchantsUI.transactionsTab.show')}</span>
                         <select
                             className="form-select form-select-sm w-auto"
                             value={pagination.per_page}
@@ -249,13 +251,17 @@ const MerchantTransactionsTab = ({ merchantId }) => {
                                 </option>
                             ))}
                         </select>
-                        <span className="text-gray-600 small">entries</span>
+                        <span className="text-gray-600 small">{t('admin.merchantsUI.transactionsTab.entries')}</span>
                     </div>
 
                     <div className="text-gray-600 small">
                         {hasTransactions
-                            ? `Showing ${startEntry} to ${endEntry} of ${pagination.total} entries`
-                            : 'No entries to display'}
+                            ? t('admin.merchantsUI.transactionsTab.showingEntries', {
+                                from: startEntry,
+                                to: endEntry,
+                                total: pagination.total
+                            })
+                            : t('admin.merchantsUI.transactionsTab.noEntries')}
                     </div>
 
                     <PaginationControls

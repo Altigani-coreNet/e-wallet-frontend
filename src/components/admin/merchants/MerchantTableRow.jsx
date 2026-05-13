@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AUTH_SERVICE_BASE } from '../../../utils/constants';
 import { useCan } from '../../../utils/permissions';
 
@@ -26,6 +27,7 @@ const MerchantTableRow = ({
     onDelete,
     onResetPassword
 }) => {
+    const { t } = useTranslation();
     const canEditMerchant = useCan('pos.merchants.edit_merchants');
     const canDeleteMerchant = useCan('pos.merchants.delete_merchants');
     const [logoError, setLogoError] = useState(false);
@@ -114,13 +116,13 @@ const MerchantTableRow = ({
 
             {/* Phone */}
             <td>
-                <span className="text-gray-600">{merchant.phone || 'N/A'}</span>
+                <span className="text-gray-600">{merchant.phone || t('admin.common.na')}</span>
             </td>
 
             {/* Business Type */}
             <td>
                 <span className="badge badge-light-primary">
-                    {merchant.business_type ? merchant.business_type.charAt(0).toUpperCase() + merchant.business_type.slice(1) : 'N/A'}
+                    {merchant.business_type ? merchant.business_type.charAt(0).toUpperCase() + merchant.business_type.slice(1) : t('admin.common.na')}
                 </span>
             </td>
 
@@ -128,31 +130,31 @@ const MerchantTableRow = ({
             <td>
                 {merchant.plan ? (
                     <span className="badge badge-light-info">
-                        {merchant.plan.name || merchant.plan.text || 'N/A'}
+                        {merchant.plan.name || merchant.plan.text || t('admin.common.na')}
                     </span>
                 ) : (
-                    <span className="badge badge-light-secondary">No Plan</span>
+                    <span className="badge badge-light-secondary">{t('admin.merchantsUI.noPlan')}</span>
                 )}
             </td>
 
             {/* Status */}
             <td>
                 <span className={`badge ${getStatusBadgeClass(merchant.status)}`}>
-                    {merchant.status ? merchant.status.charAt(0).toUpperCase() + merchant.status.slice(1) : 'N/A'}
+                    {merchant.status ? merchant.status.charAt(0).toUpperCase() + merchant.status.slice(1) : t('admin.common.na')}
                 </span>
             </td>
 
             {/* Is Active */}
             <td>
                 <span className={`badge ${merchant.is_active ? 'badge-light-success' : 'badge-light-danger'}`}>
-                    {merchant.is_active ? 'Active' : 'Inactive'}
+                    {merchant.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                 </span>
             </td>
 
             {/* Country */}
             <td>
                 <span className="text-gray-600">
-                    {merchant.country_name || merchant.country?.name?.en || merchant.country?.name || 'N/A'}
+                    {merchant.country_name || merchant.country?.name?.en || merchant.country?.name || t('admin.common.na')}
                 </span>
             </td>
 
@@ -164,7 +166,7 @@ const MerchantTableRow = ({
                         className="btn btn-sm btn-icon btn-bg-light btn-active-light-primary"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
-                        title="Actions"
+                        title={t('admin.merchantsIndex.colActions')}
                     >
                         <i className="ki-duotone ki-dots-square fs-2">
                             <span className="path1" />
@@ -181,7 +183,7 @@ const MerchantTableRow = ({
                                     <span className="path2" />
                                     <span className="path3" />
                                 </i>
-                                View
+                                {t('admin.common.view')}
                             </Link>
                         </li>
                         {canEditMerchant && (
@@ -191,7 +193,7 @@ const MerchantTableRow = ({
                                         <span className="path1" />
                                         <span className="path2" />
                                     </i>
-                                    Edit
+                                    {t('admin.common.edit')}
                                 </Link>
                             </li>
                         )}
@@ -206,7 +208,7 @@ const MerchantTableRow = ({
                                         <span className="path1" />
                                         <span className="path2" />
                                     </i>
-                                    Approve
+                                    {t('admin.common.approve')}
                                 </button>
                             </li>
                         )}
@@ -221,7 +223,7 @@ const MerchantTableRow = ({
                                         <span className="path1" />
                                         <span className="path2" />
                                     </i>
-                                    Reject
+                                    {t('admin.common.reject')}
                                 </button>
                             </li>
                         )}
@@ -236,7 +238,7 @@ const MerchantTableRow = ({
                                         <span className="path1" />
                                         <span className="path2" />
                                     </i>
-                                    Suspend
+                                    {t('admin.common.suspend')}
                                 </button>
                             </li>
                         )}
@@ -251,7 +253,7 @@ const MerchantTableRow = ({
                                         <span className="path1" />
                                         <span className="path2" />
                                     </i>
-                                    Unsuspend
+                                    {t('admin.common.unsuspend')}
                                 </button>
                             </li>
                         )}
@@ -266,7 +268,7 @@ const MerchantTableRow = ({
                                         <span className="path1" />
                                         <span className="path2" />
                                     </i>
-                                    Reset Password
+                                    {t('admin.merchantsUI.resetPasswordAction')}
                                 </button>
                             </li>
                         )}
@@ -288,7 +290,7 @@ const MerchantTableRow = ({
                                             <span className="path4" />
                                             <span className="path5" />
                                         </i>
-                                        Delete
+                                        {t('admin.common.delete')}
                                     </button>
                                 </li>
                             </>

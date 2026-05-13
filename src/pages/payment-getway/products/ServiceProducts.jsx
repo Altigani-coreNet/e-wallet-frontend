@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { fetchProductsByService, createProduct, deleteProduct } from '../../../services/serviceProductsService';
 import ServiceProductModel from '../../../services/ServiceProductModel';
 
 const ServiceProducts = () => {
+    const { t } = useTranslation();
     const { id: serviceId } = useParams();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs } = useToolbar();
@@ -25,14 +27,14 @@ const ServiceProducts = () => {
     });
 
     useEffect(() => {
-        setTitle('Service Products');
+        setTitle(t('admin.paymentGetway.titlesServiceProducts'));
         setBreadcrumbs([
-            { label: 'Home', path: '/admin' },
-            { label: 'Services', path: '/admin/services' },
-            { label: 'Products', path: `/admin/services/${serviceId}/products`, active: true }
+            { label: t('admin.paymentGetway.breadcrumbsHome'), path: '/admin' },
+            { label: t('admin.paymentGetway.breadcrumbsServices'), path: '/admin/services' },
+            { label: t('admin.paymentGetway.breadcrumbsProducts'), path: `/admin/services/${serviceId}/products`, active: true }
         ]);
         loadProducts();
-    }, [serviceId, setTitle, setBreadcrumbs]);
+    }, [serviceId, setTitle, setBreadcrumbs, t]);
 
     const loadProducts = async () => {
         setLoading(true);
@@ -42,7 +44,7 @@ const ServiceProducts = () => {
                 setProducts(ServiceProductModel.fromApiResponseArray(response.data.data || []));
             }
         } catch (error) {
-            toast.error('Failed to load products');
+            toast.error(t('admin.paymentGetway.svcProdFailedLoad'));
         } finally {
             setLoading(false);
         }
@@ -56,7 +58,7 @@ const ServiceProducts = () => {
                 service_id: serviceId
             });
             if (result.success) {
-                toast.success('Product created successfully');
+                toast.success(t('admin.paymentGetway.svcProdCreated'));
                 setShowAddForm(false);
                 setFormData({
                     service_sub_category_id: "",
@@ -71,41 +73,41 @@ const ServiceProducts = () => {
                 });
                 loadProducts();
             } else {
-                toast.error(result.error || 'Failed to create product');
+                toast.error(result.error || t('admin.paymentGetway.svcProdCreateFailed'));
             }
         } catch (error) {
-            toast.error('Failed to create product');
+            toast.error(t('admin.paymentGetway.svcProdCreateFailed'));
         }
     };
 
     const handleDelete = async (productId) => {
-        if (!window.confirm('Are you sure you want to delete this product?')) return;
+        if (!window.confirm(t('admin.paymentGetway.svcProdDeleteConfirm'))) return;
         try {
             await deleteProduct(productId);
-            toast.success('Product deleted successfully');
+            toast.success(t('admin.paymentGetway.svcProdDeleted'));
             loadProducts();
         } catch (error) {
-            toast.error('Failed to delete product');
+            toast.error(t('admin.paymentGetway.productFailedDelete'));
         }
     };
 
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Products</h3>
+                <h3 className="card-title">{t('admin.paymentGetway.viewProductCol')}</h3>
                 <div className="card-toolbar">
                     <button className="btn btn-primary" onClick={() => setShowAddForm(!showAddForm)}>
-                        {showAddForm ? 'Cancel' : 'Add Product'}
+                        {showAddForm ? t('admin.common.cancel') : t('admin.paymentGetway.productAdd')}
                     </button>
                 </div>
             </div>
             <div className="card-body">
                 {showAddForm && (
                     <form onSubmit={handleSubmit} className="mb-5 p-4 border rounded">
-                        <h4>Add New Product</h4>
+                        <h4>{t('admin.paymentGetway.svcProdAddNewProduct')}</h4>
                         <div className="row">
                             <div className="col-md-6 mb-3">
-                                <label className="form-label">Name (English)</label>
+                                <label className="form-label">{t('admin.paymentGetway.subCatLabelNameEn')}</label>
                                 <input
                                     type="text"
                                     className="form-control"
@@ -114,7 +116,7 @@ const ServiceProducts = () => {
                                 />
                             </div>
                             <div className="col-md-6 mb-3">
-                                <label className="form-label">Name (Arabic)</label>
+                                <label className="form-label">{t('admin.paymentGetway.subCatLabelNameAr')}</label>
                                 <input
                                     type="text"
                                     className="form-control"
@@ -123,7 +125,7 @@ const ServiceProducts = () => {
                                 />
                             </div>
                             <div className="col-md-6 mb-3">
-                                <label className="form-label">Service Sub Category ID</label>
+                                <label className="form-label">{t('admin.paymentGetway.svcProdLabelSubCatId')}</label>
                                 <input
                                     type="text"
                                     className="form-control"
@@ -132,7 +134,7 @@ const ServiceProducts = () => {
                                 />
                             </div>
                             <div className="col-md-6 mb-3">
-                                <label className="form-label">Type ID</label>
+                                <label className="form-label">{t('admin.paymentGetway.svcProdLabelTypeId')}</label>
                                 <input
                                     type="text"
                                     className="form-control"
@@ -141,7 +143,7 @@ const ServiceProducts = () => {
                                 />
                             </div>
                             <div className="col-md-6 mb-3">
-                                <label className="form-label">Country ID</label>
+                                <label className="form-label">{t('admin.paymentGetway.svcProdLabelCountryId')}</label>
                                 <input
                                     className="form-control"
                                     value={formData.country_id}
@@ -149,7 +151,7 @@ const ServiceProducts = () => {
                                 />
                             </div>
                             <div className="col-md-6 mb-3">
-                                <label className="form-label">Service URL</label>
+                                <label className="form-label">{t('admin.paymentGetway.svcProdLabelServiceUrl')}</label>
                                 <input
                                     className="form-control"
                                     value={formData.service_url}
@@ -157,7 +159,7 @@ const ServiceProducts = () => {
                                 />
                             </div>
                             <div className="col-md-6 mb-3">
-                                <label className="form-label">Notify URL</label>
+                                <label className="form-label">{t('admin.paymentGetway.svcProdLabelNotifyUrl')}</label>
                                 <input
                                     className="form-control"
                                     value={formData.notify_url}
@@ -165,7 +167,7 @@ const ServiceProducts = () => {
                                 />
                             </div>
                             <div className="col-md-6 mb-3">
-                                <label className="form-label">Prepay URL</label>
+                                <label className="form-label">{t('admin.paymentGetway.svcProdLabelPrepayUrl')}</label>
                                 <input
                                     className="form-control"
                                     value={formData.prepay_url}
@@ -173,7 +175,7 @@ const ServiceProducts = () => {
                                 />
                             </div>
                             <div className="col-md-6 mb-3">
-                                <label className="form-label">Image</label>
+                                <label className="form-label">{t('admin.paymentGetway.catLabelImage')}</label>
                                 <input
                                     className="form-control"
                                     value={formData.image}
@@ -181,7 +183,7 @@ const ServiceProducts = () => {
                                 />
                             </div>
                             <div className="col-md-6 mb-3">
-                                <label className="form-label">Status</label>
+                                <label className="form-label">{t('admin.paymentGetway.status')}</label>
                                 <div className="form-check form-switch">
                                     <input
                                         className="form-check-input"
@@ -190,29 +192,29 @@ const ServiceProducts = () => {
                                         onChange={(e) => setFormData({ ...formData, status: e.target.checked })}
                                     />
                                     <label className="form-check-label">
-                                        {formData.status ? 'Active' : 'Inactive'}
+                                        {formData.status ? t('admin.common.active') : t('admin.common.inactive')}
                                     </label>
                                 </div>
                             </div>
                         </div>
-                        <button type="submit" className="btn btn-primary">Create Product</button>
+                        <button type="submit" className="btn btn-primary">{t('admin.paymentGetway.svcProdCreateProductBtn')}</button>
                     </form>
                 )}
 
                 {loading ? (
-                    <div className="text-center py-5">Loading...</div>
+                    <div className="text-center py-5">{t('admin.paymentGetway.svcProdLoading')}</div>
                 ) : products.length === 0 ? (
-                    <div className="text-center py-5 text-muted">No products found</div>
+                    <div className="text-center py-5 text-muted">{t('admin.paymentGetway.svcProdNoProducts')}</div>
                 ) : (
                     <div className="table-responsive">
                         <table className="table table-striped">
                             <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Country</th>
-                                    <th>Type</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                <tr className="text-end text-muted fw-bold fs-7 text-uppercase gs-0">
+                                    <th>{t('admin.paymentGetway.catColName')}</th>
+                                    <th>{t('admin.paymentGetway.svcProdColCountry')}</th>
+                                    <th>{t('admin.paymentGetway.svcProdColType')}</th>
+                                    <th>{t('admin.paymentGetway.status')}</th>
+                                    <th>{t('admin.common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -223,7 +225,7 @@ const ServiceProducts = () => {
                                         <td>{product.type_id || '-'}</td>
                                         <td>
                                             <span className={`badge badge-${product.isActive() ? 'success' : 'danger'}`}>
-                                                {product.isActive() ? 'Active' : 'Inactive'}
+                                                {product.isActive() ? t('admin.common.active') : t('admin.common.inactive')}
                                             </span>
                                         </td>
                                         <td>
@@ -231,7 +233,7 @@ const ServiceProducts = () => {
                                                 className="btn btn-sm btn-danger"
                                                 onClick={() => handleDelete(product.id)}
                                             >
-                                                Delete
+                                                {t('admin.common.delete')}
                                             </button>
                                         </td>
                                     </tr>

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getTranslatedText } from '../../../utils/helpers';
 import { useCan, USER_GROUP_EDIT_PERMISSIONS } from '../../../utils/permissions';
 
@@ -12,6 +13,7 @@ const UserGroupTableRow = ({
     onDeactivate, 
     onDelete 
 }) => {
+    const { t } = useTranslation();
     const canEditUserGroup = useCan(USER_GROUP_EDIT_PERMISSIONS);
     const canDeleteUserGroup = useCan('pos.user_groups.delete_users_groups');
     const [showActions, setShowActions] = useState(false);
@@ -33,7 +35,7 @@ const UserGroupTableRow = ({
     };
 
     const getStatusBadge = (isActive) => {
-        const statusText = isActive ? 'Active' : 'Inactive';
+        const statusText = isActive ? t('admin.common.active') : t('admin.common.inactive');
         const statusClass = isActive ? 'badge-light-success' : 'badge-light-warning';
         
         return (
@@ -101,7 +103,7 @@ const UserGroupTableRow = ({
                         {getTranslatedText(group.branch.name)}
                     </span>
                 ) : (
-                    <span className="text-muted">N/A</span>
+                    <span className="text-muted">{t('admin.common.na')}</span>
                 )}
             </td>
 
@@ -123,14 +125,14 @@ const UserGroupTableRow = ({
                         </span>
                     </div>
                 ) : (
-                    <span className="text-muted">N/A</span>
+                    <span className="text-muted">{t('admin.common.na')}</span>
                 )}
             </td>
 
             {/* Users Count */}
             <td>
                 <span className="badge badge-light-primary">
-                    {group.users?.length || 0} Users
+                    {t('admin.userGroupsUI.tableRow.usersCount', { count: group.users?.length || 0 })}
                 </span>
             </td>
 
@@ -156,7 +158,7 @@ const UserGroupTableRow = ({
                         onClick={() => setShowActions(!showActions)}
                         onBlur={() => setTimeout(() => setShowActions(false), 200)}
                     >
-                        Actions
+                        {t('admin.userGroupsUI.tableRow.actions')}
                         <i className="ki-duotone ki-down fs-5 ms-1"></i>
                     </button>
                     {showActions && (
@@ -180,7 +182,7 @@ const UserGroupTableRow = ({
                                     <span className="path2"></span>
                                     <span className="path3"></span>
                                 </i>
-                                View
+                                {t('admin.common.view')}
                             </Link>
                             
                             {canEditUserGroup && (
@@ -193,7 +195,7 @@ const UserGroupTableRow = ({
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Edit
+                                    {t('admin.common.edit')}
                                 </Link>
                             )}
                             
@@ -206,7 +208,7 @@ const UserGroupTableRow = ({
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Deactivate
+                                    {t('admin.terminalGroupsUI.view.deactivate')}
                                 </button>
                             ) : (
                                 <button 
@@ -217,7 +219,7 @@ const UserGroupTableRow = ({
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Activate
+                                    {t('admin.terminalGroupsUI.view.activate')}
                                 </button>
                             )}
                             
@@ -235,7 +237,7 @@ const UserGroupTableRow = ({
                                         <span className="path4"></span>
                                         <span className="path5"></span>
                                     </i>
-                                    Delete
+                                    {t('admin.common.delete')}
                                 </button>
                             )}
                         </div>

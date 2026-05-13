@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import {
@@ -20,9 +21,10 @@ import { getToken } from '../../../utils/api';
 
 const PLACEHOLDER_ROWS = 6;
 
-const subPartnersTabPlaceholderColumns = ['Country', 'Partner', 'Category', 'Created', 'Status', 'Actions'];
+const subPartnersTabPlaceholderColumns = ['viewCountryCol', 'viewPartnerCol', 'viewCategoryCol', 'viewCreatedCol', 'status', 'actions'];
 
 const PartnerSubPartnersTab = ({ parentId, parentName }) => {
+    const { t } = useTranslation();
     const canCreatePartner = useCan('pos.merchants.create_merchants');
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -71,7 +73,7 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
                 });
             }
         } catch (e) {
-            toast.error('Failed to load Sub Partners');
+            toast.error(t('admin.paymentGetway.viewFailedLoadSubPartners'));
             console.error(e);
         } finally {
             setLoading(false);
@@ -84,11 +86,11 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
 
     const handleApprove = async (subId) => {
         const confirmation = await Swal.fire({
-            title: 'Approve Sub Partner?',
+            title: t('admin.paymentGetway.viewApproveSubPartnerTitle'),
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Approve',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.paymentGetway.viewApprove'),
+            cancelButtonText: t('admin.common.cancel'),
             customClass: { confirmButton: 'btn btn-success', cancelButton: 'btn btn-light' },
             buttonsStyling: false,
         });
@@ -100,11 +102,11 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
                 return;
             }
             if (result.data.success || result.data.status) {
-                toast.success('Sub Partner approved');
+                toast.success(t('admin.paymentGetway.viewSubPartnerApproved'));
                 fetchRows();
             }
         } catch (e) {
-            toast.error('Failed to approve');
+            toast.error(t('admin.paymentGetway.viewFailedApprove'));
         }
     };
 
@@ -122,13 +124,13 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
                 return;
             }
             if (result.data.success || result.data.status) {
-                toast.success('Sub Partner rejected');
+                toast.success(t('admin.paymentGetway.viewSubPartnerRejected'));
                 setRejectModalOpen(false);
                 setRejectingPartner(null);
                 fetchRows();
             }
         } catch (e) {
-            toast.error(e.response?.data?.message || 'Failed to reject');
+            toast.error(e.response?.data?.message || t('admin.paymentGetway.viewFailedReject'));
         } finally {
             setIsRejectSubmitting(false);
         }
@@ -136,14 +138,14 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
 
     const handleSuspend = async (partner) => {
         const suspensionPrompt = await Swal.fire({
-            title: 'Suspend Sub Partner',
+            title: t('admin.paymentGetway.viewSuspendSubPartnerTitle'),
             input: 'textarea',
             showCancelButton: true,
-            confirmButtonText: 'Suspend',
+            confirmButtonText: t('admin.common.suspend'),
             preConfirm: (value) => {
                 const t = value?.trim();
                 if (!t || t.length < 10) {
-                    Swal.showValidationMessage('Reason must be at least 10 characters.');
+                    Swal.showValidationMessage(t('admin.paymentGetway.viewSuspendReasonMin'));
                     return;
                 }
                 return t;
@@ -157,20 +159,20 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
                 return;
             }
             if (result.data.success || result.data.status) {
-                toast.success('Sub Partner suspended');
+                toast.success(t('admin.paymentGetway.viewSubPartnerSuspended'));
                 fetchRows();
             }
         } catch {
-            toast.error('Failed to suspend');
+            toast.error(t('admin.paymentGetway.viewFailedSuspend'));
         }
     };
 
     const handleUnsuspend = async (subId) => {
         const confirmation = await Swal.fire({
-            title: 'Unsuspend?',
+            title: t('admin.paymentGetway.viewUnsuspendTitle'),
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Unsuspend',
+            confirmButtonText: t('admin.paymentGetway.viewUnsuspend'),
         });
         if (!confirmation.isConfirmed) return;
         try {
@@ -180,20 +182,20 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
                 return;
             }
             if (result.data.success || result.data.status) {
-                toast.success('Sub Partner unsuspended');
+                toast.success(t('admin.paymentGetway.viewSubPartnerUnsuspended'));
                 fetchRows();
             }
         } catch {
-            toast.error('Failed to unsuspend');
+            toast.error(t('admin.paymentGetway.viewFailedUnsuspend'));
         }
     };
 
     const handleDelete = async (subId) => {
         const confirmation = await Swal.fire({
-            title: 'Delete Sub Partner?',
+            title: t('admin.paymentGetway.viewDeleteSubPartnerTitle'),
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Delete',
+            confirmButtonText: t('admin.common.delete'),
         });
         if (!confirmation.isConfirmed) return;
         try {
@@ -203,11 +205,11 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
                 return;
             }
             if (result.data.success || result.data.status) {
-                toast.success('Deleted');
+                toast.success(t('admin.paymentGetway.viewDeleted'));
                 fetchRows();
             }
         } catch {
-            toast.error('Failed to delete');
+            toast.error(t('admin.paymentGetway.viewFailedDelete'));
         }
     };
 
@@ -265,7 +267,7 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
 
     const handleResetPassword = async (partner) => {
         if (!partner.user_id && !partner.user?.id) {
-            toast.error('No user account linked');
+            toast.error(t('admin.paymentGetway.viewNoUserLinked'));
             return;
         }
         const userId = partner.user_id || partner.user?.id;
@@ -275,12 +277,12 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
                 headers: { Authorization: `Bearer ${token}` },
             });
             if (response.data.success || response.data.status) {
-                toast.success(response.data.data?.message || 'Reset link sent');
+                toast.success(response.data.data?.message || t('admin.paymentGetway.viewResetLinkSent'));
             } else {
-                toast.error(response.data.message || 'Failed');
+                toast.error(response.data.message || t('admin.paymentGetway.cpImportFailed'));
             }
         } catch (e) {
-            toast.error(e.response?.data?.message || 'Failed');
+            toast.error(e.response?.data?.message || t('admin.paymentGetway.cpImportFailed'));
         }
     };
 
@@ -288,9 +290,9 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
         <div className="card">
             <div className="card-header border-0 pt-6">
                 <div className="card-title flex-column align-items-start">
-                    <h3 className="fw-bolder fs-4">Sub Partners</h3>
+                    <h3 className="fw-bolder fs-4">{t('admin.paymentGetway.viewSubPartnersTitle')}</h3>
                     <span className="text-muted fs-8">
-                        Under {parentName || 'parent'} — same country and category as this partner.
+                        {t('admin.paymentGetway.viewSubPartnersUnder', { parent: parentName || t('admin.paymentGetway.cpParent') })}
                     </span>
                 </div>
                 <div className="card-toolbar">
@@ -303,7 +305,7 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            <span className="d-none d-md-inline ms-1">Add Sub Partner</span>
+                            <span className="d-none d-md-inline ms-1">{t('admin.paymentGetway.viewAddSubPartner')}</span>
                         </Link>
                     )}
                 </div>
@@ -316,12 +318,12 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
                     <table className="table table-sm table-row-dashed align-middle fs-7 gy-3">
                         <thead>
                             <tr className="text-start text-gray-400 fw-bold fs-8 text-uppercase gs-0">
-                                <th className="text-dark" style={{ minWidth: '88px', maxWidth: '110px' }}>Country</th>
-                                <th className="text-dark" style={{ minWidth: '160px', maxWidth: '240px' }}>Partner</th>
-                                <th className="text-dark" style={{ minWidth: '72px', maxWidth: '100px' }}>Category</th>
-                                <th className="text-dark" style={{ minWidth: '78px', maxWidth: '92px' }}>Created</th>
-                                <th className="text-dark" style={{ minWidth: '72px' }}>Status</th>
-                                <th className="text-end text-dark" style={{ minWidth: '96px' }}>Actions</th>
+                                <th className="text-dark" style={{ minWidth: '88px', maxWidth: '110px' }}>{t('admin.paymentGetway.viewCountryCol')}</th>
+                                <th className="text-dark" style={{ minWidth: '160px', maxWidth: '240px' }}>{t('admin.paymentGetway.viewPartnerCol')}</th>
+                                <th className="text-dark" style={{ minWidth: '72px', maxWidth: '100px' }}>{t('admin.paymentGetway.viewCategoryCol')}</th>
+                                <th className="text-dark" style={{ minWidth: '78px', maxWidth: '92px' }}>{t('admin.paymentGetway.viewCreatedCol')}</th>
+                                <th className="text-dark" style={{ minWidth: '72px' }}>{t('admin.paymentGetway.status')}</th>
+                                <th className="text-end text-dark" style={{ minWidth: '96px' }}>{t('admin.common.actions')}</th>
                             </tr>
                         </thead>
                         <tbody className="text-gray-600 fw-semibold">
@@ -356,9 +358,9 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
 
                 {!loading && rows.length === 0 && (
                     <div className="text-center py-10 text-gray-600">
-                        No Sub Partners yet. {canCreatePartner && (
+                        {t('admin.paymentGetway.viewNoSubPartners')} {canCreatePartner && (
                             <Link to={`/admin/partners/${parentId}/sub-partners/create`} className="fw-bold">
-                                Add one
+                                {t('admin.paymentGetway.viewAddOne')}
                             </Link>
                         )}
                     </div>
@@ -381,7 +383,7 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
                                         setPagination((p) => ({ ...p, current_page: p.current_page - 1 }))
                                     }
                                 >
-                                    Previous
+                                    {t('admin.common.previous')}
                                 </button>
                             </li>
                             <li className={`page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}`}>
@@ -393,7 +395,7 @@ const PartnerSubPartnersTab = ({ parentId, parentName }) => {
                                         setPagination((p) => ({ ...p, current_page: p.current_page + 1 }))
                                     }
                                 >
-                                    Next
+                                    {t('admin.common.next')}
                                 </button>
                             </li>
                         </ul>

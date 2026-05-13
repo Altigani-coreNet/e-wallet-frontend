@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import axios from '../../utils/axiosConfig';
@@ -9,6 +10,7 @@ import { getPartnersSelect } from '../../services/adminPartnersService';
 import SearchableDropdown from '../../common/filters/SearchableDropdown';
 
 const ServiceCreate = () => {
+    const { t } = useTranslation();
     const { setTitle, setBreadcrumbs } = useToolbar();
     const navigate = useNavigate();
     const [submitting, setSubmitting] = useState(false);
@@ -46,15 +48,34 @@ const ServiceCreate = () => {
     const [subCategoriesEnabled, setSubCategoriesEnabled] = useState(false);
     const [subCategorySearchTerm, setSubCategorySearchTerm] = useState("");
     const [selectedSubCategoryOption, setSelectedSubCategoryOption] = useState(null);
-    const [serviceTypes, setServiceTypes] = useState([
-        { value: "digital", label: "Digital" },
-        { value: "ivr", label: "IVR" },
-        { value: "sms", label: "SMS" },
-    ]);
+    const defaultServiceTypes = useMemo(
+        () => [
+            { value: 'digital', label: t('admin.paymentGetway.svcTypeDigital') },
+            { value: 'ivr', label: t('admin.paymentGetway.svcTypeIvr') },
+            { value: 'sms', label: t('admin.paymentGetway.svcTypeSms') },
+        ],
+        [t]
+    );
+    const [serviceTypes, setServiceTypes] = useState(defaultServiceTypes);
     const [loadingServiceTypes, setLoadingServiceTypes] = useState(false);
     const [serviceTypesEnabled, setServiceTypesEnabled] = useState(false);
     const [serviceTypeSearchTerm, setServiceTypeSearchTerm] = useState("");
-    const [selectedServiceTypeOption, setSelectedServiceTypeOption] = useState({ value: "digital", label: "Digital" });
+    const [selectedServiceTypeOption, setSelectedServiceTypeOption] = useState(defaultServiceTypes[0]);
+
+    useEffect(() => {
+        setServiceTypes((prev) => {
+            if (!prev?.length) return defaultServiceTypes;
+            return prev.map((row) => {
+                const tr = defaultServiceTypes.find((d) => d.value === row.value);
+                return tr ? { ...row, label: tr.label } : row;
+            });
+        });
+        setSelectedServiceTypeOption((prev) => {
+            const v = prev?.value || 'digital';
+            const tr = defaultServiceTypes.find((d) => d.value === v);
+            return tr || defaultServiceTypes[0];
+        });
+    }, [defaultServiceTypes]);
 
     const [contentProviders, setContentProviders] = useState([]);
     const [loadingContentProviders, setLoadingContentProviders] = useState(false);
@@ -77,17 +98,17 @@ const ServiceCreate = () => {
     const [serviceImageFile, setServiceImageFile] = useState(null);
 
     useEffect(() => {
-        setTitle('Add Service');
+        setTitle(t('admin.paymentGetway.titlesAddService'));
         setBreadcrumbs([
-            { label: 'Home', path: '/admin' },
-            { label: 'Services', path: '/admin/services' },
-            { label: 'Add Service', path: '/admin/services/create', active: true }
+            { label: t('admin.paymentGetway.breadcrumbsHome'), path: '/admin' },
+            { label: t('admin.paymentGetway.breadcrumbsServices'), path: '/admin/services' },
+            { label: t('admin.paymentGetway.titlesAddService'), path: '/admin/services/create', active: true },
         ]);
 
         return () => {
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs]);
+    }, [setTitle, setBreadcrumbs, t]);
 
     // Load countries
     const loadCountries = useCallback(
@@ -332,9 +353,9 @@ const ServiceCreate = () => {
     const loadServiceTypes = useCallback(
         async (search = "") => {
             const defaultTypes = [
-                { value: "digital", label: "Digital" },
-                { value: "ivr", label: "IVR" },
-                { value: "sms", label: "SMS" },
+                { value: 'digital', label: t('admin.paymentGetway.svcTypeDigital') },
+                { value: 'ivr', label: t('admin.paymentGetway.svcTypeIvr') },
+                { value: 'sms', label: t('admin.paymentGetway.svcTypeSms') },
             ];
             try {
                 setLoadingServiceTypes(true);
@@ -358,7 +379,7 @@ const ServiceCreate = () => {
                 setLoadingServiceTypes(false);
             }
         },
-        []
+        [t]
     );
 
     useEffect(() => {
@@ -422,32 +443,32 @@ const ServiceCreate = () => {
 
         // Validation
         if (!formData.country_id) {
-            toast.error("Country is required");
+            toast.error(t('admin.paymentGetway.svcErrCountryRequired'));
             return;
         }
         if (!formData.category_id) {
-            toast.error("Category is required");
+            toast.error(t('admin.paymentGetway.svcErrCategoryRequired'));
             return;
         }
         if (!selectedParentPartner) {
-            toast.error("Parent partner is required");
+            toast.error(t('admin.paymentGetway.svcErrParentPartnerRequired'));
             return;
         }
         if (selectedParentPartner.has_sub_partners && !formData.partner_id) {
-            toast.error("Sub partner is required for this parent organization");
+            toast.error(t('admin.paymentGetway.svcErrSubPartnerRequiredOrg'));
             return;
         }
         if (!formData.partner_id) {
-            toast.error("Partner is required");
+            toast.error(t('admin.paymentGetway.svcErrPartnerRequired'));
             return;
         }
         if (!formData.service_type) {
-            toast.error("Service Type is required");
+            toast.error(t('admin.paymentGetway.svcErrServiceTypeRequired'));
             return;
         }
 
         if (!formData.price) {
-            toast.error("Price is required");
+            toast.error(t('admin.paymentGetway.svcErrPriceRequired'));
             return;
         }
 
@@ -474,12 +495,12 @@ const ServiceCreate = () => {
             const response = await axios.post(ADMIN_ENDPOINTS.SERVICES, submitData, config);
 
             if (response.data.success) {
-                toast.success(response.data.message || "Service created successfully");
+                toast.success(response.data.message || t('admin.paymentGetway.svcCreatedSuccess'));
                 navigate('/admin/services');
             }
         } catch (error) {
             console.error("Error creating service:", error);
-            toast.error(error.response?.data?.message || "Failed to create service");
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.svcErrCreateFailed'));
         } finally {
             setSubmitting(false);
         }
@@ -499,7 +520,7 @@ const ServiceCreate = () => {
 
     const handleSubCategoryOpen = useCallback(() => {
         if (!formData.category_id) {
-            toast.warning("Please select a category first");
+            toast.warning(t('admin.paymentGetway.svcWarnSelectCategoryFirst'));
             return;
         }
         setSubCategoriesEnabled(true);
@@ -515,7 +536,7 @@ const ServiceCreate = () => {
 
     const handleContentProviderOpen = useCallback(() => {
         if (!formData.country_id) {
-            toast.warning("Please select a country first");
+            toast.warning(t('admin.paymentGetway.wizSelectCountryFirst'));
             return;
         }
         setContentProvidersEnabled(true);
@@ -599,7 +620,7 @@ const ServiceCreate = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Add New Service</h3>
+                <h3 className="card-title">{t('admin.paymentGetway.svcCreateCardTitle')}</h3>
             </div>
             <form onSubmit={handleSubmit}>
                 <div className="card-body">
@@ -607,8 +628,8 @@ const ServiceCreate = () => {
                         {/* Category */}
                         <div className="col-md-6">
                             <SearchableDropdown
-                                label="Category *"
-                                placeholder="Select category"
+                                label={t('admin.paymentGetway.svcLabelCategoryRequired')}
+                                placeholder={t('admin.paymentGetway.svcPlaceholderSelectCategory')}
                                 options={categoryOptions}
                                 selected={selectedCategoryOption}
                                 onSelect={(option) => {
@@ -623,7 +644,7 @@ const ServiceCreate = () => {
                                 }}
                                 required={true}
                                 loading={loadingCategories}
-                                searchPlaceholder="Search categories..."
+                                searchPlaceholder={t('admin.paymentGetway.catSearchPlaceholder')}
                                 onOpen={handleCategoryOpen}
                                 onSearchChange={handleCategorySearchChange}
                                 showClear={false}
@@ -633,8 +654,8 @@ const ServiceCreate = () => {
                         {/* Sub-Category */}
                         <div className="col-md-6">
                             <SearchableDropdown
-                                label="Sub-Category"
-                                placeholder="Select sub-category"
+                                label={t('admin.paymentGetway.svcLabelSubCategory')}
+                                placeholder={t('admin.paymentGetway.svcPlaceholderSelectSubCategory')}
                                 options={subCategoryOptions}
                                 selected={selectedSubCategoryOption}
                                 onSelect={(option) => {
@@ -646,7 +667,7 @@ const ServiceCreate = () => {
                                     setFormData({ ...formData, sub_category_id: "" });
                                 }}
                                 loading={loadingSubCategories}
-                                searchPlaceholder="Search sub-categories..."
+                                searchPlaceholder={t('admin.paymentGetway.subCatSearchPlaceholder')}
                                 onOpen={handleSubCategoryOpen}
                                 onSearchChange={handleSubCategorySearchChange}
                                 showClear={true}
@@ -656,8 +677,8 @@ const ServiceCreate = () => {
                         {/* Service Type */}
                         <div className="col-md-6">
                             <SearchableDropdown
-                                label="Service Type *"
-                                placeholder="Select service type"
+                                label={t('admin.paymentGetway.svcLabelServiceTypeRequired')}
+                                placeholder={t('admin.paymentGetway.svcPlaceholderSelectServiceType')}
                                 options={serviceTypes}
                                 selected={selectedServiceTypeOption}
                                 onSelect={(option) => {
@@ -665,12 +686,12 @@ const ServiceCreate = () => {
                                     setFormData({ ...formData, service_type: option?.value || "digital" });
                                 }}
                                 onClear={() => {
-                                    setSelectedServiceTypeOption({ value: "digital", label: "Digital" });
+                                    setSelectedServiceTypeOption(defaultServiceTypes[0]);
                                     setFormData({ ...formData, service_type: "digital" });
                                 }}
                                 required={true}
                                 loading={loadingServiceTypes}
-                                searchPlaceholder="Search service types..."
+                                searchPlaceholder={t('admin.paymentGetway.svcSearchServiceTypes')}
                                 onOpen={handleServiceTypeOpen}
                                 onSearchChange={handleServiceTypeSearchChange}
                                 showClear={false}
@@ -680,8 +701,8 @@ const ServiceCreate = () => {
                         {/* Country */}
                         <div className="col-md-6">
                             <SearchableDropdown
-                                label="Country *"
-                                placeholder="Select country"
+                                label={t('admin.paymentGetway.svcLabelCountryRequired')}
+                                placeholder={t('admin.paymentGetway.cpSelectCountryPlaceholder')}
                                 options={countryOptions}
                                 selected={selectedCountryOption}
                                 onSelect={handleCountrySelect}
@@ -690,7 +711,7 @@ const ServiceCreate = () => {
                                 loading={loadingCountries}
                                 onOpen={handleCountryOpen}
                                 onSearchChange={handleCountrySearchChange}
-                                searchPlaceholder="Search countries..."
+                                searchPlaceholder={t('admin.paymentGetway.cpSearchCountries')}
                                 showClear={false}
                             />
                         </div>
@@ -698,8 +719,8 @@ const ServiceCreate = () => {
                         {/* Parent partner */}
                         <div className="col-md-6">
                             <SearchableDropdown
-                                label="Parent partner *"
-                                placeholder="Select parent partner"
+                                label={t('admin.paymentGetway.svcLabelParentPartnerRequired')}
+                                placeholder={t('admin.paymentGetway.wizPlaceholderParentPartner')}
                                 options={parentPartnerOptions}
                                 selected={selectedParentPartnerOption}
                                 onSelect={(option) => {
@@ -724,7 +745,7 @@ const ServiceCreate = () => {
                                 }}
                                 required={true}
                                 loading={loadingContentProviders}
-                                searchPlaceholder="Search parent partners..."
+                                searchPlaceholder={t('admin.paymentGetway.cpSearchParentPartners')}
                                 onOpen={handleContentProviderOpen}
                                 onSearchChange={handleContentProviderSearchChange}
                                 showClear={false}
@@ -733,8 +754,8 @@ const ServiceCreate = () => {
                         {selectedParentPartner?.has_sub_partners ? (
                             <div className="col-md-6">
                                 <SearchableDropdown
-                                    label="Sub partner *"
-                                    placeholder="Select sub partner"
+                                    label={t('admin.paymentGetway.svcLabelSubPartnerRequired')}
+                                    placeholder={t('admin.paymentGetway.svcPlaceholderSelectSubPartner')}
                                     options={subPartnerOptions}
                                     selected={selectedSubPartnerOption}
                                     onSelect={(option) => {
@@ -749,7 +770,7 @@ const ServiceCreate = () => {
                                     }}
                                     required={true}
                                     loading={loadingSubPartners}
-                                    searchPlaceholder="Search sub-partners..."
+                                    searchPlaceholder={t('admin.paymentGetway.svcSearchSubPartnersFilter')}
                                     onOpen={handleSubPartnerOpen}
                                     onSearchChange={handleSubPartnerSearchChange}
                                     showClear={false}
@@ -759,7 +780,7 @@ const ServiceCreate = () => {
 
                         {/* Service Image */}
                         <div className="col-md-6">
-                            <label className="form-label fw-bold">Service Image</label>
+                            <label className="form-label fw-bold">{t('admin.paymentGetway.svcLabelServiceImage')}</label>
                             <div className="d-flex align-items-center gap-4">
                                 <div
                                     className="image-input-wrapper w-100px h-100px border rounded"
@@ -771,18 +792,20 @@ const ServiceCreate = () => {
                                 ></div>
                                 <div className="flex-grow-1">
                                     <input type="file" name="image" accept="image/*" className="form-control" onChange={handleServiceImageChange} />
-                                    <div className="text-muted fs-7 mt-2">Upload service image</div>
+                                    <div className="text-muted fs-7 mt-2">
+                                        {t('admin.paymentGetway.svcUploadServiceImageHint')}
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Product ID */}
                         <div className="col-md-6">
-                            <label className="form-label">Product ID</label>
+                            <label className="form-label">{t('admin.paymentGetway.svcLabelProductId')}</label>
                             <input
                                 type="text"
                                 className="form-control"
-                                placeholder="Enter product ID (optional)"
+                                placeholder={t('admin.paymentGetway.svcPlaceholderProductId')}
                                 value={formData.product_id}
                                 onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
                             />
@@ -790,12 +813,12 @@ const ServiceCreate = () => {
 
                         {/* Price */}
                         <div className="col-md-6">
-                            <label className="form-label required">Price</label>
+                            <label className="form-label required">{t('admin.paymentGetway.svcLabelPrice')}</label>
                             <input
                                 type="number"
                                 step="0.01"
                                 className="form-control"
-                                placeholder="0.00"
+                                placeholder={t('admin.paymentGetway.svcPlaceholderZero')}
                                 value={formData.price}
                                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                                 required
@@ -804,45 +827,45 @@ const ServiceCreate = () => {
 
                         {/* Fallback Prices */}
                         <div className="col-md-3">
-                            <label className="form-label">Fallback Price 1</label>
+                            <label className="form-label">{t('admin.paymentGetway.svcLabelFallbackPrice1')}</label>
                             <input
                                 type="number"
                                 step="0.01"
                                 className="form-control"
-                                placeholder="0.00"
+                                placeholder={t('admin.paymentGetway.svcPlaceholderZero')}
                                 value={formData.fallback_price1}
                                 onChange={(e) => setFormData({ ...formData, fallback_price1: e.target.value })}
                             />
                         </div>
                         <div className="col-md-3">
-                            <label className="form-label">Fallback Price 2</label>
+                            <label className="form-label">{t('admin.paymentGetway.svcLabelFallbackPrice2')}</label>
                             <input
                                 type="number"
                                 step="0.01"
                                 className="form-control"
-                                placeholder="0.00"
+                                placeholder={t('admin.paymentGetway.svcPlaceholderZero')}
                                 value={formData.fallback_price2}
                                 onChange={(e) => setFormData({ ...formData, fallback_price2: e.target.value })}
                             />
                         </div>
                         <div className="col-md-3">
-                            <label className="form-label">Fallback Price 3</label>
+                            <label className="form-label">{t('admin.paymentGetway.svcLabelFallbackPrice3')}</label>
                             <input
                                 type="number"
                                 step="0.01"
                                 className="form-control"
-                                placeholder="0.00"
+                                placeholder={t('admin.paymentGetway.svcPlaceholderZero')}
                                 value={formData.fallback_price3}
                                 onChange={(e) => setFormData({ ...formData, fallback_price3: e.target.value })}
                             />
                         </div>
                         <div className="col-md-3">
-                            <label className="form-label">Fallback Price 4</label>
+                            <label className="form-label">{t('admin.paymentGetway.svcLabelFallbackPrice4')}</label>
                             <input
                                 type="number"
                                 step="0.01"
                                 className="form-control"
-                                placeholder="0.00"
+                                placeholder={t('admin.paymentGetway.svcPlaceholderZero')}
                                 value={formData.fallback_price4}
                                 onChange={(e) => setFormData({ ...formData, fallback_price4: e.target.value })}
                             />
@@ -850,11 +873,11 @@ const ServiceCreate = () => {
 
                         {/* Sub Code */}
                         <div className="col-md-6">
-                            <label className="form-label">Sub Code</label>
+                            <label className="form-label">{t('admin.paymentGetway.svcLabelSubCode')}</label>
                             <input
                                 type="text"
                                 className="form-control"
-                                placeholder="Enter sub code"
+                                placeholder={t('admin.paymentGetway.svcPlaceholderSubCode')}
                                 value={formData.sub_code}
                                 onChange={(e) => setFormData({ ...formData, sub_code: e.target.value })}
                             />
@@ -862,11 +885,11 @@ const ServiceCreate = () => {
 
                         {/* Cancel Code */}
                         <div className="col-md-6">
-                            <label className="form-label">Cancel Code</label>
+                            <label className="form-label">{t('admin.paymentGetway.svcLabelCancelCode')}</label>
                             <input
                                 type="text"
                                 className="form-control"
-                                placeholder="Enter cancel code"
+                                placeholder={t('admin.paymentGetway.svcPlaceholderCancelCode')}
                                 value={formData.cancel_code}
                                 onChange={(e) => setFormData({ ...formData, cancel_code: e.target.value })}
                             />
@@ -874,12 +897,12 @@ const ServiceCreate = () => {
 
                         {/* Tax */}
                         <div className="col-md-4">
-                            <label className="form-label">Tax (%)</label>
+                            <label className="form-label">{t('admin.paymentGetway.svcLabelTaxPct')}</label>
                             <input
                                 type="number"
                                 step="0.01"
                                 className="form-control"
-                                placeholder="0.00"
+                                placeholder={t('admin.paymentGetway.svcPlaceholderZero')}
                                 value={formData.tax}
                                 onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
                             />
@@ -887,24 +910,24 @@ const ServiceCreate = () => {
 
                         {/* Status */}
                         <div className="col-md-4">
-                            <label className="form-label required">Status</label>
+                            <label className="form-label required">{t('admin.paymentGetway.svcLabelStatusField')}</label>
                             <select
                                 className="form-select"
                                 value={formData.status}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                                 required
                             >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                                <option value="pending">Pending</option>
-                                <option value="staging">Staging</option>
-                                <option value="testing">Testing</option>
+                                <option value="active">{t('admin.common.active')}</option>
+                                <option value="inactive">{t('admin.common.inactive')}</option>
+                                <option value="pending">{t('admin.common.pending')}</option>
+                                <option value="staging">{t('admin.paymentGetway.wizStatusStaging')}</option>
+                                <option value="testing">{t('admin.common.testing')}</option>
                             </select>
                         </div>
 
                         {/* Is Active */}
                         <div className="col-md-4">
-                            <label className="form-label">Active Status</label>
+                            <label className="form-label">{t('admin.paymentGetway.cpLabelActiveStatus')}</label>
                             <div className="form-check form-switch form-check-custom form-check-solid mt-2">
                                 <input
                                     className="form-check-input"
@@ -913,18 +936,18 @@ const ServiceCreate = () => {
                                     onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
                                 />
                                 <label className="form-check-label">
-                                    {formData.is_active ? "Active" : "Inactive"}
+                                    {formData.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                 </label>
                             </div>
                         </div>
 
                         {/* Description English */}
                         <div className="col-md-6">
-                            <label className="form-label">Description (English)</label>
+                            <label className="form-label">{t('admin.paymentGetway.svcDescEnglish')}</label>
                             <textarea
                                 className="form-control"
                                 rows="3"
-                                placeholder="Enter description in English"
+                                placeholder={t('admin.paymentGetway.svcDescEnglishPlaceholder')}
                                 value={formData.description_en}
                                 onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
                             ></textarea>
@@ -932,11 +955,11 @@ const ServiceCreate = () => {
 
                         {/* Description Arabic */}
                         <div className="col-md-6">
-                            <label className="form-label">Description (Arabic)</label>
+                            <label className="form-label">{t('admin.paymentGetway.svcDescArabic')}</label>
                             <textarea
                                 className="form-control"
                                 rows="3"
-                                placeholder="أدخل الوصف بالعربية"
+                                placeholder={t('admin.paymentGetway.svcDescArabicPlaceholder')}
                                 value={formData.description_ar}
                                 onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
                             ></textarea>
@@ -950,7 +973,7 @@ const ServiceCreate = () => {
                         onClick={handleCancel}
                         disabled={submitting}
                     >
-                        Cancel
+                        {t('admin.common.cancel')}
                     </button>
                     <button 
                         type="submit" 
@@ -960,10 +983,10 @@ const ServiceCreate = () => {
                         {submitting ? (
                             <>
                                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                Creating...
+                                {t('admin.paymentGetway.svcCreatingShort')}
                             </>
                         ) : (
-                            'Next: Design Service'
+                            t('admin.paymentGetway.svcNextDesignService')
                         )}
                     </button>
                 </div>

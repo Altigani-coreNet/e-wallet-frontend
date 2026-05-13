@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { useAdminTerminalGroup, deleteAdminTerminalGroup, toggleTerminalGroupStatus, removeTerminalFromGroup } from '../../../services/adminTerminalGroupsService';
 
 const AdminTerminalGroupView = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -16,12 +18,12 @@ const AdminTerminalGroupView = () => {
     const terminalGroup = groupResponse?.data;
 
     useEffect(() => {
-        setTitle('Terminal Group Details');
+        setTitle(t('admin.terminalGroupsUI.view.pageTitle'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/admin/dashboard' },
-            { label: 'Terminal Groups', path: '/admin/terminal-groups' },
-            { label: 'Terminal Group Details', path: `/admin/terminal-groups/${id}`, active: true }
+            { label: t('admin.terminalGroupsUI.pages.breadcrumbDashboard'), path: '/admin/dashboard' },
+            { label: t('admin.terminalGroupsUI.pages.breadcrumbList'), path: '/admin/terminal-groups' },
+            { label: t('admin.terminalGroupsUI.view.breadcrumbDetail'), path: `/admin/terminal-groups/${id}`, active: true }
         ]);
         
         setActions(
@@ -34,7 +36,7 @@ const AdminTerminalGroupView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Edit
+                    {t('admin.terminalGroupsUI.view.edit')}
                 </Link>
                 
                 <button 
@@ -47,7 +49,7 @@ const AdminTerminalGroupView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    {isTogglingStatus ? 'Processing...' : (terminalGroup?.is_active ? 'Deactivate' : 'Activate')}
+                    {isTogglingStatus ? t('admin.terminalGroupsUI.view.processing') : (terminalGroup?.is_active ? t('admin.terminalGroupsUI.view.deactivate') : t('admin.terminalGroupsUI.view.activate'))}
                 </button>
                 
                 <button 
@@ -59,7 +61,7 @@ const AdminTerminalGroupView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Delete Group
+                    {t('admin.terminalGroupsUI.view.deleteGroup')}
                 </button>
                 
                 <Link 
@@ -70,7 +72,7 @@ const AdminTerminalGroupView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back
+                    {t('admin.terminalGroupsUI.view.back')}
                 </Link>
             </div>
         );
@@ -79,21 +81,20 @@ const AdminTerminalGroupView = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [id, terminalGroup, isLoading, isTogglingStatus, setTitle, setBreadcrumbs, setActions]);
+    }, [id, terminalGroup, isLoading, isTogglingStatus, setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     const handleToggleStatus = async () => {
         if (!terminalGroup) return;
 
-        const action = terminalGroup.is_active ? 'deactivate' : 'activate';
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to ${action} this terminal group.`,
+            title: t('admin.terminalGroupsUI.view.toggleTitle'),
+            text: terminalGroup.is_active ? t('admin.terminalGroupsUI.view.toggleTextDeactivate') : t('admin.terminalGroupsUI.view.toggleTextActivate'),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: terminalGroup.is_active ? '#f1416c' : '#50cd89',
             cancelButtonColor: '#7e8299',
-            confirmButtonText: `Yes, ${action} it!`,
-            cancelButtonText: 'Cancel'
+            confirmButtonText: terminalGroup.is_active ? t('admin.terminalGroupsUI.view.yesDeactivate') : t('admin.terminalGroupsUI.view.yesActivate'),
+            cancelButtonText: t('admin.terminalGroupsUI.view.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -114,14 +115,14 @@ const AdminTerminalGroupView = () => {
         if (!terminalGroup) return;
 
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You want to delete this terminal group?`,
+            title: t('admin.terminalGroupsUI.view.deleteTitle'),
+            text: t('admin.terminalGroupsUI.view.deleteText'),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('admin.terminalGroupsUI.view.yesDelete'),
+            cancelButtonText: t('admin.terminalGroupsUI.view.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -138,14 +139,14 @@ const AdminTerminalGroupView = () => {
 
     const handleRemoveTerminal = async (terminalId, terminalName) => {
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You want to remove this terminal from the group?`,
+            title: t('admin.terminalGroupsUI.view.removeTerminalTitle'),
+            text: t('admin.terminalGroupsUI.view.removeTerminalText'),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, remove it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('admin.terminalGroupsUI.view.yesRemove'),
+            cancelButtonText: t('admin.terminalGroupsUI.view.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -204,8 +205,16 @@ const AdminTerminalGroupView = () => {
                                 <table className="table align-middle table-row-dashed fs-6 gy-5">
                                     <thead>
                                         <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                            {['ID', 'Name', 'Terminal ID', 'Model', 'Manufacturer', 'Status', 'Actions'].map((header, idx) => (
-                                                <th key={idx} className={idx === 6 ? 'text-end' : ''}>
+                                            {[
+                                                'colId',
+                                                'colName',
+                                                'colTerminalId',
+                                                'colModel',
+                                                'colManufacturer',
+                                                'colStatus',
+                                                'colActions'
+                                            ].map((colKey, idx) => (
+                                                <th key={colKey} className={idx === 6 ? 'text-end' : ''}>
                                                     <div className="placeholder-glow">
                                                         <span className="placeholder col-8" style={{ height: '16px' }}></span>
                                                     </div>
@@ -244,9 +253,9 @@ const AdminTerminalGroupView = () => {
                         <span className="path2"></span>
                         <span className="path3"></span>
                     </i>
-                    <p className="text-danger fs-4">Terminal group not found</p>
+                    <p className="text-danger fs-4">{t('admin.terminalGroupsUI.view.notFound')}</p>
                     <Link to="/admin/terminal-groups" className="btn btn-primary mt-3">
-                        Back to Terminal Groups
+                        {t('admin.terminalGroupsUI.view.backToList')}
                     </Link>
                 </div>
             </div>
@@ -260,40 +269,40 @@ const AdminTerminalGroupView = () => {
                 <div className="card mb-5 mb-xl-8">
                     <div className="card-header border-0 pt-6">
                         <div className="card-title">
-                            <h2 className="fw-bold">Terminal Group Details</h2>
+                            <h2 className="fw-bold">{t('admin.terminalGroupsUI.view.cardTitle')}</h2>
                         </div>
                     </div>
                     
                     <div className="card-body pt-0">
                         <div className="row">
                             <div className="col-md-6 mb-4">
-                                <label className="form-label fw-bold text-muted">Group Name</label>
+                                <label className="form-label fw-bold text-muted">{t('admin.terminalGroupsUI.view.groupName')}</label>
                                 <p className="form-control-plaintext">{terminalGroup.name}</p>
                             </div>
                             
                             <div className="col-md-6 mb-4">
-                                <label className="form-label fw-bold text-muted">Group ID</label>
+                                <label className="form-label fw-bold text-muted">{t('admin.terminalGroupsUI.view.groupId')}</label>
                                 <p className="form-control-plaintext">
                                     <span className="badge badge-primary fs-6">{terminalGroup.group_id}</span>
                                 </p>
                             </div>
                             
                             <div className="col-md-6 mb-4">
-                                <label className="form-label fw-bold text-muted">Merchant</label>
-                                <p className="form-control-plaintext">{terminalGroup.merchant_id || 'N/A'}</p>
+                                <label className="form-label fw-bold text-muted">{t('admin.terminalGroupsUI.view.merchant')}</label>
+                                <p className="form-control-plaintext">{terminalGroup.merchant_id || t('admin.common.na')}</p>
                             </div>
                             
                             <div className="col-md-6 mb-4">
-                                <label className="form-label fw-bold text-muted">Status</label>
+                                <label className="form-label fw-bold text-muted">{t('admin.terminalGroupsUI.view.status')}</label>
                                 <p className="form-control-plaintext">
                                     <span className={`badge badge-${terminalGroup.is_active ? 'success' : 'danger'} fs-6`}>
-                                        {terminalGroup.is_active ? 'Active' : 'Inactive'}
+                                        {terminalGroup.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                     </span>
                                 </p>
                             </div>
                             
                             <div className="col-md-6 mb-4">
-                                <label className="form-label fw-bold text-muted">Created Date</label>
+                                <label className="form-label fw-bold text-muted">{t('admin.terminalGroupsUI.view.createdDate')}</label>
                                 <p className="form-control-plaintext">
                                     {terminalGroup.created_at ? new Date(terminalGroup.created_at).toLocaleString('en-US', {
                                         month: 'short',
@@ -301,12 +310,12 @@ const AdminTerminalGroupView = () => {
                                         year: 'numeric',
                                         hour: '2-digit',
                                         minute: '2-digit'
-                                    }) : 'N/A'}
+                                    }) : t('admin.common.na')}
                                 </p>
                             </div>
                             
                             <div className="col-md-6 mb-4">
-                                <label className="form-label fw-bold text-muted">Updated Date</label>
+                                <label className="form-label fw-bold text-muted">{t('admin.terminalGroupsUI.view.updatedDate')}</label>
                                 <p className="form-control-plaintext">
                                     {terminalGroup.updated_at ? new Date(terminalGroup.updated_at).toLocaleString('en-US', {
                                         month: 'short',
@@ -314,13 +323,13 @@ const AdminTerminalGroupView = () => {
                                         year: 'numeric',
                                         hour: '2-digit',
                                         minute: '2-digit'
-                                    }) : 'N/A'}
+                                    }) : t('admin.common.na')}
                                 </p>
                             </div>
                             
                             {terminalGroup.description && (
                                 <div className="col-12 mb-4">
-                                    <label className="form-label fw-bold text-muted">Description</label>
+                                    <label className="form-label fw-bold text-muted">{t('admin.terminalGroupsUI.view.description')}</label>
                                     <p className="form-control-plaintext">{terminalGroup.description}</p>
                                 </div>
                             )}
@@ -332,12 +341,12 @@ const AdminTerminalGroupView = () => {
                 <div className="card">
                     <div className="card-header border-0 pt-6">
                         <div className="card-title">
-                            <h3 className="fw-bold">Terminals in this Group</h3>
+                            <h3 className="fw-bold">{t('admin.terminalGroupsUI.view.terminalsCardTitle')}</h3>
                         </div>
                         <div className="card-toolbar">
                             <div className="d-flex justify-content-end">
                                 <span className="badge badge-light-primary fs-7">
-                                    {terminalGroup.terminals?.length || 0} Total
+                                    {t('admin.terminalGroupsUI.view.total', { count: terminalGroup.terminals?.length || 0 })}
                                 </span>
                             </div>
                         </div>
@@ -349,13 +358,13 @@ const AdminTerminalGroupView = () => {
                                 <table className="table align-middle table-row-dashed fs-6 gy-5" id="terminals-table">
                                     <thead>
                                         <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                            <th className="text-dark">ID</th>
-                                            <th className="min-w-125px text-dark">Name</th>
-                                            <th className="min-w-125px text-dark">Terminal ID</th>
-                                            <th className="min-w-125px text-dark">Model</th>
-                                            <th className="min-w-125px text-dark">Manufacturer</th>
-                                            <th className="text-dark">Status</th>
-                                            <th className="text-end min-w-125px text-dark">Actions</th>
+                                            <th className="text-dark">{t('admin.terminalGroupsUI.view.colId')}</th>
+                                            <th className="min-w-125px text-dark">{t('admin.terminalGroupsUI.view.colName')}</th>
+                                            <th className="min-w-125px text-dark">{t('admin.terminalGroupsUI.view.colTerminalId')}</th>
+                                            <th className="min-w-125px text-dark">{t('admin.terminalGroupsUI.view.colModel')}</th>
+                                            <th className="min-w-125px text-dark">{t('admin.terminalGroupsUI.view.colManufacturer')}</th>
+                                            <th className="text-dark">{t('admin.terminalGroupsUI.view.colStatus')}</th>
+                                            <th className="text-end min-w-125px text-dark">{t('admin.terminalGroupsUI.view.colActions')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="fw-semibold text-gray-600">
@@ -366,11 +375,11 @@ const AdminTerminalGroupView = () => {
                                                 <td>
                                                     <span className="badge badge-light-info fs-7">{terminal.terminal_id}</span>
                                                 </td>
-                                                <td>{terminal.model || 'N/A'}</td>
-                                                <td>{terminal.manufacturer || 'N/A'}</td>
+                                                <td>{terminal.model || t('admin.common.na')}</td>
+                                                <td>{terminal.manufacturer || t('admin.common.na')}</td>
                                                 <td>
                                                     <span className={`badge badge-light-${terminal.is_active ? 'success' : 'danger'} fs-7`}>
-                                                        {terminal.is_active ? 'Active' : 'Inactive'}
+                                                        {terminal.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                                     </span>
                                                 </td>
                                                 <td className="text-end">
@@ -378,19 +387,19 @@ const AdminTerminalGroupView = () => {
                                                         to={`/admin/terminals/${terminal.id}`} 
                                                         className="btn btn-sm btn-light-primary me-2"
                                                     >
-                                                        View
+                                                        {t('admin.terminalGroupsUI.view.viewTerminal')}
                                                     </Link>
                                                     <button 
                                                         type="button"
                                                         className="btn btn-sm btn-light-danger"
                                                         onClick={() => handleRemoveTerminal(terminal.id, terminal.name)}
-                                                        title="Remove from Group"
+                                                        title={t('admin.terminalGroupsUI.view.removeFromGroup')}
                                                     >
                                                         <i className="ki-duotone ki-cross fs-2">
                                                             <span className="path1"></span>
                                                             <span className="path2"></span>
                                                         </i>
-                                                        Unsign The Device
+                                                        {t('admin.terminalGroupsUI.view.unsignDevice')}
                                                     </button>
                                                 </td>
                                             </tr>
@@ -408,8 +417,8 @@ const AdminTerminalGroupView = () => {
                                         </i>
                                     </div>
                                 </div>
-                                <h3 className="text-gray-600 mb-2">No Terminals Assigned</h3>
-                                <p className="text-muted fs-6">This terminal group doesn't have any terminals assigned to it yet.</p>
+                                <h3 className="text-gray-600 mb-2">{t('admin.terminalGroupsUI.view.noTerminalsTitle')}</h3>
+                                <p className="text-muted fs-6">{t('admin.terminalGroupsUI.view.noTerminalsHint')}</p>
                                 <Link 
                                     to={`/admin/terminal-groups/${id}/edit`} 
                                     className="btn btn-primary"
@@ -418,7 +427,7 @@ const AdminTerminalGroupView = () => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Assign Terminals
+                                    {t('admin.terminalGroupsUI.view.assignTerminals')}
                                 </Link>
                             </div>
                         )}

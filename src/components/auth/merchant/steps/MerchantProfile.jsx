@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AUTH_ENDPOINTS } from '../../../../utils/constants';
 
 const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
+    const { t } = useTranslation();
     const [countries, setCountries] = useState([]);
     const [filteredCountries, setFilteredCountries] = useState([]);
     const [cities, setCities] = useState([]);
@@ -211,11 +213,11 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
             if (data.success && data.data && data.data.terms) {
                 setTermsContent(data.data.terms);
             } else {
-                setTermsContent('Terms and Conditions content not available at the moment. Please contact support for more information.');
+                setTermsContent(t('auth.merchantProfile.termsUnavailable'));
             }
         } catch (error) {
             console.error('Error fetching terms content:', error);
-            setTermsContent('Terms and Conditions content not available at the moment. Please contact support for more information.');
+            setTermsContent(t('auth.merchantProfile.termsUnavailable'));
         } finally {
             setLoading(prev => ({ ...prev, terms: false }));
         }
@@ -318,21 +320,21 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
     return (
         <div className="w-100">
             <div className="pb-10 pb-lg-15">
-                <h2 className="fw-bolder text-dark">Merchant Profile</h2>
+                <h2 className="fw-bolder text-dark">{t('auth.merchantProfile.title')}</h2>
                 <div className="text-muted fw-bold fs-6">
-                    Please provide your business information and trade license details to complete your merchant profile.
+                    {t('auth.merchantProfile.subtitle')}
                 </div>
             </div>
 
             <div className="col-12">
-                <h4 className="fw-bold text-dark mb-4">Business Information</h4>
+                <h4 className="fw-bold text-dark mb-4">{t('auth.merchantProfile.businessInfo')}</h4>
             </div>
 
             <div className="row">
                 {/* Basic Business Information */}
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="owner_name" className="form-label">
-                        Owner Name <span className="text-danger">*</span>
+                        {t('auth.merchantProfile.ownerName')} <span className="text-danger">*</span>
                     </label>
                     <input
                         type="text"
@@ -341,7 +343,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         name="owner_name"
                         value={formData.owner_name || ''}
                         onChange={handleChange}
-                        placeholder="Enter Owner Name"
+                        placeholder={t('auth.merchantProfile.placeholderOwner')}
                         required
                         style={{ textTransform: 'none' }}
                     />
@@ -352,7 +354,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="business_name" className="form-label">
-                        Business Name <span className="text-danger">*</span>
+                        {t('auth.merchantProfile.businessName')} <span className="text-danger">*</span>
                     </label>
                     <input
                         type="text"
@@ -361,7 +363,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         name="business_name"
                         value={formData.business_name || ''}
                         onChange={handleChange}
-                        placeholder="Enter Business Name"
+                        placeholder={t('auth.merchantProfile.placeholderBusiness')}
                         required
                         style={{ textTransform: 'none' }}
                     />
@@ -372,7 +374,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="business_type" className="form-label">
-                        Business Type <span className="text-danger">*</span>
+                        {t('auth.merchantProfile.businessType')} <span className="text-danger">*</span>
                     </label>
                     <select
                         className={`form-select ${fieldErrors?.business_type ? 'is-invalid' : ''}`}
@@ -383,7 +385,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         required
                         disabled={loading.businessTypes}
                     >
-                        <option value="">{loading.businessTypes ? 'Loading...' : 'Select Business Type'}</option>
+                        <option value="">{loading.businessTypes ? t('auth.common.loading') : t('auth.merchantProfile.selectBusinessType')}</option>
                         {businessTypes.map(type => (
                             <option key={type.id} value={type.value}>
                                 {type.text}
@@ -397,7 +399,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="business_phone" className="form-label">
-                        Business Phone <span className="text-danger">*</span>
+                        {t('auth.merchantProfile.businessPhone')} <span className="text-danger">*</span>
                     </label>
                     <input
                         type="tel"
@@ -406,7 +408,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         name="business_phone"
                         value={formData.business_phone || ''}
                         onChange={handleChange}
-                        placeholder="Enter Business Phone"
+                        placeholder={t('auth.merchantProfile.placeholderBusinessPhone')}
                         required
                         style={{ textTransform: 'none' }}
                     />
@@ -417,12 +419,12 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 {/* Trade License Section */}
                 <div className="col-12">
-                    <h4 className="fw-bold text-dark mb-4">Trade License Information</h4>
+                    <h4 className="fw-bold text-dark mb-4">{t('auth.merchantProfile.tradeLicenseInfo')}</h4>
                 </div>
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="trade_license_number" className="form-label">
-                        Trade License Number <span className="text-danger">*</span>
+                        {t('auth.merchantProfile.tradeLicenseNumber')} <span className="text-danger">*</span>
                     </label>
                     <input
                         type="text"
@@ -431,7 +433,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         name="trade_license_number"
                         value={formData.trade_license_number || ''}
                         onChange={handleChange}
-                        placeholder="Enter Trade License Number"
+                        placeholder={t('auth.merchantProfile.placeholderLicense')}
                         required
                         style={{ textTransform: 'none' }}
                     />
@@ -442,7 +444,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="trade_license_start_date" className="form-label">
-                        Trade License Start Date <span className="text-danger">*</span>
+                        {t('auth.merchantProfile.tradeLicenseStartDate')} <span className="text-danger">*</span>
                     </label>
                     <input
                         ref={startDateRef}
@@ -462,7 +464,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="trade_license_expired_date" className="form-label">
-                        Trade License Expired Date <span className="text-danger">*</span>
+                        {t('auth.merchantProfile.tradeLicenseExpiredDate')} <span className="text-danger">*</span>
                     </label>
                     <input
                         ref={expiredDateRef}
@@ -482,7 +484,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="tax_number" className="form-label">
-                        Tax Number <span className="text-danger">*</span>
+                        {t('auth.merchantProfile.taxNumber')} <span className="text-danger">*</span>
                     </label>
                     <input
                         type="text"
@@ -491,7 +493,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         name="tax_number"
                         value={formData.tax_number || ''}
                         onChange={handleChange}
-                        placeholder="Enter Tax Number"
+                        placeholder={t('auth.merchantProfile.placeholderTax')}
                         required
                         style={{ textTransform: 'none' }}
                     />
@@ -502,12 +504,12 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 {/* Location Information Section */}
                 <div className="col-12">
-                    <h4 className="fw-bold text-dark mb-4">Address Information</h4>
+                    <h4 className="fw-bold text-dark mb-4">{t('auth.merchantProfile.addressInfo')}</h4>
                 </div>
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="country" className="form-label">
-                        Country <span className="text-danger">*</span>
+                        {t('auth.merchantProfile.country')} <span className="text-danger">*</span>
                     </label>
                     <div className="position-relative">
                         <div 
@@ -530,7 +532,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                                         <span className="fw-bold text-gray-800">{selectedCountry.text}</span>
                                     </>
                                 ) : (
-                                    <span className="text-muted">Select Country</span>
+                                    <span className="text-muted">{t('auth.merchantProfile.selectCountry')}</span>
                                 )}
                             </div>
                             <div className="d-flex align-items-center">
@@ -559,7 +561,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         {loading.countries && (
                             <div className="position-absolute top-50 end-0 translate-middle-y me-3">
                                 <div className="spinner-border spinner-border-sm" role="status">
-                                    <span className="visually-hidden">Loading...</span>
+                                    <span className="visually-hidden">{t('auth.common.loading')}</span>
                                 </div>
                             </div>
                         )}
@@ -571,7 +573,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                                     <input 
                                         type="text" 
                                         className="form-control form-control-sm mb-2" 
-                                        placeholder="Search countries..."
+                                        placeholder={t('auth.merchantProfile.searchCountries')}
                                         value={countrySearchTerm}
                                         onChange={(e) => {
                                             const value = e.target.value;
@@ -585,9 +587,9 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                                 {loading.countries ? (
                                     <div className="p-3 text-center">
                                         <div className="spinner-border spinner-border-sm me-2" role="status">
-                                            <span className="visually-hidden">Loading...</span>
+                                            <span className="visually-hidden">{t('auth.common.loading')}</span>
                                         </div>
-                                        <span className="text-muted">Searching countries...</span>
+                                        <span className="text-muted">{t('auth.merchantProfile.searchingCountries')}</span>
                                     </div>
                                 ) : filteredCountries.length > 0 ? (
                                     filteredCountries.map((country) => (
@@ -615,7 +617,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                                 ) : (
                                     <div className="p-3 text-muted text-center">
                                         <i className="fas fa-search me-2"></i>
-                                        No countries found
+                                        {t('auth.merchantProfile.noCountries')}
                                     </div>
                                 )}
                             </div>
@@ -628,7 +630,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-6 fv-row mb-4">
                     <label htmlFor="city" className="form-label">
-                        City <span className="text-danger">*</span>
+                        {t('auth.merchantProfile.city')} <span className="text-danger">*</span>
                     </label>
                     <div className="position-relative">
                         <div 
@@ -648,7 +650,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                                     <span className="fw-bold text-gray-800">{selectedCity.text}</span>
                                 ) : (
                                     <span className="text-muted">
-                                        {!(selectedCountry || formData.country) ? 'Please select a country first' : 'Select City'}
+                                        {!(selectedCountry || formData.country) ? t('auth.merchantProfile.selectCountryFirst') : t('auth.merchantProfile.selectCity')}
                                     </span>
                                 )}
                             </div>
@@ -678,7 +680,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         {loading.cities && (
                             <div className="position-absolute top-50 end-0 translate-middle-y me-3">
                                 <div className="spinner-border spinner-border-sm" role="status">
-                                    <span className="visually-hidden">Loading...</span>
+                                    <span className="visually-hidden">{t('auth.common.loading')}</span>
                                 </div>
                             </div>
                         )}
@@ -690,7 +692,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                                     <input 
                                         type="text" 
                                         className="form-control form-control-sm mb-2" 
-                                        placeholder="Search cities..."
+                                        placeholder={t('auth.merchantProfile.searchCities')}
                                         value={citySearchTerm}
                                         onChange={(e) => {
                                             const value = e.target.value;
@@ -715,7 +717,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                                         </div>
                                     ))
                                 ) : (
-                                    <div className="p-3 text-muted text-center">No cities found</div>
+                                    <div className="p-3 text-muted text-center">{t('auth.merchantProfile.noCities')}</div>
                                 )}
                             </div>
                         )}
@@ -727,7 +729,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
 
                 <div className="col-md-12 fv-row mb-4">
                     <label htmlFor="business_address" className="form-label">
-                        Business Address <span className="text-danger">*</span>
+                        {t('auth.merchantProfile.businessAddress')} <span className="text-danger">*</span>
                     </label>
                     <textarea
                         className={`form-control ${fieldErrors?.business_address ? 'is-invalid' : ''}`}
@@ -736,7 +738,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                         rows="3"
                         value={formData.business_address || ''}
                         onChange={handleChange}
-                        placeholder="Enter Business Address"
+                        placeholder={t('auth.merchantProfile.placeholderAddress')}
                         required
                     ></textarea>
                     {fieldErrors?.business_address && (
@@ -757,13 +759,13 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                             required
                         />
                         <label className="form-check-label" htmlFor="accept_terms">
-                            I agree to the{' '}
+                            {t('auth.merchantProfile.agreeTerms')}{' '}
                             <a 
                                 href="#" 
                                 className="text-primary fw-bold"
                                 onClick={handleTermsClick}
                             >
-                                Terms and Conditions
+                                {t('auth.merchantProfile.termsLink')}
                             </a>
                             <span className="text-danger">*</span>
                         </label>
@@ -782,16 +784,16 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                     <div className="modal-dialog modal-lg modal-dialog-scrollable">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title fw-bold">Terms and Conditions</h5>
+                                <h5 className="modal-title fw-bold">{t('auth.merchantProfile.termsModalTitle')}</h5>
                                 <button type="button" className="btn-close" onClick={handleTermsModalClose}></button>
                             </div>
                             <div className="modal-body">
                                 {loading.terms ? (
                                     <div className="text-center py-5">
                                         <div className="spinner-border text-primary" role="status">
-                                            <span className="visually-hidden">Loading...</span>
+                                            <span className="visually-hidden">{t('auth.common.loading')}</span>
                                         </div>
-                                        <p className="mt-3 text-muted">Loading terms and conditions...</p>
+                                        <p className="mt-3 text-muted">{t('auth.merchantProfile.termsLoading')}</p>
                                     </div>
                                 ) : (
                                     <div 
@@ -812,7 +814,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                                     className="btn btn-secondary" 
                                     onClick={handleTermsModalClose}
                                 >
-                                    Close
+                                    {t('auth.common.close')}
                                 </button>
                                 <button 
                                     type="button" 
@@ -820,7 +822,7 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                                     onClick={handleTermsAgree}
                                     disabled={loading.terms}
                                 >
-                                    I Agree
+                                    {t('auth.merchantProfile.iAgree')}
                                 </button>
                             </div>
                         </div>

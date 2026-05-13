@@ -170,17 +170,17 @@ body.app-sidebar-minimize .menu-sub .menu-item {
 }
 
 /*
- * Toolbar row: title vs actions — use dir=rtl on #kt_app_toolbar_container (Toolbar.jsx)
- * so flex main-start is inline-end. Do NOT add flex-direction: row-reverse here; it
- * double-reverses with dir=rtl and keeps the English layout.
+ * Toolbar title + breadcrumbs: under dir=rtl, flex-end maps to the physical left on the
+ * cross axis (column) / main axis (row). Use flex-start so headings and crumbs sit on the
+ * inline-start side (right in RTL).
  */
 #kt_app_root.app-layout-ar #kt_app_toolbar .page-title {
-    text-align: right;
-    align-items: flex-end;
+    text-align: start;
+    align-items: flex-start;
 }
 
 #kt_app_root.app-layout-ar #kt_app_toolbar .breadcrumb {
-    justify-content: flex-end;
+    justify-content: flex-start;
 }
 
 /* Tables & DataTables */

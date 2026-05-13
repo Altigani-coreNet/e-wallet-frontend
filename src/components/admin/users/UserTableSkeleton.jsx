@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const UserTableSkeleton = ({ rows = 10 }) => {
+    const { t } = useTranslation();
     return (
         <>
             <style>{`
@@ -26,15 +28,15 @@ const UserTableSkeleton = ({ rows = 10 }) => {
                                     <div className="skeleton" style={{ width: '18px', height: '18px' }}></div>
                                 </div>
                             </th>
-                            <th className="text-dark">ID</th>
-                            <th className="min-w-200px text-dark">User Info</th>
-                            <th className="min-w-150px text-dark">Merchant</th>
-                            <th className="text-dark">Branch</th>
-                            <th className="text-dark">Country</th>
-                            <th className="text-dark">Status</th>
-                            <th className="text-dark">Is Admin</th>
-                            <th className="text-dark">Created At</th>
-                            <th className="text-end text-dark">Actions</th>
+                            <th className="text-dark">{t('admin.usersIndex.colId')}</th>
+                            <th className="min-w-200px text-dark">{t('admin.usersIndex.colUserInfo')}</th>
+                            <th className="min-w-150px text-dark">{t('admin.usersIndex.colMerchant')}</th>
+                            <th className="text-dark">{t('admin.usersIndex.colBranch')}</th>
+                            <th className="text-dark">{t('admin.usersIndex.colCountry')}</th>
+                            <th className="text-dark">{t('admin.usersIndex.colStatus')}</th>
+                            <th className="text-dark">{t('admin.usersIndex.colIsAdmin')}</th>
+                            <th className="text-dark">{t('admin.usersIndex.colCreatedAt')}</th>
+                            <th className="text-end text-dark">{t('admin.usersIndex.colActions')}</th>
                         </tr>
                     </thead>
                     <tbody className="text-gray-600 fw-semibold">

@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { getToken } from '../../../utils/api';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 
@@ -9,6 +10,7 @@ const CustomUserGroupSelector = ({
     merchantId = null,
     className = '' 
 }) => {
+    const { t } = useTranslation();
     const [userGroups, setUserGroups] = useState([]);
     const [filteredUserGroups, setFilteredUserGroups] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -135,6 +137,14 @@ const CustomUserGroupSelector = ({
         }
     };
 
+    const selectAllAction = useMemo(
+        () =>
+            selectedUserGroups.length === filteredUserGroups.length && filteredUserGroups.length > 0
+                ? t('admin.selectorCommon.deselectAll')
+                : t('admin.selectorCommon.selectAll'),
+        [selectedUserGroups.length, filteredUserGroups.length, t]
+    );
+
     // Reset selection only when merchant actually changes (e.g. user picks another merchant).
     // Do not clear on first mount — edit forms hydrate user_group_ids from the API and this
     // effect was wiping them and blocking submit/PUT.
@@ -158,7 +168,7 @@ const CustomUserGroupSelector = ({
                     <span className="path2"></span>
                     <span className="path3"></span>
                 </i>
-                Please select a merchant first to load user groups
+                {t('admin.terminalGroupsUI.userGroupSelector.pickMerchantFirst')}
             </div>
         );
     }
@@ -189,21 +199,21 @@ const CustomUserGroupSelector = ({
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Available User Groups
+                    {t('admin.terminalGroupsUI.userGroupSelector.header')}
                 </h5>
                 
                 <div className="mb-4">
                     <h6 className="mb-2 fw-semibold text-dark">
                         <i className="ki-duotone ki-user-tick fs-5 me-2 text-warning"></i>
-                        User Groups ({userGroups.length})
+                        {t('admin.terminalGroupsUI.userGroupSelector.userGroupsHeading', { count: userGroups.length })}
                     </h6>
                     <div className="d-flex flex-wrap gap-2">
                         {userGroups.length > 0 ? (
                             <span className="text-muted small">
-                                Search and select user groups from the system
+                                {t('admin.terminalGroupsUI.userGroupSelector.hintHasGroups')}
                             </span>
                         ) : (
-                            <span className="text-muted small">No user groups available</span>
+                            <span className="text-muted small">{t('admin.terminalGroupsUI.userGroupSelector.noGroups')}</span>
                         )}
                     </div>
                 </div>
@@ -211,7 +221,7 @@ const CustomUserGroupSelector = ({
                 {/* Quick Actions */}
                 <div className="d-flex gap-2 mt-3">
                     <span className="text-muted small align-self-center">
-                        Use search to filter user groups by name or ID
+                        {t('admin.terminalGroupsUI.userGroupSelector.searchHelp')}
                     </span>
                 </div>
             </div>
@@ -229,12 +239,12 @@ const CustomUserGroupSelector = ({
                         <input
                             type="text"
                             className="form-control"
-                            placeholder="Search user groups by name or ID..."
+                            placeholder={t('admin.terminalGroupsUI.userGroupSelector.searchPlaceholder')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <small className="text-muted">{selectedUserGroups.length} selected</small>
+                    <small className="text-muted">{t('admin.selectorCommon.selectedCount', { count: selectedUserGroups.length })}</small>
                 </div>
             </div>
 
@@ -244,7 +254,7 @@ const CustomUserGroupSelector = ({
                     {/* Results Count */}
                     <div className="results-count mb-3 p-2 bg-light rounded">
                         <small className="text-muted">
-                            Showing {filteredUserGroups.length} of {userGroups.length} user groups
+                            {t('admin.terminalGroupsUI.userGroupSelector.showingGroups', { shown: filteredUserGroups.length, total: userGroups.length })}
                         </small>
                     </div>
 
@@ -253,9 +263,9 @@ const CustomUserGroupSelector = ({
                         <div className="alert alert-info py-2 mb-3">
                             <div className="d-flex align-items-center">
                                 <div className="spinner-border spinner-border-sm text-info me-2" role="status">
-                                    <span className="visually-hidden">Loading...</span>
+                                    <span className="visually-hidden">{t('admin.selectorCommon.loading')}</span>
                                 </div>
-                                <span className="small">Fetching filtered user groups from server...</span>
+                                <span className="small">{t('admin.terminalGroupsUI.userGroupSelector.fetchingGroups')}</span>
                             </div>
                         </div>
                     )}
@@ -263,9 +273,9 @@ const CustomUserGroupSelector = ({
                     {/* Active Filters Display */}
                     {searchTerm && (
                         <div className="active-filters mb-3 p-2 bg-light border rounded">
-                            <small className="text-muted me-2">Active filters:</small>
+                            <small className="text-muted me-2">{t('admin.selectorCommon.activeFilters')}</small>
                             {searchTerm && (
-                                <span className="badge bg-warning me-1">Search: "{searchTerm}"</span>
+                                <span className="badge bg-warning me-1">{t('admin.selectorCommon.searchBadge', { term: searchTerm })}</span>
                             )}
                         </div>
                     )}
@@ -273,38 +283,38 @@ const CustomUserGroupSelector = ({
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <div className="d-flex align-items-center gap-3">
                             <h6 className="mb-0 fw-bold">
-                                User Groups ({filteredUserGroups.length})
+                                {t('admin.terminalGroupsUI.userGroupSelector.listHeading', { count: filteredUserGroups.length })}
                             </h6>
                             {filteredUserGroups.length > 0 && (
                                 <div className="d-flex align-items-center gap-2">
                                     <button
                                         className={`btn btn-sm ${selectedUserGroups.length === filteredUserGroups.length && filteredUserGroups.length > 0 ? 'btn-success' : 'btn-outline-primary'}`}
                                         onClick={() => handleSelectAll()}
-                                        title={selectedUserGroups.length === filteredUserGroups.length ? 'Deselect All' : 'Select All'}
+                                        title={selectAllAction}
                                     >
                                         <i className={`ki-duotone ${selectedUserGroups.length === filteredUserGroups.length && filteredUserGroups.length > 0 ? 'ki-check' : 'ki-plus'} fs-5 me-1`}>
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        {selectedUserGroups.length === filteredUserGroups.length && filteredUserGroups.length > 0 ? 'Deselect All' : 'Select All'}
+                                        {selectAllAction}
                                     </button>
                                     {selectedUserGroups.length > 0 && selectedUserGroups.length < filteredUserGroups.length && (
                                         <small className="text-muted">
-                                            ({selectedUserGroups.length} of {filteredUserGroups.length})
+                                            {t('admin.selectorCommon.ofTotal', { selected: selectedUserGroups.length, total: filteredUserGroups.length })}
                                         </small>
                                     )}
                                 </div>
                             )}
                         </div>
                         <small className="text-muted">
-                            {selectedUserGroups.length} selected
+                            {t('admin.selectorCommon.selectedCount', { count: selectedUserGroups.length })}
                         </small>
                     </div>
 
                     {loading ? (
                         <div className="text-center py-4">
                             <div className="spinner-border text-primary" role="status">
-                                <span className="visually-hidden">Loading...</span>
+                                <span className="visually-hidden">{t('admin.selectorCommon.loading')}</span>
                             </div>
                         </div>
                     ) : filteredUserGroups.length === 0 ? (
@@ -313,7 +323,7 @@ const CustomUserGroupSelector = ({
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            <p>No user groups found matching your criteria</p>
+                            <p>{t('admin.terminalGroupsUI.userGroupSelector.noMatch')}</p>
                         </div>
                     ) : (
                         <div className="terminal-grid">
@@ -328,13 +338,10 @@ const CustomUserGroupSelector = ({
                                         id="select-all-user-groups"
                                     />
                                     <label className="form-check-label fw-semibold mb-0" htmlFor="select-all-user-groups">
-                                        {selectedUserGroups.length === filteredUserGroups.length && filteredUserGroups.length > 0 
-                                            ? 'Deselect All' 
-                                            : 'Select All'
-                                        } User Groups
+                                        {t('admin.terminalGroupsUI.userGroupSelector.selectAllLabel', { action: selectAllAction })}
                                         {selectedUserGroups.length > 0 && (
                                             <span className="text-muted ms-2">
-                                                ({selectedUserGroups.length} of {filteredUserGroups.length})
+                                                {t('admin.selectorCommon.ofTotal', { selected: selectedUserGroups.length, total: filteredUserGroups.length })}
                                             </span>
                                         )}
                                     </label>
@@ -367,21 +374,21 @@ const CustomUserGroupSelector = ({
                                             <div className="fw-semibold">{userGroup.name || userGroup.text}</div>
                                             <div className="row">
                                                 <div className="text-muted small col-md-6">
-                                                    ID: {userGroup.group_id}
+                                                    {t('admin.selectorCommon.labelId')} {userGroup.group_id}
                                                 </div>
                                                 {userGroup.merchant_name && (
                                                     <div className="text-muted small col-md-6">
-                                                        Merchant: {userGroup.merchant_name}
+                                                        {t('admin.selectorCommon.labelMerchant')} {userGroup.merchant_name}
                                                     </div>
                                                 )}
                                                 {userGroup.branch_name && (
                                                     <div className="text-muted small col-md-6">
-                                                        Branch: {userGroup.branch_name}
+                                                        {t('admin.selectorCommon.labelBranch')} {userGroup.branch_name}
                                                     </div>
                                                 )}
                                                 {userGroup.description && (
                                                     <div className="text-muted small col-md-6">
-                                                        Description: {userGroup.description}
+                                                        {t('admin.selectorCommon.labelDescription')} {userGroup.description}
                                                     </div>
                                                 )}
                                             </div>
@@ -398,7 +405,7 @@ const CustomUserGroupSelector = ({
             {selectedUserGroups.length > 0 && (
                 <div className="selected-summary mt-3 p-3 bg-primary bg-opacity-10 rounded">
                     <h6 className="mb-2 fw-bold">
-                        Selected User Groups ({selectedUserGroups.length})
+                        {t('admin.terminalGroupsUI.userGroupSelector.selectedTitle', { count: selectedUserGroups.length })}
                     </h6>
                     <div className="selected-list">
                         {userGroups

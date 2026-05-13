@@ -923,17 +923,7 @@ const AdminSidebar = () => {
                                         </div>
                                     </div>
 
-                                    <div className="menu-item">
-                                        <NavLink
-                                            className={`menu-link ${isPathActive('/admin/settings/system-configuration') ? 'active' : ''}`}
-                                            to="/admin/settings/system-configuration"
-                                        >
-                                            <span className="menu-bullet">
-                                                <span className="bullet bullet-dot"></span>
-                                            </span>
-                                            <span className="menu-title">{t('admin.sidebar.systemConfiguration')}</span>
-                                        </NavLink>
-                                    </div>
+                                    
 
                                     <div
                                         data-kt-menu-trigger="click"

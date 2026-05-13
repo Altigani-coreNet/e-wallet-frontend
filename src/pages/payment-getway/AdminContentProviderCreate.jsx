@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, Link, useParams, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../utils/constants';
@@ -18,6 +19,7 @@ const debounce = (func, delay) => {
 };
 
 const AdminContentProviderCreate = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
     const { parentId } = useParams();
@@ -75,7 +77,7 @@ const AdminContentProviderCreate = () => {
 
     useEffect(() => {
         const isSubTitle = Boolean(effectiveParentId) || isGlobalSubCreate;
-        setTitle(isSubTitle ? 'Add Sub Partner' : 'Add New Partner');
+        setTitle(isSubTitle ? t('admin.paymentGetway.titlesAddSubPartner') : t('admin.paymentGetway.titlesAddNewPartner'));
         const backTo = isGlobalSubCreate
             ? '/admin/partners/sub-partners'
             : effectiveParentId
@@ -87,11 +89,11 @@ const AdminContentProviderCreate = () => {
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back
+                {t('admin.paymentGetway.cpBack')}
             </Link>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, effectiveParentId, isGlobalSubCreate]);
+    }, [setTitle, setActions, effectiveParentId, isGlobalSubCreate, t]);
 
     useEffect(() => {
         if (!effectiveParentId) {
@@ -109,11 +111,11 @@ const AdminContentProviderCreate = () => {
                 if (p?.id) {
                     setParentPartner(p);
                     if (!p.is_parent) {
-                        toast.warning('This partner is not marked as a parent organization. Enable it in Edit partner first, then add Sub Partners.');
+                        toast.warning(t('admin.paymentGetway.cpWarnNotParentOrg'));
                     }
-                } else toast.error('Parent partner not found');
+                } else toast.error(t('admin.paymentGetway.cpErrParentNotFound'));
             } catch {
-                if (!cancelled) toast.error('Failed to load parent partner');
+                if (!cancelled) toast.error(t('admin.paymentGetway.cpErrLoadParentPartner'));
             } finally {
                 if (!cancelled) setLoadingParent(false);
             }
@@ -121,7 +123,7 @@ const AdminContentProviderCreate = () => {
         return () => {
             cancelled = true;
         };
-    }, [effectiveParentId]);
+    }, [effectiveParentId, t]);
 
     const fetchPickerCountries = useCallback(async (searchTerm = '') => {
         try {
@@ -172,10 +174,10 @@ const AdminContentProviderCreate = () => {
 
     useEffect(() => {
         if (!isGlobalSubCreate || !subPickerCountryId) return undefined;
-        const t = setTimeout(() => {
+        const timer = setTimeout(() => {
             fetchParentOrgsForPicker(subPickerCountryId, pickerParentSearch);
         }, 300);
-        return () => clearTimeout(t);
+        return () => clearTimeout(timer);
     }, [isGlobalSubCreate, subPickerCountryId, pickerParentSearch, fetchParentOrgsForPicker]);
 
     useEffect(() => {
@@ -239,7 +241,7 @@ const AdminContentProviderCreate = () => {
             }
         } catch (error) {
             console.error('Failed to fetch countries:', error);
-            toast.error('Failed to load countries');
+            toast.error(t('admin.paymentGetway.cpErrLoadCountries'));
         }
     };
 
@@ -465,14 +467,14 @@ const AdminContentProviderCreate = () => {
 
     const handleOperatorOpen = useCallback(() => {
         if (!formData.country_id) {
-            toast.warning("Please select a country first");
+            toast.warning(t('admin.paymentGetway.wizSelectCountryFirst'));
             return;
         }
         setOperatorsEnabled(true);
         if (operators.length === 0 && !loadingOperators) {
             loadOperators(operatorSearchTerm, formData.country_id);
         }
-    }, [operators.length, loadingOperators, operatorSearchTerm, formData.country_id, loadOperators]);
+    }, [operators.length, loadingOperators, operatorSearchTerm, formData.country_id, loadOperators, t]);
 
     const handleOperatorSearchChange = useCallback((value) => {
         setOperatorSearchTerm(value);
@@ -511,38 +513,38 @@ const AdminContentProviderCreate = () => {
         const newErrors = {};
 
         if (!formData.name?.trim()) {
-            newErrors.name = 'Partner name is required';
+            newErrors.name = t('admin.paymentGetway.cpValPartnerNameRequired');
         }
 
         if (!formData.owner_name?.trim()) {
-            newErrors.owner_name = 'Owner name is required';
+            newErrors.owner_name = t('admin.paymentGetway.cpValOwnerRequired');
         }
 
         if (!formData.email?.trim()) {
-            newErrors.email = 'Email is required';
+            newErrors.email = t('admin.paymentGetway.cpValEmailRequired');
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            newErrors.email = 'Invalid email format';
+            newErrors.email = t('admin.paymentGetway.cpValEmailInvalid');
         }
 
         if (!formData.phone?.trim()) {
-            newErrors.phone = 'Phone is required';
+            newErrors.phone = t('admin.paymentGetway.cpValPhoneRequired');
         }
 
         if (!effectiveParentId) {
             if (isGlobalSubCreate) {
                 if (!subPickerCountryId) {
-                    newErrors.picker_country_id = 'Country is required';
+                    newErrors.picker_country_id = t('admin.paymentGetway.cpValCountryRequired');
                 }
                 if (!pickedParentId) {
-                    newErrors.parent_id = 'Parent partner is required';
+                    newErrors.parent_id = t('admin.paymentGetway.cpValParentPartnerRequired');
                 }
             } else {
                 if (!formData.country_id) {
-                    newErrors.country_id = 'Country is required';
+                    newErrors.country_id = t('admin.paymentGetway.cpValCountryRequired');
                 }
 
                 if (!formData.partner_category_id) {
-                    newErrors.partner_category_id = 'Partner category is required';
+                    newErrors.partner_category_id = t('admin.paymentGetway.cpValPartnerCategoryRequired');
                 }
             }
         }
@@ -555,7 +557,7 @@ const AdminContentProviderCreate = () => {
         e.preventDefault();
 
         if (!validateForm()) {
-            toast.error('Please fill in all required fields');
+            toast.error(t('admin.paymentGetway.cpFillRequiredFields'));
             return;
         }
 
@@ -617,7 +619,11 @@ const AdminContentProviderCreate = () => {
 
             const isSuccess = result.data.success || result.data.status;
             if (isSuccess) {
-                toast.success(effectiveParentId ? 'Sub Partner created successfully' : 'Partner created successfully');
+                toast.success(
+                    effectiveParentId
+                        ? t('admin.paymentGetway.cpSuccessSubPartnerCreated')
+                        : t('admin.paymentGetway.cpSuccessPartnerCreated')
+                );
                 if (isGlobalSubCreate) {
                     navigate('/admin/partners/sub-partners');
                 } else if (effectiveParentId) {
@@ -627,7 +633,7 @@ const AdminContentProviderCreate = () => {
                 }
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Failed to create partner';
+            const errorMessage = error.response?.data?.message || t('admin.paymentGetway.cpErrCreatePartnerFailed');
             toast.error(errorMessage);
 
             if (error.response?.data?.errors) {
@@ -662,12 +668,12 @@ const AdminContentProviderCreate = () => {
     if (effectiveParentId && !parentPartner && !loadingParent && !isGlobalSubCreate) {
         return (
             <div className="text-center py-15">
-                <p className="text-gray-700">Could not load parent partner.</p>
+                <p className="text-gray-700">{t('admin.paymentGetway.cpCouldNotLoadParentPage')}</p>
                 <Link
                     to={isGlobalSubCreate ? '/admin/partners/sub-partners' : '/admin/partners'}
                     className="btn btn-primary mt-3"
                 >
-                    Back
+                    {t('admin.paymentGetway.cpBack')}
                 </Link>
             </div>
         );
@@ -683,7 +689,7 @@ const AdminContentProviderCreate = () => {
                             <div className="card card-flush">
                                 <div className="card-header">
                                     <div className="card-title">
-                                        <h2>Logo</h2>
+                                        <h2>{t('admin.paymentGetway.cpLogoCardTitle')}</h2>
                                     </div>
                                 </div>
                                 <div className="card-body text-center pt-0">
@@ -713,7 +719,7 @@ const AdminContentProviderCreate = () => {
                                                 className="btn btn-icon btn-circle btn-color-muted btn-active-color-primary w-35px h-35px bg-body shadow" 
                                                 data-kt-image-input-action="change" 
                                                 data-bs-toggle="tooltip" 
-                                                title="Change logo"
+                                                title={t('admin.paymentGetway.cpChangeLogoTooltip')}
                                                 style={{ position: 'absolute', bottom: 0, right: 'calc(50% - 17.5px)', cursor: 'pointer' }}
                                             >
                                                 <i className="ki-duotone ki-pencil fs-2">
@@ -724,7 +730,7 @@ const AdminContentProviderCreate = () => {
                                         </div>
                                     </div>
                                     <div className="text-muted fs-7">
-                                        Upload partner logo
+                                        {t('admin.paymentGetway.cpUploadPartnerLogo')}
                                     </div>
                                 </div>
                             </div>
@@ -735,7 +741,11 @@ const AdminContentProviderCreate = () => {
                             <div className="card">
                                 <div className="card-header border-0">
                                     <div className="card-title">
-                                        <h2>{effectiveParentId || isGlobalSubCreate ? 'Add Sub Partner' : 'Add New Partner'}</h2>
+                                        <h2>
+                                            {effectiveParentId || isGlobalSubCreate
+                                                ? t('admin.paymentGetway.titlesAddSubPartner')
+                                                : t('admin.paymentGetway.titlesAddNewPartner')}
+                                        </h2>
                                     </div>
                                 </div>
 
@@ -749,7 +759,7 @@ const AdminContentProviderCreate = () => {
                                                     <span className="path2"></span>
                                                 </i>
                                                 <div className="d-flex flex-column">
-                                                    <h4 className="mb-1">Validation Errors</h4>
+                                                    <h4 className="mb-1">{t('admin.paymentGetway.cpValidationErrorsHeading')}</h4>
                                                     <ul className="mb-0">
                                                         {Object.values(errors).map((error, idx) => (
                                                             <li key={idx}>{error}</li>
@@ -765,15 +775,17 @@ const AdminContentProviderCreate = () => {
                                         {isGlobalSubCreate && (
                                             <>
                                                 <div className="col-12 mb-5">
-                                                    <h3 className="fs-5 fw-bold text-gray-800 mb-1">Parent organization</h3>
+                                                    <h3 className="fs-5 fw-bold text-gray-800 mb-1">
+                                                        {t('admin.paymentGetway.cpParentOrgSectionTitle')}
+                                                    </h3>
                                                     <p className="text-muted fs-7 mb-0">
-                                                        Choose country and main partner first. Country and partner category follow the parent.
+                                                        {t('admin.paymentGetway.cpParentOrgSectionHint')}
                                                     </p>
                                                 </div>
                                                 <div className="col-md-6 mb-7">
                                                     <SearchableDropdown
-                                                        label="Country"
-                                                        placeholder="Select country"
+                                                        label={t('admin.paymentGetway.cpCountry')}
+                                                        placeholder={t('admin.paymentGetway.cpSelectCountryPlaceholder')}
                                                         options={pickerCountryOptions}
                                                         selected={selectedPickerCountryOption}
                                                         onSelect={(option) => {
@@ -795,7 +807,7 @@ const AdminContentProviderCreate = () => {
                                                             setPickerCountrySearch(v);
                                                             fetchPickerCountries(v);
                                                         }}
-                                                        searchPlaceholder="Search countries..."
+                                                        searchPlaceholder={t('admin.paymentGetway.cpSearchCountries')}
                                                         required
                                                         renderSelected={(option) =>
                                                             option ? (
@@ -814,7 +826,9 @@ const AdminContentProviderCreate = () => {
                                                                     <span className="text-gray-800">{option.label}</span>
                                                                 </div>
                                                             ) : (
-                                                                <span className="text-muted fw-semibold">Select country</span>
+                                                                <span className="text-muted fw-semibold">
+                                                                    {t('admin.paymentGetway.cpSelectCountryMuted')}
+                                                                </span>
                                                             )
                                                         }
                                                         renderOption={(option) => (
@@ -840,9 +854,11 @@ const AdminContentProviderCreate = () => {
                                                 </div>
                                                 <div className="col-md-6 mb-7">
                                                     <SearchableDropdown
-                                                        label="Parent partner"
+                                                        label={t('admin.paymentGetway.cpParentPartner')}
                                                         placeholder={
-                                                            subPickerCountryId ? 'Select parent partner' : 'Select country first'
+                                                            subPickerCountryId
+                                                                ? t('admin.paymentGetway.cpSelectParentPartnerPlaceholder')
+                                                                : t('admin.paymentGetway.cpSelectCountryFirst')
                                                         }
                                                         options={parentOrgPickerOptions}
                                                         selected={selectedPickerParentOption}
@@ -861,7 +877,7 @@ const AdminContentProviderCreate = () => {
                                                             }
                                                         }}
                                                         onSearchChange={(v) => setPickerParentSearch(v)}
-                                                        searchPlaceholder="Search parent partners..."
+                                                        searchPlaceholder={t('admin.paymentGetway.cpSearchParentPartners')}
                                                         required
                                                     />
                                                     {errors.parent_id && (
@@ -872,15 +888,14 @@ const AdminContentProviderCreate = () => {
                                                     <div className="col-12 mb-5">
                                                         <span className="text-muted fs-7">
                                                             <span className="spinner-border spinner-border-sm text-primary me-2" />
-                                                            Loading parent details…
+                                                            {t('admin.paymentGetway.cpLoadingParentDetails')}
                                                         </span>
                                                     </div>
                                                 )}
                                                 {pickedParentId && !loadingParent && !parentPartner && (
                                                     <div className="col-12 mb-7">
                                                         <div className="alert alert-warning mb-0">
-                                                            Could not load the selected parent partner. Try another parent or go back and try
-                                                            again.
+                                                            {t('admin.paymentGetway.cpParentLoadFailedWarning')}
                                                         </div>
                                                     </div>
                                                 )}
@@ -891,11 +906,11 @@ const AdminContentProviderCreate = () => {
                                             <div className="col-12 mb-7">
                                                 <div className="alert alert-primary d-flex flex-column mb-0">
                                                     <span className="fw-bold">
-                                                        Parent: {parentPartner.business_name || parentPartner.name}
+                                                        {t('admin.paymentGetway.cpParentBannerPrefix')}{' '}
+                                                        {parentPartner.business_name || parentPartner.name}
                                                     </span>
                                                     <span className="fs-7 text-gray-700 mt-1">
-                                                        Country and partner category are taken from the parent and cannot be changed
-                                                        here.
+                                                        {t('admin.paymentGetway.cpParentBannerHint')}
                                                     </span>
                                                 </div>
                                             </div>
@@ -905,8 +920,8 @@ const AdminContentProviderCreate = () => {
                                         {!effectiveParentId && !isGlobalSubCreate && (
                                         <div className="col-md-6 mb-7">
                                             <SearchableDropdown
-                                                label="Country"
-                                                placeholder="Select Country"
+                                                label={t('admin.paymentGetway.cpCountry')}
+                                                placeholder={t('admin.paymentGetway.wizPlaceholderCountry')}
                                                 options={countryOptions}
                                                 selected={selectedCountryOption}
                                                 onSelect={handleCountrySelect}
@@ -914,7 +929,7 @@ const AdminContentProviderCreate = () => {
                                                 loading={false}
                                                 onOpen={handleCountryOpen}
                                                 onSearchChange={handleCountrySearchChange}
-                                                searchPlaceholder="Search countries..."
+                                                searchPlaceholder={t('admin.paymentGetway.cpSearchCountries')}
                                                 required={true}
                                                 renderSelected={(option) => (
                                                     option ? (
@@ -930,7 +945,11 @@ const AdminContentProviderCreate = () => {
                                                             )}
                                                             <span className="text-gray-800">{option.label}</span>
                                                         </div>
-                                                    ) : <span className="text-muted fw-semibold">Select country</span>
+                                                    ) : (
+                                                        <span className="text-muted fw-semibold">
+                                                            {t('admin.paymentGetway.cpSelectCountryMuted')}
+                                                        </span>
+                                                    )
                                                 )}
                                                 renderOption={(option) => (
                                                     <div className="d-flex align-items-center">
@@ -955,8 +974,8 @@ const AdminContentProviderCreate = () => {
                                         {!effectiveParentId && !isGlobalSubCreate && (
                                         <div className="col-md-6 mb-7">
                                             <SearchableDropdown
-                                                label="Partner category"
-                                                placeholder="Select partner category"
+                                                label={t('admin.paymentGetway.cpPartnerCategory')}
+                                                placeholder={t('admin.paymentGetway.cpSelectPartnerCategoryPlaceholder')}
                                                 options={partnerCategoryOptions}
                                                 selected={selectedPartnerCategoryOption}
                                                 onSelect={handlePartnerCategorySelect}
@@ -964,7 +983,7 @@ const AdminContentProviderCreate = () => {
                                                 loading={loadingPartnerCategories}
                                                 onOpen={handlePartnerCategoryOpen}
                                                 onSearchChange={handlePartnerCategorySearchChange}
-                                                searchPlaceholder="Search categories..."
+                                                searchPlaceholder={t('admin.paymentGetway.cpSearchCategories')}
                                                 required
                                             />
                                             {errors.partner_category_id && (
@@ -975,84 +994,96 @@ const AdminContentProviderCreate = () => {
 
                                         {/* Business /Brand Name */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Business /Brand Name</label>
+                                            <label className="form-label fw-bold required">
+                                                {t('admin.paymentGetway.viewBusinessBrandName')}
+                                            </label>
                                             <input
                                                 type="text"
                                                 name="name"
                                                 className={`form-control ${errors.name ? 'is-invalid' : ''}`}
                                                 value={formData.name}
                                                 onChange={handleInputChange}
-                                                placeholder="Enter Business /Brand Name"
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderBusinessBrand')}
                                             />
                                             {errors.name && <div className="invalid-feedback d-block">{errors.name}</div>}
                                         </div>
 
                                         {/* Contact Person Name */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Contact Person Name</label>
+                                            <label className="form-label fw-bold required">
+                                                {t('admin.paymentGetway.viewContactPersonName')}
+                                            </label>
                                             <input
                                                 type="text"
                                                 name="business_name"
                                                 className="form-control"
                                                 value={formData.business_name}
                                                 onChange={handleInputChange}
-                                                placeholder="Enter Contact Person Name"
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderContactPerson')}
                                                 required
                                             />
                                         </div>
 
                                         {/* Company Name */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Company Name</label>
+                                            <label className="form-label fw-bold required">
+                                                {t('admin.paymentGetway.viewCompanyName')}
+                                            </label>
                                             <input
                                                 type="text"
                                                 name="owner_name"
                                                 className={`form-control ${errors.owner_name ? 'is-invalid' : ''}`}
                                                 value={formData.owner_name}
                                                 onChange={handleInputChange}
-                                                placeholder="Enter Company Name"
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderCompanyName')}
                                             />
                                             {errors.owner_name && <div className="invalid-feedback d-block">{errors.owner_name}</div>}
                                         </div>
 
                                         {/* Email */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Email</label>
+                                            <label className="form-label fw-bold required">
+                                                {t('admin.paymentGetway.cpImportEmail')}
+                                            </label>
                                             <input
                                                 type="email"
                                                 name="email"
                                                 className={`form-control ${errors.email ? 'is-invalid' : ''}`}
                                                 value={formData.email}
                                                 onChange={handleInputChange}
-                                                placeholder="provider@example.com"
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderEmailProvider')}
                                             />
                                             {errors.email && <div className="invalid-feedback d-block">{errors.email}</div>}
                                         </div>
 
                                         {/* Phone */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Phone</label>
+                                            <label className="form-label fw-bold required">
+                                                {t('admin.paymentGetway.cpImportPhone')}
+                                            </label>
                                             <input
                                                 type="text"
                                                 name="phone"
                                                 className={`form-control ${errors.phone ? 'is-invalid' : ''}`}
                                                 value={formData.phone}
                                                 onChange={handleInputChange}
-                                                placeholder="+1234567890"
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderPhone')}
                                             />
                                             {errors.phone && <div className="invalid-feedback d-block">{errors.phone}</div>}
                                         </div>
 
                                         {/* Business Phone */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Business Phone</label>
+                                            <label className="form-label fw-bold required">
+                                                {t('admin.paymentGetway.viewBusinessPhone')}
+                                            </label>
                                             <input
                                                 type="text"
                                                 name="business_phone"
                                                 className="form-control"
                                                 value={formData.business_phone}
                                                 onChange={handleInputChange}
-                                                placeholder="+1234567890"
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderPhone')}
                                                 required
                                             />
                                         </div>
@@ -1064,20 +1095,24 @@ const AdminContentProviderCreate = () => {
 
                                         {/* Profile Summary */}
                                         <div className="col-md-12 mb-7">
-                                            <label className="form-label fw-bold">Profile Summary</label>
+                                            <label className="form-label fw-bold">
+                                                {t('admin.paymentGetway.viewProfileSummary')}
+                                            </label>
                                             <textarea
                                                 name="address"
                                                 className="form-control"
                                                 rows="3"
                                                 value={formData.address}
                                                 onChange={handleInputChange}
-                                                placeholder="Enter profile summary"
+                                                placeholder={t('admin.paymentGetway.cpPlaceholderProfileSummary')}
                                             />
                                         </div>
 
                                         {/* Is Active */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Active Status</label>
+                                            <label className="form-label fw-bold">
+                                                {t('admin.paymentGetway.cpLabelActiveStatus')}
+                                            </label>
                                             <div className="form-check form-switch form-check-custom form-check-solid mt-2">
                                                 <input
                                                     className="form-check-input"
@@ -1087,14 +1122,18 @@ const AdminContentProviderCreate = () => {
                                                     onChange={handleInputChange}
                                                 />
                                                 <label className="form-check-label">
-                                                    {formData.is_active ? 'Active' : 'Inactive'}
+                                                    {formData.is_active
+                                                        ? t('admin.common.active')
+                                                        : t('admin.common.inactive')}
                                                 </label>
                                             </div>
                                         </div>
 
                                         {!effectiveParentId && !isGlobalSubCreate && (
                                             <div className="col-md-6 mb-7">
-                                                <label className="form-label fw-bold">Parent Organization</label>
+                                                <label className="form-label fw-bold">
+                                                    {t('admin.paymentGetway.cpLabelParentOrganizationField')}
+                                                </label>
                                                 <div className="form-check form-switch form-check-custom form-check-solid">
                                                     <input
                                                         className="form-check-input"
@@ -1105,7 +1144,7 @@ const AdminContentProviderCreate = () => {
                                                         id="create_is_parent"
                                                     />
                                                     <label className="form-check-label" htmlFor="create_is_parent">
-                                                        Parent organization
+                                                        {t('admin.paymentGetway.cpLabelParentOrgSwitch')}
                                                     </label>
                                                 </div>
                                             </div>
@@ -1123,7 +1162,7 @@ const AdminContentProviderCreate = () => {
                         <div className="col-md-9">
                             <div className="d-flex justify-content-end gap-3">
                                 <Link to={cancelHref} className="btn btn-light">
-                                    Cancel
+                                    {t('admin.common.cancel')}
                                 </Link>
                                 <button
                                     type="submit"
@@ -1140,7 +1179,7 @@ const AdminContentProviderCreate = () => {
                                     {saving ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Creating...
+                                            {t('admin.paymentGetway.cpCreating')}
                                         </>
                                     ) : (
                                         <>
@@ -1148,7 +1187,9 @@ const AdminContentProviderCreate = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            {effectiveParentId || isGlobalSubCreate ? 'Create Sub Partner' : 'Create Partner'}
+                                            {effectiveParentId || isGlobalSubCreate
+                                                ? t('admin.paymentGetway.cpCreateSubPartnerBtn')
+                                                : t('admin.paymentGetway.cpCreatePartnerBtn')}
                                         </>
                                     )}
                                 </button>

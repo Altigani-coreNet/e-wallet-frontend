@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS, ADMIN_SYSTEM_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -9,6 +10,7 @@ import { getTranslatedText } from '../../../utils/helpers';
 import UserFormSkeleton from './UserFormSkeleton';
 
 const AdminUserEdit = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
@@ -57,18 +59,18 @@ const AdminUserEdit = () => {
         .filter(Boolean);
 
     useEffect(() => {
-        setTitle('Edit User');
+        setTitle(t('admin.usersUI.form.editTitle'));
         setActions(
             <Link to="/admin/users" className="btn btn-sm btn-light-danger">
                 <i className="ki-duotone ki-arrow-left fs-2">
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back
+                {t('admin.usersUI.form.back')}
             </Link>
         );
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t, i18n.language]);
 
     useEffect(() => {
         fetchMerchants();
@@ -150,7 +152,7 @@ const AdminUserEdit = () => {
                 setSelectedRoleIds(roleIds);
             }
         } catch (error) {
-            toast.error('Failed to load user');
+            toast.error(t('admin.usersUI.form.loadUserFailed'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -273,21 +275,21 @@ const AdminUserEdit = () => {
         const newErrors = {};
 
         if (!formData.name?.trim()) {
-            newErrors.name = 'Name is required';
+            newErrors.name = t('admin.usersUI.form.nameRequired');
         }
 
         if (!formData.email?.trim()) {
-            newErrors.email = 'Email is required';
+            newErrors.email = t('admin.usersUI.form.emailRequired');
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            newErrors.email = 'Invalid email format';
+            newErrors.email = t('admin.usersUI.form.emailInvalid');
         }
 
         if (!formData.phone?.trim()) {
-            newErrors.phone = 'Phone is required';
+            newErrors.phone = t('admin.usersUI.form.phoneRequired');
         }
 
         if (!formData.merchant_id) {
-            newErrors.merchant_id = 'Merchant is required';
+            newErrors.merchant_id = t('admin.usersUI.form.merchantRequired');
         }
 
         setErrors(newErrors);
@@ -298,7 +300,7 @@ const AdminUserEdit = () => {
         e.preventDefault();
 
         if (!validateForm()) {
-            toast.error('Please fill in all required fields');
+            toast.error(t('admin.usersUI.form.fillRequired'));
             return;
         }
 
@@ -325,11 +327,11 @@ const AdminUserEdit = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('User updated successfully');
+                toast.success(t('admin.usersUI.form.updateSuccess'));
                 navigate('/admin/users');
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Failed to update user';
+            const errorMessage = error.response?.data?.message || t('admin.usersUI.form.updateFailed');
             toast.error(errorMessage);
             
             if (error.response?.data?.errors) {
@@ -355,14 +357,14 @@ const AdminUserEdit = () => {
                             <div className="card">
                                 <div className="card-header border-0">
                                     <div className="card-title">
-                                        <h2>Edit User</h2>
+                                        <h2>{t('admin.usersUI.form.editTitle')}</h2>
                                     </div>
                                 </div>
 
                                 <div className="card-body p-9">
                                     {validationMessages.length > 0 && (
                                         <div className="alert alert-danger alert-dismissible fade show mb-7">
-                                            <h4 className="mb-1">Validation Errors</h4>
+                                            <h4 className="mb-1">{t('admin.usersUI.form.validationErrors')}</h4>
                                             <ul className="mb-0">
                                                 {validationMessages.map((error, idx) => (
                                                     <li key={idx}>{error}</li>
@@ -374,7 +376,7 @@ const AdminUserEdit = () => {
 
                                     <div className="row">
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Full Name</label>
+                                            <label className="form-label fw-bold required">{t('admin.usersUI.form.fullName')}</label>
                                             <input
                                                 type="text"
                                                 name="name"
@@ -386,7 +388,7 @@ const AdminUserEdit = () => {
                                         </div>
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Email</label>
+                                            <label className="form-label fw-bold required">{t('admin.usersUI.form.email')}</label>
                                             <input
                                                 type="email"
                                                 name="email"
@@ -398,7 +400,7 @@ const AdminUserEdit = () => {
                                         </div>
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Phone</label>
+                                            <label className="form-label fw-bold required">{t('admin.usersUI.form.phone')}</label>
                                             <input
                                                 type="text"
                                                 name="phone"
@@ -413,13 +415,13 @@ const AdminUserEdit = () => {
                                                     <span className="path2"></span>
                                                     <span className="path3"></span>
                                                 </i>
-                                                To reset password, use the "Send Reset Password Link" option from the user details page
+                                                {t('admin.usersUI.form.passwordHintEdit')}
                                             </div>
                                         </div>
 
                                         {/* Merchant */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Merchant</label>
+                                            <label className="form-label fw-bold required">{t('admin.usersUI.form.merchant')}</label>
                                             <div className="position-relative">
                                                 <div 
                                                     className={`form-control h-50px d-flex align-items-center justify-content-between ${hasError('merchant_id') ? 'is-invalid' : ''}`}
@@ -432,7 +434,7 @@ const AdminUserEdit = () => {
                                                                 {getTranslatedText(selectedMerchant.business_name) || getTranslatedText(selectedMerchant.name)}
                                                             </span>
                                                         ) : (
-                                                            <span className="text-muted">Select Merchant</span>
+                                                            <span className="text-muted">{t('admin.usersUI.form.selectMerchant')}</span>
                                                         )}
                                                     </div>
                                                     <div className="d-flex align-items-center">
@@ -461,7 +463,7 @@ const AdminUserEdit = () => {
                                                             <input 
                                                                 type="text" 
                                                                 className="form-control form-control-sm mb-2" 
-                                                                placeholder="Search merchants..."
+                                                                placeholder={t('admin.usersUI.form.searchMerchantsPh')}
                                                                 value={merchantSearchTerm}
                                                                 onChange={(e) => handleMerchantSearch(e.target.value)}
                                                                 onClick={(e) => e.stopPropagation()}
@@ -483,7 +485,7 @@ const AdminUserEdit = () => {
                                                                 </div>
                                                             ))
                                                         ) : (
-                                                            <div className="p-3 text-muted text-center">No merchants found</div>
+                                                            <div className="p-3 text-muted text-center">{t('admin.usersUI.form.noMerchants')}</div>
                                                         )}
                                                     </div>
                                                 )}
@@ -493,7 +495,7 @@ const AdminUserEdit = () => {
 
                                         {/* Branch */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Branch (Optional)</label>
+                                            <label className="form-label fw-bold">{t('admin.usersUI.form.branchOptional')}</label>
                                             <div className="position-relative">
                                                 <div 
                                                     className="form-control h-50px d-flex align-items-center justify-content-between"
@@ -508,7 +510,7 @@ const AdminUserEdit = () => {
                                                             <span className="text-gray-800">{getTranslatedText(selectedBranch.name)}</span>
                                                         ) : (
                                                             <span className="text-muted">
-                                                                {!(selectedMerchant || formData.merchant_id) ? 'Select merchant first' : 'Select Branch'}
+                                                                {!(selectedMerchant || formData.merchant_id) ? t('admin.usersUI.form.selectMerchantFirst') : t('admin.usersUI.form.selectBranch')}
                                                             </span>
                                                         )}
                                                     </div>
@@ -538,7 +540,7 @@ const AdminUserEdit = () => {
                                                             <input 
                                                                 type="text" 
                                                                 className="form-control form-control-sm mb-2" 
-                                                                placeholder="Search branches..."
+                                                                placeholder={t('admin.usersUI.form.searchBranchesPh')}
                                                                 value={branchSearchTerm}
                                                                 onChange={(e) => handleBranchSearch(e.target.value)}
                                                                 onClick={(e) => e.stopPropagation()}
@@ -557,7 +559,7 @@ const AdminUserEdit = () => {
                                                                 </div>
                                                             ))
                                                         ) : (
-                                                            <div className="p-3 text-muted text-center">No branches found</div>
+                                                            <div className="p-3 text-muted text-center">{t('admin.usersUI.form.noBranches')}</div>
                                                         )}
                                                     </div>
                                                 )}
@@ -565,11 +567,11 @@ const AdminUserEdit = () => {
                                         </div>
 
                                         <div className="col-12 mb-7">
-                                            <label className="form-label fw-bold">Roles</label>
+                                            <label className="form-label fw-bold">{t('admin.usersUI.form.roles')}</label>
                                             {!formData.merchant_id ? (
-                                                <div className="text-muted fs-7">Select merchant first to load roles.</div>
+                                                <div className="text-muted fs-7">{t('admin.usersUI.form.selectMerchantForRoles')}</div>
                                             ) : merchantRoles.length === 0 ? (
-                                                <div className="text-muted fs-7">No roles found for this merchant yet.</div>
+                                                <div className="text-muted fs-7">{t('admin.usersUI.form.noRolesEdit')}</div>
                                             ) : (
                                                 <div className="d-flex flex-wrap gap-4 mt-2">
                                                     {merchantRoles.map((role) => (
@@ -588,20 +590,20 @@ const AdminUserEdit = () => {
                                         </div>
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Status</label>
+                                            <label className="form-label fw-bold">{t('admin.common.status')}</label>
                                             <select
                                                 name="status"
                                                 className="form-select"
                                                 value={formData.status}
                                                 onChange={handleInputChange}
                                             >
-                                                <option value="active">Active</option>
-                                                <option value="inactive">Inactive</option>
+                                                <option value="active">{t('admin.common.active')}</option>
+                                                <option value="inactive">{t('admin.common.inactive')}</option>
                                             </select>
                                         </div>
 
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">User Type</label>
+                                            <label className="form-label fw-bold">{t('admin.usersUI.form.userType')}</label>
                                             <div className="form-check form-switch form-check-custom form-check-solid mt-2">
                                                 <input
                                                     className="form-check-input"
@@ -611,7 +613,7 @@ const AdminUserEdit = () => {
                                                     onChange={handleInputChange}
                                                 />
                                                 <label className="form-check-label">
-                                                    {formData.is_admin ? 'Admin User' : 'Regular User'}
+                                                    {formData.is_admin ? t('admin.usersUI.form.adminUser') : t('admin.usersUI.form.regularUser')}
                                                 </label>
                                             </div>
                                         </div>
@@ -621,7 +623,7 @@ const AdminUserEdit = () => {
                                         <div className="col-12">
                                             <div className="d-flex justify-content-end gap-3">
                                                 <Link to="/admin/users" className="btn btn-light">
-                                                    Cancel
+                                                    {t('admin.usersUI.form.cancel')}
                                                 </Link>
                                                 <button
                                                     type="submit"
@@ -631,7 +633,7 @@ const AdminUserEdit = () => {
                                                     {saving ? (
                                                         <>
                                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                                            Updating...
+                                                            {t('admin.usersUI.form.updating')}
                                                         </>
                                                     ) : (
                                                         <>
@@ -639,7 +641,7 @@ const AdminUserEdit = () => {
                                                                 <span className="path1"></span>
                                                                 <span className="path2"></span>
                                                             </i>
-                                                            Update User
+                                                            {t('admin.usersUI.form.updateUser')}
                                                         </>
                                                     )}
                                                 </button>

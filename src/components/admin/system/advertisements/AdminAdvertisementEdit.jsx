@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { getAdvertisement, updateAdvertisement } from '../../../../services/adminAdvertisementsService';
 import { AUTH_ENDPOINTS } from '../../../../utils/constants';
 import { advertisementAssetUrl, openNativeDatePicker, toDateInputValue } from '../../../../utils/advertisementFormUtils';
 
 const AdminAdvertisementEdit = () => {
+	const { t, i18n } = useTranslation();
 	const { id } = useParams();
 	const { setTitle, setActions } = useToolbar();
 	const navigate = useNavigate();
@@ -27,13 +29,6 @@ const AdminAdvertisementEdit = () => {
 		end_date: ''
 	});
 	const [errors, setErrors] = useState({});
-	useEffect(() => {
-		setTitle('Edit Advertisement');
-		setActions(null);
-		fetchAdAndInit();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [id]);
-
 	const debounce = (func, delay) => {
 		let timeoutId;
 		return (...args) => {
@@ -45,9 +40,11 @@ const AdminAdvertisementEdit = () => {
 	const fetchCountries = useCallback(async (searchTerm = '') => {
 		setCountriesLoading(true);
 		try {
-			const url = searchTerm
+			const lang = i18n.language?.split('-')[0] || 'en';
+			let url = searchTerm
 				? `${AUTH_ENDPOINTS.COUNTRIES_SELECT}?search=${encodeURIComponent(searchTerm)}`
 				: AUTH_ENDPOINTS.COUNTRIES_SELECT;
+			url += `${url.includes('?') ? '&' : '?'}lang=${encodeURIComponent(lang)}`;
 			const response = await fetch(url);
 			const data = await response.json();
 			if (data?.status) {
@@ -59,7 +56,7 @@ const AdminAdvertisementEdit = () => {
 		} finally {
 			setCountriesLoading(false);
 		}
-	}, []);
+	}, [i18n.language]);
 
 	const debouncedCountrySearch = useCallback(
 		(searchTerm) => {
@@ -120,11 +117,11 @@ const AdminAdvertisementEdit = () => {
 					setImagePreview(null);
 				}
 			} else {
-				toast.error(adRes.error || 'Failed to load advertisement');
+				toast.error(adRes.error || t('admin.settings.advertisements.loadFailed'));
 			}
 
-			// Load countries and try to set selectedCountry based on ad country_id
-			const url = AUTH_ENDPOINTS.COUNTRIES_SELECT;
+			const lang = i18n.language?.split('-')[0] || 'en';
+			const url = `${AUTH_ENDPOINTS.COUNTRIES_SELECT}?lang=${encodeURIComponent(lang)}`;
 			const countriesResponse = await fetch(url);
 			const countriesData = await countriesResponse.json();
 			if (countriesData?.status) {
@@ -143,11 +140,21 @@ const AdminAdvertisementEdit = () => {
 			}
 		} catch (e) {
 			console.error('Error loading advertisement/countries:', e);
-			toast.error('Failed to load data');
+			toast.error(t('admin.settings.advertisements.loadDataFailed'));
 		} finally {
 			setLoading(false);
 		}
 	};
+
+	useEffect(() => {
+		setTitle(t('admin.settings.advertisements.editTitle'));
+		setActions(null);
+	}, [setTitle, setActions, t]);
+
+	useEffect(() => {
+		fetchAdAndInit();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [id, i18n.language]);
 
 	const handleImageChange = (e) => {
 		const file = e.target.files[0];
@@ -167,15 +174,15 @@ const AdminAdvertisementEdit = () => {
 		try {
 			const response = await updateAdvertisement(id, formData);
 			if (response.success) {
-				toast.success('Advertisement updated successfully');
+				toast.success(t('admin.settings.advertisements.updateSuccess'));
 				navigate('/admin/system/advertisements');
 			} else {
 				if (response.errors) setErrors(response.errors);
-				toast.error(response.error || 'Failed to update advertisement');
+				toast.error(response.error || t('admin.settings.advertisements.updateFailed'));
 			}
 		} catch (error) {
 			console.error('Error updating advertisement:', error);
-			toast.error('Failed to update advertisement');
+			toast.error(t('admin.settings.advertisements.updateFailed'));
 		} finally {
 			setLoading(false);
 		}
@@ -184,14 +191,14 @@ const AdminAdvertisementEdit = () => {
 	return (
 		<div className="card">
 			<div className="card-header">
-				<h3 className="card-title">Edit Advertisement</h3>
+				<h3 className="card-title">{t('admin.settings.advertisements.editCardTitle')}</h3>
 			</div>
 
 			<form onSubmit={handleSubmit}>
 				<div className="card-body">
 					<div className="row">
 						<div className="col-md-6 mb-5">
-							<label className="form-label required">Name</label>
+							<label className="form-label required">{t('admin.settings.advertisements.labelName')}</label>
 							<input
 								type="text"
 								className={`form-control ${errors.name ? 'is-invalid' : ''}`}
@@ -202,7 +209,7 @@ const AdminAdvertisementEdit = () => {
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label required">Country</label>
+							<label className="form-label required">{t('admin.settings.advertisements.labelCountry')}</label>
 							<div className="position-relative">
 								<div className={`
 									form-control h-50px d-flex align-items-center justify-content-between 
@@ -221,7 +228,7 @@ const AdminAdvertisementEdit = () => {
 												<span className="fw-bold text-gray-800">{selectedCountry?.text}</span>
 										</>
 									) : (
-										<span className="text-muted">Select Country</span>
+										<span className="text-muted">{t('admin.settings.advertisements.selectCountry')}</span>
 									)}
 								</div>
 								<div className="d-flex align-items-center">
@@ -241,7 +248,7 @@ const AdminAdvertisementEdit = () => {
 							{countriesLoading && (
 								<div className="position-absolute top-50 end-0 translate-middle-y me-3">
 									<div className="spinner-border spinner-border-sm" role="status">
-										<span className="visually-hidden">Loading...</span>
+										<span className="visually-hidden">{t('admin.common.loading')}</span>
 									</div>
 								</div>
 							)}
@@ -252,7 +259,7 @@ const AdminAdvertisementEdit = () => {
 										<input 
 											type="text" 
 											className="form-control form-control-sm mb-2" 
-											placeholder="Search countries..." 
+											placeholder={t('admin.settings.advertisements.searchCountries')} 
 											value={countrySearchTerm} 
 											onChange={(e) => handleCountrySearch(e.target.value)} 
 											onFocus={(e) => e.stopPropagation()} 
@@ -263,9 +270,9 @@ const AdminAdvertisementEdit = () => {
 									{countriesLoading ? (
 										<div className="p-3 text-center">
 											<div className="spinner-border spinner-border-sm me-2" role="status">
-												<span className="visually-hidden">Loading...</span>
+												<span className="visually-hidden">{t('admin.common.loading')}</span>
 											</div>
-											<span className="text-muted">Searching countries...</span>
+											<span className="text-muted">{t('admin.settings.advertisements.searchingCountries')}</span>
 										</div>
 									) : (
 										filteredCountries.length > 0 ? (
@@ -282,7 +289,7 @@ const AdminAdvertisementEdit = () => {
 												</div>
 											))
 										) : (
-											<div className="p-3 text-muted text-center">No countries found</div>
+											<div className="p-3 text-muted text-center">{t('admin.settings.advertisements.noCountriesFound')}</div>
 										)
 									)}
 							</div>
@@ -292,7 +299,7 @@ const AdminAdvertisementEdit = () => {
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label">Image (leave blank to keep current)</label>
+							<label className="form-label">{t('admin.settings.advertisements.labelImageKeep')}</label>
 							<input
 								type="file"
 								className="form-control"
@@ -301,10 +308,10 @@ const AdminAdvertisementEdit = () => {
 							/>
 							{imagePreview && (
 								<div className="mt-3">
-									<div className="text-muted fs-8 mb-1">Current / preview</div>
+									<div className="text-muted fs-8 mb-1">{t('admin.settings.advertisements.previewCurrent')}</div>
 									<img
 										src={imagePreview}
-										alt="Advertisement"
+										alt={t('admin.settings.advertisements.previewAlt')}
 										className="img-thumbnail rounded border"
 										style={{ maxWidth: '100%', maxHeight: '280px', objectFit: 'contain' }}
 									/>
@@ -313,19 +320,19 @@ const AdminAdvertisementEdit = () => {
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label required">Status</label>
+							<label className="form-label required">{t('admin.settings.advertisements.labelStatus')}</label>
 							<select
 								className="form-select"
 								value={formData.status}
 								onChange={(e) => setFormData({ ...formData, status: e.target.value })}
 							>
-								<option value="active">Active</option>
-								<option value="inactive">Inactive</option>
+								<option value="active">{t('admin.common.active')}</option>
+								<option value="inactive">{t('admin.common.inactive')}</option>
 							</select>
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label" htmlFor="advertisement-edit-start-date">Start Date</label>
+							<label className="form-label" htmlFor="advertisement-edit-start-date">{t('admin.settings.advertisements.labelStartDate')}</label>
 							<input
 								id="advertisement-edit-start-date"
 								type="date"
@@ -337,7 +344,7 @@ const AdminAdvertisementEdit = () => {
 						</div>
 
 						<div className="col-md-6 mb-5">
-							<label className="form-label" htmlFor="advertisement-edit-end-date">End Date</label>
+							<label className="form-label" htmlFor="advertisement-edit-end-date">{t('admin.settings.advertisements.labelEndDate')}</label>
 							<input
 								id="advertisement-edit-end-date"
 								type="date"
@@ -356,10 +363,10 @@ const AdminAdvertisementEdit = () => {
 						className="btn btn-light"
 						onClick={() => navigate('/admin/system/advertisements')}
 					>
-						Cancel
+						{t('admin.common.cancel')}
 					</button>
 					<button type="submit" className="btn btn-primary" disabled={loading}>
-						{loading ? 'Updating...' : 'Update Advertisement'}
+						{loading ? t('admin.settings.advertisements.updating') : t('admin.settings.advertisements.updateBtn')}
 					</button>
 				</div>
 			</form>

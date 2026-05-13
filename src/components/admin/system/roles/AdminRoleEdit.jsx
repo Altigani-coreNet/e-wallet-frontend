@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { getRole, updateRole, getPermissions } from '../../../../services/adminRolesService';
 
 const AdminRoleEdit = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
@@ -17,10 +19,10 @@ const AdminRoleEdit = () => {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        setTitle('Edit Role');
+        setTitle(t('admin.systemRoles.editTitle'));
         setActions(null);
         fetchData();
-    }, [id, setTitle, setActions]);
+    }, [id, setTitle, setActions, t]);
 
     const fetchData = async () => {
         try {
@@ -42,7 +44,7 @@ const AdminRoleEdit = () => {
             }
         } catch (error) {
             console.error('Error fetching data:', error);
-            toast.error('Failed to fetch role data');
+            toast.error(t('admin.systemRoles.roleDataFetchFailed'));
         }
     };
 
@@ -54,17 +56,17 @@ const AdminRoleEdit = () => {
         try {
             const response = await updateRole(id, formData);
             if (response.success) {
-                toast.success('Role updated successfully');
+                toast.success(t('admin.systemRoles.roleUpdated'));
                 navigate('/admin/system/roles');
             } else {
                 if (response.errors) {
                     setErrors(response.errors);
                 }
-                toast.error(response.error || 'Failed to update role');
+                toast.error(response.error || t('admin.systemRoles.roleUpdateFailed'));
             }
         } catch (error) {
             console.error('Error updating role:', error);
-            toast.error('Failed to update role');
+            toast.error(t('admin.systemRoles.roleUpdateFailed'));
         } finally {
             setLoading(false);
         }
@@ -152,7 +154,7 @@ const AdminRoleEdit = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Edit Role</h3>
+                <h3 className="card-title">{t('admin.systemRoles.editCardTitle')}</h3>
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -169,7 +171,7 @@ const AdminRoleEdit = () => {
                     </div>
 
                     <div className="mb-5">
-                        <label className="form-label required">Permissions</label>
+                        <label className="form-label required">{t('admin.systemRoles.labelPermissionsRequired')}</label>
                         <div className="accordion" id="permissions-accordion">
                             {Object.keys(grouped).sort().map((moduleKey) => {
                                 const moduleIds = getModuleIds(moduleKey);
@@ -249,10 +251,10 @@ const AdminRoleEdit = () => {
                         className="btn btn-light"
                         onClick={() => navigate('/admin/system/roles')}
                     >
-                        Cancel
+                        {t('admin.common.cancel')}
                     </button>
                     <button type="submit" className="btn btn-primary" disabled={loading}>
-                        {loading ? 'Updating...' : 'Update Role'}
+                        {loading ? t('admin.systemRoles.updating') : t('admin.systemRoles.updateRole')}
                     </button>
                 </div>
             </form>

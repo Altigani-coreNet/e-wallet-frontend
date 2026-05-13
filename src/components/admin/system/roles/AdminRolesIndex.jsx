@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { useCan } from '../../../../utils/permissions';
 import { getRolesData, bulkDeleteRoles } from '../../../../services/adminRolesService';
@@ -8,6 +9,7 @@ import RoleTableRow from './RoleTableRow';
 import BulkActionBar from '../../../common/BulkActionBar';
 
 const AdminRolesIndex = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const canCreateRole = useCan('pos.roles.create_roles');
     const [roles, setRoles] = useState([]);
@@ -23,7 +25,7 @@ const AdminRolesIndex = () => {
     });
 
     useEffect(() => {
-        setTitle('Roles Management');
+        setTitle(t('admin.systemRoles.title'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button
@@ -34,7 +36,9 @@ const AdminRolesIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">{showFilters ? 'Hide' : 'Show'} Filters</span>
+                    <span className="d-none d-md-inline ms-1">
+                        {showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}
+                    </span>
                 </button>
 
                 {canCreateRole && (
@@ -43,13 +47,13 @@ const AdminRolesIndex = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        <span className="d-none d-md-inline ms-1">Add Role</span>
+                        <span className="d-none d-md-inline ms-1">{t('admin.systemRoles.addRole')}</span>
                     </Link>
                 )}
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters]);
+    }, [setTitle, setActions, showFilters, t]);
 
     useEffect(() => {
         fetchRoles();
@@ -87,11 +91,11 @@ const AdminRolesIndex = () => {
                     }));
                 }
             } else {
-                toast.error(response.error || 'Failed to fetch roles');
+                toast.error(response.error || t('admin.systemRoles.fetchFailed'));
             }
         } catch (error) {
             console.error('Error fetching roles:', error);
-            toast.error('Failed to fetch roles');
+            toast.error(t('admin.systemRoles.fetchFailed'));
         } finally {
             setLoading(false);
         }
@@ -99,26 +103,26 @@ const AdminRolesIndex = () => {
 
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) {
-            toast.warning('Please select roles to delete');
+            toast.warning(t('admin.systemRoles.selectToDelete'));
             return;
         }
 
-        if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} role(s)?`)) {
+        if (!window.confirm(t('admin.systemRoles.bulkDeleteConfirm', { count: selectedIds.length }))) {
             return;
         }
 
         try {
             const response = await bulkDeleteRoles(selectedIds);
             if (response.success) {
-                toast.success('Roles deleted successfully');
+                toast.success(t('admin.systemRoles.bulkDeleted'));
                 setSelectedIds([]);
                 fetchRoles();
             } else {
-                toast.error(response.error || 'Failed to delete roles');
+                toast.error(response.error || t('admin.systemRoles.bulkDeleteFailed'));
             }
         } catch (error) {
             console.error('Error deleting roles:', error);
-            toast.error('Failed to delete roles');
+            toast.error(t('admin.systemRoles.bulkDeleteFailed'));
         }
     };
 
@@ -150,12 +154,12 @@ const AdminRolesIndex = () => {
                             <div className="card-body">
                                 <div className="row g-3">
                                     <div className="col-md-6">
-                                        <label className="form-label">Search</label>
+                                        <label className="form-label">{t('admin.systemRoles.searchLabel')}</label>
                                         <input 
                                             type="text" 
                                             className="form-control form-control-sm"
                                             value={searchTerm}
-                                            placeholder="Search roles..."
+                                            placeholder={t('admin.systemRoles.searchPlaceholder')}
                                             onChange={(e) => setSearchTerm(e.target.value)}
                                         />
                                     </div>
@@ -166,7 +170,7 @@ const AdminRolesIndex = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Reset Filters
+                                        {t('admin.systemRoles.resetFilters')}
                                     </button>
                                 </div>
                             </div>
@@ -181,7 +185,7 @@ const AdminRolesIndex = () => {
                         <BulkActionBar
                             selectedCount={selectedIds.length}
                             onDelete={handleBulkDelete}
-                            onCancel={() => setSelectedIds([])}
+                            onClear={() => setSelectedIds([])}
                         />
                     </div>
                 </div>
@@ -200,7 +204,7 @@ const AdminRolesIndex = () => {
                                 <input
                                     type="text"
                                     className="form-control form-control-solid w-250px ps-13"
-                                    placeholder="Search Roles"
+                                    placeholder={t('admin.systemRoles.searchPlaceholderToolbar')}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
@@ -223,10 +227,10 @@ const AdminRolesIndex = () => {
                                                 />
                                             </div>
                                         </th>
-                                        <th>Role Name</th>
-                                        <th>Permissions Count</th>
-                                        <th>Created At</th>
-                                        <th className="text-end min-w-100px">Actions</th>
+                                        <th>{t('admin.systemRoles.colRoleName')}</th>
+                                        <th>{t('admin.systemRoles.colPermissionsCount')}</th>
+                                        <th>{t('admin.systemRoles.colCreatedAt')}</th>
+                                        <th className="text-end min-w-100px">{t('admin.common.actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="fw-semibold text-gray-600">
@@ -234,14 +238,14 @@ const AdminRolesIndex = () => {
                                         <tr>
                                             <td colSpan="5" className="text-center py-5">
                                                 <div className="spinner-border text-primary" role="status">
-                                                    <span className="visually-hidden">Loading...</span>
+                                                    <span className="visually-hidden">{t('admin.common.loading')}</span>
                                                 </div>
                                             </td>
                                         </tr>
                                     ) : roles.length === 0 ? (
                                         <tr>
                                             <td colSpan="5" className="text-center py-5">
-                                                No roles found
+                                                {t('admin.systemRoles.noRolesFound')}
                                             </td>
                                         </tr>
                                     ) : (
@@ -264,7 +268,10 @@ const AdminRolesIndex = () => {
                             <div className="row">
                                 <div className="col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start">
                                     <div className="dataTables_length">
-                                        Showing page {pagination.current_page} of {pagination.last_page}
+                                        {t('admin.systemRoles.showingPage', {
+                                            current: pagination.current_page,
+                                            last: pagination.last_page,
+                                        })}
                                     </div>
                                 </div>
                                 <div className="col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end">

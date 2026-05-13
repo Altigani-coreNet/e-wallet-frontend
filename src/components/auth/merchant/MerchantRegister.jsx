@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import classNames from 'classnames';
 import Swal from 'sweetalert2';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AUTH_ENDPOINTS, AUTH_SERVICE_BASE } from '../../../utils/constants';
 import { validateRegistrationPhone } from '../../../utils/registrationPhoneRules';
@@ -14,33 +15,36 @@ import MerchantProfile from './steps/MerchantProfile';
 import BusinessDocuments from './steps/BusinessDocuments';
 import CompletionStep from './steps/CompletionStep';
 
-const steps = [
-    {
-        title: 'Account Details',
-        description: 'Setup Your Account Details'
-    },
-    {
-        title: 'Account Verification',
-        description: 'Verify Your Account & Set Your Passport'
-    },
-    {
-        title: 'Merchant Profile',
-        description: 'Setup Your Merchant Profile Details'
-    },
-    {
-        title: 'Business Documents',
-        description: 'Attach Documents & Complete Registration'
-    },
-    {
-        title: 'Completed',
-        description: 'Woah, we are here'
-    }
-];
-
 // LocalStorage key for saving registration progress
 const REGISTRATION_STORAGE_KEY = 'merchant_registration_progress';
 
 const MerchantRegister = () => {
+    const { t } = useTranslation();
+    const steps = useMemo(
+        () => [
+            {
+                title: t('auth.merchantRegister.steps.accountDetails.title'),
+                description: t('auth.merchantRegister.steps.accountDetails.description'),
+            },
+            {
+                title: t('auth.merchantRegister.steps.accountVerification.title'),
+                description: t('auth.merchantRegister.steps.accountVerification.description'),
+            },
+            {
+                title: t('auth.merchantRegister.steps.merchantProfile.title'),
+                description: t('auth.merchantRegister.steps.merchantProfile.description'),
+            },
+            {
+                title: t('auth.merchantRegister.steps.businessDocuments.title'),
+                description: t('auth.merchantRegister.steps.businessDocuments.description'),
+            },
+            {
+                title: t('auth.merchantRegister.steps.completed.title'),
+                description: t('auth.merchantRegister.steps.completed.description'),
+            },
+        ],
+        [t]
+    );
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     // Read plan_id from URL (e.g. ?plan_id=3). If missing, leave null and let backend fall back.
@@ -271,11 +275,11 @@ const MerchantRegister = () => {
             // Show alert with two options: proceed (stay on current step) or start new
             Swal.fire({
                 icon: 'info',
-                title: 'Complete Your Merchant Registration',
-                text: 'Please complete your merchant profile to continue.',
+                title: t('auth.registration.completeMerchantTitle'),
+                text: t('auth.registration.completeMerchantText'),
                 showCancelButton: true,
-                confirmButtonText: 'Proceed to register',
-                cancelButtonText: 'Start new registration'
+                confirmButtonText: t('auth.registration.proceedToRegister'),
+                cancelButtonText: t('auth.common.startNewRegistration'),
             }).then((result) => {
                 if (result.dismiss === Swal.DismissReason.cancel) {
                     handleStartNew();
@@ -398,15 +402,15 @@ const MerchantRegister = () => {
             setShowContinueModal(false);
             
             // Show success message with correct step number
-            const stepName = steps[step]?.title || `Step ${step + 1}`;
+            const stepName = steps[step]?.title || t('auth.registration.stepFallback', { n: step + 1 });
             Swal.fire({
                 icon: 'success',
-                title: 'Welcome Back!',
-                text: `Continuing from ${stepName} (Step ${step + 1}).`,
+                title: t('auth.common.welcomeBack'),
+                text: t('auth.registration.continuingFrom', { stepName, stepNumber: step + 1 }),
                 timer: 2000,
                 showConfirmButton: false,
                 toast: true,
-                position: 'top-end'
+                position: 'top-end',
             });
         }
     };
@@ -526,9 +530,9 @@ const MerchantRegister = () => {
                 setFieldErrors({ phone: [phoneCheck.message] });
                 await Swal.fire({
                     icon: 'error',
-                    title: 'Invalid phone number',
+                    title: t('auth.registration.invalidPhoneTitle'),
                     text: phoneCheck.message,
-                    confirmButtonText: 'OK',
+                    confirmButtonText: t('auth.common.ok'),
                 });
                 return;
             }
@@ -571,15 +575,15 @@ const MerchantRegister = () => {
                         
                         await Swal.fire({
                             icon: 'error',
-                            title: 'Oops!',
-                            text: 'Some required information is missing. Please review the highlighted fields.',
-                            confirmButtonText: 'OK'
+                            title: t('auth.common.oops'),
+                            text: t('auth.registration.missingFieldsText'),
+                            confirmButtonText: t('auth.common.ok'),
                         });
                     } else {
                         await Swal.fire({
                             icon: 'error',
-                            title: 'Error',
-                            text: data.message || 'Failed to send verification code. Please try again.',
+                            title: t('auth.common.error'),
+                            text: data.message || t('auth.registration.failedSendCode'),
                         });
                     }
                 }
@@ -587,8 +591,8 @@ const MerchantRegister = () => {
                 console.error('Error:', error);
                 await Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: 'An error occurred. Please try again.',
+                    title: t('auth.common.error'),
+                    text: t('auth.registration.genericError'),
                 });
             }
         } else if (currentStep === 2) {
@@ -599,29 +603,27 @@ const MerchantRegister = () => {
             
             // Check required fields
             const requiredFields = {
-                owner_name: 'Owner Name',
-                business_name: 'Business Name',
-                business_type: 'Business Type',
-                business_phone: 'Business Phone',
-                business_address: 'Business Address',
-                country: 'Country',
-                city: 'City',
-                trade_license_number: 'Trade License Number',
-                trade_license_start_date: 'Trade License Start Date',
-                trade_license_expired_date: 'Trade License Expired Date',
-                tax_number: 'Tax Number'
+                owner_name: t('auth.merchantRegister.fields.ownerName'),
+                business_name: t('auth.merchantRegister.fields.businessName'),
+                business_type: t('auth.merchantRegister.fields.businessType'),
+                business_phone: t('auth.merchantRegister.fields.businessPhone'),
+                business_address: t('auth.merchantRegister.fields.businessAddress'),
+                country: t('auth.merchantRegister.fields.country'),
+                city: t('auth.merchantRegister.fields.city'),
+                trade_license_number: t('auth.merchantRegister.fields.tradeLicenseNumber'),
+                trade_license_start_date: t('auth.merchantRegister.fields.tradeLicenseStartDate'),
+                trade_license_expired_date: t('auth.merchantRegister.fields.tradeLicenseExpiredDate'),
+                tax_number: t('auth.merchantRegister.fields.taxNumber'),
             };
-            
-            // Validate required fields
+
             Object.entries(requiredFields).forEach(([field, label]) => {
                 if (!formData[field] || formData[field].toString().trim() === '') {
-                    validationErrors[field] = [`${label} is required.`];
+                    validationErrors[field] = [t('auth.registration.fieldRequired', { label })];
                 }
             });
-            
-            // Validate accept_terms specifically
+
             if (!formData.accept_terms) {
-                validationErrors.accept_terms = ['You must accept the Terms and Conditions to continue.'];
+                validationErrors.accept_terms = [t('auth.registration.acceptTermsRequired')];
             }
             
             // If there are validation errors, show them and don't proceed
@@ -700,10 +702,10 @@ const MerchantRegister = () => {
                 if (data.success || data.status) {
                     await Swal.fire({
                         icon: 'success',
-                        title: 'Success!',
-                        text: 'Merchant details saved successfully!',
+                        title: t('auth.common.success'),
+                        text: t('auth.registration.merchantSaved'),
                         timer: 2000,
-                        showConfirmButton: false
+                        showConfirmButton: false,
                     });
                     const nextStep = currentStep + 1;
                     console.log(`Moving from step ${currentStep} to step ${nextStep}`);
@@ -719,8 +721,8 @@ const MerchantRegister = () => {
                     } else {
                         await Swal.fire({
                             icon: 'error',
-                            title: 'Error',
-                            text: data.message || 'Failed to save merchant details. Please try again.',
+                            title: t('auth.common.error'),
+                            text: data.message || t('auth.registration.merchantSaveFailed'),
                         });
                     }
                 }
@@ -728,8 +730,8 @@ const MerchantRegister = () => {
                 console.error('Error saving merchant details:', error);
                 await Swal.fire({
                     icon: 'error',
-                    title: 'Error',
-                    text: 'An error occurred while saving merchant details. Please try again.',
+                    title: t('auth.common.error'),
+                    text: t('auth.registration.merchantSaveError'),
                 });
             } finally {
                 setIsLoading(false);
@@ -860,8 +862,10 @@ const MerchantRegister = () => {
             case 0:
                 return <AccountDetails {...commonProps} />;
             case 1:
-                return <AccountVerification 
-                    {...commonProps} 
+                return (
+                    <AccountVerification
+                    {...commonProps}
+                    variant="merchant"
                     onNextStep={() => {
                         const nextStep = currentStep + 1; // This will be step 2
                         console.log(`AccountVerification: Moving from step ${currentStep} to step ${nextStep}`);
@@ -877,7 +881,8 @@ const MerchantRegister = () => {
                         setCurrentStep(0);
                     }}
                     onStartNewRegistration={handleStartNew}
-                />;
+                    />
+                );
             case 2:
                 return <MerchantProfile {...commonProps} />;
             case 3:
@@ -898,7 +903,7 @@ const MerchantRegister = () => {
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title">Continue Registration?</h5>
+                                <h5 className="modal-title">{t('auth.registration.continueModalTitle')}</h5>
                                 <button type="button" className="btn-close" onClick={handleStartNew}></button>
                             </div>
                             <div className="modal-body">
@@ -906,18 +911,21 @@ const MerchantRegister = () => {
                                     <i className="fas fa-info-circle text-primary" style={{ fontSize: '3rem' }}></i>
                                 </div>
                                 <p className="text-center mb-3">
-                                    We found your saved registration progress from <strong>{steps[savedProgressData.currentStep]?.title || `Step ${savedProgressData.currentStep + 1}`}</strong>.
+                                    {t('auth.registration.continueModalFoundPrefix')}{' '}
+                                    <strong>
+                                        {steps[savedProgressData.currentStep]?.title ||
+                                            t('auth.registration.stepFallback', { n: savedProgressData.currentStep + 1 })}
+                                    </strong>
+                                    .
                                 </p>
-                                <p className="text-center text-muted">
-                                    Would you like to continue from where you left off?
-                                </p>
+                                <p className="text-center text-muted">{t('auth.registration.continueModalQuestion')}</p>
                             </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-secondary" onClick={handleStartNew}>
-                                    Start New Registration
+                                    {t('auth.registration.startNewRegistration')}
                                 </button>
                                 <button type="button" className="btn btn-primary" onClick={handleContinueRegistration}>
-                                    Continue Registration
+                                    {t('auth.registration.continueRegistration')}
                                 </button>
                             </div>
                         </div>
@@ -979,7 +987,7 @@ const MerchantRegister = () => {
                                                     <span className="svg-icon svg-icon-4 me-1">
                                                         <i className="fas fa-arrow-left"></i>
                                                     </span>
-                                                    Previous
+                                                    {t('auth.common.previous')}
                                                 </button>
                                             )}
                                         </div>
@@ -993,11 +1001,11 @@ const MerchantRegister = () => {
                                                 {isLoading ? (
                                                     <>
                                                         <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                        {currentStep === 3 ? 'Loading ...' : 'Loading...'}
+                                                        {t('auth.common.loadingEllipsis')}
                                                     </>
                                                 ) : (
                                                     <>
-                                                        Next
+                                                        {t('auth.common.next')}
                                                         <span className="svg-icon svg-icon-4 ms-1">
                                                             <i className="fas fa-arrow-right"></i>
                                                         </span>

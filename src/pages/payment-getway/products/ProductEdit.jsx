@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { fetchProductDetails, updateProduct, fetchProductServiceForms, mapProductFormsToApiPayload } from '../../../services/serviceProductsService';
@@ -61,6 +62,7 @@ const normalizeFieldOptions = (options = []) =>
     }));
 
 const ProductEdit = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs } = useToolbar();
@@ -91,14 +93,14 @@ const ProductEdit = () => {
     const mobileFormsBuilderRef = useRef(null);
 
     useEffect(() => {
-        setTitle('Edit Product');
+        setTitle(t('admin.paymentGetway.productEditTitle'));
         setBreadcrumbs([
-            { label: 'Home', path: '/admin' },
-            { label: 'Service Products', path: '/admin/service-products' },
-            { label: 'Edit Product', path: `/admin/service-products/${id}/edit`, active: true },
+            { label: t('admin.paymentGetway.breadcrumbsHome'), path: '/admin' },
+            { label: t('admin.paymentGetway.breadcrumbsServiceProducts'), path: '/admin/service-products' },
+            { label: t('admin.paymentGetway.productEditTitle'), path: `/admin/service-products/${id}/edit`, active: true },
         ]);
         loadProduct();
-    }, [id, setTitle, setBreadcrumbs]);
+    }, [id, setTitle, setBreadcrumbs, t]);
 
 
     const loadProduct = async () => {
@@ -145,10 +147,10 @@ const ProductEdit = () => {
                         const list = formsResp.data || [];
                         setProductForms(list.map((f) => ({
                             id: `${f.id}`,
-                            title: f.form_name_en || f.form_name?.en || f.form_name || 'Mobile Services Form',
+                            title: f.form_name_en || f.form_name?.en || f.form_name || t('admin.paymentGetway.mobileServicesForm'),
                             form_name: normalizeFormNameTranslations(
                                 f.form_name,
-                                f.form_name_en || f.form_name?.en || f.form_name || 'Mobile Services Form',
+                                f.form_name_en || f.form_name?.en || f.form_name || t('admin.paymentGetway.mobileServicesForm'),
                                 f.form_name_ar || f.form_name?.ar || ''
                             ),
                             form_url: f.form_url || '',
@@ -182,11 +184,11 @@ const ProductEdit = () => {
                     // ignore load forms errors
                 }
             } else {
-                toast.error(response.error || 'Failed to load product');
+                toast.error(response.error || t('admin.paymentGetway.productFailedLoad'));
             }
         } catch (error) {
             console.error('Error loading product:', error);
-            toast.error(error.response?.data?.message || 'Failed to load product');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.productFailedLoad'));
         } finally {
             setLoading(false);
         }
@@ -247,7 +249,7 @@ const ProductEdit = () => {
     const serviceLabel = useMemo(() => (
         (typeof formData?.name?.en === 'string' ? formData.name.en.trim() : '') ||
         (typeof formData?.name?.ar === 'string' ? formData.name.ar.trim() : '') ||
-        'Live Form Preview'
+        t('admin.paymentGetway.liveFormPreview')
     ), [formData?.name?.en, formData?.name?.ar]);
 
     /** Service detail URL uses the service UUID (`services.id`), same as Service Show. */
@@ -271,17 +273,17 @@ const ProductEdit = () => {
                 forms: mapProductFormsToApiPayload(productForms),
             });
             if (result.success) {
-                toast.success('Product updated successfully');
+                toast.success(t('admin.paymentGetway.productUpdatedSuccessfully'));
                 if (serviceRouteId) {
                     navigate(`/admin/services/${serviceRouteId}`, { replace: true });
                 } else {
                     navigate(-1);
                 }
             } else {
-                toast.error(result.error || 'Failed to update product');
+                toast.error(result.error || t('admin.paymentGetway.productFailedUpdate'));
             }
         } catch (error) {
-            toast.error('Failed to update product');
+            toast.error(t('admin.paymentGetway.productFailedUpdate'));
         } finally {
             setSubmitting(false);
         }
@@ -296,7 +298,7 @@ const ProductEdit = () => {
                             <span className="placeholder col-4 rounded" />
                         </div>
                         <div className="card-body">
-                            <p className="text-muted mb-4">Loading product…</p>
+                            <p className="text-muted mb-4">{t('admin.paymentGetway.productLoading')}</p>
                             <div className="row g-4">
                                 {Array.from({ length: 6 }).map((_, idx) => (
                                     <div key={idx} className="col-md-6">
@@ -309,7 +311,7 @@ const ProductEdit = () => {
                             </div>
                             <div className="d-flex justify-content-center mt-5">
                                 <div className="spinner-border text-primary" role="status">
-                                    <span className="visually-hidden">Loading…</span>
+                                    <span className="visually-hidden">{t('admin.paymentGetway.cpLoading')}</span>
                                 </div>
                             </div>
                         </div>
@@ -335,33 +337,33 @@ const ProductEdit = () => {
                 <div className="col-md-9">
                     <div className="card">
                         <div className="card-header">
-                            <h3 className="card-title">Edit Product</h3>
+                            <h3 className="card-title">{t('admin.paymentGetway.productEditTitle')}</h3>
                         </div>
                         <div className="card-body">
                             <div className="row">
                                 <div className="col-md-6 mb-3">
-                                    <label className="form-label">Product Name (English)</label>
+                                    <label className="form-label">{t('admin.paymentGetway.productNameEnglish')}</label>
                                     <input
                                         type="text"
                                         className="form-control"
                                         value={formData?.name?.en || ''}
                                         onChange={(e) => setFormData({ ...formData, name: { ...formData.name, en: e.target.value } })}
-                                        placeholder="Enter product name (EN)"
+                                        placeholder={t('admin.paymentGetway.productNameEnglishInputPlaceholder')}
                                     />
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="form-label">Product Name (Arabic)</label>
+                                    <label className="form-label">{t('admin.paymentGetway.productNameArabic')}</label>
                                     <input
                                         type="text"
                                         className="form-control"
                                         value={formData?.name?.ar || ''}
                                         onChange={(e) => setFormData({ ...formData, name: { ...formData.name, ar: e.target.value } })}
-                                        placeholder="Enter product name (AR)"
+                                        placeholder={t('admin.paymentGetway.productNameArabicInputPlaceholder')}
                                     />
                                 </div>
 
                                 <div className="col-md-6 mb-3">
-                                    <label className="form-label">Description (English)</label>
+                                    <label className="form-label">{t('admin.paymentGetway.productDescriptionEnglish')}</label>
                                     <textarea
                                         className="form-control"
                                         rows={4}
@@ -372,11 +374,11 @@ const ProductEdit = () => {
                                                 description: { ...formData.description, en: e.target.value },
                                             })
                                         }
-                                        placeholder="Short description (English)"
+                                        placeholder={t('admin.paymentGetway.productDescriptionEnglishShortPlaceholder')}
                                     />
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="form-label">Description (Arabic)</label>
+                                    <label className="form-label">{t('admin.paymentGetway.productDescriptionArabic')}</label>
                                     <textarea
                                         className="form-control"
                                         rows={4}
@@ -388,12 +390,12 @@ const ProductEdit = () => {
                                             })
                                         }
                                         dir="rtl"
-                                        placeholder="وصف المنتج بالعربية"
+                                        placeholder={t('admin.paymentGetway.productDescriptionArabicPlaceholder')}
                                     />
                                 </div>
 
                                 <div className="col-md-6 mb-3">
-                                    <label className="form-label fw-semibold">Service Sub Category</label>
+                                    <label className="form-label fw-semibold">{t('admin.paymentGetway.productServiceSubCategory')}</label>
                                     <SearchableDropdown
                                         options={subCategories}
                                         selected={selectedSubCategory ? { value: selectedSubCategory.value, label: selectedSubCategory.label } : null}
@@ -402,12 +404,12 @@ const ProductEdit = () => {
                                         onClear={handleSubCategoryClear}
                                         onOpen={handleSubCategoryOpen}
                                         loading={loadingSubCategories}
-                                        placeholder={loadingSubCategories ? 'Loading sub-categories…' : 'Select sub category'}
+                                        placeholder={loadingSubCategories ? t('admin.paymentGetway.productLoadingSubCategories') : t('admin.paymentGetway.productSelectSubCategory')}
                                     />
                                 </div>
 
                                 <div className="col-md-6 mb-3">
-                                    <label className="form-label">Status</label>
+                                    <label className="form-label">{t('admin.paymentGetway.status')}</label>
                                     <div className="form-check form-switch">
                                         <input
                                             className="form-check-input"
@@ -416,12 +418,12 @@ const ProductEdit = () => {
                                             onChange={(e) => setFormData({ ...formData, status: e.target.checked })}
                                         />
                                         <label className="form-check-label">
-                                            {formData.status ? 'Active' : 'Inactive'}
+                                            {formData.status ? t('admin.common.active') : t('admin.common.inactive')}
                                         </label>
                                     </div>
                                 </div>
                                 <div className="col-md-6 mb-3">
-                                    <label className="form-label">Service UUID</label>
+                                    <label className="form-label">{t('admin.paymentGetway.serviceUuid')}</label>
                                     <input
                                         type="text"
                                         className="form-control text-break"
@@ -429,9 +431,9 @@ const ProductEdit = () => {
                                         readOnly
                                         disabled
                                         style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
-                                        placeholder="—"
+                                        placeholder={t('admin.paymentGetway.dash')}
                                     />
-                                    <small className="text-muted">Linked service primary key (read-only)</small>
+                                    <small className="text-muted">{t('admin.paymentGetway.linkedServicePrimaryKeyReadOnly')}</small>
                                 </div>
                             </div>
                         </div>
@@ -442,7 +444,7 @@ const ProductEdit = () => {
                     <div className="card card-flush">
                         <div className="card-header">
                             <div className="card-title">
-                                <h3>Product Image</h3>
+                                <h3>{t('admin.paymentGetway.productImage')}</h3>
                             </div>
                         </div>
                         <div className="card-body text-center pt-0">
@@ -485,7 +487,7 @@ const ProductEdit = () => {
                                     </label>
                                 </div>
                             </div>
-                            <div className="text-muted fs-7">Upload product image</div>
+                            <div className="text-muted fs-7">{t('admin.paymentGetway.uploadProductImage')}</div>
                         </div>
                     </div>
                 </div>
@@ -507,7 +509,7 @@ const ProductEdit = () => {
                             className="btn btn-light-primary"
                             onClick={() => mobileFormsBuilderRef.current?.addForm?.()}
                         >
-                            <i className="la la-plus"></i> Add Form
+                            <i className="la la-plus"></i> {t('admin.paymentGetway.addForm')}
                         </button>
                         <button
                             type="button"
@@ -519,13 +521,13 @@ const ProductEdit = () => {
                                 <span className="path2"></span>
                                 <span className="path3"></span>
                             </i>
-                            Preview the Process
+                            {t('admin.paymentGetway.previewProcess')}
                         </button>
                         <button type="button" className="btn btn-light" onClick={goBackToServiceShow}>
-                            Cancel
+                            {t('admin.common.cancel')}
                         </button>
                         <button type="submit" className="btn btn-primary" disabled={submitting}>
-                            {submitting ? 'Updating...' : 'Update Product'}
+                            {submitting ? t('admin.paymentGetway.updating') : t('admin.paymentGetway.productUpdateButton')}
                         </button>
                     </div>
                 </div>

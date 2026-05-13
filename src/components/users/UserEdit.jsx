@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getUser, updateUser } from '../../services/usersService';
 import UserForm from './UserForm';
 import { useToolbar } from '../../contexts/ToolbarContext';
@@ -8,6 +9,7 @@ import ErrorAlert from '../common/ErrorAlert';
 import { toast } from 'react-toastify';
 
 const UserEdit = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
@@ -25,11 +27,11 @@ const UserEdit = () => {
     // Set toolbar title and breadcrumbs
     useEffect(() => {
         const breadcrumbs = [
-            { label: 'Users', path: usersPath },
-            { label: 'Edit', active: true }
+            { label: t('merchant.users.list.breadcrumbUsers'), path: usersPath },
+            { label: t('merchant.users.editPage.breadcrumbEdit'), active: true }
         ];
         
-        setTitle('Edit User');
+        setTitle(t('merchant.users.editPage.title'));
         setBreadcrumbs(breadcrumbs);
         setActions(null);
         
@@ -38,7 +40,7 @@ const UserEdit = () => {
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [basePath, usersPath, setTitle, setBreadcrumbs, setActions]);
+    }, [basePath, usersPath, setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     // Fetch user data
     useEffect(() => {
@@ -52,11 +54,11 @@ const UserEdit = () => {
                     const apiData = response.data.data || response.data;
                     setUser(apiData.user || apiData);
                 } else {
-                    setError(response.error || 'Failed to fetch user');
+                    setError(response.error || t('merchant.users.editPage.loadFailed'));
                 }
             } catch (err) {
                 console.error('Error fetching user:', err);
-                setError('An unexpected error occurred while fetching user');
+                setError(t('merchant.users.editPage.unexpectedFetch'));
             } finally {
                 setFetchingUser(false);
             }
@@ -76,17 +78,17 @@ const UserEdit = () => {
 
             if (response.success) {
                 // Success message and redirect
-                toast.success('User updated successfully!');
+                toast.success(t('merchant.users.editPage.toastSuccess'));
                 navigate(usersPath);
             } else {
                 // Handle validation errors
-                const errorData = response.error || response.details || 'Failed to update user';
+                const errorData = response.error || response.details || t('merchant.users.editPage.toastFailed');
                 setError(errorData);
-                toast.error(typeof errorData === 'string' ? errorData : 'Failed to update user');
+                toast.error(typeof errorData === 'string' ? errorData : t('merchant.users.editPage.toastFailed'));
             }
         } catch (err) {
             console.error('Error updating user:', err);
-            const errorMessage = 'An unexpected error occurred while updating the user';
+            const errorMessage = t('merchant.users.editPage.unexpectedUpdate');
             setError(errorMessage);
             toast.error(errorMessage);
         } finally {
@@ -100,15 +102,15 @@ const UserEdit = () => {
                 {fetchingUser ? (
                     <div className="card">
                         <div className="card-body">
-                            <LoadingSpinner message="Loading user data..." />
+                            <LoadingSpinner message={t('merchant.users.editPage.loadingUser')} />
                         </div>
                     </div>
                 ) : error && !user ? (
                     <div className="card">
                         <div className="card-body">
-                            <ErrorAlert message={typeof error === 'string' ? error : 'Failed to load user'} />
+                            <ErrorAlert message={typeof error === 'string' ? error : t('merchant.users.editPage.loadFailed')} />
                             <button onClick={() => navigate(usersPath)} className="btn btn-light mt-3">
-                                Back to Users
+                                {t('merchant.users.editPage.backToUsers')}
                             </button>
                         </div>
                     </div>

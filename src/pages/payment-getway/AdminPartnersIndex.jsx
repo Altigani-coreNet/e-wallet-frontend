@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from '../../utils/axiosConfig';
 import { toast } from 'react-toastify';
 import { Link } from 'react-router-dom';
@@ -6,6 +7,7 @@ import Swal from 'sweetalert2';
 import { ADMIN_ENDPOINTS } from '../../utils/constants';
 import {
     getPartners,
+    mapAdminPartnersPaginatedResponse,
     exportPartners,
     bulkDeletePartners,
     approvePartner,
@@ -14,6 +16,7 @@ import {
     unsuspendPartner,
     deletePartner,
 } from '../../services/adminPartnersService';
+import ContentProviderModel from '../../services/ContentProviderModel';
 import { useToolbar } from '../../contexts/ToolbarContext';
 import { useCan } from '../../utils/permissions';
 import ContentProviderFiltersPanel from './ContentProviderFiltersPanel';
@@ -26,6 +29,7 @@ import useCountryInfoByIds from '../../hooks/useCountryInfoByIds';
 const PLACEHOLDER_ROWS = 6;
 
 const AdminPartnersIndex = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const canCreatePartner = useCan('pos.merchants.create_merchants');
     const [contentProviders, setContentProviders] = useState([]);
@@ -54,7 +58,7 @@ const AdminPartnersIndex = () => {
     const countryIds = useMemo(
         () =>
             contentProviders
-                .map((contentProvider) => contentProvider?.country_id ?? contentProvider?.country?.id)
+                .map((cp) => ContentProviderModel.ensure(cp).country_id)
                 .filter((id) => id !== null && id !== undefined && id !== '')
                 .map((id) => String(id)),
         [contentProviders]
@@ -63,7 +67,7 @@ const AdminPartnersIndex = () => {
     const { loading: countryLookupLoading, getCountryById, hasPendingRequest } = useCountryInfoByIds(countryIds);
 
     useEffect(() => {
-        setTitle('Partners Management');
+        setTitle(t('admin.paymentGetway.titlesPartnersManagement'));
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button
@@ -75,7 +79,7 @@ const AdminPartnersIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Filter</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.common.filter')}</span>
                 </button>
 
                 <button
@@ -87,7 +91,7 @@ const AdminPartnersIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Import</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.common.import')}</span>
                 </button>
 
                 <button
@@ -99,7 +103,7 @@ const AdminPartnersIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Export</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.common.export')}</span>
                 </button>
 
                 {canCreatePartner && (
@@ -108,13 +112,13 @@ const AdminPartnersIndex = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        <span className="d-none d-md-inline ms-1">Add</span>
+                        <span className="d-none d-md-inline ms-1">{t('admin.common.add')}</span>
                     </Link>
                 )}
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters]);
+    }, [setTitle, setActions, showFilters, t]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -142,16 +146,19 @@ const AdminPartnersIndex = () => {
             const responseData = result.data;
             const isSuccess = responseData.success || responseData.status;
             if (isSuccess) {
-                setContentProviders(responseData.data.data || []);
-                setPagination({
-                    current_page: responseData.data.current_page,
-                    per_page: responseData.data.per_page,
-                    total: responseData.data.total,
-                    last_page: responseData.data.last_page
-                });
+                const { partners, pagination: meta } = mapAdminPartnersPaginatedResponse(responseData);
+                setContentProviders(partners);
+                if (meta) {
+                    setPagination({
+                        current_page: meta.current_page,
+                        per_page: meta.per_page,
+                        total: meta.total,
+                        last_page: meta.last_page,
+                    });
+                }
             }
         } catch (error) {
-            toast.error('Failed to load partners');
+            toast.error(t('admin.paymentGetway.cpLoadPartnersFailed'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -170,7 +177,7 @@ const AdminPartnersIndex = () => {
             if (isSuccess && responseData.data) {
                 const { data, filename } = responseData.data;
                 if (!data || data.length === 0) {
-                    toast.error('No data to export');
+                    toast.error(t('admin.paymentGetway.cpExportNoData'));
                     return;
                 }
 
@@ -197,12 +204,12 @@ const AdminPartnersIndex = () => {
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(link.href);
-                toast.success('Export successful!');
+                toast.success(t('admin.paymentGetway.cpExportSuccess'));
             } else {
-                toast.error('No data to export');
+                toast.error(t('admin.paymentGetway.cpExportNoData'));
             }
         } catch (error) {
-            toast.error('Export failed');
+            toast.error(t('admin.paymentGetway.cpExportFailed'));
             console.error(error);
         }
     };
@@ -230,12 +237,12 @@ const AdminPartnersIndex = () => {
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) return;
         const confirmation = await Swal.fire({
-            title: 'Delete partners?',
-            text: `Are you sure you want to delete ${selectedIds.length} partner(s)?`,
+            title: t('admin.paymentGetway.cpBulkDeleteTitle'),
+            text: t('admin.paymentGetway.cpBulkDeleteText', { count: selectedIds.length }),
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.paymentGetway.cpYesDelete'),
+            cancelButtonText: t('admin.common.cancel'),
             customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' },
             buttonsStyling: false
         });
@@ -249,24 +256,24 @@ const AdminPartnersIndex = () => {
             }
             const isSuccess = result.data.success || result.data.status;
             if (isSuccess) {
-                toast.success(`${selectedIds.length} partner(s) deleted successfully`);
+                toast.success(t('admin.paymentGetway.cpBulkDeleted', { count: selectedIds.length }));
                 setSelectedIds([]);
                 fetchContentProviders();
             }
         } catch (error) {
-            toast.error('Failed to delete partners');
+            toast.error(t('admin.paymentGetway.cpBulkDeleteFailed'));
             console.error(error);
         }
     };
 
     const handleApprove = async (id) => {
         const confirmation = await Swal.fire({
-            title: 'Approve partner?',
-            text: 'Are you sure you want to approve this partner?',
+            title: t('admin.paymentGetway.cpApproveTitle'),
+            text: t('admin.paymentGetway.cpApproveText'),
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Approve',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.paymentGetway.viewApprove'),
+            cancelButtonText: t('admin.common.cancel'),
             customClass: { confirmButton: 'btn btn-success', cancelButton: 'btn btn-light' },
             buttonsStyling: false
         });
@@ -280,11 +287,11 @@ const AdminPartnersIndex = () => {
             }
             const isSuccess = result.data.success || result.data.status;
             if (isSuccess) {
-                toast.success('Partner approved successfully');
+                toast.success(t('admin.paymentGetway.cpApproveSuccess'));
                 fetchContentProviders();
             }
         } catch (error) {
-            toast.error('Failed to approve partner');
+            toast.error(t('admin.paymentGetway.cpApproveFailed'));
             console.error(error);
         }
     };
@@ -304,37 +311,38 @@ const AdminPartnersIndex = () => {
             }
             const isSuccess = result.data.success || result.data.status;
             if (isSuccess) {
-                toast.success('Partner rejected successfully');
+                toast.success(t('admin.paymentGetway.cpRejectSuccess'));
                 setRejectModalOpen(false);
                 setRejectingContentProvider(null);
                 fetchContentProviders();
             } else {
-                toast.error(result.data.message || 'Failed to reject partner');
+                toast.error(result.data.message || t('admin.paymentGetway.cpRejectFailed'));
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to reject partner');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.cpRejectFailed'));
             console.error(error);
         } finally {
             setIsRejectSubmitting(false);
         }
     };
 
-    const handleSuspend = async (contentProvider) => {
+    const handleSuspend = async (partner) => {
+        const contentProvider = ContentProviderModel.ensure(partner);
         const suspensionPrompt = await Swal.fire({
-            title: 'Suspend partner',
-            text: 'Provide a reason for suspension (minimum 10 characters).',
+            title: t('admin.paymentGetway.cpSuspendTitle'),
+            text: t('admin.paymentGetway.cpSuspendText'),
             icon: 'warning',
             input: 'textarea',
-            inputPlaceholder: 'Enter suspension reason...',
+            inputPlaceholder: t('admin.paymentGetway.cpSuspendPlaceholder'),
             showCancelButton: true,
-            confirmButtonText: 'Suspend',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.common.suspend'),
+            cancelButtonText: t('admin.common.cancel'),
             customClass: { confirmButton: 'btn btn-warning', cancelButton: 'btn btn-light' },
             buttonsStyling: false,
             preConfirm: (value) => {
                 const trimmed = value?.trim();
                 if (!trimmed || trimmed.length < 10) {
-                    Swal.showValidationMessage('Suspension reason must be at least 10 characters.');
+                    Swal.showValidationMessage(t('admin.paymentGetway.cpSuspendReasonMin'));
                     return;
                 }
                 return trimmed;
@@ -353,23 +361,23 @@ const AdminPartnersIndex = () => {
             }
             const isSuccess = result.data.success || result.data.status;
             if (isSuccess) {
-                toast.success('Partner suspended successfully');
+                toast.success(t('admin.paymentGetway.cpSuspendSuccess'));
                 fetchContentProviders();
             }
         } catch (error) {
-            toast.error('Failed to suspend partner');
+            toast.error(t('admin.paymentGetway.cpSuspendFailed'));
             console.error(error);
         }
     };
 
     const handleUnsuspend = async (id) => {
         const confirmation = await Swal.fire({
-            title: 'Unsuspend partner?',
-            text: 'Are you sure you want to unsuspend this partner?',
+            title: t('admin.paymentGetway.cpUnsuspendTitle'),
+            text: t('admin.paymentGetway.cpUnsuspendText'),
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Unsuspend',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.paymentGetway.viewUnsuspend'),
+            cancelButtonText: t('admin.common.cancel'),
             customClass: { confirmButton: 'btn btn-success', cancelButton: 'btn btn-light' },
             buttonsStyling: false
         });
@@ -383,23 +391,23 @@ const AdminPartnersIndex = () => {
             }
             const isSuccess = result.data.success || result.data.status;
             if (isSuccess) {
-                toast.success('Partner unsuspended successfully');
+                toast.success(t('admin.paymentGetway.cpUnsuspendSuccess'));
                 fetchContentProviders();
             }
         } catch (error) {
-            toast.error('Failed to unsuspend partner');
+            toast.error(t('admin.paymentGetway.cpUnsuspendFailed'));
             console.error(error);
         }
     };
 
     const handleDelete = async (id) => {
         const confirmation = await Swal.fire({
-            title: 'Delete partner?',
-            text: 'Are you sure you want to delete this partner?',
+            title: t('admin.paymentGetway.cpDeleteTitle'),
+            text: t('admin.paymentGetway.cpDeleteText'),
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.paymentGetway.cpYesDelete'),
+            cancelButtonText: t('admin.common.cancel'),
             customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' },
             buttonsStyling: false
         });
@@ -413,50 +421,63 @@ const AdminPartnersIndex = () => {
             }
             const isSuccess = result.data.success || result.data.status;
             if (isSuccess) {
-                toast.success('Partner deleted successfully');
+                toast.success(t('admin.paymentGetway.cpDeleteSuccess'));
                 fetchContentProviders();
             }
         } catch (error) {
-            toast.error('Failed to delete partner');
+            toast.error(t('admin.paymentGetway.cpDeleteFailed'));
             console.error(error);
         }
     };
 
-    const handleResetPassword = async (contentProvider) => {
-        if (!contentProvider.user_id && !contentProvider.user?.id) {
-            toast.error('This partner does not have an associated user account');
+    const handleResetPassword = async (partner) => {
+        const cp = ContentProviderModel.ensure(partner);
+        if (!cp.hasLinkedUser) {
+            toast.error(t('admin.paymentGetway.cpNoUserAccount'));
             return;
         }
         const confirmation = await Swal.fire({
-            title: 'Reset Password?',
-            text: `Are you sure you want to send a password reset link to ${contentProvider.user?.email || contentProvider.email}?`,
+            title: t('admin.paymentGetway.cpResetPasswordTitle'),
+            text: t('admin.paymentGetway.cpResetPasswordText', {
+                email: cp.resetPasswordEmail,
+            }),
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Yes, send reset link',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t('admin.paymentGetway.cpResetPasswordConfirm'),
+            cancelButtonText: t('admin.common.cancel'),
             customClass: { confirmButton: 'btn btn-primary', cancelButton: 'btn btn-light' },
             buttonsStyling: false
         });
         if (!confirmation.isConfirmed) return;
 
         try {
-            const userId = contentProvider.user_id || contentProvider.user?.id;
+            const userId = cp.user_id;
             const response = await axios.post(ADMIN_ENDPOINTS.USER_SEND_RESET_PASSWORD(userId), {});
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success(response.data.data?.message || 'Password reset link sent successfully');
+                toast.success(
+                    response.data.data?.message || t('admin.paymentGetway.cpResetPasswordSuccess')
+                );
             } else {
-                toast.error(response.data.message || 'Failed to send reset password link');
+                toast.error(response.data.message || t('admin.paymentGetway.cpResetPasswordFailed'));
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to send reset password link');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.cpResetPasswordFailed'));
             console.error(error);
         }
     };
 
     const renderPlaceholderTable = useMemo(() => {
         if (!loading) return null;
-        const columns = ['checkbox', 'Country', 'Partner', 'Category', 'Created', 'Status', 'Actions'];
+        const columns = [
+            'checkbox',
+            t('admin.paymentGetway.viewCountryCol'),
+            t('admin.paymentGetway.viewPartnerCol'),
+            t('admin.paymentGetway.viewCategoryCol'),
+            t('admin.paymentGetway.cpColCreationDate'),
+            t('admin.common.status'),
+            t('admin.common.actions'),
+        ];
         return (
             <div className="table-responsive">
                 <table className="table align-middle table-row-dashed fs-6 gy-5">
@@ -487,7 +508,7 @@ const AdminPartnersIndex = () => {
                 </table>
             </div>
         );
-    }, [loading]);
+    }, [loading, t]);
 
     return (
         <>
@@ -499,7 +520,7 @@ const AdminPartnersIndex = () => {
                             <div className="card-title">
                                 <div className="d-flex align-items-center position-relative me-5" style={{ minWidth: '250px' }}>
                                     <i className="ki-duotone ki-magnifier fs-2 position-absolute ms-4" style={{ zIndex: 1 }}><span className="path1"></span><span className="path2"></span></i>
-                                    <input type="text" className="form-control form-control-solid ps-13" placeholder="Quick search partners..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} style={{ paddingLeft: '3rem' }} />
+                                    <input type="text" className="form-control form-control-solid ps-13" placeholder={t('admin.paymentGetway.cpQuickSearchPartners')} value={searchInput} onChange={(e) => setSearchInput(e.target.value)} style={{ paddingLeft: '3rem' }} />
                                     {searchInput && (
                                         <button className="btn btn-icon btn-sm btn-active-color-primary position-absolute end-0 me-2" onClick={() => { setSearchInput(''); setFilters(prev => ({ ...prev, search: '' })); }} style={{ zIndex: 1 }}>
                                             <i className="ki-duotone ki-cross fs-2"><span className="path1"></span><span className="path2"></span></i>
@@ -519,17 +540,17 @@ const AdminPartnersIndex = () => {
                                         <thead>
                                             <tr className="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
                                                 <th className="w-10px pe-2"><div className="form-check form-check-sm form-check-custom form-check-solid me-3"><input className="form-check-input" type="checkbox" checked={selectedIds.length === contentProviders.length && contentProviders.length > 0} onChange={handleSelectAll} /></div></th>
-                                                <th className="text-dark min-w-125px">Country</th>
-                                                <th className="min-w-220px text-dark">Partner</th>
-                                                <th className="text-dark min-w-120px">Category</th>
-                                                <th className="text-dark min-w-140px">Creation date</th>
-                                                <th className="text-dark min-w-100px">Status</th>
-                                                <th className="text-end text-dark min-w-100px">Actions</th>
+                                                <th className="text-dark min-w-125px">{t('admin.paymentGetway.viewCountryCol')}</th>
+                                                <th className="min-w-220px text-dark">{t('admin.paymentGetway.viewPartnerCol')}</th>
+                                                <th className="text-dark min-w-120px">{t('admin.paymentGetway.viewCategoryCol')}</th>
+                                                <th className="text-dark min-w-140px">{t('admin.paymentGetway.cpColCreationDate')}</th>
+                                                <th className="text-dark min-w-100px">{t('admin.common.status')}</th>
+                                                <th className="text-end text-dark min-w-100px">{t('admin.common.actions')}</th>
                                             </tr>
                                         </thead>
                                         <tbody className="text-gray-600 fw-semibold">
                                             {contentProviders.map((contentProvider) => {
-                                                const countryId = contentProvider?.country_id ?? contentProvider?.country?.id;
+                                                const countryId = contentProvider.country_id;
                                                 const record = getCountryById(countryId);
                                                 const rowLookupLoading =
                                                     countryLookupLoading && hasPendingRequest(countryId);
@@ -559,10 +580,14 @@ const AdminPartnersIndex = () => {
                             {!loading && contentProviders.length > 0 && (
                                 <div className="d-flex flex-stack flex-wrap pt-10">
                                     <div className="fs-6 fw-semibold text-gray-700">
-                                        Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} entries
+                                        {t('admin.common.showingEntries', {
+                                            from: ((pagination.current_page - 1) * pagination.per_page) + 1,
+                                            to: Math.min(pagination.current_page * pagination.per_page, pagination.total),
+                                            total: pagination.total,
+                                        })}
                                     </div>
                                     <ul className="pagination">
-                                        <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}><button className="page-link" onClick={() => setPagination({ ...pagination, current_page: pagination.current_page - 1 })} disabled={pagination.current_page === 1}>Previous</button></li>
+                                        <li className={`page-item ${pagination.current_page === 1 ? 'disabled' : ''}`}><button className="page-link" onClick={() => setPagination({ ...pagination, current_page: pagination.current_page - 1 })} disabled={pagination.current_page === 1}>{t('admin.common.previous')}</button></li>
                                         {[...Array(pagination.last_page)].map((_, idx) => {
                                             const pageNum = idx + 1;
                                             if (pageNum === 1 || pageNum === pagination.last_page || (pageNum >= pagination.current_page - 1 && pageNum <= pagination.current_page + 1)) {
@@ -572,14 +597,14 @@ const AdminPartnersIndex = () => {
                                             }
                                             return null;
                                         })}
-                                        <li className={`page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}`}><button className="page-link" onClick={() => setPagination({ ...pagination, current_page: pagination.current_page + 1 })} disabled={pagination.current_page === pagination.last_page}>Next</button></li>
+                                        <li className={`page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}`}><button className="page-link" onClick={() => setPagination({ ...pagination, current_page: pagination.current_page + 1 })} disabled={pagination.current_page === pagination.last_page}>{t('admin.common.next')}</button></li>
                                     </ul>
                                 </div>
                             )}
 
                             {!loading && contentProviders.length === 0 && (
                                 <div className="text-center py-10">
-                                    <p className="text-gray-600 fs-4">No partners found</p>
+                                    <p className="text-gray-600 fs-4">{t('admin.paymentGetway.cpNoPartnersFound')}</p>
                                 </div>
                             )}
                         </div>

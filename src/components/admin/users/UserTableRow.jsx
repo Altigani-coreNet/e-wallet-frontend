@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getTranslatedText } from '../../../utils/helpers';
 import { useCan } from '../../../utils/permissions';
 
@@ -13,6 +14,7 @@ const UserTableRow = ({
     onDelete,
     onSendResetPassword
 }) => {
+    const { t } = useTranslation();
     const canEditUser = useCan('pos.users.edit_users');
     const canDeleteUser = useCan('pos.users.delete_users');
 
@@ -28,7 +30,7 @@ const UserTableRow = ({
             status === '1' ||
             status === true ||
             isActiveFallback === true;
-        const statusText = isActive ? 'Active' : 'Inactive';
+        const statusText = isActive ? t('admin.common.active') : t('admin.common.inactive');
         const statusClass = isActive ? 'badge-light-success' : 'badge-light-warning';
         
         return (
@@ -85,7 +87,7 @@ const UserTableRow = ({
                         )}
                     </div>
                 ) : (
-                    <span className="text-muted">N/A</span>
+                    <span className="text-muted">{t('admin.common.na')}</span>
                 )}
             </td>
 
@@ -96,7 +98,7 @@ const UserTableRow = ({
                         {getTranslatedText(user.branch.name)}
                     </span>
                 ) : (
-                    <span className="text-muted">N/A</span>
+                    <span className="text-muted">{t('admin.common.na')}</span>
                 )}
             </td>
 
@@ -118,7 +120,7 @@ const UserTableRow = ({
                         </span>
                     </div>
                 ) : (
-                    <span className="text-muted">N/A</span>
+                    <span className="text-muted">{t('admin.common.na')}</span>
                 )}
             </td>
 
@@ -130,9 +132,9 @@ const UserTableRow = ({
             {/* Is Admin */}
             <td>
                 {user.is_admin ? (
-                    <span className="badge badge-light-primary">Yes</span>
+                    <span className="badge badge-light-primary">{t('admin.common.yes')}</span>
                 ) : (
-                    <span className="badge badge-light-secondary">No</span>
+                    <span className="badge badge-light-secondary">{t('admin.common.no')}</span>
                 )}
             </td>
 
@@ -151,7 +153,7 @@ const UserTableRow = ({
                         className="btn btn-sm btn-icon btn-bg-light btn-active-light-primary"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
-                        title="Actions"
+                        title={t('admin.usersUI.tableRow.actionsTitle')}
                     >
                         <i className="ki-duotone ki-dots-square fs-2">
                             <span className="path1" />
@@ -168,7 +170,7 @@ const UserTableRow = ({
                                     <span className="path2" />
                                     <span className="path3" />
                                 </i>
-                                View
+                                {t('admin.common.view')}
                             </Link>
                         </li>
                         {canEditUser && (
@@ -178,7 +180,7 @@ const UserTableRow = ({
                                         <span className="path1" />
                                         <span className="path2" />
                                     </i>
-                                    Edit
+                                    {t('admin.common.edit')}
                                 </Link>
                             </li>
                         )}
@@ -193,7 +195,7 @@ const UserTableRow = ({
                                         <span className="path1" />
                                         <span className="path2" />
                                     </i>
-                                    Deactivate
+                                    {t('admin.terminalGroupsUI.view.deactivate')}
                                 </button>
                             ) : (
                                 <button
@@ -205,7 +207,7 @@ const UserTableRow = ({
                                         <span className="path1" />
                                         <span className="path2" />
                                     </i>
-                                    Activate
+                                    {t('admin.terminalGroupsUI.view.activate')}
                                 </button>
                             )}
                         </li>
@@ -219,7 +221,7 @@ const UserTableRow = ({
                                     <span className="path1" />
                                     <span className="path2" />
                                 </i>
-                                Reset Password
+                                {t('admin.usersUI.tableRow.resetPassword')}
                             </button>
                         </li>
                         {canDeleteUser && onDelete && (
@@ -240,7 +242,7 @@ const UserTableRow = ({
                                             <span className="path4" />
                                             <span className="path5" />
                                         </i>
-                                        Delete
+                                        {t('admin.common.delete')}
                                     </button>
                                 </li>
                             </>

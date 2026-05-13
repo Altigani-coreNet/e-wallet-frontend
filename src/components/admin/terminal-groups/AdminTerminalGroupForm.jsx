@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { getTranslatedText } from '../../../utils/helpers';
@@ -12,11 +13,12 @@ import { getParentGroups } from '../../../services/adminTerminalGroupsService';
  * Exact copy of TerminalGroupForm.jsx from SoftPos but adapted for React Admin Dashboard
  */
 const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, loading: externalLoading }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         name: initialData.name || '',
         description: initialData.description || '',
         parent_id: initialData.parent_id || '',
-        terminal_ids: initialData.terminals?.map(t => t.id) || initialData.terminal_ids || [],
+        terminal_ids: initialData.terminals?.map(term => term.id) || initialData.terminal_ids || [],
         user_group_ids: initialData.userGroups?.map(ug => ug.id) || initialData.user_groups?.map(ug => ug.id) || initialData.user_group_ids || [],
         merchant_id: initialData.merchant_id || ''
     });
@@ -136,22 +138,22 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
         const validationErrors = {};
         
         if (!formData.name || formData.name.trim() === '') {
-            validationErrors.name = ['Group name is required.'];
+            validationErrors.name = [t('admin.terminalGroupsUI.form.valNameRequired')];
         } else if (formData.name.length > 255) {
-            validationErrors.name = ['Group name must not exceed 255 characters.'];
+            validationErrors.name = [t('admin.terminalGroupsUI.form.valNameMax')];
         }
         
         if (!formData.terminal_ids || formData.terminal_ids.length === 0) {
-            validationErrors.terminal_ids = ['At least one terminal must be selected.'];
+            validationErrors.terminal_ids = [t('admin.terminalGroupsUI.form.valTerminalsRequired')];
         }
         
         if (!formData.user_group_ids || formData.user_group_ids.length === 0) {
-            validationErrors.user_group_ids = ['At least one user group must be selected.'];
+            validationErrors.user_group_ids = [t('admin.terminalGroupsUI.form.valUserGroupsRequired')];
         }
 
         // Require merchant_id
         if (!formData.merchant_id || formData.merchant_id === '') {
-            validationErrors.merchant_id = ['Merchant is required.'];
+            validationErrors.merchant_id = [t('admin.terminalGroupsUI.form.valMerchantRequired')];
         }
         
         if (Object.keys(validationErrors).length > 0) {
@@ -179,7 +181,7 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                             <div className="card">
                                 <div className="card-header border-0">
                                     <div className="card-title">
-                                        <h2>{mode === 'create' ? 'Add' : 'Edit'} Terminal Group</h2>
+                                        <h2>{mode === 'create' ? t('admin.terminalGroupsUI.form.addTitle') : t('admin.terminalGroupsUI.form.editTitle')}</h2>
                                     </div>
                                 </div>
                                 
@@ -194,7 +196,7 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                                                             <span className="path2"></span>
                                                         </i>
                                                         <div className="d-flex flex-column">
-                                                            <h4 className="mb-1">Validation Errors</h4>
+                                                            <h4 className="mb-1">{t('admin.terminalGroupsUI.form.validationErrors')}</h4>
                                                             <ul className="mb-0">
                                                                 {Object.values(errors).flat().map((error, index) => (
                                                                     <li key={index}>{error}</li>
@@ -202,17 +204,17 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                                                             </ul>
                                                         </div>
                                                     </div>
-                                                    <button type="button" className="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                                    <button type="button" className="btn-close" data-bs-dismiss="alert" aria-label={t('admin.terminalGroupsUI.form.close')}></button>
                                                 </div>
                                             )}
                                             
                                             <div className="row">
                                                 <div className="col-12">
-                                                    <h4 className="mb-3">Terminal Group Information</h4>
+                                                    <h4 className="mb-3">{t('admin.terminalGroupsUI.form.sectionInfo')}</h4>
                                                 </div>
                                                 
                                                 <div className="col-md-12 mb-3">
-                                                    <label htmlFor="name" className="form-label">Group Name <span className="text-danger">*</span></label>
+                                                    <label htmlFor="name" className="form-label">{t('admin.terminalGroupsUI.form.groupName')} <span className="text-danger">*</span></label>
                                                     <input 
                                                         type="text" 
                                                         name="name" 
@@ -220,7 +222,7 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                                                         className={`form-control ${errors.name ? 'is-invalid' : ''}`}
                                                         value={formData.name}
                                                         onChange={handleInputChange}
-                                                        placeholder="Enter group name"
+                                                        placeholder={t('admin.terminalGroupsUI.form.namePh')}
                                                         required
                                                     />
                                                     {errors.name && (
@@ -245,7 +247,7 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                                                 
                                                 {isSubgroup && (
                                                     <div className="col-md-12 mb-3">
-                                                        <label htmlFor="parent_id" className="form-label">Parent Group <span className="text-danger">*</span></label>
+                                                        <label htmlFor="parent_id" className="form-label">{t('admin.terminalGroupsUI.form.parentGroup')} <span className="text-danger">*</span></label>
                                                         <select 
                                                             name="parent_id" 
                                                             id="parent_id" 
@@ -254,7 +256,7 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                                                             onChange={handleSelectChange}
                                                             required={isSubgroup}
                                                         >
-                                                            <option value="">Select parent group</option>
+                                                            <option value="">{t('admin.terminalGroupsUI.form.selectParent')}</option>
                                                             {parentGroups.map(group => (
                                                                 <option key={group.id} value={group.id}>
                                                                     {group.text}
@@ -268,13 +270,13 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                                                 )}
                                                 
                                                 <div className="col-12 mb-3">
-                                                    <label htmlFor="description" className="form-label">Description</label>
+                                                    <label htmlFor="description" className="form-label">{t('admin.terminalGroupsUI.form.description')}</label>
                                                     <textarea 
                                                         name="description" 
                                                         id="description" 
                                                         className={`form-control ${errors.description ? 'is-invalid' : ''}`}
                                                         rows="3" 
-                                                        placeholder="Enter description"
+                                                        placeholder={t('admin.terminalGroupsUI.form.descriptionPh')}
                                                         value={formData.description}
                                                         onChange={handleInputChange}
                                                     ></textarea>
@@ -286,7 +288,7 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                                                 <div className="col-12 mb-3">
                                                     <div className="row">
                                                         <div className="col-md-12 mb-3">
-                                                            <label htmlFor="merchant_id" className="form-label">Merchant <span className="text-danger">*</span></label>
+                                                            <label htmlFor="merchant_id" className="form-label">{t('admin.terminalGroupsUI.form.merchant')} <span className="text-danger">*</span></label>
                                                             <select
                                                                 id="merchant_id"
                                                                 name="merchant_id"
@@ -295,7 +297,7 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                                                                 onChange={handleSelectChange}
                                                                 required
                                                             >
-                                                                <option value="">Select merchant</option>
+                                                                <option value="">{t('admin.terminalGroupsUI.form.selectMerchant')}</option>
                                                                 {merchantOptions.map(opt => (
                                                                     <option key={opt.id} value={opt.id}>
                                                                         {getTranslatedText(opt.business_name) || getTranslatedText(opt.name) || opt.text || opt.name}
@@ -311,7 +313,7 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
 
                                                 <div className="col-12 mb-3">
                                                     <label htmlFor="user_group_ids" className="form-label">
-                                                        Select User Groups <span className="text-danger">*</span>
+                                                        {t('admin.terminalGroupsUI.form.selectUserGroups')} <span className="text-danger">*</span>
                                                     </label>
                                                     <CustomUserGroupSelector
                                                         selectedUserGroups={formData.user_group_ids}
@@ -338,7 +340,7 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                                                 
                                                 <div className="col-12 mb-3">
                                                     <label htmlFor="terminal_ids" className="form-label">
-                                                        Select Terminals <span className="text-danger">*</span>
+                                                        {t('admin.terminalGroupsUI.form.selectTerminals')} <span className="text-danger">*</span>
                                                     </label>
                                                     <CustomTerminalSelector
                                                         selectedTerminals={formData.terminal_ids}
@@ -377,7 +379,7 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                                             {(loading || externalLoading) ? (
                                                 <>
                                                     <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                    {mode === 'create' ? 'Creating...' : 'Updating...'}
+                                                    {mode === 'create' ? t('admin.terminalGroupsUI.form.creating') : t('admin.terminalGroupsUI.form.updating')}
                                                 </>
                                             ) : (
                                                 <>
@@ -385,7 +387,7 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                                                         <span className="path1"></span>
                                                         <span className="path2"></span>
                                                     </i>
-                                                    {mode === 'create' ? 'Create Terminal Group' : 'Update Terminal Group'}
+                                                    {mode === 'create' ? t('admin.terminalGroupsUI.form.createBtn') : t('admin.terminalGroupsUI.form.updateBtn')}
                                                 </>
                                             )}
                                         </button>
@@ -398,7 +400,7 @@ const AdminTerminalGroupForm = ({ initialData = {}, mode = 'create', onSubmit, l
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Cancel
+                                            {t('admin.terminalGroupsUI.form.cancel')}
                                         </button>
                                     </div>
                                 </div>

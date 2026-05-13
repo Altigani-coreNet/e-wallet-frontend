@@ -135,12 +135,12 @@ const AdminCurrenciesIndex = () => {
                     }));
                 }
             } else {
-                toast.error(response.error || t('admin.currenciesIndex.fetchFailed'));
+                toast.error(response.error || t('admin.settings.currencies.listFetchFailed'));
                 setCurrencies([]);
             }
         } catch (error) {
             console.error('Fetch error:', error);
-            toast.error(t('admin.currenciesIndex.fetchFailed'));
+            toast.error(t('admin.settings.currencies.listFetchFailed'));
             setCurrencies([]);
         } finally {
             setLoading(false);
@@ -149,19 +149,19 @@ const AdminCurrenciesIndex = () => {
 
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) {
-            toast.warning(t('admin.common.pleaseSelectToDelete'));
+            toast.warning(t('admin.settings.currencies.selectToDelete'));
             return;
         }
         
-        if (!window.confirm(t('admin.currenciesIndex.deleteConfirm', { count: selectedIds.length }))) return;
+        if (!window.confirm(t('admin.settings.currencies.bulkDeleteConfirm', { count: selectedIds.length }))) return;
         
         const response = await bulkDeleteCurrencies(selectedIds);
         if (response.success) {
-            toast.success(t('admin.currenciesIndex.deleted'));
+            toast.success(t('admin.settings.currencies.bulkDeleted'));
             setSelectedIds([]);
             fetchCurrencies();
         } else {
-            toast.error(response.error || t('admin.currenciesIndex.deleteFailed'));
+            toast.error(response.error || t('admin.settings.currencies.bulkDeleteFailed'));
         }
     };
 
@@ -183,10 +183,10 @@ const AdminCurrenciesIndex = () => {
                 )}
                 
                 {selectedIds.length > 0 && (
-                    <BulkActionBar 
+                    <BulkActionBar
                         selectedCount={selectedIds.length}
                         onDelete={handleBulkDelete}
-                        onCancel={() => setSelectedIds([])}
+                        onClear={() => setSelectedIds([])}
                     />
                 )}
 
@@ -201,7 +201,7 @@ const AdminCurrenciesIndex = () => {
                                 <input 
                                     type="text" 
                                     className="form-control form-control-solid w-250px ps-13" 
-                                    placeholder={t('admin.currenciesIndex.searchPlaceholder')}
+                                    placeholder={t('admin.settings.currencies.searchPlaceholder')}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />

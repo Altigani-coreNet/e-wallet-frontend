@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import Swal from 'sweetalert2';
 import AdminTerminalGroupForm from './AdminTerminalGroupForm';
 import { useAdminTerminalGroup, updateAdminTerminalGroup } from '../../../services/adminTerminalGroupsService';
 
 const AdminTerminalGroupEdit = () => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { id } = useParams();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -16,12 +18,12 @@ const AdminTerminalGroupEdit = () => {
     const terminalGroup = groupResponse?.data;
 
     useEffect(() => {
-        setTitle(terminalGroup ? `Edit Terminal Group: ${terminalGroup.name}` : 'Edit Terminal Group');
+        setTitle(terminalGroup ? t('admin.terminalGroupsUI.pages.editTitleNamed', { name: terminalGroup.name }) : t('admin.terminalGroupsUI.pages.editTitle'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/admin/dashboard' },
-            { label: 'Terminal Groups', path: '/admin/terminal-groups' },
-            { label: terminalGroup?.name || 'Edit', path: `/admin/terminal-groups/${id}/edit`, active: true }
+            { label: t('admin.terminalGroupsUI.pages.breadcrumbDashboard'), path: '/admin/dashboard' },
+            { label: t('admin.terminalGroupsUI.pages.breadcrumbList'), path: '/admin/terminal-groups' },
+            { label: terminalGroup?.name || t('admin.terminalGroupsUI.pages.breadcrumbEdit'), path: `/admin/terminal-groups/${id}/edit`, active: true }
         ]);
         
         setActions(
@@ -32,14 +34,14 @@ const AdminTerminalGroupEdit = () => {
                         <span className="path2"></span>
                         <span className="path3"></span>
                     </i>
-                    View
+                    {t('admin.terminalGroupsUI.pages.view')}
                 </Link>
                 <Link to="/admin/terminal-groups" className="btn btn-sm btn-light-danger">
                     <i className="ki-duotone ki-arrow-left fs-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back to List
+                    {t('admin.terminalGroupsUI.pages.backToList')}
                 </Link>
             </div>
         );
@@ -48,7 +50,7 @@ const AdminTerminalGroupEdit = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [id, terminalGroup, setTitle, setBreadcrumbs, setActions]);
+    }, [id, terminalGroup, setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     const handleSubmit = async (formData) => {
         setLoading(true);
@@ -58,19 +60,19 @@ const AdminTerminalGroupEdit = () => {
             
             if (response.success) {
                 await Swal.fire({
-                    title: 'Success!',
-                    text: 'Terminal group updated successfully.',
+                    title: t('admin.terminalGroupsUI.pages.successTitle'),
+                    text: t('admin.terminalGroupsUI.pages.updatedMsg'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
                 });
                 navigate(`/admin/terminal-groups/${id}`);
             } else {
-                Swal.fire('Error!', response.error || 'Failed to update terminal group.', 'error');
+                Swal.fire(t('admin.terminalGroupsUI.pages.errorTitle'), response.error || t('admin.terminalGroupsUI.pages.errorUpdate'), 'error');
             }
         } catch (err) {
             console.error('Error updating terminal group:', err);
-            Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+            Swal.fire(t('admin.terminalGroupsUI.pages.errorTitle'), t('admin.terminalGroupsUI.pages.errorUnexpected'), 'error');
         } finally {
             setLoading(false);
         }
@@ -186,9 +188,9 @@ const AdminTerminalGroupEdit = () => {
                         <span className="path2"></span>
                         <span className="path3"></span>
                     </i>
-                    <p className="text-danger fs-4">Failed to load terminal group</p>
+                    <p className="text-danger fs-4">{t('admin.terminalGroupsUI.pages.loadFailed')}</p>
                     <Link to="/admin/terminal-groups" className="btn btn-primary mt-3">
-                        Back to Terminal Groups
+                        {t('admin.terminalGroupsUI.view.backToList')}
                     </Link>
                 </div>
             </div>

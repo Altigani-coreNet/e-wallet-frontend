@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import Swal from 'sweetalert2';
 import AdminTerminalGroupForm from './AdminTerminalGroupForm';
 import { createAdminTerminalGroup } from '../../../services/adminTerminalGroupsService';
 
 const AdminTerminalGroupCreate = () => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        setTitle('Create Terminal Group');
+        setTitle(t('admin.terminalGroupsUI.pages.createTitle'));
         
         setBreadcrumbs([
-            { label: 'Dashboard', path: '/admin/dashboard' },
-            { label: 'Terminal Groups', path: '/admin/terminal-groups' },
-            { label: 'Create Terminal Group', path: '/admin/terminal-groups/create', active: true }
+            { label: t('admin.terminalGroupsUI.pages.breadcrumbDashboard'), path: '/admin/dashboard' },
+            { label: t('admin.terminalGroupsUI.pages.breadcrumbList'), path: '/admin/terminal-groups' },
+            { label: t('admin.terminalGroupsUI.pages.breadcrumbCreate'), path: '/admin/terminal-groups/create', active: true }
         ]);
         
         setActions(
@@ -25,7 +27,7 @@ const AdminTerminalGroupCreate = () => {
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back to List
+                {t('admin.terminalGroupsUI.pages.backToList')}
             </Link>
         );
 
@@ -33,7 +35,7 @@ const AdminTerminalGroupCreate = () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions]);
+    }, [setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     const handleSubmit = async (formData) => {
         setLoading(true);
@@ -43,19 +45,19 @@ const AdminTerminalGroupCreate = () => {
             
             if (response.success) {
                 await Swal.fire({
-                    title: 'Success!',
-                    text: 'Terminal group created successfully.',
+                    title: t('admin.terminalGroupsUI.pages.successTitle'),
+                    text: t('admin.terminalGroupsUI.pages.createdMsg'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
                 });
                 navigate('/admin/terminal-groups');
             } else {
-                Swal.fire('Error!', response.error || 'Failed to create terminal group.', 'error');
+                Swal.fire(t('admin.terminalGroupsUI.pages.errorTitle'), response.error || t('admin.terminalGroupsUI.pages.errorCreate'), 'error');
             }
         } catch (err) {
             console.error('Error creating terminal group:', err);
-            Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+            Swal.fire(t('admin.terminalGroupsUI.pages.errorTitle'), t('admin.terminalGroupsUI.pages.errorUnexpected'), 'error');
         } finally {
             setLoading(false);
         }

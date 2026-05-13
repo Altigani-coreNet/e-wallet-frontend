@@ -199,7 +199,7 @@ const SubscriptionWidget = ({ data, loading }) => {
                             {loading ? (
                                 <div className="d-flex align-items-center justify-content-center" style={{ height: '300px' }}>
                                     <div className="spinner-border text-primary" role="status">
-                                        <span className="visually-hidden">Loading...</span>
+                                        <span className="visually-hidden">{t('admin.common.loading')}</span>
                                     </div>
                                 </div>
                             ) : (

@@ -1,25 +1,82 @@
-.ps-page {
-    min-height: 100vh;
+/*
+ * Receipt width chain:
+ * 1. `PaymentLinkRedirect.css` → `.pl-main--result { max-width: 560px }` (shared with checkout result screens).
+ * 2. This file → `main.pl-main.pl-main--result.ps-success-layout` raises that cap so the success receipt is not a skinny column.
+ * 3. The white box is `.ps-receipt-card` (width 100% of the main column).
+ * JSX must include `ps-success-layout` on `<main>` and `ps-success-page` on the outer `.ps-page` wrapper.
+ */
+main.pl-main.pl-main--result.ps-success-layout {
+    display: block;
+    max-width: min(920px, calc(100% - 24px));
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 16px 14px 28px;
+    box-sizing: border-box;
+}
+
+.ps-page.ps-success-page {
+    min-height: calc(100vh - 180px);
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 24px 16px;
-    background:
-        radial-gradient(circle at 50% -10%, rgba(35, 162, 109, 0.34) 0%, rgba(35, 162, 109, 0.16) 28%, rgba(35, 162, 109, 0.04) 52%, rgba(35, 162, 109, 0) 72%),
-        radial-gradient(circle at 50% 0%, #ecfff5 0%, #f2fff8 28%, #f6f9fc 60%, #eef1f6 100%);
+    align-items: flex-start;
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 12px 20px;
+    margin: 0 auto;
+    box-sizing: border-box;
+    background: #f0f2f5;
     font-family: 'Poppins', 'Inter', sans-serif;
 }
 
 .ps-receipt-card {
-    width: min(100%, 520px);
+    width: 100%;
+    max-width: 100%;
     background: #ffffff;
-    box-shadow: 0 13px 40px rgba(170, 170, 170, 0.12);
-    border-radius: 30px;
-    padding: 28px;
+    box-shadow: 0 8px 28px rgba(55, 65, 80, 0.1);
+    border-radius: 18px;
+    padding: 22px 18px 26px;
+    overflow: visible;
     display: flex;
     flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+    box-sizing: border-box;
+    min-height: 0;
+    margin: 0 auto;
+}
+
+.ps-receipt-card--loading {
+    justify-content: center;
     align-items: center;
-    gap: 20px;
+    min-height: 200px;
+    padding: 36px 20px;
+}
+
+/* Soft green band — reads closer to Square / terminal receipts */
+.ps-header-slab {
+    width: 100%;
+    padding: 28px 28px 22px;
+    box-sizing: border-box;
+    background: linear-gradient(
+        180deg,
+        rgba(35, 162, 109, 0.18) 0%,
+        rgba(35, 162, 109, 0.06) 55%,
+        rgba(255, 255, 255, 0) 100%
+    );
+}
+
+.ps-receipt-body {
+    width: 100%;
+    padding: 12px 28px 28px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.ps-receipt-body > .ps-actions {
+    margin-top: 4px;
 }
 
 .ps-header {
@@ -28,6 +85,7 @@
     flex-direction: column;
     align-items: center;
     gap: 14px;
+    padding-bottom: 0;
 }
 
 .ps-success-icon {
@@ -69,12 +127,25 @@
 
 .ps-line {
     width: 100%;
+    border: none;
     border-top: 1.7px solid #ededed;
+    margin: 0;
 }
 
 .ps-dash {
     width: 100%;
-    border-top: 1.7px dashed #ededed;
+    border: none;
+    border-top: 1.7px dashed #e8eaef;
+    margin: 0;
+}
+
+/* Desktop: details + QR side‑by‑side → shorter, squarer receipt */
+.ps-receipt-split {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: stretch;
 }
 
 .ps-details,
@@ -82,15 +153,19 @@
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 18px;
+    flex: 1;
+    min-width: 0;
+    padding: 0;
 }
 
 .ps-detail-row {
     width: 100%;
     display: flex;
     justify-content: space-between;
-    gap: 20px;
-    align-items: center;
+    gap: 24px;
+    align-items: flex-start;
+    padding: 4px 0;
 }
 
 .ps-detail-row span {
@@ -103,20 +178,24 @@
     font-size: 15px;
     font-weight: 600;
     text-align: right;
-    max-width: 50%;
+    max-width: 58%;
     word-break: break-word;
 }
 
 .ps-qr-block {
     width: 100%;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 12px;
-    border: 1px solid #eceef4;
-    border-radius: 18px;
+    gap: 12px;
+    padding: 22px 22px 24px;
+    border: 1px solid #e8ecf4;
+    border-radius: 20px;
     background: #fafbff;
+    flex-shrink: 0;
 }
 
 .ps-qr-title {
@@ -146,12 +225,13 @@
 .ps-qr-svg svg {
     display: block;
     width: 100%;
-    max-width: 180px;
+    max-width: 160px;
     height: auto;
 }
 
 .ps-qr-block small {
     color: #7a7a7a;
+    text-align: center;
 }
 
 .ps-qr-link {
@@ -171,10 +251,12 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
+    margin-top: 4px;
+    padding-top: 8px;
 }
 
 .ps-btn {
-    height: 42px;
+    height: 44px;
     border-radius: 10px;
     border: none;
     display: inline-flex;
@@ -197,36 +279,175 @@
     color: #fff;
 }
 
-@media (max-width: 640px) {
-    .ps-page {
-        padding: 24px 12px;
+@media (min-width: 768px) {
+    main.pl-main.pl-main--result.ps-success-layout {
+        max-width: min(920px, calc(100% - 40px));
+        padding: 24px 24px 40px;
+    }
+
+    .ps-page.ps-success-page {
+        padding: 20px 20px 32px;
     }
 
     .ps-receipt-card {
+        padding: 32px 36px 36px;
+        gap: 22px;
         border-radius: 22px;
-        padding: 24px 18px;
+    }
+
+    .ps-receipt-split {
+        flex-direction: row;
+        align-items: flex-start;
+        gap: 28px;
+    }
+
+    .ps-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .ps-receipt-split .ps-qr-block {
+        width: auto;
+        max-width: 240px;
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+
+@media (min-width: 1100px) {
+    main.pl-main.pl-main--result.ps-success-layout {
+        max-width: min(960px, calc(100% - 48px));
+    }
+}
+
+@media (max-width: 640px) {
+    main.pl-main.pl-main--result.ps-success-layout {
+        padding: 8px 8px 15px;
+        max-width: 100%;
+    }
+
+    .ps-page.ps-success-page {
+        padding: 6px 6px 12px;
+        min-height: auto;
+    }
+
+    .ps-header-slab {
+        padding: 22px 20px 18px;
+    }
+
+    .ps-receipt-body {
+        padding: 10px 20px 22px;
+    }
+
+    .ps-receipt-card {
+        border-radius: 14px;
+        padding: 14px 11px 17px;
+        gap: 12px;
+        margin: 0;
+        box-shadow: 0 4px 18px rgba(55, 65, 80, 0.08);
+    }
+
+    .ps-receipt-card--loading {
+        padding: 24px 12px;
+        min-height: 140px;
+    }
+
+    .ps-header {
+        gap: 10px;
+    }
+
+    .ps-success-icon {
+        width: 64px;
+        height: 64px;
+    }
+
+    .ps-success-icon svg {
+        width: 44px;
+        height: 44px;
     }
 
     .ps-header-text h1 {
-        font-size: 24px;
+        font-size: 22px;
     }
 
     .ps-header-text h2 {
-        font-size: 32px;
+        font-size: 28px;
+    }
+
+    .ps-header-text p {
+        margin: 8px 0 0;
+        font-size: 13px;
+    }
+
+    /* Key : value — single row, tighter rhythm (~0.75 spacing) */
+    .ps-details {
+        gap: 9px;
     }
 
     .ps-detail-row {
-        flex-direction: column;
+        flex-direction: row;
+        justify-content: space-between;
         align-items: flex-start;
-        gap: 4px;
+        gap: 10px;
+        padding: 2px 0;
+    }
+
+    .ps-detail-row span {
+        flex: 0 1 auto;
+        min-width: 0;
+        font-size: 13px;
+        line-height: 1.35;
+        padding-right: 6px;
     }
 
     .ps-detail-row strong {
+        flex: 1;
+        min-width: 0;
+        max-width: 58%;
+        text-align: right;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.35;
+        word-break: break-word;
+    }
+
+    .ps-dash {
+        margin: -2px 0;
+    }
+
+    .ps-qr-block {
+        padding: 12px 10px 14px;
+        gap: 8px;
+        border-radius: 14px;
         max-width: 100%;
-        text-align: left;
+    }
+
+    .ps-qr-svg svg {
+        max-width: 132px;
     }
 
     .ps-actions {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 2px;
+        padding-top: 6px;
     }
+
+    .ps-btn {
+        height: 40px;
+        font-size: 12px;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}
+
+@keyframes ps-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.ps-loading-spin {
+    animation: ps-spin 0.9s linear infinite;
+    color: #23a26d;
 }

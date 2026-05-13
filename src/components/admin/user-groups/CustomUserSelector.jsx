@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 
@@ -9,6 +10,7 @@ const CustomUserSelector = ({
     onUserChange,
     className = '' 
 }) => {
+    const { t } = useTranslation();
     const [users, setUsers] = useState([]);
     const [filteredUsers, setFilteredUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
@@ -131,6 +133,14 @@ const CustomUserSelector = ({
         }
     };
 
+    const selectAllAction = useMemo(
+        () =>
+            selectedUsers.length === filteredUsers.length && filteredUsers.length > 0
+                ? t('admin.selectorCommon.deselectAll')
+                : t('admin.selectorCommon.selectAll'),
+        [selectedUsers.length, filteredUsers.length, t]
+    );
+
     return (
         <div className={`custom-user-selector ${className}`}>
             {/* Users Header */}
@@ -140,21 +150,21 @@ const CustomUserSelector = ({
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Available Users
+                    {t('admin.userGroupsUI.userSelector.availableUsers')}
                 </h5>
                 
                 <div className="mb-4">
                     <h6 className="mb-2 fw-semibold text-dark">
                         <i className="ki-duotone ki-users fs-5 me-2 text-warning"></i>
-                        Users ({users.length})
+                        {t('admin.userGroupsUI.userSelector.usersHeading', { count: users.length })}
                     </h6>
                     <div className="d-flex flex-wrap gap-2">
                         {users.length > 0 ? (
                             <span className="text-muted small">
-                                {merchantId ? 'Search and select users for this merchant' : 'Select a merchant to load users'}
+                                {merchantId ? t('admin.userGroupsUI.userSelector.hintWithMerchant') : t('admin.userGroupsUI.userSelector.hintPickMerchant')}
                             </span>
                         ) : (
-                            <span className="text-muted small">No users available</span>
+                            <span className="text-muted small">{t('admin.userGroupsUI.userSelector.noUsers')}</span>
                         )}
                     </div>
                 </div>
@@ -162,7 +172,7 @@ const CustomUserSelector = ({
                 {/* Quick Actions */}
                 <div className="d-flex gap-2 mt-3">
                     <span className="text-muted small align-self-center">
-                        Use search to filter users by name or email
+                        {t('admin.userGroupsUI.userSelector.searchHelp')}
                     </span>
                 </div>
             </div>
@@ -186,7 +196,7 @@ const CustomUserSelector = ({
                             disabled={!merchantId}
                         />
                     </div>
-                    <small className="text-muted">{selectedUsers.length} selected</small>
+                    <small className="text-muted">{t('admin.selectorCommon.selectedCount', { count: selectedUsers.length })}</small>
                 </div>
             </div>
 
@@ -196,7 +206,7 @@ const CustomUserSelector = ({
                     {/* Results Count */}
                     <div className="results-count mb-3 p-2 bg-light rounded">
                         <small className="text-muted">
-                            Showing {filteredUsers.length} of {users.length} users
+                            {t('admin.userGroupsUI.userSelector.showingUsers', { shown: filteredUsers.length, total: users.length })}
                         </small>
                     </div>
 
@@ -205,9 +215,9 @@ const CustomUserSelector = ({
                         <div className="alert alert-info py-2 mb-3">
                             <div className="d-flex align-items-center">
                                 <div className="spinner-border spinner-border-sm text-info me-2" role="status">
-                                    <span className="visually-hidden">Loading...</span>
+                                    <span className="visually-hidden">{t('admin.selectorCommon.loading')}</span>
                                 </div>
-                                <span className="small">Fetching filtered users from server...</span>
+                                <span className="small">{t('admin.userGroupsUI.userSelector.fetchingUsers')}</span>
                             </div>
                         </div>
                     )}
@@ -215,9 +225,9 @@ const CustomUserSelector = ({
                     {/* Active Filters Display */}
                     {searchTerm && (
                         <div className="active-filters mb-3 p-2 bg-light border rounded">
-                            <small className="text-muted me-2">Active filters:</small>
+                            <small className="text-muted me-2">{t('admin.selectorCommon.activeFilters')}</small>
                             {searchTerm && (
-                                <span className="badge bg-warning me-1">Search: "{searchTerm}"</span>
+                                <span className="badge bg-warning me-1">{t('admin.selectorCommon.searchBadge', { term: searchTerm })}</span>
                             )}
                         </div>
                     )}
@@ -225,7 +235,7 @@ const CustomUserSelector = ({
                     <div className="d-flex justify-content-between align-items-center mb-3">
                         <div className="d-flex align-items-center gap-3">
                             <h6 className="mb-0 fw-bold">
-                                Users ({filteredUsers.length})
+                                {t('admin.userGroupsUI.userSelector.usersListHeading', { count: filteredUsers.length })}
                             </h6>
                             {filteredUsers.length > 0 && (
                                 <div className="d-flex align-items-center gap-2">
@@ -233,37 +243,37 @@ const CustomUserSelector = ({
                                         type="button"
                                         className={`btn btn-sm ${selectedUsers.length === filteredUsers.length ? 'btn-success' : 'btn-outline-primary'}`}
                                         onClick={() => handleSelectAll()}
-                                        title={selectedUsers.length === filteredUsers.length ? 'Deselect All' : 'Select All'}
+                                        title={selectAllAction}
                                     >
                                         <i className={`ki-duotone ${selectedUsers.length === filteredUsers.length ? 'ki-check' : 'ki-plus'} fs-5 me-1`}>
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        {selectedUsers.length === filteredUsers.length ? 'Deselect All' : 'Select All'}
+                                        {selectAllAction}
                                     </button>
                                     {selectedUsers.length > 0 && selectedUsers.length < filteredUsers.length && (
                                         <small className="text-muted">
-                                            ({selectedUsers.length} of {filteredUsers.length})
+                                            {t('admin.selectorCommon.ofTotal', { selected: selectedUsers.length, total: filteredUsers.length })}
                                         </small>
                                     )}
                                 </div>
                             )}
                         </div>
                         <small className="text-muted">
-                            {selectedUsers.length} selected
+                            {t('admin.selectorCommon.selectedCount', { count: selectedUsers.length })}
                         </small>
                     </div>
 
                     {loading ? (
                         <div className="text-center py-4">
                             <div className="spinner-border text-primary" role="status">
-                                <span className="visually-hidden">Loading...</span>
+                                <span className="visually-hidden">{t('admin.selectorCommon.loading')}</span>
                             </div>
                         </div>
                     ) : filteredUsers.length === 0 ? (
                         <div className="text-center py-4 text-muted">
                             <i className="ki-duotone ki-search fs-2x mb-2"></i>
-                            <p>No users found matching your criteria</p>
+                            <p>{t('admin.userGroupsUI.userSelector.noMatch')}</p>
                         </div>
                     ) : (
                         <div className="terminal-grid">
@@ -279,13 +289,10 @@ const CustomUserSelector = ({
                                         disabled={!merchantId}
                                     />
                                     <label className="form-check-label fw-semibold mb-0" htmlFor="select-all-users">
-                                        {selectedUsers.length === filteredUsers.length && filteredUsers.length > 0 
-                                            ? 'Deselect All' 
-                                            : 'Select All'
-                                        } Users
+                                        {t('admin.userGroupsUI.userSelector.selectAllUsers', { action: selectAllAction })}
                                         {selectedUsers.length > 0 && (
                                             <span className="text-muted ms-2">
-                                                ({selectedUsers.length} of {filteredUsers.length})
+                                                {t('admin.selectorCommon.ofTotal', { selected: selectedUsers.length, total: filteredUsers.length })}
                                             </span>
                                         )}
                                     </label>
@@ -313,9 +320,9 @@ const CustomUserSelector = ({
                                         <div className="flex-grow-1">
                                             <div className="fw-semibold">{u.name}</div>
                                             <div className="row small text-muted">
-                                                <div className="col-md-4">Email: {u.email || '-'}</div>
-                                                <div className="col-md-4">Company: {u.merchant_name || '-'}</div>
-                                                <div className="col-md-4">Branch: {u.branch_name || '-'}</div>
+                                                <div className="col-md-4">{t('admin.selectorCommon.labelEmail')} {u.email || '-'}</div>
+                                                <div className="col-md-4">{t('admin.selectorCommon.labelCompany')} {u.merchant_name || '-'}</div>
+                                                <div className="col-md-4">{t('admin.selectorCommon.labelBranch')} {u.branch_name || '-'}</div>
                                             </div>
                                         </div>
                                     </div>
@@ -330,7 +337,7 @@ const CustomUserSelector = ({
             {selectedUsers.length > 0 && (
                 <div className="selected-summary mt-3 p-3 bg-primary bg-opacity-10 rounded">
                     <h6 className="mb-2 fw-bold">
-                        Selected Users ({selectedUsers.length})
+                        {t('admin.userGroupsUI.userSelector.selectedUsersTitle', { count: selectedUsers.length })}
                     </h6>
                     <div className="selected-list">
                         {users

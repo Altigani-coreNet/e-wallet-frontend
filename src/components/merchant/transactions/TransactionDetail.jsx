@@ -511,7 +511,10 @@ const TransactionDetail = () => {
                                         )}
                                     </div>
                                     <div className="fw-bold text-black">
-                                        {transaction.transaction_type} - {transaction.transaction_id}
+                                        {t('merchant.transactionDetail.typeAndTransactionId', {
+                                            type: transaction.transaction_type || t('merchant.common.na'),
+                                            id: transaction.transaction_id || t('merchant.common.na'),
+                                        })}
                                     </div>
                                     <div className="text-muted fs-6">
                                         {transaction.created_at
@@ -524,7 +527,9 @@ const TransactionDetail = () => {
                                         {transaction.currency_symbol || '$'} {parseFloat(transaction.amount || 0).toFixed(2)}
                                     </div>
                                     <div className="fw-bold text-black">
-                                        {currency?.currency_code || transaction.currency?.currency_code || 'USD'}
+                                        {currency?.currency_code ||
+                                            transaction.currency?.currency_code ||
+                                            t('merchant.transactionDetail.defaultCurrencyCode')}
                                     </div>
                                 </div>
                             </div>
@@ -559,7 +564,10 @@ const TransactionDetail = () => {
                                                 transaction.paymentMethod?.card_type,
                                             t
                                         ) || t('merchant.transactionDetail.methodCard')}
-                                        {transaction.card_number && ` **** ${transaction.card_number.slice(-4)}`}
+                                        {transaction.card_number &&
+                                            t('merchant.transactionDetail.cardMaskedLast4', {
+                                                last4: transaction.card_number.slice(-4),
+                                            })}
                                     </div>
                                     <div className="fs-6 fw-bold text-gray-400">
                                         {transaction.expiry
@@ -812,7 +820,10 @@ const TransactionDetail = () => {
                                     <div className="fs-7 text-muted">{t('merchant.transactionDetail.currency')}</div>
                                     <div className="fs-6 fw-bold">
                                         {transaction.currency_symbol || '$'} (
-                                        {currency?.currency_code || transaction.currency?.currency_code || 'USD'})
+                                        {currency?.currency_code ||
+                                            transaction.currency?.currency_code ||
+                                            t('merchant.transactionDetail.defaultCurrencyCode')}
+                                        )
                                     </div>
                                 </div>
                                 <div className="col-md-4">
@@ -967,13 +978,17 @@ const TransactionDetail = () => {
                                 )}
                                 {transaction.tvr && (
                                     <div className="col-md-4">
-                                        <div className="fs-7 text-muted">TVR</div>
+                                        <div className="fs-7 text-muted">
+                                            {t('merchant.transactionDetail.fieldTvr')}
+                                        </div>
                                         <div className="fs-6 fw-bold">{transaction.tvr}</div>
                                     </div>
                                 )}
                                 {transaction.tsi && (
                                     <div className="col-md-4">
-                                        <div className="fs-7 text-muted">TSI</div>
+                                        <div className="fs-7 text-muted">
+                                            {t('merchant.transactionDetail.fieldTsi')}
+                                        </div>
                                         <div className="fs-6 fw-bold">{transaction.tsi}</div>
                                     </div>
                                 )}

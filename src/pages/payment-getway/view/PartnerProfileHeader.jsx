@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const getStatusBadgeClass = (status) => {
     const key = status != null ? String(status).toLowerCase() : '';
@@ -28,7 +29,7 @@ const getStatusMeta = (partner) => {
 
     return {
         isActive,
-        label: isActive ? 'Active' : 'Inactive',
+        label: isActive ? 'active' : 'inactive',
         badgeClass: `badge badge-light-${isActive ? 'success' : 'danger'}`,
         progressClass: `bg-${isActive ? 'success' : 'danger'}`,
         progressValue: isActive ? 100 : 0,
@@ -64,8 +65,8 @@ const StatItem = ({ value = 0, label, iconClass }) => (
 );
 
 const DEFAULT_STATS_CONFIG = [
-    { key: 'events', label: 'Events', icon: 'ki-abstract-44' },
-    { key: 'attachments', label: 'Attachments', icon: 'ki-folder' },
+    { key: 'events', label: 'viewRecentEvents', icon: 'ki-abstract-44' },
+    { key: 'attachments', label: 'viewAttachmentsTitle', icon: 'ki-folder' },
 ];
 
 const PartnerProfileHeader = ({
@@ -81,6 +82,7 @@ const PartnerProfileHeader = ({
     countryName,
     countryCode,
 }) => {
+    const { t } = useTranslation();
     const [localLogoError, setLocalLogoError] = useState(false);
 
     useEffect(() => {
@@ -92,7 +94,7 @@ const PartnerProfileHeader = ({
     }
 
     const statusMeta = getStatusMeta(partner);
-    const displayName = partner.business_name || partner.name || 'Partner';
+    const displayName = partner.business_name || partner.name || t('admin.paymentGetway.viewPartnerCol');
     const workflowBadgeClass = getStatusBadgeClass(partner.status);
     const showLogo = logoUrl && !localLogoError;
 
@@ -154,7 +156,7 @@ const PartnerProfileHeader = ({
                                         {countryCode && (
                                             <img
                                                 src={`/flags/${String(countryCode).toLowerCase()}.png`}
-                                                alt={countryName || 'Country'}
+                                                alt={countryName || t('admin.paymentGetway.cpCountryAlt')}
                                                 className="me-2"
                                                 style={{ width: '20px', height: '15px', objectFit: 'cover' }}
                                                 onError={(e) => { e.target.style.display = 'none'; }}
@@ -164,7 +166,7 @@ const PartnerProfileHeader = ({
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        {countryName || 'N/A'}
+                                        {countryName || t('admin.paymentGetway.na')}
                                     </span>
                                 </div>
                             </div>
@@ -177,14 +179,14 @@ const PartnerProfileHeader = ({
                                         <StatItem
                                             key={key}
                                             value={statistics[key] ?? 0}
-                                            label={label}
+                                            label={t(`admin.paymentGetway.${label}`)}
                                             iconClass={icon}
                                         />
                                     ))}
                                 </div>
                                 <div className="d-flex flex-column align-items-center w-200px w-sm-300px mt-6 mt-sm-0">
                                     <div className="d-flex justify-content-between w-100 mb-2">
-                                        <span className="fw-bold fs-7 text-gray-500">Account status</span>
+                                        <span className="fw-bold fs-7 text-gray-500">{t('admin.paymentGetway.viewAccountStatus')}</span>
                                         <span className="fw-bold fs-7">{statusMeta.progressValue}%</span>
                                     </div>
                                     <div className="h-5px mx-3 w-100 bg-light mb-2">
@@ -200,7 +202,7 @@ const PartnerProfileHeader = ({
                                     <span
                                         className={`fw-bold fs-8 text-${statusMeta.isActive ? 'success' : 'danger'}`}
                                     >
-                                        {statusMeta.label}
+                                        {statusMeta.isActive ? t('admin.common.active') : t('admin.common.inactive')}
                                     </span>
                                 </div>
                             </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -8,6 +9,7 @@ import { getToken } from '../../../utils/api';
 import BulkActionBar from '../../../common/BulkActionBar';
 
 const AdminServiceSubCategoriesIndex = () => {
+    const { t } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const [rows, setRows] = useState([]);
     const [parentCategories, setParentCategories] = useState([]);
@@ -28,15 +30,15 @@ const AdminServiceSubCategoriesIndex = () => {
     });
 
     useEffect(() => {
-        setTitle('Sub-Categories Management');
+        setTitle(t('admin.paymentGetway.titlesSubCategoriesManagement'));
         setActions(
-            <button className="btn btn-sm btn-primary" onClick={openCreateModal}>
+            <button type="button" className="btn btn-sm btn-primary" onClick={openCreateModal}>
                 <i className="ki-duotone ki-plus fs-3"><span className="path1"></span><span className="path2"></span></i>
-                <span className="ms-1">Add Sub-Category</span>
+                <span className="ms-1">{t('admin.paymentGetway.catAddSubCategory')}</span>
             </button>
         );
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t]);
 
     useEffect(() => {
         fetchRows();
@@ -81,7 +83,7 @@ const AdminServiceSubCategoriesIndex = () => {
                 last_page: meta.last_page || 1,
             }));
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Failed to load sub-categories');
+            toast.error(error?.response?.data?.message || t('admin.paymentGetway.subCatFailedLoad'));
         } finally {
             setLoading(false);
         }
@@ -120,11 +122,11 @@ const AdminServiceSubCategoriesIndex = () => {
                     headers: { Authorization: `Bearer ${token}` },
                 });
             }
-            toast.success(isEditing ? 'Sub-category updated successfully' : 'Sub-category created successfully');
+            toast.success(isEditing ? t('admin.paymentGetway.subCatUpdated') : t('admin.paymentGetway.subCatCreated'));
             setShowModal(false);
             fetchRows();
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Failed to save sub-category');
+            toast.error(error?.response?.data?.message || t('admin.paymentGetway.subCatSaveFailed'));
         }
     };
 
@@ -136,17 +138,18 @@ const AdminServiceSubCategoriesIndex = () => {
             });
             fetchRows();
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Failed to update status');
+            toast.error(error?.response?.data?.message || t('admin.paymentGetway.subCatStatusFailed'));
         }
     };
 
     const deleteOne = async (item) => {
         const result = await Swal.fire({
-            title: 'Delete Sub-Category?',
-            text: `Delete "${item.name_en || item.code}"?`,
+            title: t('admin.paymentGetway.subCatDeleteTitle'),
+            text: t('admin.paymentGetway.subCatDeleteText', { name: item.name_en || item.code }),
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Yes, delete',
+            confirmButtonText: t('admin.paymentGetway.catYesDelete'),
+            cancelButtonText: t('admin.common.cancel'),
         });
         if (!result.isConfirmed) return;
         try {
@@ -156,7 +159,7 @@ const AdminServiceSubCategoriesIndex = () => {
             });
             fetchRows();
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Failed to delete sub-category');
+            toast.error(error?.response?.data?.message || t('admin.paymentGetway.subCatDeleteFailed'));
         }
     };
 
@@ -170,7 +173,7 @@ const AdminServiceSubCategoriesIndex = () => {
             setSelectedIds([]);
             fetchRows();
         } catch (error) {
-            toast.error(error?.response?.data?.message || 'Failed to delete sub-categories');
+            toast.error(error?.response?.data?.message || t('admin.paymentGetway.subCatBulkDeleteFailed'));
         }
     };
 
@@ -190,7 +193,7 @@ const AdminServiceSubCategoriesIndex = () => {
                         <input
                             type="text"
                             className="form-control form-control-solid w-250px"
-                            placeholder="Search sub-categories..."
+                            placeholder={t('admin.paymentGetway.subCatSearchPlaceholder')}
                             value={search}
                             onChange={(e) => {
                                 setSearch(e.target.value);
@@ -212,17 +215,17 @@ const AdminServiceSubCategoriesIndex = () => {
                                             onChange={(e) => setSelectedIds(e.target.checked ? rows.map((r) => r.id) : [])}
                                         />
                                     </th>
-                                    <th>Sub-Category</th>
-                                    <th>Parent Category</th>
-                                    <th>Status</th>
-                                    <th>Services Count</th>
-                                    <th className="text-end">Actions</th>
+                                    <th>{t('admin.paymentGetway.subCatColSubCategory')}</th>
+                                    <th>{t('admin.paymentGetway.subCatColParent')}</th>
+                                    <th>{t('admin.paymentGetway.status')}</th>
+                                    <th>{t('admin.paymentGetway.catColServicesCount')}</th>
+                                    <th className="text-end">{t('admin.common.actions')}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {!loading && rows.length === 0 && (
                                     <tr>
-                                        <td colSpan="6" className="text-center py-10">No sub-categories found</td>
+                                        <td colSpan="6" className="text-center py-10">{t('admin.paymentGetway.subCatNoRows')}</td>
                                     </tr>
                                 )}
                                 {rows.map((item) => (
@@ -241,11 +244,11 @@ const AdminServiceSubCategoriesIndex = () => {
                                                 }}
                                             />
                                         </td>
-                                        <td>{item.name_en || 'N/A'}</td>
-                                        <td>{item.category?.name_en || 'N/A'}</td>
+                                        <td>{item.name_en || t('admin.paymentGetway.na')}</td>
+                                        <td>{item.category?.name_en || t('admin.paymentGetway.na')}</td>
                                         <td>
                                             <button className={`badge badge-light-${item.is_active ? 'success' : 'danger'} border-0`} onClick={() => toggleStatus(item)}>
-                                                {item.is_active ? 'Active' : 'Inactive'}
+                                                {item.is_active ? t('admin.common.active') : t('admin.common.inactive')}
                                             </button>
                                         </td>
                                         <td><span className="badge badge-light-info">{item.services_count ?? 0}</span></td>
@@ -270,45 +273,45 @@ const AdminServiceSubCategoriesIndex = () => {
                     <div className="modal-dialog modal-dialog-centered">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title">{isEditing ? 'Edit Sub-Category' : 'Create Sub-Category'}</h5>
+                                <h5 className="modal-title">{isEditing ? t('admin.paymentGetway.catEditSubCategory') : t('admin.paymentGetway.catCreateSubCategory')}</h5>
                                 <button className="btn-close" onClick={() => setShowModal(false)}></button>
                             </div>
                             <form onSubmit={submitForm}>
                                 <div className="modal-body">
                                     <div className="mb-5">
-                                        <label className="form-label required">Parent Category</label>
+                                        <label className="form-label required">{t('admin.paymentGetway.catLabelParentCategory')}</label>
                                         <select
                                             className="form-select"
                                             value={formData.category_id}
                                             onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                                             required
                                         >
-                                            <option value="">Select parent category</option>
+                                            <option value="">{t('admin.paymentGetway.catSelectParent')}</option>
                                             {parentCategories.map((cat) => (
                                                 <option key={cat.id} value={cat.id}>{cat.name_en || cat.name || cat.code}</option>
                                             ))}
                                         </select>
                                     </div>
                                     <div className="mb-5">
-                                        <label className="form-label required">Name (English)</label>
+                                        <label className="form-label required">{t('admin.paymentGetway.subCatLabelNameEn')}</label>
                                         <input className="form-control" value={formData.name_en} onChange={(e) => setFormData({ ...formData, name_en: e.target.value })} required />
                                     </div>
                                     <div className="mb-5">
-                                        <label className="form-label required">Name (Arabic)</label>
+                                        <label className="form-label required">{t('admin.paymentGetway.subCatLabelNameAr')}</label>
                                         <input className="form-control" value={formData.name_ar} onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })} required />
                                     </div>
                                     <div className="mb-5">
-                                        <label className="form-label">Description</label>
+                                        <label className="form-label">{t('admin.paymentGetway.catLabelDescription')}</label>
                                         <textarea className="form-control" rows="3" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}></textarea>
                                     </div>
                                     <div className="form-check form-switch">
                                         <input className="form-check-input" type="checkbox" checked={formData.is_active} onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })} />
-                                        <label className="form-check-label">Active</label>
+                                        <label className="form-check-label">{t('admin.paymentGetway.catLabelActive')}</label>
                                     </div>
                                 </div>
                                 <div className="modal-footer">
-                                    <button type="button" className="btn btn-light" onClick={() => setShowModal(false)}>Cancel</button>
-                                    <button type="submit" className="btn btn-primary">{isEditing ? 'Update' : 'Create'}</button>
+                                    <button type="button" className="btn btn-light" onClick={() => setShowModal(false)}>{t('admin.common.cancel')}</button>
+                                    <button type="submit" className="btn btn-primary">{isEditing ? t('admin.paymentGetway.catUpdateBtn') : t('admin.paymentGetway.catCreateBtn')}</button>
                                 </div>
                             </form>
                         </div>

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../stores/authStore';
 
 const Register = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { register, loading, error, isAuthenticated, clearError } = useAuthStore();
-    
+
     const [formData, setFormData] = useState({
         first_name: '',
         last_name: '',
@@ -19,77 +21,74 @@ const Register = () => {
 
     const [formErrors, setFormErrors] = useState({});
 
-    // Redirect if already authenticated
     useEffect(() => {
         if (isAuthenticated) {
             navigate('/merchant/dashboard');
         }
     }, [isAuthenticated, navigate]);
 
-    // Clear error when component unmounts
     useEffect(() => {
         return () => clearError();
     }, [clearError]);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: type === 'checkbox' ? checked : value,
         }));
-        
-        // Clear field error when user types
+
         if (formErrors[name]) {
-            setFormErrors(prev => ({
+            setFormErrors((prev) => ({
                 ...prev,
-                [name]: ''
+                [name]: '',
             }));
         }
     };
 
     const validate = () => {
         const errors = {};
-        
+
         if (!formData.first_name) {
-            errors.first_name = 'First name is required';
+            errors.first_name = t('auth.adminRegister.firstNameRequired');
         }
-        
+
         if (!formData.last_name) {
-            errors.last_name = 'Last name is required';
+            errors.last_name = t('auth.adminRegister.lastNameRequired');
         }
-        
+
         if (!formData.email) {
-            errors.email = 'Email is required';
+            errors.email = t('auth.adminRegister.emailRequired');
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            errors.email = 'Email is invalid';
+            errors.email = t('auth.adminRegister.emailInvalid');
         }
-        
+
         if (!formData.phone) {
-            errors.phone = 'Phone is required';
+            errors.phone = t('auth.adminRegister.phoneRequired');
         }
-        
+
         if (!formData.password) {
-            errors.password = 'Password is required';
+            errors.password = t('auth.adminRegister.passwordRequired');
         } else if (formData.password.length < 6) {
-            errors.password = 'Password must be at least 6 characters';
+            errors.password = t('auth.adminRegister.passwordMin');
         }
-        
+
         if (!formData.password_confirmation) {
-            errors.password_confirmation = 'Please confirm your password';
+            errors.password_confirmation = t('auth.adminRegister.confirmRequired');
         } else if (formData.password !== formData.password_confirmation) {
-            errors.password_confirmation = 'Passwords do not match';
+            errors.password_confirmation = t('auth.adminRegister.passwordMismatch');
         }
-        
+
         if (!formData.terms) {
-            errors.terms = 'You must accept the terms and conditions';
+            errors.terms = t('auth.adminRegister.termsRequired');
         }
-        
+
         return errors;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         const errors = validate();
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
@@ -105,11 +104,11 @@ const Register = () => {
                 password: formData.password,
                 password_confirmation: formData.password_confirmation,
             });
-            
-            toast.success('Registration successful!');
+
+            toast.success(t('auth.adminRegister.registrationSuccess'));
             navigate('/merchant/dashboard');
         } catch (err) {
-            const errorMessage = err.response?.data?.message || error || 'Registration failed';
+            const errorMessage = err.response?.data?.message || error || t('auth.adminRegister.registrationFailed');
             toast.error(errorMessage);
             setFormErrors({ submit: errorMessage });
         }
@@ -118,17 +117,14 @@ const Register = () => {
     return (
         <div className="d-flex flex-column flex-root" id="kt_app_root">
             <div className="d-flex flex-column flex-lg-row flex-column-fluid">
-                {/* Left side - Register Form */}
                 <div className="d-flex flex-column flex-lg-row-fluid w-lg-50 p-10 order-2 order-lg-1">
                     <div className="d-flex flex-center flex-column flex-lg-row-fluid">
                         <div className="w-lg-600px p-10">
-                            {/* Logo */}
                             <div className="text-center mb-11">
-                                <h1 className="text-dark fw-bolder mb-3">Sign Up</h1>
-                                <div className="text-gray-500 fw-semibold fs-6">Create Your Admin Account</div>
+                                <h1 className="text-dark fw-bolder mb-3">{t('auth.adminRegister.title')}</h1>
+                                <div className="text-gray-500 fw-semibold fs-6">{t('auth.adminRegister.subtitle')}</div>
                             </div>
 
-                            {/* Form */}
                             <form className="form w-100" onSubmit={handleSubmit}>
                                 {formErrors.submit && (
                                     <div className="alert alert-danger d-flex align-items-center p-5 mb-10">
@@ -137,21 +133,20 @@ const Register = () => {
                                             <span className="path2"></span>
                                         </i>
                                         <div className="d-flex flex-column">
-                                            <h4 className="mb-1 text-danger">Error</h4>
+                                            <h4 className="mb-1 text-danger">{t('auth.common.error')}</h4>
                                             <span>{formErrors.submit}</span>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Name Fields */}
                                 <div className="row fv-row mb-7">
                                     <div className="col-xl-6">
-                                        <label className="form-label fw-bolder text-dark fs-6">First Name</label>
+                                        <label className="form-label fw-bolder text-dark fs-6">{t('auth.adminRegister.firstNameLabel')}</label>
                                         <input
                                             type="text"
                                             name="first_name"
                                             className={`form-control bg-transparent ${formErrors.first_name ? 'is-invalid' : ''}`}
-                                            placeholder="First name"
+                                            placeholder={t('auth.adminRegister.placeholderFirstName')}
                                             value={formData.first_name}
                                             onChange={handleChange}
                                         />
@@ -160,12 +155,12 @@ const Register = () => {
                                         )}
                                     </div>
                                     <div className="col-xl-6">
-                                        <label className="form-label fw-bolder text-dark fs-6">Last Name</label>
+                                        <label className="form-label fw-bolder text-dark fs-6">{t('auth.adminRegister.lastNameLabel')}</label>
                                         <input
                                             type="text"
                                             name="last_name"
                                             className={`form-control bg-transparent ${formErrors.last_name ? 'is-invalid' : ''}`}
-                                            placeholder="Last name"
+                                            placeholder={t('auth.adminRegister.placeholderLastName')}
                                             value={formData.last_name}
                                             onChange={handleChange}
                                         />
@@ -175,48 +170,41 @@ const Register = () => {
                                     </div>
                                 </div>
 
-                                {/* Email */}
                                 <div className="fv-row mb-7">
-                                    <label className="form-label fw-bolder text-dark fs-6">Email</label>
+                                    <label className="form-label fw-bolder text-dark fs-6">{t('auth.adminRegister.emailLabel')}</label>
                                     <input
                                         type="email"
                                         name="email"
                                         className={`form-control bg-transparent ${formErrors.email ? 'is-invalid' : ''}`}
-                                        placeholder="Enter your email"
+                                        placeholder={t('auth.adminRegister.placeholderEmail')}
                                         value={formData.email}
                                         onChange={handleChange}
                                         autoComplete="email"
                                     />
-                                    {formErrors.email && (
-                                        <div className="invalid-feedback">{formErrors.email}</div>
-                                    )}
+                                    {formErrors.email && <div className="invalid-feedback">{formErrors.email}</div>}
                                 </div>
 
-                                {/* Phone */}
                                 <div className="fv-row mb-7">
-                                    <label className="form-label fw-bolder text-dark fs-6">Phone Number</label>
+                                    <label className="form-label fw-bolder text-dark fs-6">{t('auth.adminRegister.phoneLabel')}</label>
                                     <input
                                         type="tel"
                                         name="phone"
                                         className={`form-control bg-transparent ${formErrors.phone ? 'is-invalid' : ''}`}
-                                        placeholder="Enter your phone number"
+                                        placeholder={t('auth.adminRegister.placeholderPhone')}
                                         value={formData.phone}
                                         onChange={handleChange}
                                     />
-                                    {formErrors.phone && (
-                                        <div className="invalid-feedback">{formErrors.phone}</div>
-                                    )}
+                                    {formErrors.phone && <div className="invalid-feedback">{formErrors.phone}</div>}
                                 </div>
 
-                                {/* Password */}
                                 <div className="mb-10 fv-row" data-kt-password-meter="true">
                                     <div className="mb-1">
-                                        <label className="form-label fw-bolder text-dark fs-6">Password</label>
+                                        <label className="form-label fw-bolder text-dark fs-6">{t('auth.adminRegister.passwordLabel')}</label>
                                         <input
                                             type="password"
                                             name="password"
                                             className={`form-control bg-transparent ${formErrors.password ? 'is-invalid' : ''}`}
-                                            placeholder="Password"
+                                            placeholder={t('auth.adminRegister.placeholderPassword')}
                                             value={formData.password}
                                             onChange={handleChange}
                                             autoComplete="new-password"
@@ -225,19 +213,16 @@ const Register = () => {
                                             <div className="invalid-feedback">{formErrors.password}</div>
                                         )}
                                     </div>
-                                    <div className="text-muted">
-                                        Use 6 or more characters with a mix of letters, numbers & symbols.
-                                    </div>
+                                    <div className="text-muted">{t('auth.passwordRules.hintMixed')}</div>
                                 </div>
 
-                                {/* Confirm Password */}
                                 <div className="fv-row mb-10">
-                                    <label className="form-label fw-bolder text-dark fs-6">Confirm Password</label>
+                                    <label className="form-label fw-bolder text-dark fs-6">{t('auth.adminRegister.confirmPasswordLabel')}</label>
                                     <input
                                         type="password"
                                         name="password_confirmation"
                                         className={`form-control bg-transparent ${formErrors.password_confirmation ? 'is-invalid' : ''}`}
-                                        placeholder="Confirm password"
+                                        placeholder={t('auth.adminRegister.placeholderConfirmPassword')}
                                         value={formData.password_confirmation}
                                         onChange={handleChange}
                                         autoComplete="new-password"
@@ -247,7 +232,6 @@ const Register = () => {
                                     )}
                                 </div>
 
-                                {/* Terms */}
                                 <div className="fv-row mb-8">
                                     <label className={`form-check form-check-inline ${formErrors.terms ? 'is-invalid' : ''}`}>
                                         <input
@@ -258,42 +242,36 @@ const Register = () => {
                                             onChange={handleChange}
                                         />
                                         <span className="form-check-label fw-semibold text-gray-700 fs-base ms-1">
-                                            I Accept the{' '}
+                                            {t('auth.adminRegister.acceptTerms')}{' '}
                                             <a href="#" className="ms-1 link-primary">
-                                                Terms
+                                                {t('auth.common.terms')}
                                             </a>
                                         </span>
                                     </label>
-                                    {formErrors.terms && (
-                                        <div className="text-danger mt-2">{formErrors.terms}</div>
-                                    )}
+                                    {formErrors.terms && <div className="text-danger mt-2">{formErrors.terms}</div>}
                                 </div>
 
-                                {/* Submit Button */}
                                 <div className="d-grid mb-10">
-                                    <button
-                                        type="submit"
-                                        className="btn btn-primary"
-                                        disabled={loading}
-                                    >
+                                    <button type="submit" className="btn btn-primary" disabled={loading}>
                                         {loading ? (
                                             <>
-                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                Please wait...
+                                                <span
+                                                    className="spinner-border spinner-border-sm me-2"
+                                                    role="status"
+                                                    aria-hidden="true"
+                                                ></span>
+                                                {t('auth.common.pleaseWait')}
                                             </>
                                         ) : (
-                                            <>
-                                                <span className="indicator-label">Sign Up</span>
-                                            </>
+                                            <span className="indicator-label">{t('auth.common.signUp')}</span>
                                         )}
                                     </button>
                                 </div>
 
-                                {/* Login Link */}
                                 <div className="text-gray-500 text-center fw-semibold fs-6">
-                                    Already have an Account?{' '}
+                                    {t('auth.adminRegister.alreadyHaveAccount')}{' '}
                                     <Link to="/login" className="link-primary fw-semibold">
-                                        Sign in
+                                        {t('auth.adminRegister.signInLink')}
                                     </Link>
                                 </div>
                             </form>
@@ -301,19 +279,18 @@ const Register = () => {
                     </div>
                 </div>
 
-                {/* Right side - Background Image */}
-                <div className="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2"
-                     style={{
-                         backgroundImage: 'url(/assets/media/misc/auth-bg.png)',
-                         backgroundColor: '#1e1e2d'
-                     }}>
+                <div
+                    className="d-flex flex-lg-row-fluid w-lg-50 bgi-size-cover bgi-position-center order-1 order-lg-2"
+                    style={{
+                        backgroundImage: 'url(/assets/media/misc/auth-bg.png)',
+                        backgroundColor: '#1e1e2d',
+                    }}
+                >
                     <div className="d-flex flex-column flex-center py-7 py-lg-15 px-5 px-md-15 w-100">
                         <h1 className="d-none d-lg-block text-white fs-2qx fw-bolder text-center mb-7">
-                            Fast, Efficient and Productive
+                            {t('auth.adminRegister.heroTitle')}
                         </h1>
-                        <div className="d-none d-lg-block text-white fs-base text-center">
-                            Admin Dashboard for managing your business operations
-                        </div>
+                        <div className="d-none d-lg-block text-white fs-base text-center">{t('auth.adminRegister.heroSubtitle')}</div>
                     </div>
                 </div>
             </div>
@@ -322,4 +299,3 @@ const Register = () => {
 };
 
 export default Register;
-

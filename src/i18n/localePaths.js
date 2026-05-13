@@ -32,12 +32,47 @@ export function replaceLocaleInPathname(pathname, newLocale) {
     return `/${newLocale}${rest.startsWith('/') ? rest : `/${rest}`}`;
 }
 
+/** `''` or `'/en'` or `'/ar'` when the URL is `/{lng}/admin/...` */
+export function getLocalePrefixForAdmin(pathname) {
+    const m = pathname.match(/^\/(en|ar)(?=\/admin(?:\/|$))/);
+    return m ? `/${m[1]}` : '';
+}
+
+/**
+ * Keeps locale prefix in sync when linking under /admin.
+ * @param {string} adminPath e.g. `/admin/dashboard`
+ * @param {string} pathname current location.pathname
+ */
+export function resolveAdminPath(adminPath, pathname) {
+    if (typeof adminPath !== 'string' || !adminPath.startsWith('/admin')) {
+        return adminPath;
+    }
+    const prefix = getLocalePrefixForAdmin(pathname);
+    return `${prefix}${adminPath}`;
+}
+
+/** `/en/admin/x` → `/admin/x` for route comparisons */
+export function stripLocalePrefixForAdmin(pathname) {
+    const stripped = pathname.replace(/^\/(en|ar)(?=\/admin(?:\/|$))/, '');
+    return stripped || '/';
+}
+
+/** `/admin/...` or `/{en|ar}/admin/...` */
+export function pathnameIsUnderAdmin(pathname) {
+    return pathname.startsWith('/admin') || /^\/(en|ar)\/admin(\/|$)/.test(pathname);
+}
+
+export function resolveAdminLoginUrl(pathname) {
+    return resolveAdminPath('/admin/login', pathname);
+}
+
 /**
  * Paths handled outside `/:lang/*` — must not be auto-prefixed by NoLocaleFallback.
  * @param {string} pathname
  */
 export function pathShouldSkipLocaleRedirect(pathname) {
     if (pathname === '/') return true;
+    if (/^\/(en|ar)\/admin(\/|$)/.test(pathname)) return true;
     const exactOrPrefix = [
         '/login',
         '/admin',

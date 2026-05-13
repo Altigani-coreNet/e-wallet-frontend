@@ -1,7 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
-const CompletionStep = ({ onRegisterAnother }) => {
+const CompletionStep = ({ onRegisterAnother, variant = 'merchant' }) => {
+    const { t } = useTranslation();
+    const v = variant === 'partner' ? 'partner' : 'merchant';
+
     const handleRegisterAnother = () => {
         if (typeof onRegisterAnother === 'function') {
             onRegisterAnother();
@@ -15,30 +19,23 @@ const CompletionStep = ({ onRegisterAnother }) => {
                     <i className="fas fa-check-circle text-success fs-3x"></i>
                 </div>
 
-                <p className="text-muted mb-5">
-                    Your merchant registration has been submitted successfully. Our team will review your application,
-                    and you will receive a confirmation email once it has been approved.
-                </p>
+                <p className="text-muted mb-5">{t(`auth.completion.${v}.submitted`)}</p>
 
                 <div className="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4 p-lg-6 mb-5">
                     <div className="d-flex flex-stack flex-grow-1">
                         <div className="fw-bold">
-                            <h4 className="text-gray-900 fw-bolder">Welcome to Our Platform!</h4>
-                            <div className="fs-6 text-gray-700">
-                            
-                            You can start exploring our platform's features and interface right away! While some advanced features require admin approval, you have full access to navigate and discover our platform's capabilities. Once your account is approved, you'll receive a confirmation email and can login with your registered email and password to access all features.
-                            
-                              </div>
+                            <h4 className="text-gray-900 fw-bolder">{t(`auth.completion.${v}.welcomeTitle`)}</h4>
+                            <div className="fs-6 text-gray-700">{t(`auth.completion.${v}.welcomeBody`)}</div>
                         </div>
                     </div>
                 </div>
 
                 <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center">
                     <Link to="/login" className="btn btn-primary w-100">
-                        Go to Login
+                        {t('auth.completion.goToLogin')}
                     </Link>
                     <button type="button" className="btn btn-light w-100" onClick={handleRegisterAnother}>
-                        Register Another Account
+                        {t('auth.completion.registerAnother')}
                     </button>
                 </div>
             </div>
@@ -47,4 +44,3 @@ const CompletionStep = ({ onRegisterAnother }) => {
 };
 
 export default CompletionStep;
-

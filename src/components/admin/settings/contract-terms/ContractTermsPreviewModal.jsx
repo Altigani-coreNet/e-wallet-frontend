@@ -1,30 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { previewTerms } from '../../../../services/adminContractTermsService';
 
 const ContractTermsPreviewModal = ({ show, lang, onClose }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [previewHtml, setPreviewHtml] = useState('');
 
     useEffect(() => {
-        if (show) {
-            fetchPreview();
-        }
-    }, [show, lang]);
+        if (!show) return;
 
-    const fetchPreview = async () => {
-        setLoading(true);
-        const response = await previewTerms(lang);
-        setLoading(false);
+        const run = async () => {
+            setLoading(true);
+            const response = await previewTerms(lang);
+            setLoading(false);
 
-        if (response.success) {
-            const data = response.data.data || response.data;
-            setPreviewHtml(data.html || '');
-        } else {
-            toast.error(response.error || 'Failed to fetch preview');
-            onClose();
-        }
-    };
+            if (response.success) {
+                const data = response.data.data || response.data;
+                setPreviewHtml(data.html || '');
+            } else {
+                toast.error(response.error || t('admin.settings.contractTerms.previewFailed'));
+                onClose();
+            }
+        };
+
+        run();
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- onClose is stable enough; including it refetches when parent re-renders
+    }, [show, lang, t]);
 
     if (!show) return null;
 
@@ -39,22 +42,24 @@ const ContractTermsPreviewModal = ({ show, lang, onClose }) => {
                                 <span className="path2"></span>
                                 <span className="path3"></span>
                             </i>
-                            Preview Contract Terms ({lang.toUpperCase()})
+                            {t('admin.settings.contractTerms.previewTitle', { lang: lang.toUpperCase() })}
                         </h5>
-                        <button type="button" className="btn-close" onClick={onClose}></button>
+                        <button type="button" className="btn-close" onClick={onClose} aria-label={t('admin.common.close')}></button>
                     </div>
                     <div className="modal-body">
                         {loading ? (
                             <div className="text-center py-10">
-                                <div className="spinner-border text-primary"></div>
+                                <div className="spinner-border text-primary" role="status">
+                                    <span className="visually-hidden">{t('admin.common.loading')}</span>
+                                </div>
                             </div>
                         ) : (
-                            <div 
-                                className="contract-preview" 
-                                style={{ 
-                                    padding: '20px', 
+                            <div
+                                className="contract-preview"
+                                style={{
+                                    padding: '20px',
                                     backgroundColor: '#fff',
-                                    direction: lang === 'ar' ? 'rtl' : 'ltr' 
+                                    direction: lang === 'ar' ? 'rtl' : 'ltr'
                                 }}
                                 dangerouslySetInnerHTML={{ __html: previewHtml }}
                             />
@@ -62,7 +67,7 @@ const ContractTermsPreviewModal = ({ show, lang, onClose }) => {
                     </div>
                     <div className="modal-footer">
                         <button type="button" className="btn btn-secondary" onClick={onClose}>
-                            Close
+                            {t('admin.common.close')}
                         </button>
                     </div>
                 </div>
@@ -72,5 +77,3 @@ const ContractTermsPreviewModal = ({ show, lang, onClose }) => {
 };
 
 export default ContractTermsPreviewModal;
-
-

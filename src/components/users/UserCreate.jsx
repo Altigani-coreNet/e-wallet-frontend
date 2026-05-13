@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { createUser } from '../../services/usersService';
 import UserForm from './UserForm';
 import PlanUpgradeModal from './PlanUpgradeModal';
@@ -7,6 +8,7 @@ import { useToolbar } from '../../contexts/ToolbarContext';
 import { toast } from 'react-toastify';
 
 const UserCreate = () => {
+    const { t, i18n } = useTranslation();
     const location = useLocation();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -22,11 +24,11 @@ const UserCreate = () => {
     // Set toolbar title and breadcrumbs
     useEffect(() => {
         const breadcrumbs = [
-            { label: 'Users', path: usersPath },
-            { label: 'Create', active: true }
+            { label: t('merchant.users.list.breadcrumbUsers'), path: usersPath },
+            { label: t('merchant.users.createPage.breadcrumbCreate'), active: true }
         ];
         
-        setTitle('Add User');
+        setTitle(t('merchant.users.createPage.title'));
         setBreadcrumbs(breadcrumbs);
         setActions(null);
         
@@ -35,7 +37,7 @@ const UserCreate = () => {
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [basePath, usersPath, setTitle, setBreadcrumbs, setActions]);
+    }, [basePath, usersPath, setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
     const handleSubmit = async (formData) => {
         setLoading(true);
@@ -50,23 +52,24 @@ const UserCreate = () => {
                 
                 // If password was auto-generated, show it to user
                 if (apiData.generated_password) {
-                    const emailStatus = apiData.email_sent ? 
-                        'An email has been sent to the user with their credentials.' : 
-                        'Please save this password and share it with the user manually.';
-                    
-                    const message = `✅ User created successfully!\n\n` +
-                        `📧 Email: ${formData.email}\n` +
-                        `🔑 Generated Password: ${apiData.generated_password}\n\n` +
+                    const emailStatus = apiData.email_sent
+                        ? t('merchant.users.createPage.alertEmailSent')
+                        : t('merchant.users.createPage.alertEmailManual');
+
+                    const message =
+                        `${t('merchant.users.createPage.alertPasswordIntro')}\n\n` +
+                        `${t('merchant.users.createPage.alertEmailLine', { email: formData.email })}\n` +
+                        `${t('merchant.users.createPage.alertPasswordLine', { password: apiData.generated_password })}\n\n` +
                         `${emailStatus}\n\n` +
-                        `⚠️ Please save this password - it won't be shown again!`;
-                    
-                    toast.success('User created successfully! Check alert for password.');
+                        `${t('merchant.users.createPage.alertSavePassword')}`;
+
+                    toast.success(t('merchant.users.createPage.toastSuccessPassword'));
                     setTimeout(() => {
                         alert(message);
                         navigate(usersPath);
                     }, 500);
                 } else {
-                    toast.success('User created successfully!');
+                    toast.success(t('merchant.users.createPage.toastSuccess'));
                     navigate(usersPath);
                 }
             } else {
@@ -77,14 +80,14 @@ const UserCreate = () => {
                     setError(null);
                 } else {
                     // Handle validation errors
-                    const errorData = response.error || response.details || 'Failed to create user';
+                    const errorData = response.error || response.details || t('merchant.users.createPage.toastFailed');
                     setError(errorData);
-                    toast.error(typeof errorData === 'string' ? errorData : 'Failed to create user');
+                    toast.error(typeof errorData === 'string' ? errorData : t('merchant.users.createPage.toastFailed'));
                 }
             }
         } catch (err) {
             console.error('Error creating user:', err);
-            const errorMessage = 'An unexpected error occurred while creating the user';
+            const errorMessage = t('merchant.users.createPage.unexpected');
             setError(errorMessage);
             toast.error(errorMessage);
         } finally {

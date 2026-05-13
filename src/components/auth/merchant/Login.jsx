@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../stores/authStore';
 import { buildPrefixedPath, getStoredOrDefaultLocale } from '../../../i18n/localePaths';
 
 const Login = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { login, loading, error, isAuthenticated, clearError, merchant } = useAuthStore();
     
@@ -69,13 +71,13 @@ const Login = () => {
         const errors = {};
         
         if (!formData.email) {
-            errors.email = 'Email is required';
+            errors.email = t('auth.login.emailRequired');
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-            errors.email = 'Email is invalid';
+            errors.email = t('auth.login.emailInvalid');
         }
         
         if (!formData.password) {
-            errors.password = 'Password is required';
+            errors.password = t('auth.login.passwordRequired');
         }
         
         return errors;
@@ -96,7 +98,7 @@ const Login = () => {
                 password: formData.password,
             });
             
-            toast.success('Login successful!');
+            toast.success(t('auth.login.success'));
 
             const lng = getStoredOrDefaultLocale();
 
@@ -151,7 +153,7 @@ const Login = () => {
                 navigate(buildPrefixedPath('/merchant/profile', lng), { replace: true });
             }
         } catch (err) {
-            const errorMessage = err.response?.data?.message || error || 'Login failed';
+            const errorMessage = err.response?.data?.message || error || t('auth.login.failed');
             toast.error(errorMessage);
             setFormErrors({ submit: errorMessage });
         }
@@ -223,8 +225,8 @@ const Login = () => {
                                 
                                 <form className="form w-100" onSubmit={handleSubmit}>
                                     <div className="text-center mb-13">
-                                        <h1 className="text-dark fw-bolder mb-3">Merchant Sign In</h1>
-                                        <div className="text-gray-500 fw-semibold fs-6">Enter your merchant credentials</div>
+                                        <h1 className="text-dark fw-bolder mb-3">{t('auth.login.title')}</h1>
+                                        <div className="text-gray-500 fw-semibold fs-6">{t('auth.login.subtitle')}</div>
                                     </div>
 
                                     {/* Error Messages */}
@@ -239,7 +241,7 @@ const Login = () => {
                                         <input
                                             type="text"
                                             name="email"
-                                            placeholder="Email Address"
+                                            placeholder={t('auth.login.emailPlaceholder')}
                                             autoComplete="off"
                                             className={`form-control bg-transparent ${formErrors.email ? 'is-invalid' : ''}`}
                                             value={formData.email}
@@ -255,7 +257,7 @@ const Login = () => {
                                         <input
                                             type={showPassword ? 'text' : 'password'}
                                             name="password"
-                                            placeholder="Password"
+                                            placeholder={t('auth.login.passwordPlaceholder')}
                                             className={`form-control bg-transparent ${formErrors.password ? 'is-invalid' : ''}`}
                                             style={{ paddingRight: '3rem' }}
                                             value={formData.password}
@@ -265,7 +267,7 @@ const Login = () => {
                                             type="button"
                                             className="btn btn-icon btn-sm position-absolute top-50 end-0 translate-middle-y me-2"
                                             onClick={() => setShowPassword((prev) => !prev)}
-                                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                            aria-label={showPassword ? t('auth.common.hidePassword') : t('auth.common.showPassword')}
                                         >
                                             <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
                                         </button>
@@ -278,17 +280,17 @@ const Login = () => {
                                     <div className="d-flex flex-stack flex-wrap gap-3 fs-base fw-semibold mb-10">
                                         <div></div>
                                         <Link to="/forgot-password" className="link-primary">
-                                            Forgot Password?
+                                            {t('auth.login.forgotPassword')}
                                         </Link>
                                     </div>
 
                                     {/* Submit Button */}
                                     <div className="d-grid mb-10">
                                         <button type="submit" className="btn btn-primary" disabled={loading}>
-                                            <span className={loading ? 'd-none' : 'indicator-label'}>Sign In</span>
+                                            <span className={loading ? 'd-none' : 'indicator-label'}>{t('auth.common.signIn')}</span>
                                             {loading && (
                                                 <span className="indicator-progress" style={{ display: 'block' }}>
-                                                    Signing In...
+                                                    {t('auth.login.signingIn')}
                                                     <span className="spinner-border spinner-border-sm align-middle ms-2"></span>
                                                 </span>
                                             )}
@@ -297,9 +299,9 @@ const Login = () => {
 
                                     {/* Register Link */}
                                     <div className="text-center">
-                                        <span className="text-gray-500 fs-6">Don't have an account?</span>
+                                        <span className="text-gray-500 fs-6">{t('auth.login.noAccount')}</span>
                                         <Link to="/merchant/register" className="link-primary fw-semibold fs-6 ms-1">
-                                            Register Here
+                                            {t('auth.common.registerHere')}
                                         </Link>
                                     </div>
                                 </form>

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { getServiceFee, updateServiceFee } from '../../../../services/adminServiceFeesService';
 
 const AdminServiceFeeEdit = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
@@ -18,10 +20,10 @@ const AdminServiceFeeEdit = () => {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        setTitle('Edit Service Fee');
+        setTitle(t('admin.settings.serviceFees.editTitle'));
         setActions(null);
         fetchServiceFee();
-    }, [setTitle, setActions, id]);
+    }, [setTitle, setActions, id, t]);
 
     const fetchServiceFee = async () => {
         setFetching(true);
@@ -36,7 +38,7 @@ const AdminServiceFeeEdit = () => {
                 fees: data.fees || ''
             });
         } else {
-            toast.error(response.error || 'Failed to fetch service fee');
+            toast.error(response.error || t('admin.settings.serviceFees.fetchOneFailed'));
             navigate('/admin/settings/service-fees');
         }
     };
@@ -58,10 +60,10 @@ const AdminServiceFeeEdit = () => {
         setLoading(false);
 
         if (response.success) {
-            toast.success('Service fee updated successfully');
+            toast.success(t('admin.settings.serviceFees.updateSuccess'));
             navigate('/admin/settings/service-fees');
         } else {
-            toast.error(response.error || 'Failed to update service fee');
+            toast.error(response.error || t('admin.settings.serviceFees.updateFailed'));
             if (response.errors) {
                 setErrors(response.errors);
             }
@@ -86,13 +88,13 @@ const AdminServiceFeeEdit = () => {
         <>
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title">Service Fee Information</h3>
+                        <h3 className="card-title">{t('admin.settings.serviceFees.cardInfo')}</h3>
                     </div>
                     <form onSubmit={handleSubmit}>
                         <div className="card-body">
                             <div className="row mb-6">
                                 <div className="col-lg-6">
-                                    <label className="form-label required">Name</label>
+                                    <label className="form-label required">{t('admin.settings.serviceFees.labelName')}</label>
                                     <input 
                                         type="text"
                                         name="name"
@@ -104,7 +106,7 @@ const AdminServiceFeeEdit = () => {
                                     {errors.name && <div className="invalid-feedback">{errors.name[0]}</div>}
                                 </div>
                                 <div className="col-lg-6">
-                                    <label className="form-label required">Type</label>
+                                    <label className="form-label required">{t('admin.settings.serviceFees.labelType')}</label>
                                     <input 
                                         type="text"
                                         name="type"
@@ -118,7 +120,7 @@ const AdminServiceFeeEdit = () => {
                             </div>
                             <div className="row mb-6">
                                 <div className="col-lg-6">
-                                    <label className="form-label required">Fees</label>
+                                    <label className="form-label required">{t('admin.settings.serviceFees.labelFees')}</label>
                                     <input 
                                         type="number"
                                         name="fees"
@@ -139,7 +141,7 @@ const AdminServiceFeeEdit = () => {
                                 className="btn btn-light btn-active-light-primary me-2"
                                 onClick={() => navigate('/admin/settings/service-fees')}
                             >
-                                Cancel
+                                {t('admin.common.cancel')}
                             </button>
                             <button 
                                 type="submit" 
@@ -149,10 +151,10 @@ const AdminServiceFeeEdit = () => {
                                 {loading ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2"></span>
-                                        Updating...
+                                        {t('admin.settings.serviceFees.updating')}
                                     </>
                                 ) : (
-                                    'Update Service Fee'
+                                    t('admin.settings.serviceFees.updateBtn')
                                 )}
                             </button>
                         </div>
@@ -163,5 +165,3 @@ const AdminServiceFeeEdit = () => {
 };
 
 export default AdminServiceFeeEdit;
-
-

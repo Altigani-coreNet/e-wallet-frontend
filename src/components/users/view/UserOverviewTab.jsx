@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getTranslatedText } from '../../../utils/helpers';
 
-const InfoRow = ({ label, value, fallback = 'N/A' }) => (
+const InfoRow = ({ label, value, fallback }) => (
     <div className="row mb-7">
         <label className="col-lg-4 fw-semibold text-muted">{label}</label>
         <div className="col-lg-8">
@@ -17,21 +18,18 @@ const SectionCard = ({ title, action, children }) => (
             <div className="card-title m-0">
                 <h3 className="fw-bolder m-0">{title}</h3>
             </div>
-            <div className="card-toolbar">
-                {action}
-            </div>
-            
+            <div className="card-toolbar">{action}</div>
         </div>
         <div className="card-body p-9">{children}</div>
     </div>
 );
 
-const renderStatusBadge = (status) => {
+const renderStatusBadge = (status, activeLabel, inactiveLabel) => {
     const isActive = status === true || status === 1 || status === '1' || status === 'active';
 
     return (
         <span className={`badge badge-light-${isActive ? 'success' : 'danger'}`}>
-            {isActive ? 'Active' : 'Inactive'}
+            {isActive ? activeLabel : inactiveLabel}
         </span>
     );
 };
@@ -56,6 +54,11 @@ const UserOverviewTab = ({
     showBranchDetails = true,
     branchLink,
 }) => {
+    const { t } = useTranslation();
+    const na = t('merchant.common.na');
+    const activeLabel = t('merchant.common.active');
+    const inactiveLabel = t('merchant.common.inactive');
+
     if (!user) {
         return null;
     }
@@ -67,54 +70,75 @@ const UserOverviewTab = ({
         <div className="row g-5 g-xl-8">
             <div className="col-xl-12">
                 <SectionCard
-                    title="Basic Information"
+                    title={t('merchant.users.overviewTab.basicInformation')}
                     action={
                         canEdit && editUrl ? (
                             <Link to={editUrl} className="btn btn-primary btn-sm">
-                                Edit User
+                                {t('merchant.users.overviewTab.editUser')}
                             </Link>
                         ) : null
                     }
                 >
-                    <InfoRow label="Full Name" value={user.name} />
-                    <InfoRow label="Email" value={user.email} />
-                    <InfoRow label="Phone" value={user.phone} />
-                    <InfoRow label="Status" value={renderStatusBadge(user.status)} />
-                    <InfoRow label="Created At" value={formatDateTime(user.created_at)} />
-                    {user.updated_at && <InfoRow label="Last Updated" value={formatDateTime(user.updated_at)} />}
+                    <InfoRow label={t('merchant.users.overviewTab.fullName')} value={user.name} fallback={na} />
+                    <InfoRow label={t('merchant.users.overviewTab.email')} value={user.email} fallback={na} />
+                    <InfoRow label={t('merchant.users.overviewTab.phone')} value={user.phone} fallback={na} />
+                    <InfoRow
+                        label={t('merchant.users.overviewTab.status')}
+                        value={renderStatusBadge(user.status, activeLabel, inactiveLabel)}
+                        fallback={na}
+                    />
+                    <InfoRow
+                        label={t('merchant.users.overviewTab.createdAt')}
+                        value={formatDateTime(user.created_at)}
+                        fallback={na}
+                    />
+                    {user.updated_at && (
+                        <InfoRow
+                            label={t('merchant.users.overviewTab.lastUpdated')}
+                            value={formatDateTime(user.updated_at)}
+                            fallback={na}
+                        />
+                    )}
                 </SectionCard>
             </div>
 
             {showMerchantDetails && (
                 <div className="col-xl-12">
                     <SectionCard
-                        title="Merchant Details"
+                        title={t('merchant.users.overviewTab.merchantDetails')}
                         action={
-                            merchant && (merchantLink || merchant.id)
-                                ? (
-                                      <a
-                                          href={merchantLink || `/admin/merchants/${merchant.id}`}
-                                          className="btn btn-sm btn-light-primary"
-                                      >
-                                          View Merchant
-                                      </a>
-                                  )
-                                : null
+                            merchant && (merchantLink || merchant.id) ? (
+                                <a
+                                    href={merchantLink || `/admin/merchants/${merchant.id}`}
+                                    className="btn btn-sm btn-light-primary"
+                                >
+                                    {t('merchant.users.overviewTab.viewMerchant')}
+                                </a>
+                            ) : null
                         }
                     >
                         {merchant ? (
                             <>
                                 <InfoRow
-                                    label="Merchant Name"
+                                    label={t('merchant.users.overviewTab.merchantName')}
                                     value={getTranslatedText(merchant.business_name) || getTranslatedText(merchant.name)}
+                                    fallback={na}
                                 />
-                                <InfoRow label="Owner Name" value={merchant.owner_name} />
-                                <InfoRow label="Email" value={merchant.email} />
-                                <InfoRow label="Phone" value={merchant.phone} />
-                                <InfoRow label="Business Type" value={merchant.business_type_display_name} />
-                                <InfoRow label="Address" value={merchant.address} />
-                                <InfoRow label="Merchant Code" value={merchant.merchant_code} />
-                                <InfoRow label="Status" value={renderStatusBadge(merchant.is_active)} />
+                                <InfoRow label={t('merchant.users.overviewTab.ownerName')} value={merchant.owner_name} fallback={na} />
+                                <InfoRow label={t('merchant.users.overviewTab.email')} value={merchant.email} fallback={na} />
+                                <InfoRow label={t('merchant.users.overviewTab.phone')} value={merchant.phone} fallback={na} />
+                                <InfoRow
+                                    label={t('merchant.users.overviewTab.businessType')}
+                                    value={merchant.business_type_display_name}
+                                    fallback={na}
+                                />
+                                <InfoRow label={t('merchant.users.overviewTab.address')} value={merchant.address} fallback={na} />
+                                <InfoRow label={t('merchant.users.overviewTab.merchantCode')} value={merchant.merchant_code} fallback={na} />
+                                <InfoRow
+                                    label={t('merchant.users.overviewTab.status')}
+                                    value={renderStatusBadge(merchant.is_active, activeLabel, inactiveLabel)}
+                                    fallback={na}
+                                />
                             </>
                         ) : (
                             <div className="alert alert-warning d-flex align-items-center p-5 mb-0">
@@ -124,8 +148,8 @@ const UserOverviewTab = ({
                                     <span className="path3"></span>
                                 </i>
                                 <div className="d-flex flex-column">
-                                    <h4 className="mb-1 text-warning">No Merchant Assigned</h4>
-                                    <span>This user is not linked to a merchant yet.</span>
+                                    <h4 className="mb-1 text-warning">{t('merchant.users.overviewTab.noMerchantTitle')}</h4>
+                                    <span>{t('merchant.users.overviewTab.noMerchantHint')}</span>
                                 </div>
                             </div>
                         )}
@@ -136,23 +160,28 @@ const UserOverviewTab = ({
             {showBranchDetails && (
                 <div className="col-xl-12">
                     <SectionCard
-                        title="Branch Details"
+                        title={t('merchant.users.overviewTab.branchDetails')}
                         action={
                             branch && (branchLink || branch.id) ? (
-                                <Link
-                                    to={branchLink || `/admin/branches/${branch.id}`}
-                                    className="btn btn-sm btn-light-primary"
-                                >
-                                    View Branch
+                                <Link to={branchLink || `/admin/branches/${branch.id}`} className="btn btn-sm btn-light-primary">
+                                    {t('merchant.users.overviewTab.viewBranch')}
                                 </Link>
                             ) : null
                         }
                     >
                         {branch ? (
                             <>
-                                <InfoRow label="Branch Name" value={getTranslatedText(branch.name)} />
-                                <InfoRow label="Address" value={branch.address} />
-                                <InfoRow label="Status" value={renderStatusBadge(branch.is_active)} />
+                                <InfoRow
+                                    label={t('merchant.users.overviewTab.branchName')}
+                                    value={getTranslatedText(branch.name)}
+                                    fallback={na}
+                                />
+                                <InfoRow label={t('merchant.users.overviewTab.address')} value={branch.address} fallback={na} />
+                                <InfoRow
+                                    label={t('merchant.users.overviewTab.status')}
+                                    value={renderStatusBadge(branch.is_active, activeLabel, inactiveLabel)}
+                                    fallback={na}
+                                />
                             </>
                         ) : (
                             <div className="alert alert-info d-flex align-items-center p-5 mb-0">
@@ -161,8 +190,8 @@ const UserOverviewTab = ({
                                     <span className="path2"></span>
                                 </i>
                                 <div className="d-flex flex-column">
-                                    <h4 className="mb-1 text-info">No Branch Assigned</h4>
-                                    <span>This user is not linked to a specific branch.</span>
+                                    <h4 className="mb-1 text-info">{t('merchant.users.overviewTab.noBranchTitle')}</h4>
+                                    <span>{t('merchant.users.overviewTab.noBranchHint')}</span>
                                 </div>
                             </div>
                         )}
@@ -174,4 +203,3 @@ const UserOverviewTab = ({
 };
 
 export default UserOverviewTab;
-

@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS, ADMIN_SYSTEM_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { getTranslatedText } from '../../../utils/helpers';
 
 const AdminUserCreate = () => {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
     const [saving, setSaving] = useState(false);
@@ -49,18 +51,18 @@ const AdminUserCreate = () => {
         .filter(Boolean);
 
     useEffect(() => {
-        setTitle('Add New User');
+        setTitle(t('admin.usersUI.form.addTitle'));
         setActions(
             <Link to="/admin/users" className="btn btn-sm btn-light-danger">
                 <i className="ki-duotone ki-arrow-left fs-2">
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back
+                {t('admin.usersUI.form.back')}
             </Link>
         );
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t, i18n.language]);
 
     useEffect(() => {
         fetchMerchants();
@@ -120,7 +122,7 @@ const AdminUserCreate = () => {
             }
         } catch (error) {
             console.error('Failed to fetch merchants:', error);
-            toast.error('Failed to load merchants');
+            toast.error(t('admin.usersUI.form.loadMerchantsFailed'));
         }
     };
 
@@ -228,21 +230,21 @@ const AdminUserCreate = () => {
         const newErrors = {};
 
         if (!formData.name?.trim()) {
-            newErrors.name = 'Name is required';
+            newErrors.name = t('admin.usersUI.form.nameRequired');
         }
 
         if (!formData.email?.trim()) {
-            newErrors.email = 'Email is required';
+            newErrors.email = t('admin.usersUI.form.emailRequired');
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            newErrors.email = 'Invalid email format';
+            newErrors.email = t('admin.usersUI.form.emailInvalid');
         }
 
         if (!formData.phone?.trim()) {
-            newErrors.phone = 'Phone is required';
+            newErrors.phone = t('admin.usersUI.form.phoneRequired');
         }
 
         if (!formData.merchant_id) {
-            newErrors.merchant_id = 'Merchant is required';
+            newErrors.merchant_id = t('admin.usersUI.form.merchantRequired');
         }
 
         setErrors(newErrors);
@@ -253,7 +255,7 @@ const AdminUserCreate = () => {
         e.preventDefault();
 
         if (!validateForm()) {
-            toast.error('Please fill in all required fields');
+            toast.error(t('admin.usersUI.form.fillRequired'));
             return;
         }
 
@@ -281,11 +283,11 @@ const AdminUserCreate = () => {
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                toast.success('User created successfully');
+                toast.success(t('admin.usersUI.form.createSuccess'));
                 navigate('/admin/users');
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.message || 'Failed to create user';
+            const errorMessage = error.response?.data?.message || t('admin.usersUI.form.createFailed');
             toast.error(errorMessage);
             
             if (error.response?.data?.errors) {
@@ -307,7 +309,7 @@ const AdminUserCreate = () => {
                             <div className="card">
                                 <div className="card-header border-0">
                                     <div className="card-title">
-                                        <h2>Add New User</h2>
+                                        <h2>{t('admin.usersUI.form.addTitle')}</h2>
                                     </div>
                                 </div>
 
@@ -321,7 +323,7 @@ const AdminUserCreate = () => {
                                                     <span className="path2"></span>
                                                 </i>
                                                 <div className="d-flex flex-column">
-                                                    <h4 className="mb-1">Validation Errors</h4>
+                                                    <h4 className="mb-1">{t('admin.usersUI.form.validationErrors')}</h4>
                                                     <ul className="mb-0">
                                                         {validationMessages.map((error, idx) => (
                                                             <li key={idx}>{error}</li>
@@ -336,42 +338,42 @@ const AdminUserCreate = () => {
                                     <div className="row">
                                         {/* Name */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Full Name</label>
+                                            <label className="form-label fw-bold required">{t('admin.usersUI.form.fullName')}</label>
                                             <input
                                                 type="text"
                                                 name="name"
                                                 className={`form-control ${hasError('name') ? 'is-invalid' : ''}`}
                                                 value={formData.name}
                                                 onChange={handleInputChange}
-                                                placeholder="Enter full name"
+                                                placeholder={t('admin.usersUI.form.fullNamePh')}
                                             />
                                             {hasError('name') && <div className="invalid-feedback d-block">{getErrorMessage('name')}</div>}
                                         </div>
 
                                         {/* Email */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Email</label>
+                                            <label className="form-label fw-bold required">{t('admin.usersUI.form.email')}</label>
                                             <input
                                                 type="email"
                                                 name="email"
                                                 className={`form-control ${hasError('email') ? 'is-invalid' : ''}`}
                                                 value={formData.email}
                                                 onChange={handleInputChange}
-                                                placeholder="user@example.com"
+                                                placeholder={t('admin.usersUI.form.emailPh')}
                                             />
                                             {hasError('email') && <div className="invalid-feedback d-block">{getErrorMessage('email')}</div>}
                                         </div>
 
                                         {/* Phone */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Phone</label>
+                                            <label className="form-label fw-bold required">{t('admin.usersUI.form.phone')}</label>
                                             <input
                                                 type="text"
                                                 name="phone"
                                                 className={`form-control ${hasError('phone') ? 'is-invalid' : ''}`}
                                                 value={formData.phone}
                                                 onChange={handleInputChange}
-                                                placeholder="+1234567890"
+                                                placeholder={t('admin.usersUI.form.phonePh')}
                                             />
                                             {hasError('phone') && <div className="invalid-feedback d-block">{getErrorMessage('phone')}</div>}
                                             <div className="form-text text-info mt-2">
@@ -380,13 +382,13 @@ const AdminUserCreate = () => {
                                                     <span className="path2"></span>
                                                     <span className="path3"></span>
                                                 </i>
-                                                A secure password will be auto-generated and sent to the user's email
+                                                {t('admin.usersUI.form.passwordHintCreate')}
                                             </div>
                                         </div>
 
                                         {/* Merchant */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold required">Merchant</label>
+                                            <label className="form-label fw-bold required">{t('admin.usersUI.form.merchant')}</label>
                                             <div className="position-relative">
                                                 <div 
                                                     className={`form-control h-50px d-flex align-items-center justify-content-between ${hasError('merchant_id') ? 'is-invalid' : ''}`}
@@ -399,7 +401,7 @@ const AdminUserCreate = () => {
                                                                 {getTranslatedText(selectedMerchant.business_name) || getTranslatedText(selectedMerchant.name)}
                                                             </span>
                                                         ) : (
-                                                            <span className="text-muted">Select Merchant</span>
+                                                            <span className="text-muted">{t('admin.usersUI.form.selectMerchant')}</span>
                                                         )}
                                                     </div>
                                                     <div className="d-flex align-items-center">
@@ -428,7 +430,7 @@ const AdminUserCreate = () => {
                                                             <input 
                                                                 type="text" 
                                                                 className="form-control form-control-sm mb-2" 
-                                                                placeholder="Search merchants..."
+                                                                placeholder={t('admin.usersUI.form.searchMerchantsPh')}
                                                                 value={merchantSearchTerm}
                                                                 onChange={(e) => handleMerchantSearch(e.target.value)}
                                                                 onClick={(e) => e.stopPropagation()}
@@ -450,7 +452,7 @@ const AdminUserCreate = () => {
                                                                 </div>
                                                             ))
                                                         ) : (
-                                                            <div className="p-3 text-muted text-center">No merchants found</div>
+                                                            <div className="p-3 text-muted text-center">{t('admin.usersUI.form.noMerchants')}</div>
                                                         )}
                                                     </div>
                                                 )}
@@ -460,7 +462,7 @@ const AdminUserCreate = () => {
 
                                         {/* Branch */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Branch (Optional)</label>
+                                            <label className="form-label fw-bold">{t('admin.usersUI.form.branchOptional')}</label>
                                             <div className="position-relative">
                                                 <div 
                                                     className="form-control h-50px d-flex align-items-center justify-content-between"
@@ -475,7 +477,7 @@ const AdminUserCreate = () => {
                                                             <span className="text-gray-800">{getTranslatedText(selectedBranch.name)}</span>
                                                         ) : (
                                                             <span className="text-muted">
-                                                                {!(selectedMerchant || formData.merchant_id) ? 'Select merchant first' : 'Select Branch'}
+                                                                {!(selectedMerchant || formData.merchant_id) ? t('admin.usersUI.form.selectMerchantFirst') : t('admin.usersUI.form.selectBranch')}
                                                             </span>
                                                         )}
                                                     </div>
@@ -505,7 +507,7 @@ const AdminUserCreate = () => {
                                                             <input 
                                                                 type="text" 
                                                                 className="form-control form-control-sm mb-2" 
-                                                                placeholder="Search branches..."
+                                                                placeholder={t('admin.usersUI.form.searchBranchesPh')}
                                                                 value={branchSearchTerm}
                                                                 onChange={(e) => handleBranchSearch(e.target.value)}
                                                                 onClick={(e) => e.stopPropagation()}
@@ -524,7 +526,7 @@ const AdminUserCreate = () => {
                                                                 </div>
                                                             ))
                                                         ) : (
-                                                            <div className="p-3 text-muted text-center">No branches found</div>
+                                                            <div className="p-3 text-muted text-center">{t('admin.usersUI.form.noBranches')}</div>
                                                         )}
                                                     </div>
                                                 )}
@@ -533,12 +535,12 @@ const AdminUserCreate = () => {
 
                                         {/* Merchant roles (guard web, scoped to merchant) */}
                                         <div className="col-12 mb-7">
-                                            <label className="form-label fw-bold">Roles</label>
+                                            <label className="form-label fw-bold">{t('admin.usersUI.form.roles')}</label>
                                             {!formData.merchant_id ? (
-                                                <div className="text-muted fs-7">Select merchant first to load roles.</div>
+                                                <div className="text-muted fs-7">{t('admin.usersUI.form.selectMerchantForRoles')}</div>
                                             ) : merchantRoles.length === 0 ? (
                                                 <div className="text-muted fs-7">
-                                                    No roles found for this merchant. Create roles under merchant permissions or role management first.
+                                                    {t('admin.usersUI.form.noRoles')}
                                                 </div>
                                             ) : (
                                                 <div className="d-flex flex-wrap gap-4 mt-2">
@@ -559,21 +561,21 @@ const AdminUserCreate = () => {
 
                                         {/* Status */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">Status</label>
+                                            <label className="form-label fw-bold">{t('admin.common.status')}</label>
                                             <select
                                                 name="status"
                                                 className="form-select"
                                                 value={formData.status}
                                                 onChange={handleInputChange}
                                             >
-                                                <option value="active">Active</option>
-                                                <option value="inactive">Inactive</option>
+                                                <option value="active">{t('admin.common.active')}</option>
+                                                <option value="inactive">{t('admin.common.inactive')}</option>
                                             </select>
                                         </div>
 
                                         {/* Is Admin */}
                                         <div className="col-md-6 mb-7">
-                                            <label className="form-label fw-bold">User Type</label>
+                                            <label className="form-label fw-bold">{t('admin.usersUI.form.userType')}</label>
                                             <div className="form-check form-switch form-check-custom form-check-solid mt-2">
                                                 <input
                                                     className="form-check-input"
@@ -583,7 +585,7 @@ const AdminUserCreate = () => {
                                                     onChange={handleInputChange}
                                                 />
                                                 <label className="form-check-label">
-                                                    {formData.is_admin ? 'Admin User' : 'Regular User'}
+                                                    {formData.is_admin ? t('admin.usersUI.form.adminUser') : t('admin.usersUI.form.regularUser')}
                                                 </label>
                                             </div>
                                         </div>
@@ -594,7 +596,7 @@ const AdminUserCreate = () => {
                                         <div className="col-12">
                                             <div className="d-flex justify-content-end gap-3">
                                                 <Link to="/admin/users" className="btn btn-light">
-                                                    Cancel
+                                                    {t('admin.usersUI.form.cancel')}
                                                 </Link>
                                                 <button
                                                     type="submit"
@@ -604,7 +606,7 @@ const AdminUserCreate = () => {
                                                     {saving ? (
                                                         <>
                                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                                            Creating...
+                                                            {t('admin.usersUI.form.creating')}
                                                         </>
                                                     ) : (
                                                         <>
@@ -612,7 +614,7 @@ const AdminUserCreate = () => {
                                                                 <span className="path1"></span>
                                                                 <span className="path2"></span>
                                                             </i>
-                                                            Create User
+                                                            {t('admin.usersUI.form.createUser')}
                                                         </>
                                                     )}
                                                 </button>

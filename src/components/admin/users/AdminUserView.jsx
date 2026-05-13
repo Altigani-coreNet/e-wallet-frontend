@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
@@ -15,6 +16,7 @@ import UserEventsTimeline from '../../users/view/UserEventsTimeline';
 import UserTransactionsTab from '../../users/view/UserTransactionsTab';
 
 const AdminUserView = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
@@ -30,8 +32,30 @@ const AdminUserView = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const [loading, setLoading] = useState(true);
 
+    const profileTabs = useMemo(
+        () => [
+            { key: 'overview', label: t('admin.usersUI.view.tabs.overview'), icon: 'ki-profile-circle' },
+            { key: 'terminals', label: t('admin.usersUI.view.tabs.terminals'), icon: 'ki-tablet' },
+            { key: 'transactions', label: t('admin.usersUI.view.tabs.transactions'), icon: 'ki-credit-cart' },
+            { key: 'user_groups', label: t('admin.usersUI.view.tabs.userGroups'), icon: 'ki-people' },
+            { key: 'attachments', label: t('admin.usersUI.view.tabs.attachments'), icon: 'ki-folder' },
+            { key: 'events', label: t('admin.usersUI.view.tabs.events'), icon: 'ki-abstract-44' },
+        ],
+        [t, i18n.language]
+    );
+
+    const profileStatsConfig = useMemo(
+        () => [
+            { key: 'total_terminals', label: t('admin.usersUI.view.headerStats.terminals'), icon: 'ki-devices-2' },
+            { key: 'terminal_groups', label: t('admin.usersUI.view.headerStats.terminalGroups'), icon: 'ki-grid' },
+            { key: 'user_groups', label: t('admin.usersUI.view.headerStats.userGroups'), icon: 'ki-people' },
+            { key: 'attachments', label: t('admin.usersUI.view.headerStats.attachments'), icon: 'ki-folder' },
+        ],
+        [t, i18n.language]
+    );
+
     useEffect(() => {
-        setTitle('User Details');
+        setTitle(t('admin.usersUI.view.title'));
         setActions(
             <div className="d-flex align-items-center gap-2">
                 <Link to={`/admin/users/${id}/edit`} className="btn btn-sm btn-primary">
@@ -39,19 +63,19 @@ const AdminUserView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Edit User
+                    {t('admin.usersUI.view.editUser')}
                 </Link>
                 <Link to="/admin/users" className="btn btn-sm btn-light">
                     <i className="ki-duotone ki-arrow-left fs-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back
+                    {t('admin.usersUI.view.back')}
                 </Link>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, id]);
+    }, [setTitle, setActions, id, t, i18n.language]);
 
     useEffect(() => {
         fetchUser();
@@ -97,7 +121,7 @@ const AdminUserView = () => {
                 setActiveTab('overview');
             }
         } catch (error) {
-            toast.error('Failed to load user');
+            toast.error(t('admin.usersUI.view.loadFailed'));
             console.error(error);
         } finally {
             setLoading(false);
@@ -105,7 +129,7 @@ const AdminUserView = () => {
     };
 
     const handleActivate = async () => {
-        if (!window.confirm('Are you sure you want to activate this user?')) return;
+        if (!window.confirm(t('admin.usersIndex.activateConfirm'))) return;
 
         try {
             const token = getToken();
@@ -116,17 +140,17 @@ const AdminUserView = () => {
             );
 
             if (response.data.success || response.data.status) {
-                toast.success('User activated successfully');
+                toast.success(t('admin.usersIndex.activated'));
                 fetchUser();
             }
         } catch (error) {
-            toast.error('Failed to activate user');
+            toast.error(t('admin.usersIndex.activateFailed'));
             console.error(error);
         }
     };
 
     const handleDeactivate = async () => {
-        if (!window.confirm('Are you sure you want to deactivate this user?')) return;
+        if (!window.confirm(t('admin.usersIndex.deactivateConfirm'))) return;
 
         try {
             const token = getToken();
@@ -137,18 +161,18 @@ const AdminUserView = () => {
             );
 
             if (response.data.success || response.data.status) {
-                toast.success('User deactivated successfully');
+                toast.success(t('admin.usersIndex.deactivated'));
                 fetchUser();
             }
         } catch (error) {
-            toast.error('Failed to deactivate user');
+            toast.error(t('admin.usersIndex.deactivateFailed'));
             console.error(error);
         }
     };
 
     const handleSendResetPassword = async () => {
         if (!user) return;
-        if (!window.confirm('Send reset password link to ' + user.email + '?')) return;
+        if (!window.confirm(t('admin.usersUI.view.resetPasswordConfirm', { email: user.email }))) return;
 
         try {
             const token = getToken();
@@ -159,16 +183,16 @@ const AdminUserView = () => {
             );
 
             if (response.data.success || response.data.status) {
-                toast.success(response.data.data?.message || 'Reset password link sent successfully');
+                toast.success(response.data.data?.message || t('admin.usersUI.view.resetSuccess'));
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to send reset password link');
+            toast.error(error.response?.data?.message || t('admin.usersUI.view.resetFailed'));
             console.error(error);
         }
     };
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+        if (!window.confirm(t('admin.usersUI.view.deleteConfirm'))) return;
 
         try {
             const token = getToken();
@@ -178,11 +202,11 @@ const AdminUserView = () => {
             );
 
             if (response.data.success || response.data.status) {
-                toast.success('User deleted successfully');
+                toast.success(t('admin.usersUI.view.deleteSuccess'));
                 navigate('/admin/users');
             }
         } catch (error) {
-            toast.error('Failed to delete user');
+            toast.error(t('admin.usersUI.view.deleteFailed'));
             console.error(error);
         }
     };
@@ -218,7 +242,7 @@ const AdminUserView = () => {
     if (!user) {
         return (
             <div className="text-center py-10">
-                <p className="text-muted">User not found</p>
+                <p className="text-muted">{t('admin.usersUI.view.notFound')}</p>
             </div>
         );
     }
@@ -234,6 +258,12 @@ const AdminUserView = () => {
                     statistics={statistics}
                     activeTab={activeTab}
                     onTabChange={setActiveTab}
+                    tabs={profileTabs}
+                    statsConfig={profileStatsConfig}
+                    activeStatusLabel={t('admin.common.active')}
+                    inactiveStatusLabel={t('admin.common.inactive')}
+                    userStatusLabel={t('admin.usersUI.view.userStatusProgress')}
+                    nameFallback={t('admin.common.na')}
                 />
 
                 <div className="row g-5 g-xl-8">
@@ -244,7 +274,7 @@ const AdminUserView = () => {
                         <div className="card mb-5">
                             <div className="card-header border-0">
                                 <div className="card-title m-0">
-                                    <h3 className="fw-bolder m-0">Quick Actions</h3>
+                                    <h3 className="fw-bolder m-0">{t('admin.usersUI.view.quickActions')}</h3>
                                 </div>
                             </div>
                             <div className="card-body border-top p-9">
@@ -254,7 +284,7 @@ const AdminUserView = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Edit User
+                                        {t('admin.usersUI.view.editUser')}
                                     </Link>
                                     {isActive ? (
                                         <button className="btn btn-warning" onClick={handleDeactivate}>
@@ -262,7 +292,7 @@ const AdminUserView = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Deactivate User
+                                            {t('admin.usersUI.view.deactivateUser')}
                                         </button>
                                     ) : (
                                         <button className="btn btn-success" onClick={handleActivate}>
@@ -270,7 +300,7 @@ const AdminUserView = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Activate User
+                                            {t('admin.usersUI.view.activateUser')}
                                         </button>
                                     )}
                                     <button className="btn btn-info" onClick={handleSendResetPassword}>
@@ -278,7 +308,7 @@ const AdminUserView = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Send Reset Password Link
+                                        {t('admin.usersUI.view.sendResetPassword')}
                                     </button>
                                     <button className="btn btn-danger" onClick={handleDelete}>
                                         <i className="ki-duotone ki-trash fs-3 me-2">
@@ -288,47 +318,47 @@ const AdminUserView = () => {
                                             <span className="path4"></span>
                                             <span className="path5"></span>
                                         </i>
-                                        Delete User
+                                        {t('admin.usersUI.view.deleteUser')}
                                     </button>
                                 </div>
 
                                 <div className="separator my-7"></div>
 
                                 <div>
-                                    <h4 className="fw-bold mb-4">Terminal Metrics</h4>
+                                    <h4 className="fw-bold mb-4">{t('admin.usersUI.view.terminalMetrics')}</h4>
                                     <div className="d-flex flex-column gap-3">
                                         <div className="d-flex justify-content-between text-gray-600 fs-7">
-                                            <span>Total Terminals</span>
+                                            <span>{t('admin.usersUI.view.totalTerminals')}</span>
                                             <span className="fw-bold text-gray-900">
                                                 {statistics.total_terminals ?? 0}
                                             </span>
                                         </div>
                                         <div className="d-flex justify-content-between text-gray-600 fs-7">
-                                            <span>Online</span>
+                                            <span>{t('admin.usersUI.view.online')}</span>
                                             <span className="fw-bold text-success">
                                                 {statistics.online_terminals ?? 0}
                                             </span>
                                         </div>
                                         <div className="d-flex justify-content-between text-gray-600 fs-7">
-                                            <span>Offline</span>
+                                            <span>{t('admin.usersUI.view.offline')}</span>
                                             <span className="fw-bold text-warning">
                                                 {statistics.offline_terminals ?? 0}
                                             </span>
                                         </div>
                                         <div className="d-flex justify-content-between text-gray-600 fs-7">
-                                            <span>Terminal Groups</span>
+                                            <span>{t('admin.usersUI.view.terminalGroups')}</span>
                                             <span className="fw-bold text-gray-900">
                                                 {statistics.terminal_groups ?? 0}
                                             </span>
                                         </div>
                                         <div className="d-flex justify-content-between text-gray-600 fs-7">
-                                            <span>User Groups</span>
+                                            <span>{t('admin.usersUI.view.userGroups')}</span>
                                             <span className="fw-bold text-gray-900">
                                                 {statistics.user_groups ?? 0}
                                             </span>
                                         </div>
                                         <div className="d-flex justify-content-between text-gray-600 fs-7">
-                                            <span>Attachments</span>
+                                            <span>{t('admin.usersUI.view.attachments')}</span>
                                             <span className="fw-bold text-gray-900">
                                                 {statistics.attachments ?? 0}
                                             </span>
@@ -338,7 +368,7 @@ const AdminUserView = () => {
 
                                 {user.roles && user.roles.length > 0 && (
                                     <div className="mt-9">
-                                        <h4 className="fw-bold mb-4">Roles</h4>
+                                        <h4 className="fw-bold mb-4">{t('admin.usersUI.view.roles')}</h4>
                                         <div className="d-flex flex-wrap gap-2">
                                             {user.roles.map((role) => (
                                                 <span key={role.id || role.name} className="badge badge-light-info">
@@ -353,36 +383,36 @@ const AdminUserView = () => {
 
                                 <div className="d-flex flex-column gap-3 text-gray-600 fs-7">
                                     <div className="d-flex justify-content-between">
-                                        <span>User ID</span>
+                                        <span>{t('admin.usersUI.view.userId')}</span>
                                         <span className="fw-bold text-gray-900">{user.id}</span>
                                     </div>
                                     {user.user_name && (
                                         <div className="d-flex justify-content-between">
-                                            <span>Username</span>
+                                            <span>{t('admin.usersUI.view.username')}</span>
                                             <span className="fw-bold text-gray-900">{user.user_name}</span>
                                         </div>
                                     )}
                                     {user.merchant_id && (
                                         <div className="d-flex justify-content-between">
-                                            <span>Merchant ID</span>
+                                            <span>{t('admin.usersUI.view.merchantId')}</span>
                                             <span className="fw-bold text-gray-900">{user.merchant_id}</span>
                                         </div>
                                     )}
                                     {user.branch_id && (
                                         <div className="d-flex justify-content-between">
-                                            <span>Branch ID</span>
+                                            <span>{t('admin.usersUI.view.branchId')}</span>
                                             <span className="fw-bold text-gray-900">{user.branch_id}</span>
                                         </div>
                                     )}
                                     <div className="d-flex justify-content-between">
-                                        <span>Created At</span>
+                                        <span>{t('admin.usersUI.view.createdAt')}</span>
                                         <span className="fw-bold text-gray-900">
                                             {new Date(user.created_at).toLocaleString()}
                                         </span>
                                     </div>
                                     {user.updated_at && (
                                         <div className="d-flex justify-content-between">
-                                            <span>Last Updated</span>
+                                            <span>{t('admin.usersUI.view.lastUpdated')}</span>
                                             <span className="fw-bold text-gray-900">
                                                 {new Date(user.updated_at).toLocaleString()}
                                             </span>

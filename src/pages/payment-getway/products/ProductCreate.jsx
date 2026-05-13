@@ -1,16 +1,19 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { createProduct, mapProductFormsToApiPayload } from '../../../services/serviceProductsService';
 import axios from '../../../utils/axiosConfig';
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
+import ServiceModel from '../../../services/ServiceModel';
 import { getPartnersSelect } from '../../../services/adminPartnersService';
 import SearchableDropdown from '../../../common/filters/SearchableDropdown';
 import MobileFormsBuilder from '../../../common/MobileFormsBuilder';
 
 const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { setTitle, setBreadcrumbs } = useToolbar();
@@ -111,12 +114,12 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                 const serviceData = response.data.data?.data || response.data.data || response.data;
                 applyServicePayload(serviceData);
             } else {
-                toast.error('Service not found');
+                toast.error(t('admin.paymentGetway.productServiceNotFound'));
                 navigate('/admin/services');
             }
         } catch (error) {
             console.error('Error loading service:', error);
-            toast.error('Failed to load service details');
+            toast.error(t('admin.paymentGetway.productFailedLoadServiceDetails'));
             navigate('/admin/services');
         } finally {
             setLoadingService(false);
@@ -135,11 +138,11 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                     const serviceData = response.data.data?.data || response.data.data || response.data;
                     applyServicePayload(serviceData);
                 } else {
-                    toast.error('Service not found');
+                    toast.error(t('admin.paymentGetway.productServiceNotFound'));
                 }
             } catch (error) {
                 console.error('Error loading service:', error);
-                toast.error('Failed to load service details');
+                toast.error(t('admin.paymentGetway.productFailedLoadServiceDetails'));
             } finally {
                 setLoadingSelectedService(false);
             }
@@ -238,7 +241,7 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                     setServicePickOptions(
                         list.map((s) => ({
                             value: s.id,
-                            label: s.service_name_en || s.service_name_ar || s.service_name || s.id,
+                            label: ServiceModel.displayName(s) || s.id,
                             ...s,
                         }))
                     );
@@ -256,14 +259,14 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
     );
 
     useEffect(() => {
-        setTitle('Create Product');
+        setTitle(t('admin.paymentGetway.productCreateTitle'));
         const createPath = serviceId ? `/admin/service-products/create?service_id=${serviceId}` : '/admin/service-products/create';
         setBreadcrumbs([
-            { label: 'Home', path: '/admin' },
-            { label: 'Service Products', path: '/admin/service-products' },
-            { label: 'Create Product', path: createPath, active: true },
+            { label: t('admin.paymentGetway.breadcrumbsHome'), path: '/admin' },
+            { label: t('admin.paymentGetway.breadcrumbsServiceProducts'), path: '/admin/service-products' },
+            { label: t('admin.paymentGetway.productCreateTitle'), path: createPath, active: true },
         ]);
-    }, [setTitle, setBreadcrumbs, serviceId]);
+    }, [setTitle, setBreadcrumbs, serviceId, t]);
 
     useEffect(() => {
         if (serviceId) {
@@ -278,7 +281,7 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
         e.preventDefault();
 
         if (!formData.service_id) {
-            toast.error('Please select a service');
+            toast.error(t('admin.paymentGetway.productPleaseSelectService'));
             return;
         }
 
@@ -289,14 +292,14 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                 forms: mapProductFormsToApiPayload(productForms),
             });
             if (result.success) {
-                toast.success('Product created successfully');
+                toast.success(t('admin.paymentGetway.productCreatedSuccessfully'));
                 const sid = service?.id || serviceId;
                 navigate(sid ? `/admin/services/${sid}` : '/admin/services');
             } else {
-                toast.error(result.error || 'Failed to create product');
+                toast.error(result.error || t('admin.paymentGetway.productFailedCreate'));
             }
         } catch (error) {
-            toast.error('Failed to create product');
+            toast.error(t('admin.paymentGetway.productFailedCreate'));
         } finally {
             setSubmitting(false);
         }
@@ -403,7 +406,7 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
     };
 
     const serviceLabel = useMemo(
-        () => formData?.name?.en?.trim() || formData?.name?.ar?.trim() || 'Live Form Preview',
+        () => formData?.name?.en?.trim() || formData?.name?.ar?.trim() || t('admin.paymentGetway.liveFormPreview'),
         [formData?.name?.en, formData?.name?.ar]
     );
 
@@ -416,7 +419,7 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                     </h3>
                 </div>
                 <div className="card-body">
-                    <p className="text-muted mb-4">Loading service details…</p>
+                    <p className="text-muted mb-4">{t('admin.paymentGetway.productLoadingServiceDetails')}</p>
                     <div className="row g-4">
                         <div className="col-md-6">
                             <div className="placeholder-glow mb-2">
@@ -445,7 +448,7 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                     </div>
                     <div className="d-flex justify-content-center mt-5">
                         <div className="spinner-border text-primary" role="status">
-                            <span className="visually-hidden">Loading service...</span>
+                            <span className="visually-hidden">{t('admin.paymentGetway.productLoadingService')}</span>
                         </div>
                     </div>
                 </div>
@@ -457,9 +460,9 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
         return (
             <div className="card">
                 <div className="card-body text-center py-5">
-                    <p className="text-danger">Service not found</p>
+                    <p className="text-danger">{t('admin.paymentGetway.productServiceNotFound')}</p>
                     <button type="button" className="btn btn-primary" onClick={() => navigate('/admin/services')}>
-                        Back to Services
+                        {t('admin.paymentGetway.productBackToServices')}
                     </button>
                 </div>
             </div>
@@ -472,18 +475,18 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                 <div className="col-md-9">
                     <div className="card">
                         <div className="card-header">
-                            <h3 className="card-title">Create Product</h3>
+                            <h3 className="card-title">{t('admin.paymentGetway.productCreateTitle')}</h3>
                         </div>
                         <div className="card-body">
                             {!hasPresetService && (
                                 <>
-                                    <h5 className="mb-4 text-gray-800">Service</h5>
+                                    <h5 className="mb-4 text-gray-800">{t('admin.paymentGetway.viewServiceCol')}</h5>
                                     <p className="text-muted fs-7 mb-4">
-                                        Choose country, partner, and service. Product details below use the same layout whether you open this page with or without a preset service.
+                                        {t('admin.paymentGetway.productCreateServicePickerHint')}
                                     </p>
                                     <div className="row g-4 mb-6">
                                         <div className="col-md-6">
-                                            <label className="form-label required">Country</label>
+                                            <label className="form-label required">{t('admin.paymentGetway.viewCountryCol')}</label>
                                             <SearchableDropdown
                                                 options={countries}
                                                 selected={
@@ -496,11 +499,11 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                                                 onClear={handleCountryClear}
                                                 onOpen={handleCountryOpen}
                                                 loading={loadingCountries}
-                                                placeholder={loadingCountries ? 'Loading countries…' : 'Choose country'}
+                                                placeholder={loadingCountries ? t('admin.paymentGetway.productLoadingCountries') : t('admin.paymentGetway.productChooseCountry')}
                                             />
                                         </div>
                                         <div className="col-md-6">
-                                            <label className="form-label required">Partner</label>
+                                            <label className="form-label required">{t('admin.paymentGetway.viewPartnerCol')}</label>
                                             <SearchableDropdown
                                                 options={partners}
                                                 selected={
@@ -515,16 +518,16 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                                                 loading={loadingPartners}
                                                 placeholder={
                                                     loadingPartners
-                                                        ? 'Loading partners…'
+                                                        ? t('admin.paymentGetway.productLoadingPartners')
                                                         : selectedCountryOption
-                                                          ? 'Choose partner'
-                                                          : 'Select country first'
+                                                          ? t('admin.paymentGetway.productChoosePartner')
+                                                          : t('admin.paymentGetway.cpSelectCountryFirst')
                                                 }
                                                 disabled={!selectedCountryOption}
                                             />
                                         </div>
                                         <div className="col-md-6">
-                                            <label className="form-label required">Service</label>
+                                            <label className="form-label required">{t('admin.paymentGetway.viewServiceCol')}</label>
                                             <SearchableDropdown
                                                 options={servicePickOptions}
                                                 selected={
@@ -539,10 +542,10 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                                                 loading={loadingServicePickOptions || loadingSelectedService}
                                                 placeholder={
                                                     loadingServicePickOptions || loadingSelectedService
-                                                        ? 'Loading services…'
+                                                        ? t('admin.paymentGetway.productLoadingServices')
                                                         : selectedCountryOption && selectedPartnerOption
-                                                          ? 'Choose service'
-                                                          : 'Select partner first'
+                                                          ? t('admin.paymentGetway.productChooseService')
+                                                          : t('admin.paymentGetway.cpSelectParentFirst')
                                                 }
                                                 disabled={!selectedCountryOption || !selectedPartnerOption}
                                             />
@@ -550,43 +553,44 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                                         {loadingSelectedService && (
                                             <div className="col-12 d-flex align-items-center gap-2 text-muted">
                                                 <span className="spinner-border spinner-border-sm" role="status" />
-                                                Loading service…
+                                                {t('admin.paymentGetway.productLoadingService')}
                                             </div>
                                         )}
                                     </div>
-                                    <h5 className="mb-4 text-gray-800">Product</h5>
+                                    <h5 className="mb-4 text-gray-800">{t('admin.paymentGetway.viewProductCol')}</h5>
                                 </>
                             )}
                             {hasPresetService && service && (
                                 <div className="alert alert-info mb-4">
-                                    <strong>Service:</strong> {service.service_name || 'N/A'} ({service.id})
+                                    <strong>{t('admin.paymentGetway.viewServiceCol')}:</strong>{' '}
+                                    {ServiceModel.displayName(service) || t('admin.paymentGetway.na')} ({service.id})
                                 </div>
                             )}
                             <div className="row g-4">
                                 <div className="col-md-6">
-                                    <label className="form-label">Product Name (English)</label>
+                                    <label className="form-label">{t('admin.paymentGetway.productNameEnglish')}</label>
                                     <input
                                         type="text"
                                         className="form-control"
                                         value={formData.name.en}
                                         onChange={(e) => setFormData({ ...formData, name: { ...formData.name, en: e.target.value } })}
-                                        placeholder="e.g. Premium monthly bundle"
+                                        placeholder={t('admin.paymentGetway.productNameEnglishPlaceholder')}
                                     />
                                 </div>
                                 <div className="col-md-6">
-                                    <label className="form-label">Product Name (Arabic)</label>
+                                    <label className="form-label">{t('admin.paymentGetway.productNameArabic')}</label>
                                     <input
                                         type="text"
                                         className="form-control"
                                         value={formData.name.ar}
                                         onChange={(e) => setFormData({ ...formData, name: { ...formData.name, ar: e.target.value } })}
                                         dir="rtl"
-                                        placeholder="اسم المنتج بالعربية"
+                                        placeholder={t('admin.paymentGetway.productNameArabicPlaceholder')}
                                     />
                                 </div>
 
                                 <div className="col-md-6">
-                                    <label className="form-label">Description (English)</label>
+                                    <label className="form-label">{t('admin.paymentGetway.productDescriptionEnglish')}</label>
                                     <textarea
                                         className="form-control"
                                         rows={4}
@@ -597,11 +601,11 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                                                 description: { ...formData.description, en: e.target.value },
                                             })
                                         }
-                                        placeholder="Short description shown to users (English)"
+                                        placeholder={t('admin.paymentGetway.productDescriptionEnglishPlaceholder')}
                                     />
                                 </div>
                                 <div className="col-md-6">
-                                    <label className="form-label">Description (Arabic)</label>
+                                    <label className="form-label">{t('admin.paymentGetway.productDescriptionArabic')}</label>
                                     <textarea
                                         className="form-control"
                                         rows={4}
@@ -613,12 +617,12 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                                             })
                                         }
                                         dir="rtl"
-                                        placeholder="وصف المنتج بالعربية"
+                                        placeholder={t('admin.paymentGetway.productDescriptionArabicPlaceholder')}
                                     />
                                 </div>
 
                                 <div className="col-md-6">
-                                    <label className="form-label fw-semibold">Service Sub Category</label>
+                                    <label className="form-label fw-semibold">{t('admin.paymentGetway.productServiceSubCategory')}</label>
                                     <SearchableDropdown
                                         options={subCategories}
                                         selected={
@@ -633,17 +637,17 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                                         loading={loadingSubCategories}
                                         placeholder={
                                             loadingSubCategories
-                                                ? 'Loading sub-categories…'
+                                                ? t('admin.paymentGetway.productLoadingSubCategories')
                                                 : service?.category_id
-                                                  ? 'Select sub category'
-                                                  : 'Select a service first'
+                                                  ? t('admin.paymentGetway.productSelectSubCategory')
+                                                  : t('admin.paymentGetway.productSelectServiceFirst')
                                         }
                                         disabled={!service?.category_id}
                                     />
                                 </div>
 
                                 <div className="col-md-6">
-                                    <label className="form-label">Status</label>
+                                    <label className="form-label">{t('admin.paymentGetway.status')}</label>
                                     <div className="form-check form-switch">
                                         <input
                                             className="form-check-input"
@@ -651,11 +655,11 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                                             checked={!!formData.status}
                                             onChange={(e) => setFormData({ ...formData, status: e.target.checked })}
                                         />
-                                        <label className="form-check-label">{formData.status ? 'Active' : 'Inactive'}</label>
+                                        <label className="form-check-label">{formData.status ? t('admin.common.active') : t('admin.common.inactive')}</label>
                                     </div>
                                 </div>
                                 <div className="col-md-6">
-                                    <label className="form-label">Service UUID</label>
+                                    <label className="form-label">{t('admin.paymentGetway.serviceUuid')}</label>
                                     <input
                                         type="text"
                                         className="form-control text-break"
@@ -663,9 +667,9 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                                         readOnly
                                         disabled
                                         style={{ backgroundColor: '#f5f5f5', cursor: 'not-allowed' }}
-                                        placeholder="—"
+                                        placeholder={t('admin.paymentGetway.dash')}
                                     />
-                                    <small className="text-muted">Linked service primary key (read-only)</small>
+                                    <small className="text-muted">{t('admin.paymentGetway.linkedServicePrimaryKeyReadOnly')}</small>
                                 </div>
                             </div>
                         </div>
@@ -675,7 +679,7 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                     <div className="card card-flush">
                         <div className="card-header">
                             <div className="card-title">
-                                <h3>Product Image</h3>
+                                <h3>{t('admin.paymentGetway.productImage')}</h3>
                             </div>
                         </div>
                         <div className="card-body text-center pt-0">
@@ -720,7 +724,7 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                                     </label>
                                 </div>
                             </div>
-                            <div className="text-muted fs-7">Upload product image</div>
+                            <div className="text-muted fs-7">{t('admin.paymentGetway.uploadProductImage')}</div>
                         </div>
                     </div>
                 </div>
@@ -740,7 +744,7 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                             className="btn btn-light-primary"
                             onClick={() => mobileFormsBuilderRef.current?.addForm?.()}
                         >
-                            <i className="la la-plus" /> Add Form
+                            <i className="la la-plus" /> {t('admin.paymentGetway.addForm')}
                         </button>
                         <button type="button" className="btn btn-primary" onClick={() => mobileFormsBuilderRef.current?.openPreview?.()}>
                             <i className="ki-duotone ki-eye fs-2">
@@ -748,21 +752,21 @@ const ProductCreate = ({ serviceId: serviceIdProp, onCancel }) => {
                                 <span className="path2" />
                                 <span className="path3" />
                             </i>
-                            Preview the Process
+                            {t('admin.paymentGetway.previewProcess')}
                         </button>
                         <button
                             type="button"
                             className="btn btn-light"
                             onClick={() => (typeof onCancel === 'function' ? onCancel() : navigate('/admin/services'))}
                         >
-                            Cancel
+                            {t('admin.common.cancel')}
                         </button>
                         <button
                             type="submit"
                             className="btn btn-primary"
                             disabled={submitting || !formData.service_id}
                         >
-                            {submitting ? 'Creating...' : 'Create Product'}
+                            {submitting ? t('admin.paymentGetway.creating') : t('admin.paymentGetway.productCreateTitle')}
                         </button>
                     </div>
                 </div>

@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from '../../../utils/axiosConfig';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS, AUTH_SERVICE_BASE } from '../../../utils/constants';
 import IPhoneMockup from '../../../common/IPhoneMockup';
 import { FIELD_TYPES } from '../../../common/MobileFormsBuilder';
 import { resolveBackendAssetUrl } from '../../../utils/assetUrl';
+import ServiceModel from '../../../services/ServiceModel';
 
 const ensureAbsoluteUrl = (base, value) => {
     if (!value || typeof value !== 'string') return null;
@@ -148,17 +150,6 @@ const getFieldOptions = (field) => {
         }
     }
     return [];
-};
-
-const resolveServiceName = (service) => {
-    if (service?.service_name_en || service?.service_name_ar) {
-        return service.service_name_en || service.service_name_ar || service.id || 'N/A';
-    }
-    if (service?.service_name_text) return service.service_name_text;
-    if (service?.service_name && typeof service.service_name === 'object') {
-        return service.service_name.en || service.service_name.ar || service.id || 'N/A';
-    }
-    return service?.service_name || service?.id || 'N/A';
 };
 
 const getProductDisplayName = (product) =>
@@ -469,6 +460,7 @@ function LiveRoleFields({ roleMap = {}, onFieldChange, values, errors = {} }) {
  * Full catalog flow inside one phone: services app list → products → live interactive form (no side panel, no debug JSON).
  */
 const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => {
+    const { t } = useTranslation();
     const [step, setStep] = useState('services');
     const [previewServices, setPreviewServices] = useState([]);
     const [loadingServices, setLoadingServices] = useState(false);
@@ -531,12 +523,12 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                 setPreviewServices(Array.isArray(catalogServices) ? catalogServices : []);
             } else {
                 setPreviewServices([]);
-                toast.error(response.data?.message || 'Failed to load services');
+                toast.error(response.data?.message || t('admin.paymentGetway.svcShowFailedLoad'));
             }
         } catch (error) {
             console.error(error);
             setPreviewServices([]);
-            toast.error(error.response?.data?.message || 'Failed to load services');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.svcShowFailedLoad'));
         } finally {
             setLoadingServices(false);
         }
@@ -609,7 +601,7 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
         });
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
-            toast.error('Please fill in all required fields.');
+            toast.error(t('admin.paymentGetway.svcWizardPleaseFillRequired'));
             return;
         }
         setFieldErrors({});
@@ -620,11 +612,11 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
             const nextHasUrl = Boolean(nextForm?.form_url?.trim());
             if (nextForm && nextHasUrl) {
                 setActiveFormIndex(nextIndex);
-                toast.success('Saved. Continue with the next section.');
+                toast.success(t('admin.paymentGetway.catalogSavedContinue'));
                 return;
             }
             setFormSubmitCompleted(true);
-            toast.success('Form submitted successfully.');
+            toast.success(t('admin.paymentGetway.cpImportFormSubmittedSuccess'));
             return;
         }
 
@@ -674,10 +666,10 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                 [fk]: {
                     ...(prev[fk] || {}),
                     loading: false,
-                    fetchError: error.response?.data?.message || 'Failed to process form request.',
+                    fetchError: error.response?.data?.message || t('admin.paymentGetway.catalogFailedProcessForm'),
                 },
             }));
-            toast.error(error.response?.data?.message || 'Failed to process form request.');
+            toast.error(error.response?.data?.message || t('admin.paymentGetway.catalogFailedProcessForm'));
         } finally {
             setProcessingForm(false);
         }
@@ -736,9 +728,9 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
 
     const headerTitle =
         step === 'services'
-            ? 'Services'
+            ? t('admin.paymentGetway.svcWizardServices')
             : step === 'products'
-              ? resolveServiceName(selectedService)
+              ? ServiceModel.displayName(selectedService)
               : getProductDisplayName(selectedProduct);
 
     const formHasCatalogFields =
@@ -764,14 +756,14 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                 return (
                     <div className="d-flex flex-column align-items-center justify-content-center py-15 px-4" style={{ minHeight: 280 }}>
                         <span className="spinner-border text-primary mb-3" role="status" />
-                        <span className="text-muted fs-7">Loading…</span>
+                        <span className="text-muted fs-7">{t('admin.paymentGetway.cpLoading')}</span>
                     </div>
                 );
             }
             if (previewServices.length === 0) {
                 return (
                     <div className="text-center text-muted fs-7 py-15 px-4">
-                        No services match your filters.
+                        {t('admin.paymentGetway.catalogNoServicesMatchFilters')}
                     </div>
                 );
             }
@@ -799,11 +791,11 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                                         className="fw-bold text-primary bg-light-primary w-100 h-100 d-flex align-items-center justify-content-center"
                                         style={{ fontSize: 16 }}
                                     >
-                                        {resolveServiceName(service).charAt(0).toUpperCase()}
+                                        {(ServiceModel.displayName(service) || '?').charAt(0).toUpperCase()}
                                     </span>
                                 )}
                             </div>
-                            <div style={appTileLabelStyle}>{resolveServiceName(service)}</div>
+                            <div style={appTileLabelStyle}>{ServiceModel.displayName(service)}</div>
                             {/* {service.service_id ? (
                                 <div style={appTileMetaStyle} title={service.service_id}>
                                     {service.service_id}
@@ -820,12 +812,12 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                 return (
                     <div className="d-flex flex-column align-items-center justify-content-center py-15 px-4" style={{ minHeight: 280 }}>
                         <span className="spinner-border text-primary mb-3" role="status" />
-                        <span className="text-muted fs-7">Loading products…</span>
+                        <span className="text-muted fs-7">{t('admin.paymentGetway.catalogLoadingProducts')}</span>
                     </div>
                 );
             }
             if (products.length === 0) {
-                return <div className="text-center text-muted fs-7 py-15 px-4">No products for this service.</div>;
+                return <div className="text-center text-muted fs-7 py-15 px-4">{t('admin.paymentGetway.catalogNoProductsForService')}</div>;
             }
             return (
                 <div style={appGridStyle}>
@@ -873,14 +865,14 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
             return (
                 <div className="d-flex flex-column align-items-center justify-content-center py-15 px-4" style={{ minHeight: 280 }}>
                     <span className="spinner-border text-primary mb-3" role="status" />
-                    <span className="text-muted fs-7">Loading form…</span>
+                    <span className="text-muted fs-7">{t('admin.paymentGetway.catalogLoadingForm')}</span>
                 </div>
             );
         }
         if (!activeForm || (!getFormFields(activeForm).length && !Object.keys(activeDynamicFormState?.fieldRoles || {}).length)) {
             return (
                 <div className="text-center text-muted fs-7 py-15 px-4">
-                    {forms.length === 0 ? 'No forms for this product.' : 'This form has no fields yet.'}
+                    {forms.length === 0 ? t('admin.paymentGetway.catalogNoFormsForProduct') : t('admin.paymentGetway.catalogFormNoFieldsYet')}
                 </div>
             );
         }
@@ -911,9 +903,9 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                         </i>
                     </div>
                     <div className="fw-bold text-gray-900 mb-1" style={{ fontSize: 16 }}>
-                        Submitted
+                        {t('admin.paymentGetway.cpImportSubmitted')}
                     </div>
-                    <div className="text-muted fs-7 mb-0">Your answers were sent successfully.</div>
+                    <div className="text-muted fs-7 mb-0">{t('admin.paymentGetway.catalogAnswersSentSuccessfully')}</div>
                 </div>
             );
         }
@@ -921,7 +913,7 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
         return (
             <>
                 {activeDynamicFormState?.loading ? (
-                    <div className="alert alert-info py-2 mb-3">Loading form configuration...</div>
+                    <div className="alert alert-info py-2 mb-3">{t('admin.paymentGetway.catalogLoadingFormConfiguration')}</div>
                 ) : null}
                 {activeDynamicFormState?.fetchError ? (
                     <div className="alert alert-warning py-2 mb-3">{activeDynamicFormState.fetchError}</div>
@@ -949,7 +941,7 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                                         : { background: '#fff', color: '#374151', borderColor: '#e5e7eb' }),
                                 }}
                             >
-                                {getFormDisplayName(f) || `Form ${idx + 1}`}
+                                {getFormDisplayName(f) || t('admin.paymentGetway.catalogFormWithIndex', { index: idx + 1 })}
                             </button>
                         ))}
                     </div>
@@ -1002,7 +994,7 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                                         </div>
                                     ) : (
                                         <div className="text-muted" style={{ fontSize: 12 }}>
-                                            No details available.
+                                            {t('admin.paymentGetway.catalogNoDetailsAvailable')}
                                         </div>
                                     )}
                                 </div>
@@ -1020,7 +1012,7 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
 
                 <div className="bg-white rounded-3 p-3 shadow-sm" style={{ border: '1px solid rgba(0,0,0,0.06)' }}>
                     <div className="text-muted fs-8 mb-2 text-uppercase" style={{ letterSpacing: 0.4 }}>
-                        {activeDynamicFormState?.screenId || getFormDisplayName(activeForm) || 'Service form'}
+                        {activeDynamicFormState?.screenId || getFormDisplayName(activeForm) || t('admin.paymentGetway.catalogServiceForm')}
                     </div>
                     {formHasCatalogFields && !useDynamicScreen ? (
                         <LiveCatalogFormFields
@@ -1048,8 +1040,8 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
             <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: 420 }}>
                 <div className="modal-content border-0 shadow-lg">
                     <div className="modal-header border-bottom-0 pb-0">
-                        <h5 className="modal-title">Catalog preview</h5>
-                        <button type="button" className="btn-close" onClick={onHide} aria-label="Close" />
+                        <h5 className="modal-title">{t('admin.paymentGetway.catalogPreviewTitle')}</h5>
+                        <button type="button" className="btn-close" onClick={onHide} aria-label={t('admin.common.close')} />
                     </div>
                     <div className="modal-body pt-2 pb-5 d-flex justify-content-center">
                         <IPhoneMockup screenWidth={340} frameColor="#141414">
@@ -1060,7 +1052,7 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                                             type="button"
                                             className="btn btn-icon btn-sm btn-light"
                                             onClick={handleBack}
-                                            aria-label="Back"
+                                            aria-label={t('admin.common.back')}
                                         >
                                             <i className="ki-duotone ki-arrow-left fs-2">
                                                 <span className="path1" />
@@ -1081,9 +1073,9 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                                             {headerTitle}
                                         </div>
                                         <div className="text-muted" style={{ fontSize: 11 }}>
-                                            {step === 'services' && 'Choose a service'}
-                                            {step === 'products' && 'Choose a product'}
-                                            {step === 'form' && (formSubmitCompleted ? 'Submitted' : 'Fill & submit')}
+                                            {step === 'services' && t('admin.paymentGetway.catalogChooseService')}
+                                            {step === 'products' && t('admin.paymentGetway.catalogChooseProduct')}
+                                            {step === 'form' && (formSubmitCompleted ? t('admin.paymentGetway.cpImportSubmitted') : t('admin.paymentGetway.catalogFillSubmit'))}
                                         </div>
                                     </div>
                                 </div>
@@ -1111,7 +1103,7 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                                                 }}
                                             >
                                                 <button type="button" className="btn btn-primary btn-sm w-100" onClick={handleFormDone}>
-                                                    Done
+                                                    {t('admin.common.done')}
                                                 </button>
                                             </div>
                                         </>
@@ -1146,16 +1138,16 @@ const ServicesCatalogPreviewModal = ({ show, onHide, listQueryParams = {} }) => 
                                                 }}
                                             >
                                                 <button type="button" className="btn btn-light btn-sm flex-grow-1" onClick={handleBack} disabled={processingForm}>
-                                                    {cancelAction?.action_label || 'Cancel'}
+                                                    {cancelAction?.action_label || t('admin.common.cancel')}
                                                 </button>
                                                 <button type="submit" className="btn btn-primary btn-sm flex-grow-1" disabled={processingForm}>
                                                     {processingForm ? (
                                                         <>
                                                             <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
-                                                            Processing...
+                                                            {t('admin.paymentGetway.processing')}
                                                         </>
                                                     ) : (
-                                                        primaryAction?.action_label || 'Process'
+                                                        primaryAction?.action_label || t('admin.common.process')
                                                     )}
                                                 </button>
                                             </div>
