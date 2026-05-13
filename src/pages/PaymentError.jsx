@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CircleAlert, Home, Loader2, RotateCcw } from 'lucide-react';
 import { apiGet } from '../utils/apiUtils';
@@ -7,11 +8,11 @@ import { PaymentCheckoutFooter, PaymentCheckoutHeader } from '../components/paym
 import '../components/payment-links/PaymentLinkRedirect.css';
 import './PaymentError.css';
 
-const linkErrMessage = (res) => {
+const linkErrMessage = (res, t) => {
     if (typeof res.error === 'string' && res.error) return res.error;
     const d = res.details;
     if (d?.message) return d.message;
-    return 'Could not load payment details.';
+    return t('paymentCheckout.errorPage.couldNotLoadDetails');
 };
 
 /**
@@ -19,6 +20,7 @@ const linkErrMessage = (res) => {
  * Legacy `/payments/error` without uuid still renders a generic message.
  */
 const PaymentError = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { lang, uuid } = useParams();
     const [loading, setLoading] = useState(!!uuid?.trim());
@@ -40,19 +42,19 @@ const PaymentError = () => {
                 );
                 if (cancelled) return;
                 if (!res.success) {
-                    setLoadError(linkErrMessage(res));
+                    setLoadError(linkErrMessage(res, t));
                     setLoading(false);
                     return;
                 }
                 const root = res.data;
                 if (root?.success === false) {
-                    setLoadError(root?.message || 'Payment link not found.');
+                    setLoadError(root?.message || t('paymentCheckout.errorPage.paymentLinkNotFound'));
                     setLoading(false);
                     return;
                 }
                 setLinkData(root?.data ?? null);
             } catch (e) {
-                if (!cancelled) setLoadError(e?.message || linkErrMessage({}));
+                if (!cancelled) setLoadError(e?.message || linkErrMessage({}, t));
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -60,7 +62,7 @@ const PaymentError = () => {
         return () => {
             cancelled = true;
         };
-    }, [uuidTrim]);
+    }, [uuidTrim, t]);
 
     const isAlreadyPaid = useMemo(() => {
         if (!linkData) return false;
@@ -72,12 +74,12 @@ const PaymentError = () => {
     const reason = useMemo(() => {
         if (loadError && !linkData) return loadError;
         if (isAlreadyPaid) {
-            return 'This payment link has already been paid. You cannot pay again using this link.';
+            return t('paymentCheckout.errorPage.alreadyPaidReason');
         }
         const m = linkData?.metadata;
         const meta = typeof m === 'object' && m !== null && !Array.isArray(m) ? m : {};
-        return meta.payment_last_error || 'The payment could not be completed.';
-    }, [linkData, loadError, isAlreadyPaid]);
+        return meta.payment_last_error || t('paymentCheckout.errorPage.paymentIncompleteFallback');
+    }, [linkData, loadError, isAlreadyPaid, t]);
 
     const amount = linkData?.amount != null && linkData.amount !== '' ? String(linkData.amount) : '';
     const currency = linkData?.currency_code || '';
@@ -102,7 +104,7 @@ const PaymentError = () => {
                     <div className="pe-page pe-result-page">
                         <div className="pe-card pe-card--loading" style={{ textAlign: 'center' }}>
                             <Loader2 size={40} className="pe-loading-spin" style={{ marginBottom: 16 }} />
-                            <p style={{ margin: 0, color: '#6b7280' }}>Loading…</p>
+                            <p style={{ margin: 0, color: '#6b7280' }}>{t('paymentCheckout.errorPage.loading')}</p>
                         </div>
                     </div>
                 </main>
@@ -124,15 +126,15 @@ const PaymentError = () => {
                             <div className="pe-header-text">
                                 {isAlreadyPaid ? (
                                     <>
-                                        <h1>Already paid</h1>
-                                        <h2>This link is closed</h2>
-                                        <p>This payment has already been completed. You cannot pay again with this link.</p>
+                                        <h1>{t('paymentCheckout.errorPage.alreadyPaidTitle')}</h1>
+                                        <h2>{t('paymentCheckout.errorPage.alreadyPaidSubtitle')}</h2>
+                                        <p>{t('paymentCheckout.errorPage.alreadyPaidBody')}</p>
                                     </>
                                 ) : (
                                     <>
-                                        <h1>Payment Failed</h1>
-                                        <h2>Something went wrong</h2>
-                                        <p>The payment could not be completed. Please try again.</p>
+                                        <h1>{t('paymentCheckout.errorPage.failedTitle')}</h1>
+                                        <h2>{t('paymentCheckout.errorPage.failedSubtitle')}</h2>
+                                        <p>{t('paymentCheckout.errorPage.failedBody')}</p>
                                     </>
                                 )}
                             </div>
@@ -142,25 +144,29 @@ const PaymentError = () => {
 
                         <div className="pe-content">
                             <div className="pe-note">
-                                <strong>Details</strong>
+                                <strong>{t('paymentCheckout.errorPage.details')}</strong>
                                 <p className="pe-reason-text">{reason}</p>
                             </div>
                             {!uuidTrim ? (
                                 <div className="pe-note pe-note-muted">
-                                    Open this page from your payment link to see merchant and amount details.
+                                    {t('paymentCheckout.errorPage.openFromLinkHint')}
                                 </div>
                             ) : null}
                             {(linkData?.merchant_name || formattedAmount) ? (
                                 <div className="pe-details">
                                     {linkData?.merchant_name ? (
                                         <div className="pe-detail-row">
-                                            <span>Merchant</span>
+                                            <span>{t('paymentCheckout.errorPage.merchant')}</span>
                                             <strong>{linkData.merchant_name}</strong>
                                         </div>
                                     ) : null}
                                     {formattedAmount ? (
                                         <div className="pe-detail-row">
-                                            <span>{isAlreadyPaid ? 'Amount paid' : 'Attempted amount'}</span>
+                                            <span>
+                                                {isAlreadyPaid
+                                                    ? t('paymentCheckout.errorPage.amountPaid')
+                                                    : t('paymentCheckout.errorPage.attemptedAmount')}
+                                            </span>
                                             <strong>{formattedAmount}</strong>
                                         </div>
                                     ) : null}
@@ -168,8 +174,8 @@ const PaymentError = () => {
                             ) : null}
                             <div className="pe-note pe-note-muted">
                                 {isAlreadyPaid
-                                    ? 'If you need help or a copy of your receipt, contact the merchant.'
-                                    : 'Please verify details and try again from the payment link page.'}
+                                    ? t('paymentCheckout.errorPage.helpAlreadyPaid')
+                                    : t('paymentCheckout.errorPage.tryAgainHint')}
                             </div>
                         </div>
 
@@ -177,7 +183,7 @@ const PaymentError = () => {
                             {isAlreadyPaid ? (
                                 <Link className="pe-btn pe-btn-primary" to={homePath}>
                                     <Home size={16} />
-                                    Back to Home
+                                    {t('paymentCheckout.errorPage.backToHome')}
                                 </Link>
                             ) : (
                                 <>
@@ -187,11 +193,11 @@ const PaymentError = () => {
                                         onClick={() => (uuidTrim ? navigate(checkoutPath) : navigate(-1))}
                                     >
                                         <RotateCcw size={16} />
-                                        Try Again
+                                        {t('paymentCheckout.errorPage.tryAgain')}
                                     </button>
                                     <Link className="pe-btn pe-btn-primary" to={homePath}>
                                         <Home size={16} />
-                                        Back to Home
+                                        {t('paymentCheckout.errorPage.backToHome')}
                                     </Link>
                                 </>
                             )}

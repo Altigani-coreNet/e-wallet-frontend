@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import QRCode from 'react-qr-code';
-import html2pdf from 'html2pdf.js';
 import LoadingSpinner from '../common/LoadingSpinner';
 import { SOFTPOS_ENDPOINTS } from '../../utils/constants';
 
@@ -86,12 +85,28 @@ const LineItemThumb = ({ src, name }) => {
 const PosLinkInvoicePrint = () => {
     const { t } = useTranslation();
     const { uuid } = useParams();
-    const receiptPdfRef = useRef(null);
-    const pdfBusyRef = useRef(false);
     const [invoice, setInvoice] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [pdfBusy, setPdfBusy] = useState(false);
+    /** QR module size scales down on phones so the receipt fits without scrolling. */
+    const [qrPixelSize, setQrPixelSize] = useState(168);
+
+    useEffect(() => {
+        const updateQrSize = () => {
+            if (typeof window === 'undefined') return;
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const shortest = Math.min(w, h);
+            // vmin-like scaling: smaller QR when the phone is short (less vertical scroll)
+            const tightVertical = h < 720;
+            const factor = tightVertical ? 0.26 : 0.32;
+            const next = Math.round(Math.min(176, Math.max(88, shortest * factor)));
+            setQrPixelSize(next);
+        };
+        updateQrSize();
+        window.addEventListener('resize', updateQrSize);
+        return () => window.removeEventListener('resize', updateQrSize);
+    }, []);
 
     useEffect(() => {
         const fetchInvoice = async () => {
@@ -122,41 +137,6 @@ const PosLinkInvoicePrint = () => {
     const handlePrint = () => {
         window.print();
     };
-
-    const handleDownloadPdf = useCallback(async () => {
-        const el = receiptPdfRef.current;
-        if (!el || pdfBusyRef.current) return;
-        pdfBusyRef.current = true;
-        setPdfBusy(true);
-        try {
-            const { widthMm, heightMm } = buildReceiptPdfPageSizeMm(el);
-            const options = {
-                margin: RECEIPT_PDF_MARGIN_MM,
-                filename: `invoice-${formatInvoicePdfFilenameDate(invoice)}.pdf`,
-                image: { type: 'jpeg', quality: 0.95 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: false,
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                },
-                jsPDF: {
-                    unit: 'mm',
-                    format: [widthMm, heightMm],
-                    orientation: 'portrait',
-                },
-                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
-            };
-            await html2pdf().set(options).from(el).save();
-        } catch (e) {
-            console.error('PDF generation failed:', e);
-            window.alert(t('posInvoicePrint.errors.pdfGenerationFailed'));
-        } finally {
-            pdfBusyRef.current = false;
-            setPdfBusy(false);
-        }
-    }, [invoice, t]);
 
     const getCurrencySymbol = () => {
         return invoice?.currency_symbol || invoice?.currency_object?.symbol || '$';
@@ -211,17 +191,12 @@ const PosLinkInvoicePrint = () => {
         <div className="invoice-container">
             {/* Print Controls */}
             <div
-                className="no-print mb-4 d-flex justify-content-end align-items-center flex-wrap gap-2"
-                style={{ padding: '20px' }}
+                className="no-print link-invoice-actions d-flex justify-content-end align-items-center flex-wrap gap-2"
+                style={{
+                    padding: 'clamp(8px, 2.5vw, 16px)',
+                    paddingBottom: 'max(clamp(8px, 2.5vw, 16px), env(safe-area-inset-bottom, 0px))',
+                }}
             >
-                <button
-                    type="button"
-                    className="btn btn-outline-primary"
-                    onClick={() => void handleDownloadPdf()}
-                    disabled={pdfBusy}
-                >
-                    {pdfBusy ? t('posInvoicePrint.actions.generatingPdf') : t('posInvoicePrint.actions.downloadPdf')}
-                </button>
                 <button type="button" className="btn btn-primary" onClick={handlePrint}>
                     <i className="ki-duotone ki-printer fs-2">
                         <span className="path1"></span>
@@ -234,7 +209,7 @@ const PosLinkInvoicePrint = () => {
 
             {/* Receipt Content */}
             <div className="receipt-wrapper">
-                <div ref={receiptPdfRef} className="receipt-content">
+                <div className="receipt-content">
                     {/* Logo & Branding */}
                     <div className="receipt-header">
                         <div className="receipt-logo">
@@ -492,7 +467,7 @@ const PosLinkInvoicePrint = () => {
                                 value={
                                     invoice.invoice_url || (typeof window !== 'undefined' ? window.location.href : '')
                                 }
-                                size={200}
+                                size={qrPixelSize}
                                 level="M"
                             />
                         </div>
@@ -513,51 +488,81 @@ const PosLinkInvoicePrint = () => {
 
             {/* Styles */}
             <style>{`
+                /* Fluid type/spacing from smallest viewport edge (phones / merchant tablets) */
                 .invoice-container {
+                    min-height: 100dvh;
                     min-height: 100vh;
                     background: #f5f5f5;
+                    box-sizing: border-box;
+                    overflow-x: hidden;
+                }
+                @media screen {
+                    .invoice-container {
+                        zoom: 0.9;
+                    }
+                }
+                .link-invoice-actions {
+                    margin-bottom: clamp(2px, 0.8vmin, 10px);
                 }
                 .receipt-wrapper {
                     display: flex;
                     justify-content: center;
-                    padding: 20px;
+                    padding: clamp(2px, 0.9vmin, 10px);
+                    padding-left: max(clamp(2px, 0.9vmin, 10px), env(safe-area-inset-left, 0px));
+                    padding-right: max(clamp(2px, 0.9vmin, 10px), env(safe-area-inset-right, 0px));
+                    padding-bottom: max(clamp(4px, 1.2vmin, 12px), env(safe-area-inset-bottom, 0px));
+                    box-sizing: border-box;
                 }
                 .receipt-content {
                     width: 100%;
-                    max-width: 400px;
+                    max-width: min(400px, 100%);
                     background: white;
-                    padding: 25px 20px;
+                    padding: clamp(8px, 2vmin, 14px) clamp(8px, 2.2vmin, 14px);
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+                    font-size: clamp(10px, 2.5vmin, 13px);
+                    line-height: 1.28;
                     color: #000;
                     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    box-sizing: border-box;
                 }
-                .receipt-header { text-align: center; margin-bottom: 20px; }
-                .receipt-logo { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 15px; }
-                .logo-icon { width: 40px; height: 40px; background: #000; color: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; }
-                .logo-text { font-size: 24px; font-weight: 600; color: #000; letter-spacing: -0.5px; }
+                .receipt-header { text-align: center; margin-bottom: clamp(4px, 1.2vmin, 10px); }
+                .receipt-logo { display: flex; align-items: center; justify-content: center; gap: clamp(3px, 1vmin, 7px); margin-bottom: clamp(2px, 1vmin, 8px); }
+                .logo-icon {
+                    width: clamp(24px, 7.5vmin, 36px);
+                    height: clamp(24px, 7.5vmin, 36px);
+                    background: #000;
+                    color: white;
+                    border-radius: 6px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-weight: bold;
+                    font-size: clamp(11px, 3.2vmin, 16px);
+                }
+                .logo-text { font-size: clamp(14px, 3.8vmin, 22px); font-weight: 600; color: #000; letter-spacing: -0.5px; }
                 .merchant-info { text-align: center; margin-bottom: 0; }
-                .merchant-name { font-size: 18px; font-weight: bold; color: #000; margin-bottom: 0; }
+                .merchant-name { font-size: clamp(12px, 3.4vmin, 17px); font-weight: bold; color: #000; margin-bottom: 0; }
                 .merchant-address-section { text-align: center; margin-bottom: 0; }
-                .merchant-address { font-size: 13px; color: #666; line-height: 1.5; }
+                .merchant-address { font-size: clamp(10px, 2.6vmin, 12px); color: #666; line-height: 1.3; }
                 .customer-info { margin-bottom: 0; margin-top: 0; }
-                .customer-line { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
+                .customer-line { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: clamp(10px, 2.6vmin, 12px); }
                 .customer-label { font-weight: 600; color: #000; }
                 .customer-value { color: #333; }
-                .transaction-info-top { margin-bottom: 15px; margin-top: 0; }
-                .transaction-line { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
+                .transaction-info-top { margin-bottom: clamp(4px, 1.2vmin, 10px); margin-top: 0; }
+                .transaction-line { display: flex; justify-content: space-between; margin-bottom: 2px; font-size: clamp(10px, 2.6vmin, 12px); }
                 .transaction-label { font-weight: 600; color: #000; }
                 .transaction-value { color: #333; }
-                .order-summary-title { text-align: center; font-size: 16px; font-weight: bold; color: #000; margin-bottom: 12px; }
-                .items-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 13px; }
+                .order-summary-title { text-align: center; font-size: clamp(11px, 3vmin, 15px); font-weight: bold; color: #000; margin-bottom: clamp(4px, 1.2vmin, 8px); }
+                .items-table { width: 100%; border-collapse: collapse; margin-bottom: clamp(4px, 1.2vmin, 10px); font-size: clamp(10px, 2.55vmin, 12px); }
                 .items-table thead { border-bottom: 1px solid #ddd; }
-                .items-table th { text-align: left; padding: 8px 4px; font-weight: 600; color: #000; font-size: 12px; }
-                .items-table td { padding: 6px 4px; color: #333; vertical-align: middle; }
-                .item-thumb-col { width: 48px; padding: 6px 4px 6px 0 !important; }
-                .item-thumb-cell { width: 48px; padding: 6px 4px 6px 0 !important; vertical-align: middle; }
+                .items-table th { text-align: left; padding: 3px 2px; font-weight: 600; color: #000; font-size: clamp(9px, 2.45vmin, 11px); }
+                .items-table td { padding: 3px 2px; color: #333; vertical-align: middle; }
+                .item-thumb-col { width: clamp(36px, 10vmin, 44px); padding: 3px 2px 3px 0 !important; }
+                .item-thumb-cell { width: clamp(36px, 10vmin, 44px); padding: 3px 2px 3px 0 !important; vertical-align: middle; }
                 .line-item-thumb {
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 6px;
+                    width: clamp(28px, 8vmin, 36px);
+                    height: clamp(28px, 8vmin, 36px);
+                    border-radius: 4px;
                     flex-shrink: 0;
                     border: 1px solid #e8e8e8;
                     background: #f4f4f4;
@@ -570,61 +575,66 @@ const PosLinkInvoicePrint = () => {
                     object-fit: cover;
                     padding: 0;
                 }
-                .line-item-thumb--placeholder { color: #888; font-size: 14px; font-weight: 600; }
+                .line-item-thumb--placeholder { color: #888; font-size: clamp(10px, 2.7vmin, 13px); font-weight: 600; }
                 .line-item-thumb-letter { line-height: 1; }
                 .item-name { text-align: left; }
                 .item-qty { text-align: center; }
                 .item-price { text-align: right; }
                 .item-total { text-align: right; font-weight: 600; }
                 .link-invoice-totals {
-                    margin: 12px 0 8px 0;
-                    padding-top: 4px;
+                    margin: clamp(4px, 1.2vmin, 8px) 0 clamp(2px, 0.8vmin, 6px) 0;
+                    padding-top: 1px;
                 }
                 .link-invoice-totals .total-row {
                     display: flex;
                     justify-content: space-between;
-                    margin-bottom: 6px;
-                    font-size: 14px;
+                    margin-bottom: 3px;
+                    font-size: clamp(11px, 2.75vmin, 13px);
                     color: #000;
                 }
                 .link-invoice-totals .total-final {
                     font-weight: 700;
-                    font-size: 15px;
-                    margin-top: 8px;
-                    padding-top: 8px;
+                    font-size: clamp(12px, 2.9vmin, 14px);
+                    margin-top: 4px;
+                    padding-top: 4px;
                     border-top: 1px solid #ddd;
                 }
-                .receipt-divider { border-top: 2px dashed #ccc; margin: 12px 0; }
-                .qr-section { text-align: center; padding-top: 10px; }
-                .qr-title { font-size: 13px; font-weight: 600; color: #000; margin-bottom: 12px; }
-                .qr-code { display: flex; justify-content: center; margin-bottom: 12px; }
-                .qr-code svg { width: 160px; height: 160px; border: 1px solid #e0e0e0; display: block; }
-                .qr-instruction { font-size: 12px; color: #666; }
-                .transaction-details-footer { margin-top: 15px; }
+                .receipt-divider { border-top: 2px dashed #ccc; margin: clamp(4px, 1.2vmin, 8px) 0; }
+                .qr-section { text-align: center; padding-top: clamp(2px, 0.9vmin, 6px); }
+                .qr-title { font-size: clamp(10px, 2.6vmin, 12px); font-weight: 600; color: #000; margin-bottom: clamp(4px, 1.2vmin, 8px); }
+                .qr-code { display: flex; justify-content: center; margin-bottom: clamp(4px, 1.2vmin, 8px); }
+                .qr-code svg { max-width: 100%; height: auto !important; border: 1px solid #e0e0e0; display: block; }
+                .qr-instruction { font-size: clamp(9px, 2.45vmin, 11px); color: #666; line-height: 1.3; }
+                .transaction-details-footer { margin-top: clamp(5px, 1.5vmin, 12px); }
                 .transaction-details-title {
                     text-align: center;
-                    font-size: 13px;
+                    font-size: clamp(10px, 2.6vmin, 12px);
                     font-weight: 600;
-                    margin-bottom: 8px;
+                    margin-bottom: 4px;
                 }
-                .detail-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
-                .detail-label { font-weight: 600; color: #000; }
-                .detail-value { color: #333; }
-                .thank-you-section { text-align: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e0e0e0; }
-                .thank-you-message { font-size: 15px; font-weight: bold; color: #000; margin-bottom: 8px; }
-                .powered-by { font-size: 12px; color: #999; }
-                .split-payments-section { margin-top: 8px; margin-bottom: 8px; }
-                .split-payments-title { font-size: 12px; font-weight: 600; color: #000; margin-bottom: 6px; text-align: center; }
-                .split-payment-row { display: flex; justify-content: space-between; font-size: 12px; color: #333; margin-bottom: 4px; }
+                .detail-row { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 3px; font-size: clamp(10px, 2.6vmin, 12px); }
+                .detail-label { font-weight: 600; color: #000; flex-shrink: 0; }
+                .detail-value { color: #333; text-align: right; word-break: break-word; }
+                .thank-you-section { text-align: center; margin-top: clamp(6px, 1.6vmin, 12px); padding-top: clamp(5px, 1.4vmin, 10px); border-top: 1px solid #e0e0e0; }
+                .thank-you-message { font-size: clamp(11px, 3vmin, 14px); font-weight: bold; color: #000; margin-bottom: 4px; }
+                .powered-by { font-size: clamp(9px, 2.45vmin, 11px); color: #999; }
+                .split-payments-section { margin-top: 4px; margin-bottom: 4px; }
+                .split-payments-title { font-size: clamp(9px, 2.45vmin, 11px); font-weight: 600; color: #000; margin-bottom: 3px; text-align: center; }
+                .split-payment-row { display: flex; justify-content: space-between; font-size: clamp(9px, 2.45vmin, 11px); color: #333; margin-bottom: 2px; gap: 6px; }
                 .split-payment-unpaid { color: #666; font-style: italic; }
-                .due-amount-section { text-align: center; margin-top: 8px; margin-bottom: 8px; }
-                .due-amount-label { font-size: 13px; font-weight: 600; color: #d32f2f; margin-bottom: 4px; }
-                .due-amount-value { font-size: 16px; font-weight: 700; color: #d32f2f; }
+                .due-amount-section { text-align: center; margin-top: 4px; margin-bottom: 4px; }
+                .due-amount-label { font-size: clamp(10px, 2.6vmin, 12px); font-weight: 600; color: #d32f2f; margin-bottom: 2px; }
+                .due-amount-value { font-size: clamp(12px, 3.4vmin, 15px); font-weight: 700; color: #d32f2f; }
+                @media (max-height: 720px) {
+                    .receipt-content { font-size: clamp(9px, 2.35vmin, 12px); padding: clamp(6px, 1.6vmin, 12px); }
+                    .receipt-divider { margin: clamp(3px, 1vmin, 6px) 0; }
+                    .thank-you-section { margin-top: clamp(4px, 1.2vmin, 10px); padding-top: clamp(4px, 1vmin, 8px); }
+                }
                 @media print {
                     .no-print { display: none !important; }
-                    .invoice-container { background: white !important; }
+                    .invoice-container { background: white !important; min-height: auto !important; zoom: 1 !important; }
                     .receipt-wrapper { padding: 0 !important; }
-                    .receipt-content { max-width: 100% !important; box-shadow: none !important; padding: 20px !important; }
+                    .receipt-content { max-width: 100% !important; box-shadow: none !important; padding: 10px 12px !important; font-size: 11px !important; }
                     @page { margin: 1cm; size: 80mm auto; }
                 }
             `}</style>
