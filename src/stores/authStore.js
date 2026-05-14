@@ -64,22 +64,24 @@ const useAuthStore = create(
                     
                     // Handle AuthService response format: { status: true, data: { user, token, token_type } }
                     if (response.data.status === true || response.data.success === true) {
-                        const { token, access_token, user, merchant } = response.data.data;
+                        const { token, access_token, user, merchant, onboarding_completed } = response.data.data;
                         const merchantData = extractMerchantData(user, merchant);
                         const authToken = token || access_token; // Support both formats
-                        
-                        // Store in localStorage
+                        // Single source of truth for the routing decision.
+                        const onboardingCompleted =
+                            onboarding_completed
+                            ?? user?.onboarding_completed
+                            ?? !!(merchantData || user?.merchant_id);
+
                         setToken(authToken);
                         setUser(user);
                         if (merchantData) {
                             setMerchant(merchantData);
                         }
                         
-                        // Extract custom_region and regions
                         const customRegion = user?.custom_region === true || user?.custom_regeon === true;
                         const regionsList = Array.isArray(user?.regions) ? user.regions : [];
                         
-                        // Update store
                         set({
                             token: authToken,
                             user,
@@ -94,28 +96,35 @@ const useAuthStore = create(
                             profileError: null,
                         });
 
-                        // Immediately refresh profile to ensure full merchant data is loaded
+                        // Onboarding not done → go straight to step 2. No need to await
+                        // fetchProfile for the routing decision; fire it in the background
+                        // so the store still gets populated.
+                        if (!onboardingCompleted) {
+                            get().fetchProfile().catch(() => {});
+                            return {
+                                success: true,
+                                user,
+                                merchant: null,
+                                onboarding_completed: false,
+                                needsMerchantRegistration: true,
+                            };
+                        }
+
+                        // Onboarding complete → load full merchant data for the dashboard.
                         try {
                             const profileResult = await get().fetchProfile();
-                            // Check if merchant registration is needed
-                            if (profileResult.needsMerchantRegistration) {
-                                return { 
-                                    success: true, 
-                                    user: profileResult.user, 
-                                    merchant: null,
-                                    needsMerchantRegistration: true 
-                                };
-                            }
-                            return profileResult;
+                            return {
+                                ...profileResult,
+                                onboarding_completed: profileResult.onboarding_completed ?? true,
+                            };
                         } catch (profileError) {
                             console.warn('Login profile refresh failed:', profileError);
-                            // Check if user has merchant_id
-                            const hasNoMerchant = !merchantData && (!user?.merchant_id || user?.merchant_id === null);
-                            return { 
-                                success: true, 
-                                user, 
+                            return {
+                                success: true,
+                                user,
                                 merchant: merchantData,
-                                needsMerchantRegistration: hasNoMerchant
+                                onboarding_completed: true,
+                                needsMerchantRegistration: false,
                             };
                         }
                     } else {
@@ -140,9 +149,13 @@ const useAuthStore = create(
                     const response = await axios.post(AUTH_ENDPOINTS.GOOGLE_OAUTH_EXCHANGE, { code });
 
                     if (response.data.status === true || response.data.success === true) {
-                        const { token, access_token, user, merchant } = response.data.data;
+                        const { token, access_token, user, merchant, onboarding_completed } = response.data.data;
                         const merchantData = extractMerchantData(user, merchant);
                         const authToken = token || access_token;
+                        const onboardingCompleted =
+                            onboarding_completed
+                            ?? user?.onboarding_completed
+                            ?? !!(merchantData || user?.merchant_id);
 
                         setToken(authToken);
                         setUser(user);
@@ -167,25 +180,31 @@ const useAuthStore = create(
                             profileError: null,
                         });
 
+                        if (!onboardingCompleted) {
+                            get().fetchProfile().catch(() => {});
+                            return {
+                                success: true,
+                                user,
+                                merchant: null,
+                                onboarding_completed: false,
+                                needsMerchantRegistration: true,
+                            };
+                        }
+
                         try {
                             const profileResult = await get().fetchProfile();
-                            if (profileResult.needsMerchantRegistration) {
-                                return {
-                                    success: true,
-                                    user: profileResult.user,
-                                    merchant: null,
-                                    needsMerchantRegistration: true,
-                                };
-                            }
-                            return profileResult;
+                            return {
+                                ...profileResult,
+                                onboarding_completed: profileResult.onboarding_completed ?? true,
+                            };
                         } catch (profileError) {
                             console.warn('Google OAuth profile refresh failed:', profileError);
-                            const hasNoMerchant = !merchantData && (!user?.merchant_id || user?.merchant_id === null);
                             return {
                                 success: true,
                                 user,
                                 merchant: merchantData,
-                                needsMerchantRegistration: hasNoMerchant,
+                                onboarding_completed: true,
+                                needsMerchantRegistration: false,
                             };
                         }
                     }
@@ -348,12 +367,16 @@ const useAuthStore = create(
                     
                     // Handle AuthService response format
                     if (response.data.status === true || response.data.success === true) {
-                        const { user, merchant } = response.data.data;
+                        const { user, merchant, onboarding_completed } = response.data.data;
                         const merchantData = extractMerchantData(user, merchant);
-                        
-                        // Check if user has no merchant (merchant_id is null)
-                        const hasNoMerchant = !merchantData && (!user?.merchant_id || user?.merchant_id === null);
-                        
+
+                        // Single source of truth: prefer top-level flag, then user.onboarding_completed,
+                        // and finally derive from merchant_id (legacy fallback).
+                        const onboardingCompleted =
+                            onboarding_completed
+                            ?? user?.onboarding_completed
+                            ?? !!(merchantData || user?.merchant_id);
+
                         setUser(user);
                         if (merchantData) {
                             setMerchant(merchantData);
@@ -375,12 +398,13 @@ const useAuthStore = create(
                             profileLoaded: true,
                             profileError: null,
                         });
-                        
-                        return { 
-                            success: true, 
-                            user, 
+
+                        return {
+                            success: true,
+                            user,
                             merchant: merchantData,
-                            needsMerchantRegistration: hasNoMerchant // Flag to indicate merchant registration is needed
+                            onboarding_completed: onboardingCompleted,
+                            needsMerchantRegistration: !onboardingCompleted,
                         };
                     } else {
                         throw new Error(response.data.message || 'Failed to fetch profile');

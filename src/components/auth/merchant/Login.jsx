@@ -125,9 +125,10 @@ const Login = () => {
     const [formErrors, setFormErrors] = useState({});
     const [showPassword, setShowPassword] = useState(false);
     const googleReturnHandledRef = useRef(false);
-    // Prevents the isAuthenticated watcher from navigating while Google OAuth
-    // exchange + fetchProfile is still in-flight (merchant not yet populated).
-    const googleOAuthInProgressRef = useRef(false);
+    // Blocks the isAuthenticated watcher from navigating while any explicit login
+    // flow (form login or Google OAuth) is in-flight and fetchProfile hasn't yet
+    // populated `merchant` in the store.
+    const authFlowInProgressRef = useRef(false);
 
     useEffect(() => {
         if (getStaleAuthResolution(isAuthenticated) === 'clear') {
@@ -141,8 +142,8 @@ const Login = () => {
             return;
         }
 
-        // Let the Google OAuth handler navigate after fetchProfile completes.
-        if (googleOAuthInProgressRef.current) return;
+        // Let the active login handler do the navigation once fetchProfile is done.
+        if (authFlowInProgressRef.current) return;
 
         if (isAuthenticated) {
             const lng = getStoredOrDefaultLocale();
@@ -190,7 +191,7 @@ const Login = () => {
         navigate('/login', { replace: true });
 
         (async () => {
-            googleOAuthInProgressRef.current = true;
+            authFlowInProgressRef.current = true;
             try {
                 const result = await exchangeGoogleOAuthCode(code);
                 toast.success(t('auth.login.success'));
@@ -206,7 +207,7 @@ const Login = () => {
                 const msg = getMerchantLoginErrorMessage(err, null, t('auth.login.googleOAuthInvalidCode'));
                 toast.error(msg);
             } finally {
-                googleOAuthInProgressRef.current = false;
+                authFlowInProgressRef.current = false;
             }
         })();
     }, [
@@ -244,6 +245,7 @@ const Login = () => {
             return;
         }
 
+        authFlowInProgressRef.current = true;
         try {
             const result = await login({
                 email: formData.email,
@@ -264,6 +266,8 @@ const Login = () => {
             const errorMessage = getMerchantLoginErrorMessage(err, error, t('auth.login.failed'));
             toast.error(errorMessage);
             setFormErrors({ submit: errorMessage });
+        } finally {
+            authFlowInProgressRef.current = false;
         }
     };
 

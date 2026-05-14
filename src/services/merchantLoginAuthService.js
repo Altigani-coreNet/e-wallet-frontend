@@ -40,17 +40,22 @@ export function getStaleAuthResolution(isAuthenticated) {
 }
 
 /**
- * User is signed in but has no merchant record yet (same idea as `fetchProfile` hasNoMerchant).
- * Without `user` we cannot infer server-side merchant_id, so this returns false.
+ * Single rule: user must complete onboarding (step 2) when the backend says so.
+ * Prefers the explicit `onboarding_completed` flag from the user object; only
+ * falls back to inferring from merchant/merchant_id when the flag is missing
+ * (older API responses or non-authenticated callers).
  * @param {object|null|undefined} user
  * @param {object|null|undefined} merchant
  * @returns {boolean}
  */
 export function shouldSendToMerchantOnboarding(user, merchant) {
+    if (user && typeof user === 'object' && user.onboarding_completed !== undefined) {
+        return user.onboarding_completed === false;
+    }
     const m = merchant || user?.merchant || null;
     if (m) return false;
     if (!user || typeof user !== 'object') return false;
-    return !user.merchant_id || user.merchant_id === null;
+    return !user.merchant_id;
 }
 
 /**
@@ -120,13 +125,18 @@ export function getPostLoginNavigation({ loginResult, currentMerchant, locale })
     const user = loginResult?.user;
     const merchantFromResponse = loginResult?.merchant || loginResult?.user?.merchant || currentMerchant;
 
-    if (
-        loginResult?.needsMerchantRegistration ||
-        shouldSendToMerchantOnboarding(user, merchantFromResponse)
-    ) {
+    // ONE rule for the onboarding decision. authStore guarantees that
+    // `loginResult.onboarding_completed` is set to a boolean after login/exchange.
+    const onboardingCompleted =
+        loginResult?.onboarding_completed
+        ?? user?.onboarding_completed
+        ?? !shouldSendToMerchantOnboarding(user, merchantFromResponse);
+
+    if (onboardingCompleted === false) {
         return { path: '/merchant/register?step=2', replace: true };
     }
 
+    // Onboarding done → standard routing based on merchant status / scopes.
     const status = merchantFromResponse?.status ? String(merchantFromResponse.status).toLowerCase() : null;
 
     if (status !== 'approved') {
