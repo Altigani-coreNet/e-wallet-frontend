@@ -40,13 +40,31 @@ export function getStaleAuthResolution(isAuthenticated) {
 }
 
 /**
- * Already-authenticated users: send to dashboard if approved, else profile.
+ * User is signed in but has no merchant record yet (same idea as `fetchProfile` hasNoMerchant).
+ * Without `user` we cannot infer server-side merchant_id, so this returns false.
+ * @param {object|null|undefined} user
+ * @param {object|null|undefined} merchant
+ * @returns {boolean}
+ */
+export function shouldSendToMerchantOnboarding(user, merchant) {
+    const m = merchant || user?.merchant || null;
+    if (m) return false;
+    if (!user || typeof user !== 'object') return false;
+    return !user.merchant_id || user.merchant_id === null;
+}
+
+/**
+ * Already-authenticated users on login: onboarding if no merchant, else dashboard when approved, else profile.
  * @param {object|null|undefined} merchant
  * @param {string} [locale]
+ * @param {object|null|undefined} [user]
  * @returns {string}
  */
-export function getAuthenticatedSessionPath(merchant, locale) {
+export function getAuthenticatedSessionPath(merchant, locale, user = null) {
     const lng = locale ?? getStoredOrDefaultLocale();
+    if (shouldSendToMerchantOnboarding(user, merchant)) {
+        return '/merchant/register?step=2';
+    }
     const status = merchant?.status ? String(merchant.status).toLowerCase() : null;
     if (status === 'approved') {
         return buildPrefixedPath('/merchant/dashboard', lng);
@@ -99,11 +117,16 @@ function computeScopeDestinations(merchantFromResponse) {
 export function getPostLoginNavigation({ loginResult, currentMerchant, locale }) {
     const lng = locale ?? getStoredOrDefaultLocale();
 
-    if (loginResult?.needsMerchantRegistration) {
+    const user = loginResult?.user;
+    const merchantFromResponse = loginResult?.merchant || loginResult?.user?.merchant || currentMerchant;
+
+    if (
+        loginResult?.needsMerchantRegistration ||
+        shouldSendToMerchantOnboarding(user, merchantFromResponse)
+    ) {
         return { path: '/merchant/register?step=2', replace: true };
     }
 
-    const merchantFromResponse = loginResult?.merchant || loginResult?.user?.merchant || currentMerchant;
     const status = merchantFromResponse?.status ? String(merchantFromResponse.status).toLowerCase() : null;
 
     if (status !== 'approved') {

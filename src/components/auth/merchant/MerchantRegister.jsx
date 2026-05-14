@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AUTH_ENDPOINTS, AUTH_SERVICE_BASE } from '../../../utils/constants';
 import { validateRegistrationPhone } from '../../../utils/registrationPhoneRules';
+import { getToken } from '../../../utils/api';
 import useRegistrationStore from '../../../stores/useRegistrationStore';
 import useAuthStore from '../../../stores/authStore';
 
@@ -59,6 +60,7 @@ const MerchantRegister = () => {
         registrationUser,
         currentStep: storeCurrentStep,
         formData: storeFormData,
+        setRegistrationToken,
         updateRegistrationProgress,
         saveProgress: saveProgressToStore,
         loadProgress: loadProgressFromStore,
@@ -257,10 +259,10 @@ const MerchantRegister = () => {
             setFormData(userFormData);
             setCurrentStep(2);
             
-            // Save token to registration store
+            // Seed registrationToken so step-2 API call has a valid Bearer token
             if (loggedInToken) {
+                setRegistrationToken(loggedInToken, loggedInUser);
                 updateRegistrationProgress(2, userFormData);
-                // Also save to registration store
                 const progressData = {
                     currentStep: 2,
                     formData: userFormData,
@@ -646,8 +648,9 @@ const MerchantRegister = () => {
                 console.log('Accept terms:', formData.accept_terms);
                 console.log('=====================================');
                 
-                // Get bearer token from localStorage or sessionStorage
-                const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+                // Prefer registrationToken (set during Google OAuth or normal registration),
+                // fall back to the auth-store token stored under 'admin_dashboard_token'
+                const token = registrationToken || getToken();
                 
                 const response = await fetch(AUTH_ENDPOINTS.REGISTER_MERCHANT, {
                     method: 'POST',
@@ -740,8 +743,9 @@ const MerchantRegister = () => {
             // Business Documents step - Send continuation email before going to Completion
             setIsLoading(true);
             try {
-                // Get bearer token from localStorage or sessionStorage
-                const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+                // Prefer registrationToken (set during Google OAuth or normal registration),
+                // fall back to the auth-store token stored under 'admin_dashboard_token'
+                const token = registrationToken || getToken();
                 
                 const response = await fetch(AUTH_ENDPOINTS.REGISTER_SEND_CONTINUATION_EMAIL_MERCHANT, {
                     method: 'GET',

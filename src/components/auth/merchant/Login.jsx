@@ -114,7 +114,8 @@ const LoginLangToggle = () => {
 const Login = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { login, exchangeGoogleOAuthCode, loading, error, isAuthenticated, clearError, merchant } = useAuthStore();
+    const { login, exchangeGoogleOAuthCode, loading, error, isAuthenticated, clearError, merchant, user } =
+        useAuthStore();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -139,9 +140,9 @@ const Login = () => {
 
         if (isAuthenticated) {
             const lng = getStoredOrDefaultLocale();
-            navigate(getAuthenticatedSessionPath(merchant, lng), { replace: true });
+            navigate(getAuthenticatedSessionPath(merchant, lng, user), { replace: true });
         }
-    }, [isAuthenticated, merchant, navigate]);
+    }, [isAuthenticated, merchant, user, navigate]);
 
     useEffect(() => {
         return () => clearError();
@@ -243,9 +244,10 @@ const Login = () => {
             toast.success(t('auth.login.success'));
 
             const lng = getStoredOrDefaultLocale();
+            const currentMerchant = useAuthStore.getState().merchant;
             const { path, replace } = getPostLoginNavigation({
                 loginResult: result,
-                currentMerchant: merchant,
+                currentMerchant,
                 locale: lng,
             });
             navigate(path, { replace });
