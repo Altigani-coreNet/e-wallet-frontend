@@ -132,6 +132,76 @@ const useAuthStore = create(
                 }
             },
 
+            /** Complete login after Google OAuth callback (one-time `code` from query string). */
+            exchangeGoogleOAuthCode: async (code) => {
+                set({ loading: true, error: null });
+
+                try {
+                    const response = await axios.post(AUTH_ENDPOINTS.GOOGLE_OAUTH_EXCHANGE, { code });
+
+                    if (response.data.status === true || response.data.success === true) {
+                        const { token, access_token, user, merchant } = response.data.data;
+                        const merchantData = extractMerchantData(user, merchant);
+                        const authToken = token || access_token;
+
+                        setToken(authToken);
+                        setUser(user);
+                        if (merchantData) {
+                            setMerchant(merchantData);
+                        }
+
+                        const customRegion = user?.custom_region === true || user?.custom_regeon === true;
+                        const regionsList = Array.isArray(user?.regions) ? user.regions : [];
+
+                        set({
+                            token: authToken,
+                            user,
+                            merchant: merchantData,
+                            roles: Array.isArray(user?.roles) ? user.roles : [],
+                            permissions: Array.isArray(user?.permissions) ? user.permissions : [],
+                            custom_region: customRegion,
+                            regions: regionsList,
+                            isAuthenticated: true,
+                            error: null,
+                            profileLoaded: false,
+                            profileError: null,
+                        });
+
+                        try {
+                            const profileResult = await get().fetchProfile();
+                            if (profileResult.needsMerchantRegistration) {
+                                return {
+                                    success: true,
+                                    user: profileResult.user,
+                                    merchant: null,
+                                    needsMerchantRegistration: true,
+                                };
+                            }
+                            return profileResult;
+                        } catch (profileError) {
+                            console.warn('Google OAuth profile refresh failed:', profileError);
+                            const hasNoMerchant = !merchantData && (!user?.merchant_id || user?.merchant_id === null);
+                            return {
+                                success: true,
+                                user,
+                                merchant: merchantData,
+                                needsMerchantRegistration: hasNoMerchant,
+                            };
+                        }
+                    }
+
+                    throw new Error(response.data.message || 'Google sign-in failed');
+                } catch (error) {
+                    const errorMessage = error.response?.data?.message || error.message || 'Google sign-in failed';
+                    set({
+                        loading: false,
+                        error: errorMessage,
+                        isAuthenticated: false,
+                    });
+                    throw error;
+                }
+            },
+
             // Register action
             register: async (userData) => {
                 set({ loading: true, error: null });

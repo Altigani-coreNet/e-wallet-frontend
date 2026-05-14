@@ -25,6 +25,10 @@ export const AUTH_ENDPOINTS = {
     // Authentication
     REGISTER: `${AUTH_SERVICE_BASE}/register`,
     LOGIN: `${AUTH_SERVICE_BASE}/login`,
+    /** OAuth (Socialite): implemented on SoftPos — use same host as `SOFTPOS_API_BASE` when they differ. */
+    GOOGLE_OAUTH_REDIRECT: `${SOFTPOS_API_BASE}/oauth/google`,
+    /** OAuth: SPA exchanges one-time code from callback redirect for API token. */
+    GOOGLE_OAUTH_EXCHANGE: `${SOFTPOS_API_BASE}/oauth/google/exchange`,
     LOGOUT: `${AUTH_SERVICE_BASE}/logout`,
     FORCE_LOGOUT: `${AUTH_SERVICE_BASE}/force-logout`,
     

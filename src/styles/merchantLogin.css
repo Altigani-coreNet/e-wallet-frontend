@@ -1,0 +1,880 @@
+/*
+ * Merchant login — token-driven layout (same mental model as payment success/error).
+ * @see docs/README-PAYMENT-RESULT-LAYOUT.md
+ */
+
+/* Cairo for Arabic — font is already preloaded in index.html */
+html[lang='ar'] .ml-root,
+body.app-i18n-rtl .ml-root {
+    font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+}
+
+.ml-root {
+    position: relative;
+    isolation: isolate;
+    min-height: 100vh;
+    min-height: 100dvh;
+    box-sizing: border-box;
+    font-family: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-text-size-adjust: 100%;
+
+    /* --- Design tokens (edit here to scale type / card / gaps together) --- */
+    --ml-font-base: clamp(14px, 2.8vw, 16px);
+    --ml-font-label: clamp(12px, 2.6vw, 14px);
+    --ml-font-small: clamp(11px, 2.3vw, 13px);
+    --ml-font-title: clamp(18px, 3.8vw, 22px);
+    --ml-font-sub: clamp(13px, 2.8vw, 15px);
+    --ml-font-hero: clamp(26px, 5vw, 38px);
+    --ml-font-feature-title: clamp(14px, 2.6vw, 16px);
+    --ml-font-feature-desc: clamp(12px, 2.3vw, 14px);
+    --ml-font-trust: clamp(11px, 2.2vw, 13px);
+
+    --ml-space-card: clamp(14px, 3.2vw, 22px);
+    --ml-space-gap: clamp(10px, 2.5vw, 16px);
+    --ml-space-section: clamp(14px, 3vw, 22px);
+    --ml-space-shell-x: clamp(12px, 3.5vw, 24px);
+    --ml-space-shell-y: clamp(16px, 4vw, 40px);
+    --ml-space-main-y: clamp(16px, 3.5vw, 28px);
+    --ml-space-main-x: clamp(10px, 3vw, 18px);
+
+    --ml-radius: clamp(12px, 3vw, 16px);
+    --ml-radius-control: clamp(8px, 2vw, 10px);
+
+    font-size: var(--ml-font-base);
+}
+
+.ml-root::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    min-height: 100%;
+    z-index: -1;
+    background-image: url('/login_background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transform: scaleX(-1);
+    pointer-events: none;
+}
+
+@media (max-width: 991.98px) {
+    .ml-root::before {
+        /* Pure-CSS mobile background — no image file */
+        background-image:
+            url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 390 844' preserveAspectRatio='xMidYMid slice'><g stroke='white' stroke-width='1.4' stroke-opacity='0.22' fill='none'><path d='M390 0 C340 80 260 160 200 260 S100 420 60 520 S20 680 -10 844'/><path d='M390 30 C340 110 260 190 200 290 S100 450 60 550 S20 710 -10 844'/><path d='M390 60 C340 140 260 220 200 320 S100 480 60 580 S20 740 -10 844'/><path d='M390 90 C340 170 260 250 200 350 S100 510 60 610 S20 770 -10 844'/><path d='M390 120 C340 200 260 280 200 380 S100 540 60 640 S20 800 -10 844'/><path d='M390 150 C340 230 260 310 200 410 S100 570 60 670 S20 820 -10 844'/><path d='M390 180 C340 260 260 340 200 440 S100 600 60 700 S20 844 -10 844'/><path d='M390 210 C340 290 260 370 200 470 S100 630 60 730'/><path d='M390 240 C340 320 260 400 200 500 S100 660 60 760'/><path d='M390 270 C340 350 260 430 200 530 S100 690 60 790'/><path d='M390 300 C340 380 260 460 200 560 S100 720 60 820'/><path d='M-10 844 C40 760 120 660 180 540 S280 380 320 260 S370 120 390 0'/><path d='M-10 814 C40 730 120 630 180 510 S280 350 320 230 S370 90 390 -30'/><path d='M-10 784 C40 700 120 600 180 480 S280 320 320 200 S370 60 390 -60'/><path d='M-10 754 C40 670 120 570 180 450 S280 290 320 170 S370 30 390 -90'/><path d='M-10 724 C40 640 120 540 180 420 S280 260 320 140 S370 0 390 -120'/><path d='M-10 694 C40 610 120 510 180 390 S280 230 320 110'/><path d='M-10 664 C40 580 120 480 180 360 S280 200 320 80'/><path d='M-10 634 C40 550 120 450 180 330 S280 170 320 50'/></g></svg>"),
+            linear-gradient(160deg, #1e9ed8 0%, #1255c4 35%, #0d3eb5 65%, #0830a0 100%);
+        transform: none;
+        background-size: cover, cover;
+        background-position: center top, center;
+        background-repeat: no-repeat, no-repeat;
+    }
+}
+
+.ml-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+    max-width: min(1280px, calc(100% - clamp(12px, 4vw, 28px)));
+    margin-inline: auto;
+    box-sizing: border-box;
+}
+
+@media (min-width: 992px) {
+    .ml-shell {
+        flex-direction: row;
+    }
+}
+
+.ml-aside {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-width: 0;
+    padding-block: var(--ml-space-shell-y);
+    padding-inline: var(--ml-space-shell-x);
+    color: #fff;
+    font-size: var(--ml-font-base);
+}
+
+.ml-aside-container {
+    box-sizing: border-box;
+    max-width: 34rem;
+    width: min(100%, 34rem);
+    margin-inline: auto;
+    padding-inline: clamp(8px, 2vw, 16px);
+}
+
+@media (min-width: 992px) {
+    .ml-aside {
+        display: flex;
+        flex: 1 1 0;
+        max-width: 52rem;
+        padding-inline-start: clamp(1.5rem, 4vw, 3rem);
+        padding-inline-end: 1.25rem;
+    }
+
+    .ml-aside-container {
+        max-width: 42rem;
+        width: min(100%, 42rem);
+        padding-inline-start: clamp(0.5rem, 1.5vw, 1.25rem);
+        padding-inline-end: 0.5rem;
+    }
+}
+
+.ml-aside-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: var(--ml-space-section);
+}
+
+.ml-brand-logo {
+    display: block;
+    width: auto;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
+
+.ml-brand-logo--aside {
+    height: clamp(30px, 8vw, 36px);
+    max-width: min(100%, 15rem);
+}
+
+.ml-brand-logo--mobile {
+    height: clamp(28px, 7.5vw, 36px);
+    max-width: min(100%, 14rem);
+}
+
+.ml-headline {
+    font-size: var(--ml-font-hero);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: clamp(8px, 2vw, 16px);
+    letter-spacing: -0.02em;
+}
+
+.ml-headline-accent {
+    color: #00d1ff;
+}
+
+.ml-sub {
+    font-size: var(--ml-font-sub);
+    opacity: 0.92;
+    line-height: 1.55;
+    margin-bottom: var(--ml-space-section);
+    max-width: 38rem;
+}
+
+.ml-features {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--ml-space-section);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ml-space-gap);
+}
+
+.ml-feature {
+    display: flex;
+    gap: var(--ml-space-gap);
+    align-items: flex-start;
+}
+
+.ml-feature-icon {
+    flex-shrink: 0;
+    width: clamp(40px, 10vw, 44px);
+    height: clamp(40px, 10vw, 44px);
+    border-radius: 50%;
+    background: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.65);
+    box-shadow: 0 2px 10px rgba(0, 26, 87, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ml-feature-icon-svg {
+    display: block;
+    width: clamp(22px, 5.5vw, 26px);
+    height: clamp(22px, 5.5vw, 26px);
+    color: #0047ab;
+    flex-shrink: 0;
+}
+
+.ml-feature-title {
+    font-weight: 600;
+    font-size: var(--ml-font-feature-title);
+    margin-bottom: clamp(4px, 1vw, 6px);
+}
+
+.ml-feature-desc {
+    font-size: var(--ml-font-feature-desc);
+    opacity: 0.88;
+    line-height: 1.45;
+}
+
+.ml-trust {
+    display: inline-flex;
+    align-items: center;
+    gap: clamp(6px, 1.5vw, 10px);
+    padding: clamp(8px, 1.8vw, 10px) clamp(10px, 2.2vw, 14px);
+    border-radius: var(--ml-radius-control);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(0, 26, 87, 0.25);
+    font-size: var(--ml-font-trust);
+    max-width: 100%;
+}
+
+.ml-trust-icon {
+    color: #00d1ff;
+    font-size: clamp(1rem, 2.8vw, 1.1rem);
+}
+
+.ml-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: var(--ml-space-main-y) var(--ml-space-main-x);
+    padding-bottom: max(var(--ml-space-main-y), env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    row-gap: clamp(12px, 3vw, 20px);
+}
+
+@media (min-width: 992px) {
+    .ml-main {
+        padding: clamp(18px, 2.5vw, 28px) clamp(14px, 2.5vw, 24px);
+        padding-bottom: max(clamp(18px, 2.5vw, 28px), env(safe-area-inset-bottom, 0px));
+        justify-content: center;
+        row-gap: 0;
+    }
+}
+
+.ml-mobile-logo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: min(440px, 100%);
+    margin-inline: auto;
+    box-sizing: border-box;
+    gap: 0.5rem;
+    margin-bottom: clamp(8px, 2vw, 14px);
+}
+
+@media (min-width: 992px) {
+    .ml-mobile-logo {
+        display: none;
+    }
+}
+
+/* desktop-only lang toggle row — sits above the card in ml-main */
+.ml-desktop-lang {
+    display: none;
+    width: 100%;
+    max-width: min(440px, 100%);
+    justify-content: flex-end;
+}
+
+@media (min-width: 992px) {
+    .ml-desktop-lang {
+        display: flex;
+    }
+}
+
+.ml-lang {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 3px;
+}
+
+.ml-lang-btn {
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+.ml-lang-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.ml-lang-btn--active {
+    background: rgba(255, 255, 255, 0.95);
+    color: #0047ab;
+}
+
+.ml-lang-btn--active:hover {
+    background: #fff;
+    color: #0047ab;
+}
+
+.ml-mobile-marketing {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: min(440px, 100%);
+    margin-inline: auto;
+    padding-bottom: max(clamp(8px, 2vw, 14px), env(safe-area-inset-bottom, 0px));
+    gap: clamp(14px, 3.5vw, 22px);
+    box-sizing: border-box;
+}
+
+@media (min-width: 992px) {
+    .ml-mobile-marketing {
+        display: none;
+    }
+}
+
+.ml-features.ml-features--mobile {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+    width: 100%;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.ml-features--mobile .ml-feature {
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: clamp(6px, 1.8vw, 10px);
+    padding-inline: clamp(4px, 1.5vw, 8px);
+}
+
+.ml-features--mobile .ml-feature:not(:last-child) {
+    border-inline-end: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.ml-features--mobile .ml-feature-title {
+    font-size: clamp(11px, 3vw, 13px);
+    line-height: 1.25;
+}
+
+.ml-features--mobile .ml-feature-desc {
+    font-size: clamp(9.5px, 2.6vw, 11px);
+    line-height: 1.35;
+    opacity: 0.92;
+}
+
+.ml-trust.ml-trust--mobile {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    flex-wrap: wrap;
+}
+
+
+.ml-card {
+    width: 100%;
+    max-width: min(440px, 100%);
+    background: #fff;
+    border-radius: var(--ml-radius);
+    box-shadow: 0 24px 48px rgba(0, 26, 87, 0.18);
+    padding: var(--ml-space-card);
+    box-sizing: border-box;
+}
+
+.ml-card-title {
+    font-size: var(--ml-font-title);
+    font-weight: 700;
+    color: #1a1a2e;
+    margin: 0 0 clamp(4px, 1.2vw, 8px);
+    line-height: 1.25;
+}
+
+/* ============================================================
+   MOBILE — fixed-pixel static layout (≤ 991.98 px)
+   All values are intentional fixed px — no clamp / vw / vh.
+   ============================================================ */
+@media (max-width: 991.98px) {
+
+    /* --- shell ------------------------------------------------ */
+    .ml-shell {
+        max-width: 100%;
+    }
+
+    /* --- main column ------------------------------------------ */
+    .ml-main {
+        padding-top: max(env(safe-area-inset-top, 0px), 16px);
+        padding-inline: 18px;
+        padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+        row-gap: 20px;
+        align-items: center;
+    }
+
+    /* --- mobile logo bar -------------------------------------- */
+    .ml-mobile-logo {
+        max-width: 100%;
+        margin-bottom: 0;
+        padding-inline: 0;
+    }
+
+    .ml-brand-logo--mobile {
+        height: 43px;
+        max-width: 190px;
+    }
+
+    /* --- login card ------------------------------------------- */
+    .ml-card {
+        margin-top: 12px;
+        border-radius: 20px;
+        box-shadow: 0 16px 40px rgba(0, 26, 87, 0.22);
+        padding: 24px 22px 20px;
+    }
+
+    .ml-card-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1a1a2e;
+        margin-bottom: 4px;
+    }
+
+    .ml-card-sub {
+        font-size: 13px;
+        margin-bottom: 18px;
+    }
+
+    /* fields */
+    .ml-label {
+        font-size: 13px;
+        margin-bottom: 5px;
+    }
+
+    .ml-input-wrap {
+        margin-bottom: 12px;
+    }
+
+    .ml-field {
+        font-size: 14px;
+        padding-block: 11px;
+        padding-inline: 40px 12px;
+        border-radius: 10px;
+    }
+
+    .ml-input-icon {
+        inset-inline-start: 13px;
+    }
+
+    .ml-password-wrap .ml-field {
+        padding-inline-end: 42px;
+    }
+
+    .ml-password-toggle {
+        inset-inline-end: 10px;
+    }
+
+    /* forgot row */
+    .ml-forgot-row {
+        margin-top: -4px;
+        margin-bottom: 16px;
+    }
+
+    .ml-forgot-row a {
+        font-size: 13px;
+    }
+
+    /* sign-in button */
+    .ml-btn-primary {
+        font-size: 15px;
+        font-weight: 600;
+        padding: 14px 1rem;
+        border-radius: 10px;
+    }
+
+    /* OR divider */
+    .ml-oauth-divider {
+        margin: 14px 0 12px;
+        gap: 10px;
+    }
+
+    .ml-oauth-divider-text {
+        font-size: 12px;
+    }
+
+    /* Google button */
+    .ml-btn-google {
+        font-size: 14px;
+        font-weight: 600;
+        padding: 12px 1rem;
+        border-radius: 10px;
+    }
+
+    .ml-btn-google-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* register link */
+    .ml-footer-reg {
+        font-size: 13px;
+        margin-top: 14px;
+    }
+
+    /* error / alert */
+    .ml-err {
+        font-size: 12px;
+    }
+
+    .ml-alert {
+        font-size: 13px;
+        padding: 10px 13px;
+        margin-bottom: 12px;
+        border-radius: 9px;
+    }
+
+    /* --- mobile marketing block ------------------------------- */
+    .ml-mobile-marketing {
+        margin-top: 0;
+        padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+        gap: 20px;
+        max-width: 100%;
+    }
+
+    /* features row */
+    .ml-features--mobile .ml-feature {
+        gap: 6px;
+        padding-inline: 4px;
+    }
+
+    .ml-features--mobile .ml-feature-icon {
+        width: 34px;
+        height: 34px;
+        background: #fff;
+        border-color: rgba(255, 255, 255, 0.5);
+    }
+
+    .ml-features--mobile .ml-feature-icon-svg {
+        width: 15px;
+        height: 15px;
+        color: #0047ab;
+    }
+
+    .ml-features--mobile .ml-feature-title {
+        font-size: 8.5px;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1.25;
+    }
+
+    .ml-features--mobile .ml-feature-desc {
+        font-size: 7.5px;
+        color: rgba(255, 255, 255, 0.82);
+        opacity: 1;
+        line-height: 1.35;
+    }
+
+    /* trust pill */
+    .ml-trust.ml-trust--mobile {
+        width: 100%;
+        justify-content: flex-start;
+        text-align: start;
+        flex-wrap: nowrap;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        color: rgba(255, 255, 255, 0.95);
+        padding: 9px 13px;
+        gap: 8px;
+        font-size: 9px;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    .ml-trust--mobile .ml-trust-icon {
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.9);
+        flex-shrink: 0;
+    }
+
+    .ml-trust--mobile .ml-trust-text strong {
+        display: block;
+        font-weight: 600;
+        font-size: 10px;
+        color: #fff;
+    }
+
+    .ml-trust--mobile .ml-trust-text {
+        font-size: 9px;
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1.5;
+    }
+}
+
+.ml-card-sub {
+    font-size: var(--ml-font-sub);
+    color: #6b7280;
+    margin: 0 0 clamp(14px, 2.8vw, 22px);
+    line-height: 1.45;
+}
+
+.ml-label {
+    display: block;
+    font-size: var(--ml-font-label);
+    font-weight: 600;
+    color: #0047ab;
+    margin-bottom: clamp(4px, 1vw, 7px);
+}
+
+.ml-input-wrap {
+    position: relative;
+    margin-bottom: clamp(10px, 2.2vw, 14px);
+}
+
+.ml-input-wrap.ml-has-error .ml-field {
+    border-color: #dc3545;
+}
+
+.ml-input-icon {
+    position: absolute;
+    inset-inline-start: clamp(12px, 3vw, 14px);
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    pointer-events: none;
+    display: flex;
+}
+
+.ml-field {
+    width: 100%;
+    border: 1px solid #e5e7eb;
+    border-radius: var(--ml-radius-control);
+    padding-block: clamp(0.55rem, 2vw, 0.7rem);
+    padding-inline: clamp(2.35rem, 6.5vw, 2.65rem) 0.85rem;
+    font-size: var(--ml-font-base);
+    color: #111827;
+    background: #fff;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ml-field:focus {
+    outline: none;
+    border-color: #0047ab;
+    box-shadow: 0 0 0 3px rgba(0, 71, 171, 0.12);
+}
+
+.ml-field::placeholder {
+    color: #9ca3af;
+}
+
+.ml-password-wrap .ml-field {
+    padding-inline-end: clamp(2.4rem, 6vw, 2.75rem);
+}
+
+.ml-password-toggle {
+    position: absolute;
+    inset-inline-end: clamp(8px, 2vw, 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    color: #9ca3af;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.ml-password-toggle:hover {
+    color: #374151;
+    background: #f3f4f6;
+}
+
+.ml-forgot-row {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: clamp(-6px, -0.5vw, -4px);
+    margin-bottom: clamp(12px, 2.5vw, 18px);
+}
+
+.ml-forgot-row a {
+    font-size: var(--ml-font-label);
+    font-weight: 600;
+    color: #0047ab;
+    text-decoration: none;
+}
+
+.ml-forgot-row a:hover {
+    text-decoration: underline;
+}
+
+.ml-btn-primary {
+    width: 100%;
+    border: none;
+    border-radius: var(--ml-radius-control);
+    background: #0047ab;
+    color: #fff;
+    font-weight: 600;
+    font-size: var(--ml-font-base);
+    padding: clamp(0.65rem, 2vw, 0.8rem) 1rem;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.15s;
+}
+
+.ml-btn-primary:hover:not(:disabled) {
+    background: #003a8f;
+}
+
+.ml-btn-primary:disabled {
+    opacity: 0.75;
+    cursor: not-allowed;
+}
+
+.ml-oauth-divider {
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 2vw, 12px);
+    margin: clamp(12px, 2.5vw, 18px) 0 clamp(10px, 2vw, 14px);
+}
+
+.ml-oauth-divider-line {
+    flex: 1;
+    height: 1px;
+    background: #e5e7eb;
+}
+
+.ml-oauth-divider-text {
+    flex-shrink: 0;
+    font-size: var(--ml-font-small);
+    font-weight: 600;
+    color: #9ca3af;
+    text-transform: lowercase;
+}
+
+.ml-btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    width: 100%;
+    margin: 0;
+    padding: clamp(0.6rem, 2vw, 0.72rem) 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: var(--ml-radius-control);
+    background: #fff;
+    color: #1f2937;
+    font-weight: 600;
+    font-size: var(--ml-font-label);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.ml-btn-google:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.ml-btn-google:focus-visible {
+    outline: none;
+    border-color: #0047ab;
+    box-shadow: 0 0 0 3px rgba(0, 71, 171, 0.12);
+}
+
+.ml-btn-google-icon {
+    display: block;
+    width: clamp(18px, 4.5vw, 20px);
+    height: clamp(18px, 4.5vw, 20px);
+    object-fit: contain;
+}
+
+.ml-footer-reg {
+    text-align: center;
+    margin-top: clamp(12px, 2.5vw, 20px);
+    font-size: var(--ml-font-sub);
+    color: #6b7280;
+}
+
+.ml-footer-reg a {
+    color: #0047ab;
+    font-weight: 600;
+    text-decoration: none;
+    margin-inline-start: 0.25rem;
+}
+
+.ml-footer-reg a:hover {
+    text-decoration: underline;
+}
+
+.ml-err {
+    font-size: var(--ml-font-small);
+    color: #dc3545;
+    margin-top: clamp(4px, 1vw, 6px);
+}
+
+.ml-alert {
+    padding: clamp(10px, 2.2vw, 12px) clamp(12px, 2.5vw, 14px);
+    border-radius: var(--ml-radius-control);
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #b91c1c;
+    font-size: var(--ml-font-label);
+    margin-bottom: clamp(10px, 2.2vw, 14px);
+}
+
+/* --- Width: comfortable desktop (optional tighten) ---------- */
+@media (min-width: 901px) {
+    .ml-shell {
+        max-width: min(1320px, calc(100% - clamp(16px, 3vw, 32px)));
+    }
+}
+
+/* ============================================================
+   RTL / Arabic alignment overrides
+   ============================================================ */
+
+/* Forgot password — sits at the inline-end in both directions */
+[dir="rtl"] .ml-forgot-row {
+    justify-content: flex-start;
+}
+
+/* Desktop lang toggle — inline-end of the card column */
+[dir="rtl"] .ml-desktop-lang {
+    justify-content: flex-start;
+}
+
+/* Mobile logo bar — logo on the inline-end side, toggle on inline-start */
+[dir="rtl"] .ml-mobile-logo {
+    flex-direction: row-reverse;
+}
+
+/* Mobile feature columns — reverse column order so reading flows right-to-left */
+[dir="rtl"] .ml-features--mobile {
+    flex-direction: row-reverse;
+}
+
+/* Feature column divider flips to the opposite side */
+[dir="rtl"] .ml-features--mobile .ml-feature:not(:last-child) {
+    border-inline-end: none;
+    border-inline-start: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+/* Trust badge text alignment already uses text-align: start (auto-flips) */
+/* Trust icon stays at inline-start naturally with flex-start */
