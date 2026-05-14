@@ -52,7 +52,7 @@ const MerchantRegister = () => {
     const planIdFromUrl = searchParams.get('plan_id');
     
     // Use auth store to check if user is logged in
-    const { user, merchant, token: authToken, isAuthenticated } = useAuthStore();
+    const { user, merchant, token: authToken, isAuthenticated, fetchProfile } = useAuthStore();
     
     // Use registration store
     const {
@@ -703,6 +703,15 @@ const MerchantRegister = () => {
                 console.log('Merchant registration response:', data);
 
                 if (data.success || data.status) {
+                    // Merchant now exists in DB and user.merchant_id is set. Refresh the
+                    // auth store / localStorage so onboarding_completed flips to true
+                    // and a later visit to /login routes to the dashboard, not back here.
+                    try {
+                        await fetchProfile();
+                    } catch (profileErr) {
+                        console.warn('Profile refresh after merchant create failed:', profileErr);
+                    }
+
                     await Swal.fire({
                         icon: 'success',
                         title: t('auth.common.success'),

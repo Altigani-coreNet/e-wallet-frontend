@@ -126,10 +126,20 @@ body.app-i18n-rtl .ml-root {
 }
 
 .ml-aside-brand {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    gap: 9px;
+    gap: 12px;
+    width: 100%;
     margin-bottom: var(--ml-space-section);
+}
+
+.ml-aside-brand > .ml-brand-logo {
+    justify-self: start;
+}
+
+.ml-aside-brand > .ml-lang {
+    justify-self: end;
 }
 
 .ml-brand-logo {
@@ -256,9 +266,9 @@ body.app-i18n-rtl .ml-root {
 }
 
 .ml-mobile-logo {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    justify-content: space-between;
     width: 100%;
     max-width: min(440px, 100%);
     margin-inline: auto;
@@ -267,23 +277,17 @@ body.app-i18n-rtl .ml-root {
     margin-bottom: clamp(8px, 2vw, 14px);
 }
 
+.ml-mobile-logo > .ml-brand-logo {
+    justify-self: start;
+}
+
+.ml-mobile-logo > .ml-lang {
+    justify-self: end;
+}
+
 @media (min-width: 992px) {
     .ml-mobile-logo {
         display: none;
-    }
-}
-
-/* desktop-only lang toggle row — sits above the card in ml-main */
-.ml-desktop-lang {
-    display: none;
-    width: 100%;
-    max-width: min(440px, 100%);
-    justify-content: flex-end;
-}
-
-@media (min-width: 992px) {
-    .ml-desktop-lang {
-        display: flex;
     }
 }
 
@@ -847,34 +851,12 @@ body.app-i18n-rtl .ml-root {
 }
 
 /* ============================================================
-   RTL / Arabic alignment overrides
+   RTL / Arabic alignment
+   Logo + language rows use CSS Grid (`1fr auto`); columns follow
+   `dir="rtl"` so the logo sits on the right and EN/AR on the left.
    ============================================================ */
 
-/* Forgot password — sits at the inline-end in both directions */
-[dir="rtl"] .ml-forgot-row {
+html[dir="rtl"] .ml-forgot-row,
+body.app-i18n-rtl .ml-forgot-row {
     justify-content: flex-start;
 }
-
-/* Desktop lang toggle — inline-end of the card column */
-[dir="rtl"] .ml-desktop-lang {
-    justify-content: flex-start;
-}
-
-/* Mobile logo bar — logo on the inline-end side, toggle on inline-start */
-[dir="rtl"] .ml-mobile-logo {
-    flex-direction: row-reverse;
-}
-
-/* Mobile feature columns — reverse column order so reading flows right-to-left */
-[dir="rtl"] .ml-features--mobile {
-    flex-direction: row-reverse;
-}
-
-/* Feature column divider flips to the opposite side */
-[dir="rtl"] .ml-features--mobile .ml-feature:not(:last-child) {
-    border-inline-end: none;
-    border-inline-start: 1px solid rgba(255, 255, 255, 0.22);
-}
-
-/* Trust badge text alignment already uses text-align: start (auto-flips) */
-/* Trust icon stays at inline-start naturally with flex-start */

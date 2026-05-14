@@ -114,8 +114,17 @@ const LoginLangToggle = () => {
 const Login = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { login, exchangeGoogleOAuthCode, loading, error, isAuthenticated, clearError, merchant, user } =
-        useAuthStore();
+    const {
+        login,
+        exchangeGoogleOAuthCode,
+        fetchProfile,
+        loading,
+        error,
+        isAuthenticated,
+        clearError,
+        merchant,
+        user,
+    } = useAuthStore();
 
     const [formData, setFormData] = useState({
         email: '',
@@ -129,6 +138,10 @@ const Login = () => {
     // flow (form login or Google OAuth) is in-flight and fetchProfile hasn't yet
     // populated `merchant` in the store.
     const authFlowInProgressRef = useRef(false);
+    // Ensures we only re-validate the persisted session against the server once
+    // per mount (covers the case where the user visits /login while still
+    // holding a valid token from a previous session).
+    const sessionRevalidatedRef = useRef(false);
 
     useEffect(() => {
         if (getStaleAuthResolution(isAuthenticated) === 'clear') {
@@ -145,11 +158,42 @@ const Login = () => {
         // Let the active login handler do the navigation once fetchProfile is done.
         if (authFlowInProgressRef.current) return;
 
-        if (isAuthenticated) {
-            const lng = getStoredOrDefaultLocale();
-            navigate(getAuthenticatedSessionPath(merchant, lng, user), { replace: true });
+        if (!isAuthenticated) return;
+
+        // The persisted user/merchant in localStorage may be stale (e.g. the user
+        // completed onboarding in another tab, or the merchant status changed
+        // server-side). Re-validate once with the server before deciding where
+        // to send them. authFlowInProgressRef guards against re-entry while the
+        // request is in-flight.
+        if (!sessionRevalidatedRef.current) {
+            sessionRevalidatedRef.current = true;
+            authFlowInProgressRef.current = true;
+            (async () => {
+                try {
+                    const profileResult = await fetchProfile();
+                    const lng = getStoredOrDefaultLocale();
+                    const { path, replace } = getPostLoginNavigation({
+                        loginResult: profileResult,
+                        currentMerchant: useAuthStore.getState().merchant,
+                        locale: lng,
+                    });
+                    navigate(path, { replace });
+                } catch (profileErr) {
+                    // Token rejected or network error → fall back to the cached
+                    // store data so the user is not stuck on /login.
+                    console.warn('Session revalidation failed:', profileErr);
+                    const lng = getStoredOrDefaultLocale();
+                    navigate(getAuthenticatedSessionPath(merchant, lng, user), { replace: true });
+                } finally {
+                    authFlowInProgressRef.current = false;
+                }
+            })();
+            return;
         }
-    }, [isAuthenticated, merchant, user, navigate]);
+
+        const lng = getStoredOrDefaultLocale();
+        navigate(getAuthenticatedSessionPath(merchant, lng, user), { replace: true });
+    }, [isAuthenticated, merchant, user, navigate, fetchProfile]);
 
     useEffect(() => {
         return () => clearError();
@@ -283,6 +327,7 @@ const Login = () => {
                                     className="ml-brand-logo ml-brand-logo--aside"
                                     decoding="async"
                                 />
+                                <LoginLangToggle />
                             </div>
                             <h1 className="ml-headline">
                                 {t('auth.login.heroHeadlineBefore')}{' '}
@@ -295,10 +340,6 @@ const Login = () => {
                     </aside>
 
                     <div className="ml-main">
-                        <div className="ml-desktop-lang">
-                            <LoginLangToggle />
-                        </div>
-
                         <div className="ml-mobile-logo">
                             <img
                                 src={APP_ASSETS.auth.merchantLogin.brandLogo}
