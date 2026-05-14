@@ -125,6 +125,9 @@ const Login = () => {
     const [formErrors, setFormErrors] = useState({});
     const [showPassword, setShowPassword] = useState(false);
     const googleReturnHandledRef = useRef(false);
+    // Prevents the isAuthenticated watcher from navigating while Google OAuth
+    // exchange + fetchProfile is still in-flight (merchant not yet populated).
+    const googleOAuthInProgressRef = useRef(false);
 
     useEffect(() => {
         if (getStaleAuthResolution(isAuthenticated) === 'clear') {
@@ -137,6 +140,9 @@ const Login = () => {
             });
             return;
         }
+
+        // Let the Google OAuth handler navigate after fetchProfile completes.
+        if (googleOAuthInProgressRef.current) return;
 
         if (isAuthenticated) {
             const lng = getStoredOrDefaultLocale();
@@ -184,6 +190,7 @@ const Login = () => {
         navigate('/login', { replace: true });
 
         (async () => {
+            googleOAuthInProgressRef.current = true;
             try {
                 const result = await exchangeGoogleOAuthCode(code);
                 toast.success(t('auth.login.success'));
@@ -198,6 +205,8 @@ const Login = () => {
             } catch (err) {
                 const msg = getMerchantLoginErrorMessage(err, null, t('auth.login.googleOAuthInvalidCode'));
                 toast.error(msg);
+            } finally {
+                googleOAuthInProgressRef.current = false;
             }
         })();
     }, [

@@ -870,8 +870,8 @@ export const ADMIN_SYSTEM_ENDPOINTS = {
 export const APP_CONFIG = {
     APP_NAME: 'Admin Dashboard',
     DEFAULT_PAGE_SIZE: 10,
-    TOKEN_KEY: 'admin_dashboard_token',
-    USER_KEY: 'admin_dashboard_user',
+    TOKEN_KEY: 'merchant_dashboard_token',
+    USER_KEY: 'dashboard_user',
     MERCHANT_KEY: 'admin_dashboard_merchant',
 };
 

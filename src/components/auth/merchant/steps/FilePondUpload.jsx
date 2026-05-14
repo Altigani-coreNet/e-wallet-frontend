@@ -5,6 +5,7 @@ import FilePondPluginFileValidateType from 'filepond-plugin-file-validate-type';
 import FilePondPluginFileValidateSize from 'filepond-plugin-file-validate-size';
 import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
 import { AUTH_SERVICE_BASE } from '../../../../utils/constants';
+import { getToken } from '../../../../utils/api';
 
 // Import FilePond styles
 import 'filepond/dist/filepond.min.css';
@@ -119,7 +120,7 @@ const FilePondUpload = ({
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || ''}`
+                    'Authorization': `Bearer ${getToken() || ''}`
                 },
                 body: JSON.stringify({
                     field_name: name
@@ -142,7 +143,7 @@ const FilePondUpload = ({
             url: `${AUTH_SERVICE_BASE}/upload-merchant-file`,
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || ''}`
+                'Authorization': `Bearer ${getToken() || ''}`
             },
             ondata: (formData) => {
                 // Add field name to form data
