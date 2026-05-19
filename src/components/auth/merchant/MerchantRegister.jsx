@@ -143,7 +143,7 @@ const MrSupportDropdown = () => {
                             type="button"
                             role="menuitem"
                             className="mr-dropdown-item"
-                            onClick={() => handleSubject(label)}
+                            onClick={() => handleSubject(t(`auth.support.${labelKey}`, label))}
                         >
                             <i className={`fas ${icon} mr-dropdown-item-icon`} />
                             <span>{t(`auth.support.${labelKey}`, label)}</span>
