@@ -1,0 +1,991 @@
+/*
+ * MerchantRegister — fluid onboarding layout.
+ * All sizing driven by clamp() so the layout scales from 360 px phones
+ * to 2 K monitors without a single hard-coded breakpoint pixel.
+ * The page itself never scrolls; only .mr-card-body overflows internally.
+ */
+
+/* ─── Arabic / RTL — Cairo font ─────────────────────────────────────── */
+html[lang='ar'] .mr-root,
+body.app-i18n-rtl .mr-root {
+    font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+}
+
+/* Terms checkbox: stay beside label text in LTR and RTL */
+.mr-terms-check.form-check {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding-left: 0;
+    padding-right: 0;
+    min-height: auto;
+}
+
+.mr-terms-check .form-check-input {
+    float: none;
+    margin: 0.2rem 0 0 0;
+    flex-shrink: 0;
+}
+
+.mr-terms-check .form-check-label {
+    flex: 1;
+    min-width: 0;
+}
+
+html[dir='rtl'] .mr-terms-check.form-check,
+body.app-i18n-rtl .mr-terms-check.form-check {
+    direction: rtl;
+    padding-inline-start: 0;
+    padding-inline-end: 0;
+}
+
+html[dir='rtl'] .mr-terms-check .form-check-input,
+body.app-i18n-rtl .mr-terms-check .form-check-input {
+    float: none;
+    margin: 0.2rem 0 0 0;
+}
+
+/* Phone field: always LTR — country flag stays on the left in EN and AR */
+.mr-phone-ltr,
+.mr-phone-ltr .react-tel-input {
+    direction: ltr !important;
+}
+
+.mr-phone-ltr .react-tel-input .flag-dropdown {
+    left: 0 !important;
+    right: auto !important;
+    border-radius: 3px 0 0 3px !important;
+}
+
+.mr-phone-ltr .react-tel-input .selected-flag {
+    border-radius: 3px 0 0 3px !important;
+}
+
+.mr-phone-ltr .react-tel-input .form-control {
+    direction: ltr !important;
+    text-align: left !important;
+    padding-left: 48px !important;
+    padding-right: 6px !important;
+}
+
+html[dir='rtl'] .mr-phone-ltr .react-tel-input .flag-dropdown,
+body.app-i18n-rtl .mr-phone-ltr .react-tel-input .flag-dropdown {
+    left: 0 !important;
+    right: auto !important;
+}
+
+html[dir='rtl'] .mr-phone-ltr .react-tel-input .form-control,
+body.app-i18n-rtl .mr-phone-ltr .react-tel-input .form-control {
+    padding-left: 48px !important;
+    padding-right: 6px !important;
+    text-align: left !important;
+    direction: ltr !important;
+}
+
+/* Country list dropdown opens below flag, aligned LTR */
+html[dir='rtl'] .mr-phone-ltr .react-tel-input .country-list,
+body.app-i18n-rtl .mr-phone-ltr .react-tel-input .country-list {
+    direction: ltr;
+    text-align: left;
+}
+
+/* ─── Header controls (lang + support) ─────────────────────────────── */
+
+.mr-header-controls {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 1.2vw, 8px);
+    flex-shrink: 0;
+}
+
+/* ── Shared icon button (same style for both) ── */
+.mr-ctrl-wrap {
+    position: relative;
+}
+
+.mr-ctrl-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width:  clamp(30px, 5vw, 34px);
+    height: clamp(30px, 5vw, 34px);
+    border-radius: 8px;
+    border: 1.5px solid var(--mr-border);
+    background: none;
+    color: var(--mr-muted);
+    font-size: clamp(13px, 2.2vw, 15px);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+    flex-shrink: 0;
+}
+
+/* PNG in language button — same box as Font Awesome icon (matches .mr-ctrl-btn font-size) */
+.mr-ctrl-btn .mr-lang-png-icon {
+    width: clamp(13px, 2.2vw, 15px);
+    height: clamp(13px, 2.2vw, 15px);
+    object-fit: contain;
+    display: block;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.mr-ctrl-btn:hover,
+.mr-ctrl-btn--active {
+    border-color: var(--mr-primary);
+    color: var(--mr-primary);
+    background: var(--mr-primary-light);
+}
+
+/* ── Shared dropdown panel ──
+   Anchor to inline-end so the panel grows *inward* (toward the card centre).
+   `left:0` made the menu extend right in English and clip on .mr-sidebar overflow-x. */
+.mr-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    inset-inline-end: 0;
+    inset-inline-start: auto;
+    min-width: 210px;
+    max-width: min(280px, calc(100vw - 24px));
+    background: var(--mr-white);
+    border: 1.5px solid var(--mr-border);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.13);
+    z-index: 300;
+    overflow: hidden;
+    animation: mrDropIn 0.15s ease;
+}
+
+.mr-dropdown--right {
+    /* kept for backwards compat — same positioning as base */
+    inset-inline-end: 0;
+    inset-inline-start: auto;
+}
+
+@keyframes mrDropIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.mr-dropdown-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: clamp(10px, 1.8vw, 13px) clamp(12px, 2vw, 16px);
+    font-size: clamp(10px, 1.8vw, 11px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--mr-muted);
+    border-bottom: 1px solid var(--mr-border);
+}
+
+.mr-dropdown-header-icon {
+    color: var(--mr-primary);
+    font-size: clamp(12px, 2vw, 14px);
+}
+
+.mr-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: clamp(9px, 1.6vw, 12px) clamp(12px, 2vw, 16px);
+    background: none;
+    border: none;
+    border-top: 1px solid transparent;
+    cursor: pointer;
+    font-size: clamp(12px, 2.2vw, 13px);
+    color: var(--mr-text);
+    text-align: start;
+    transition: background 0.12s;
+}
+
+.mr-dropdown-item:hover {
+    background: var(--mr-primary-light);
+}
+
+.mr-dropdown-item--active {
+    color: var(--mr-primary);
+    font-weight: 600;
+}
+
+.mr-dropdown-item-flag {
+    font-size: clamp(15px, 2.5vw, 17px);
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.mr-dropdown-item-icon {
+    width: 16px;
+    text-align: center;
+    color: var(--mr-muted);
+    font-size: clamp(12px, 2vw, 13px);
+    flex-shrink: 0;
+}
+
+.mr-dropdown-item-check {
+    margin-inline-start: auto;
+    font-size: 11px;
+    color: var(--mr-primary);
+    flex-shrink: 0;
+}
+
+/* ─── Root / design tokens ──────────────────────────────────────────── */
+/*
+ * Height strategy:
+ *   .mr-root  → exactly 100dvh, overflow hidden  (no page scroll)
+ *   .mr-shell → also 100dvh, align-items: stretch (both columns same height)
+ *   .mr-sidebar / .mr-card → height: 100%        (fill the shell row)
+ *   .mr-card-body           → flex:1, overflow-y  (only this scrolls)
+ */
+
+.mr-root {
+    /* typography */
+    --mr-font-base:       clamp(12px, 2.4vw, 14px);
+    --mr-font-sm:         clamp(11px, 2.2vw, 13px);
+    --mr-font-xs:         clamp(10px, 2vw,   12px);
+    --mr-font-step-title: clamp(12px, 2.4vw, 14px);
+    --mr-font-step-desc:  clamp(10px, 2vw,   12px);
+    --mr-font-badge:      clamp(12px, 2.2vw, 14px);
+    --mr-font-btn:        clamp(12px, 2.2vw, 14px);
+    --mr-font-logo:       clamp(18px, 3.5vw, 22px);
+    --mr-font-security:   clamp(11px, 2.2vw, 13px);
+
+    /* spacing */
+    --mr-shell-pad:       clamp(14px, 2.4vw, 32px);
+    --mr-shell-gap:       clamp(20px, 3.2vw, 44px);
+    --mr-card-pad-x:      clamp(16px, 3vw,  40px);
+    --mr-card-pad-y:      clamp(14px, 2.5vw, 32px);
+    --mr-footer-pad-y:    clamp(10px, 1.8vw, 16px);
+    --mr-step-gap-y:      clamp(6px,  1.4vw, 12px);
+    --mr-sidebar-pad:     clamp(16px, 2.8vw, 32px);
+    --mr-sidebar-logo-mb: clamp(20px, 3.5vw, 36px);
+    --mr-security-pt:     clamp(14px, 2.5vw, 24px);
+
+    /* sizes */
+    --mr-sidebar-w:       clamp(220px, 24vw, 300px);
+    --mr-badge-size:      clamp(28px,  4vw,  40px);
+    --mr-badge-font:      clamp(11px,  1.8vw, 14px);
+    --mr-logo-h:                clamp(24px,  3.5vw, 34px);
+    --mr-mobile-header-logo-h:  clamp(42px, 11vw, 56px);
+    --mr-btn-pad-x:       clamp(14px,  2.5vw, 24px);
+    --mr-btn-pad-y:       clamp(8px,   1.4vw, 11px);
+    --mr-radius:          clamp(10px,  2vw,   16px);
+    --mr-security-icon:   clamp(28px,  4vw,   36px);
+
+    /* colours */
+    --mr-primary:         #1a56db;
+    --mr-primary-light:   #eff4ff;
+    --mr-text:            #111827;
+    --mr-muted:           #6b7280;
+    --mr-border:          #e5e7eb;
+    --mr-white:           #ffffff;
+    --mr-bg:              #f3f4f6;
+    --mr-shadow:          0 4px 24px rgba(0, 0, 0, 0.08);
+
+    /* layout */
+    position: relative;
+    isolation: isolate;
+    height: 100dvh;
+    /* no overflow:hidden here — fixed children (drawer/backdrop) must escape */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    font-family: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: var(--mr-font-base);
+    -webkit-text-size-adjust: 100%;
+    box-sizing: border-box;
+}
+
+/* ── Desktop background — same image as the merchant login ── */
+.mr-root::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background-image: url('/login_background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transform: scaleX(-1);   /* mirror, matching the login page */
+    pointer-events: none;
+}
+
+/* ─── Page shell ────────────────────────────────────────────────────── */
+
+.mr-shell {
+    display: flex;
+    width: 100%;
+    flex: 1;
+    min-height: 0;           /* allow flex-child shrink below content size */
+    padding: var(--mr-shell-pad);
+    gap: var(--mr-shell-gap);
+    box-sizing: border-box;
+    align-items: stretch;   /* ← both columns stretch to the same height */
+    overflow: hidden;
+}
+
+/* ─── Sidebar card ──────────────────────────────────────────────────── */
+
+.mr-sidebar {
+    width: var(--mr-sidebar-w);
+    flex-shrink: 0;
+    background: var(--mr-white);
+    border-radius: var(--mr-radius);
+    box-shadow: var(--mr-shadow);
+    display: flex;
+    flex-direction: column;
+    padding: var(--mr-sidebar-pad);
+    /* height comes from the shell's align-items: stretch */
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: visible; /* dropdowns anchored inward must not be clipped */
+    box-sizing: border-box;
+}
+
+.mr-sidebar-logo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(8px, 1.5vw, 14px);
+    margin-bottom: var(--mr-sidebar-logo-mb);
+    flex-shrink: 0;
+}
+
+.mr-sidebar-logo img {
+    height: var(--mr-logo-h);
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
+/* ─── Stepper nav ───────────────────────────────────────────────────── */
+
+.mr-stepper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+.mr-step {
+    display: flex;
+    align-items: flex-start;
+    gap: clamp(10px, 1.8vw, 16px);
+    position: relative;
+}
+
+/* Vertical connector — centered on badge column (LTR + RTL via logical axis) */
+.mr-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    inset-inline-start: calc(var(--mr-badge-size) / 2 - 1px);
+    top: calc(var(--mr-badge-size) + 4px);
+    width: 2px;
+    bottom: 0;
+    background: var(--mr-border);
+    border-radius: 1px;
+}
+
+.mr-step:not(:last-child).mr-step--completed::after {
+    background: var(--mr-primary);
+}
+
+.mr-step-col {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.mr-step-badge {
+    width: var(--mr-badge-size);
+    height: var(--mr-badge-size);
+    border-radius: 50%;
+    border: 2px solid var(--mr-border);
+    background: var(--mr-white);
+    color: var(--mr-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--mr-badge-font);
+    font-weight: 600;
+    flex-shrink: 0;
+    transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.mr-step--active   .mr-step-badge,
+.mr-step--completed .mr-step-badge {
+    background:   var(--mr-primary);
+    border-color: var(--mr-primary);
+    color:        var(--mr-white);
+}
+
+.mr-step-info {
+    padding: clamp(4px, 1vw, 8px) 0 var(--mr-step-gap-y);
+    min-width: 0;
+}
+
+.mr-step-title {
+    font-size: var(--mr-font-step-title);
+    font-weight: 600;
+    color: var(--mr-text);
+    margin: 0 0 clamp(2px, 0.5vw, 4px);
+    line-height: 1.3;
+}
+
+.mr-step--pending .mr-step-title {
+    color: var(--mr-muted);
+}
+
+.mr-step-desc {
+    font-size: var(--mr-font-step-desc);
+    color: var(--mr-muted);
+    line-height: 1.45;
+    margin: 0;
+}
+
+/* ─── Security note ─────────────────────────────────────────────────── */
+
+.mr-security {
+    display: flex;
+    align-items: flex-start;
+    gap: clamp(8px, 1.5vw, 12px);
+    padding-top: var(--mr-security-pt);
+    margin-top: auto;
+    border-top: 1px solid var(--mr-border);
+    flex-shrink: 0;
+}
+
+.mr-security-icon {
+    width:  var(--mr-security-icon);
+    height: var(--mr-security-icon);
+    border-radius: 50%;
+    background: var(--mr-primary-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--mr-primary);
+    font-size: clamp(13px, 2.2vw, 16px);
+}
+
+.mr-security-title {
+    font-size: var(--mr-font-security);
+    font-weight: 600;
+    color: var(--mr-text);
+    margin: 0 0 clamp(2px, 0.5vw, 4px);
+}
+
+.mr-security-desc {
+    font-size: var(--mr-font-xs);
+    color: var(--mr-muted);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ─── Main column ───────────────────────────────────────────────────── */
+
+.mr-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    /* fill the same height as the sidebar */
+    height: 100%;
+}
+
+/* ─── Form card ─────────────────────────────────────────────────────── */
+
+.mr-card {
+    flex: 1;
+    background: var(--mr-white);
+    border-radius: var(--mr-radius);
+    box-shadow: var(--mr-shadow);
+    display: flex;
+    flex-direction: column;
+    /* fills .mr-main which fills the shell row */
+    height: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* ── Step content container (no bg, no border — just a clean wrapper) ─ */
+.mr-step-card {
+    width: 100%;
+    margin-inline: auto;
+    padding: clamp(12px, 2.5vw, 28px) clamp(12px, 2.5vw, 32px);
+    box-sizing: border-box;
+}
+
+/* Wide variant — form-heavy steps (Account Details, Merchant Profile, Docs) */
+.mr-step-card--wide {
+    max-width: min(880px, 100%);
+}
+
+/* Narrow variant — verification step, centered & compact so nothing overflows */
+.mr-step-card--narrow {
+    max-width: min(520px, 100%);
+    display: flex;
+    flex-direction: column;
+    /* let it fill the available card-body height so content sits centred */
+    min-height: 100%;
+    justify-content: center;
+}
+
+/* scrollable content area — this is the ONLY element that scrolls */
+.mr-card-body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: var(--mr-card-pad-y) var(--mr-card-pad-x) clamp(12px, 2vw, 20px);
+    min-height: 0;
+    box-sizing: border-box;
+    /* thin scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--mr-border) transparent;
+}
+
+.mr-card-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.mr-card-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.mr-card-body::-webkit-scrollbar-thumb {
+    background: var(--mr-border);
+    border-radius: 4px;
+}
+
+/* ─── Card footer (always visible, pinned to card bottom) ───────────── */
+
+.mr-card-footer {
+    flex-shrink: 0;
+    border-top: 1px solid var(--mr-border);
+    padding: var(--mr-footer-pad-y) var(--mr-card-pad-x);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: clamp(8px, 1.5vw, 12px);
+    background: var(--mr-white);
+    box-sizing: border-box;
+}
+
+.mr-footer-progress {
+    display: flex;
+    align-items: center;
+    gap: clamp(5px, 1vw, 8px);
+    font-size: var(--mr-font-xs);
+    color: var(--mr-muted);
+    white-space: nowrap;
+}
+
+.mr-footer-progress i {
+    color: var(--mr-primary);
+    font-size: clamp(12px, 2vw, 15px);
+}
+
+.mr-footer-actions {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 1.2vw, 10px);
+    flex-shrink: 0;
+}
+
+/* ─── Nav buttons ───────────────────────────────────────────────────── */
+
+.mr-btn-prev {
+    display: inline-flex;
+    align-items: center;
+    gap: clamp(4px, 1vw, 6px);
+    padding: var(--mr-btn-pad-y) var(--mr-btn-pad-x);
+    border-radius: clamp(6px, 1.4vw, 8px);
+    border: 1.5px solid var(--mr-border);
+    background: var(--mr-white);
+    color: var(--mr-text);
+    font-size: var(--mr-font-btn);
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.mr-btn-prev:hover:not(:disabled) {
+    border-color: var(--mr-primary);
+    color: var(--mr-primary);
+}
+
+.mr-btn-prev:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.mr-btn-next {
+    display: inline-flex;
+    align-items: center;
+    gap: clamp(5px, 1vw, 8px);
+    padding: var(--mr-btn-pad-y) var(--mr-btn-pad-x);
+    border-radius: clamp(6px, 1.4vw, 8px);
+    border: none;
+    background: var(--mr-primary);
+    color: var(--mr-white);
+    font-size: var(--mr-font-btn);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.mr-btn-next:hover:not(:disabled) {
+    background: #1648c7;
+}
+
+.mr-btn-next:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ─── Continue-registration modal overlay ───────────────────────────── */
+
+.mr-modal-overlay {
+    display: block;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* ─── Progress drawer (slide-in from left) ──────────────────────────── */
+
+.mr-progress-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 200;
+    animation: mrBackdropIn 0.2s ease;
+}
+
+@keyframes mrBackdropIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.mr-progress-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    /* desktop: panel-style width; mobile overrides below */
+    width: clamp(260px, 75vw, 340px);
+    background: var(--mr-white);
+    box-shadow: 4px 0 32px rgba(0, 0, 0, 0.14);
+    z-index: 201;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(20px, 4vw, 28px);
+    box-sizing: border-box;
+    transform: translateX(-110%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+}
+
+/* mobile: drawer fills the full screen */
+@media (max-width: 767px) {
+    .mr-progress-drawer {
+        width: 100vw;
+        padding: clamp(22px, 6vw, 32px) clamp(20px, 6vw, 30px);
+    }
+
+    .mr-progress-drawer-header {
+        margin-bottom: clamp(20px, 4dvh, 32px);
+    }
+
+    .mr-progress-drawer-close {
+        font-size: clamp(22px, 6vw, 28px);
+        padding: 6px;
+    }
+
+    .mr-progress-drawer-label {
+        font-size: clamp(11px, 3vw, 13px);
+        margin-bottom: clamp(14px, 3dvh, 20px);
+    }
+
+    /* bigger step badges on mobile */
+    .mr-progress-drawer .mr-step-badge {
+        width:  clamp(36px, 9vw, 48px);
+        height: clamp(36px, 9vw, 48px);
+        font-size: clamp(14px, 3.5vw, 18px);
+    }
+
+    /* taller connector lines */
+    .mr-progress-drawer .mr-step:not(:last-child)::after {
+        top: calc(clamp(36px, 9vw, 48px) + 5px);
+        inset-inline-start: calc(clamp(36px, 9vw, 48px) / 2 - 1px);
+    }
+
+    /* bigger step text */
+    .mr-progress-drawer .mr-step-title {
+        font-size: clamp(14px, 4vw, 17px);
+    }
+
+    .mr-progress-drawer .mr-step-desc {
+        font-size: clamp(12px, 3.2vw, 14px);
+    }
+
+    /* bigger step gaps */
+    .mr-progress-drawer .mr-step {
+        gap: clamp(14px, 4vw, 20px);
+    }
+
+    .mr-progress-drawer .mr-step-info {
+        padding-bottom: clamp(16px, 4dvh, 26px);
+    }
+
+    /* security block bigger */
+    .mr-progress-drawer .mr-security {
+        padding-top: clamp(16px, 3dvh, 24px);
+    }
+
+    .mr-progress-drawer .mr-security-icon {
+        width:  clamp(36px, 9vw, 44px);
+        height: clamp(36px, 9vw, 44px);
+        font-size: clamp(16px, 4vw, 20px);
+    }
+}
+
+.mr-progress-drawer--open {
+    transform: translateX(0);
+}
+
+.mr-progress-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: clamp(16px, 3dvh, 24px);
+    flex-shrink: 0;
+    gap: clamp(10px, 3vw, 16px);
+}
+
+.mr-progress-drawer-header-actions {
+    display: flex;
+    align-items: center;
+    gap: clamp(6px, 2vw, 10px);
+    flex-shrink: 0;
+}
+
+.mr-progress-drawer-logo {
+    height: var(--mr-mobile-header-logo-h);
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.mr-progress-drawer-close {
+    background: none;
+    border: none;
+    color: var(--mr-muted);
+    font-size: clamp(16px, 2.5vw, 20px);
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.mr-progress-drawer-close:hover {
+    color: var(--mr-text);
+    background: var(--mr-bg);
+}
+
+.mr-progress-drawer-label {
+    font-size: clamp(10px, 2vw, 11px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--mr-muted);
+    margin: 0 0 clamp(10px, 2dvh, 16px) 0;
+    flex-shrink: 0;
+}
+
+.mr-progress-drawer-stepper {
+    flex: 1;
+    min-height: 0;
+}
+
+/* ─── Mobile top bar ────────────────────────────────────────────────── */
+
+.mr-mobile-topbar {
+    display: none; /* shown only on mobile via media query */
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(14px, 3dvh, 18px) clamp(16px, 5vw, 24px);
+    background: var(--mr-white);
+    /* no border-bottom — separator removed */
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.mr-mobile-menu-btn {
+    background: none;
+    border: none;
+    color: var(--mr-text);
+    font-size: clamp(22px, 6vw, 28px);
+    cursor: pointer;
+    padding: 6px;
+    line-height: 1;
+}
+
+.mr-mobile-topbar-center {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+}
+
+.mr-mobile-logo {
+    height: clamp(32px, 8vw, 42px);
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
+
+.mr-mobile-step-count {
+    font-size: clamp(15px, 4vw, 18px);
+    font-weight: 700;
+    color: var(--mr-primary);
+}
+
+/* ─── Mobile horizontal stepper ─────────────────────────────────────── */
+
+.mr-mobile-hstepper {
+    display: none; /* shown only on mobile */
+    align-items: center;
+    justify-content: center;
+    padding: clamp(12px, 3dvh, 18px) clamp(16px, 5vw, 24px);
+    background: var(--mr-white);
+    /* no border-bottom — separator removed */
+    flex-shrink: 0;
+    gap: 0;
+}
+
+.mr-mhs-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.mr-mhs-badge {
+    width:  clamp(36px, 9vw, 44px);
+    height: clamp(36px, 9vw, 44px);
+    border-radius: 50%;
+    border: 2px solid var(--mr-border);
+    background: var(--mr-white);
+    color: var(--mr-muted);
+    font-size: clamp(13px, 3.2vw, 16px);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.mr-mhs-item--active   .mr-mhs-badge,
+.mr-mhs-item--completed .mr-mhs-badge {
+    background:   var(--mr-primary);
+    border-color: var(--mr-primary);
+    color:        var(--mr-white);
+}
+
+.mr-mhs-line {
+    flex: 1;
+    height: 2.5px;
+    background: var(--mr-border);
+    min-width: clamp(14px, 4.5vw, 30px);
+    border-radius: 2px;
+    margin: 0 3px;
+}
+
+.mr-mhs-line--done {
+    background: var(--mr-primary);
+}
+
+/* ─── Tablet: narrow sidebar ────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+    .mr-root {
+        --mr-sidebar-w: clamp(180px, 22vw, 240px);
+    }
+}
+
+/* ─── Mobile: full-screen card layout ──────────────────────────────── */
+
+@media (max-width: 767px) {
+    /* no background image/gradient on mobile — plain white */
+    .mr-root::before {
+        display: none;
+    }
+
+    /* show mobile chrome */
+    .mr-mobile-topbar,
+    .mr-mobile-hstepper {
+        display: flex;
+    }
+
+    /* lang + support live in the menu drawer on mobile, not the top bar */
+    .mr-mobile-topbar .mr-header-controls {
+        display: none;
+    }
+
+    /* shell: fills remaining height, no extra padding */
+    .mr-shell {
+        padding: 0;
+        gap: 0;
+    }
+
+    /* hide desktop sidebar */
+    .mr-sidebar {
+        display: none;
+    }
+
+    /* main fills shell completely */
+    .mr-main {
+        width: 100%;
+        flex: 1;
+        min-height: 0;
+    }
+
+    /* card: full height, flush edges */
+    .mr-card {
+        height: 100%;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    /* body scrolls internally */
+    .mr-card-body {
+        padding: clamp(16px, 4vw, 24px);
+    }
+
+    /* step container full width */
+    .mr-step-card--wide,
+    .mr-step-card--narrow {
+        max-width: 100%;
+    }
+
+    /* footer */
+    .mr-card-footer {
+        padding: clamp(10px, 2dvh, 14px) clamp(14px, 4vw, 20px);
+    }
+
+    /* hide "progress saved" text — only buttons on mobile */
+    .mr-footer-progress {
+        display: none;
+    }
+}

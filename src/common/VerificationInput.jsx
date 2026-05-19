@@ -94,25 +94,22 @@ const VerificationInput = forwardRef(({ length = 6, onComplete }, ref) => {
     };
 
     return (
-        <div className="w-100 mx-auto">
-            <div className="d-flex flex-nowrap justify-content-center overflow-auto opt_container">
-                {code.map((digit, idx) => (
-                    <input
-                        key={idx}
-                        type="tel"
-                        pattern="\d*"
-                        maxLength="1"
-                        ref={el => inputs.current[idx] = el}
-                        value={digit}
-                        className="form-control verification_input form-control-solid h-md-100px h-xl-60px fs-2qx text-center border-primary border-hover mx-1 my-2"
-                        style={{ width: '60px' }}
-                        onChange={e => handleChange(e.target, idx)}
-                        onKeyDown={e => handleKeyDown(e, idx)}
-                        onPaste={handlePaste}
-                        inputMode="numeric"
-                    />
-                ))}
-            </div>
+        <div className="av-otp-container">
+            {code.map((digit, idx) => (
+                <input
+                    key={idx}
+                    type="tel"
+                    pattern="\d*"
+                    maxLength="1"
+                    ref={el => inputs.current[idx] = el}
+                    value={digit}
+                    className="av-otp-input"
+                    onChange={e => handleChange(e.target, idx)}
+                    onKeyDown={e => handleKeyDown(e, idx)}
+                    onPaste={handlePaste}
+                    inputMode="numeric"
+                />
+            ))}
         </div>
     );
 });

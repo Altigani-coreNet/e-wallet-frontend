@@ -9,6 +9,7 @@ import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import SearchableDropdown from '../../../common/filters/SearchableDropdown';
 import ServiceModel from '../../../services/ServiceModel';
+import { getServiceTransactionStatusLabel } from '../../../utils/serviceTransactionStatusHelpers';
 
 const getStatusBadgeClass = (status) => {
     const map = {
@@ -188,7 +189,7 @@ const AdminServiceTransactionsIndex = () => {
                 headers.join(','),
                 ...allRows.map((r) => ([
                     r.id,
-                    r.status || '',
+                    getServiceTransactionStatusLabel(r.status, t) || r.status || '',
                     `"${(r.merchant?.business_name || r.merchant?.name || r.merchant_id || '').toString().replace(/"/g, '""')}"`,
                     `"${(r.partner?.name || r.partner?.business_name || r.partner_id || '').toString().replace(/"/g, '""')}"`,
                     `"${(r.service?.service_name?.en || r.service?.service_name?.ar || r.service_id || '').toString().replace(/"/g, '""')}"`,
@@ -387,7 +388,12 @@ const AdminServiceTransactionsIndex = () => {
                                             {(item.transaction?.currency_symbol || '$')}
                                             {Number(item.transaction?.amount || 0).toFixed(2)}
                                         </td>
-                                        <td><span className={`badge ${getStatusBadgeClass(item.status)}`}>{item.status || 'N/A'}</span></td>
+                                        <td>
+                                            <span className={`badge ${getStatusBadgeClass(item.status)}`}>
+                                                {getServiceTransactionStatusLabel(item.status, t) ||
+                                                    t('admin.common.na')}
+                                            </span>
+                                        </td>
                                         <td className="text-end">
                                             <button
                                                 className="btn btn-icon btn-sm btn-light btn-active-light-primary"

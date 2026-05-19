@@ -1,14 +1,18 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { AUTH_ENDPOINTS } from '../../../utils/constants';
 import VerificationInput from '../../common/VerificationInput';
+import {
+    MerchantAuthPageLayout,
+    MerchantAuthMobileTip,
+    pickForgotPasswordMobileTip,
+} from './merchantAuthShell';
 
 const ForgotPassword = () => {
     const { t } = useTranslation();
-    const navigate = useNavigate();
     const [step, setStep] = useState('request'); // request -> verify -> reset -> done
     const [email, setEmail] = useState('');
     const [submitting, setSubmitting] = useState(false);
@@ -77,7 +81,7 @@ const ForgotPassword = () => {
         try {
             const response = await axios.post(AUTH_ENDPOINTS.PASSWORD_VERIFY_CODE, {
                 token,
-                code
+                code,
             });
 
             if (response.data.success) {
@@ -106,37 +110,34 @@ const ForgotPassword = () => {
 
     const handleResetPassword = async (e) => {
         e.preventDefault();
-        
+
         const activeCode = verifiedCode || code;
 
-        // Validate code exists
         if (!activeCode || activeCode.length !== 6) {
             toast.error(t('auth.forgotPassword.toastVerifyBeforeReset'));
             setStep('verify');
             return;
         }
 
-        // Validate token exists
         if (!token) {
             toast.error(t('auth.forgotPassword.toastSessionExpired'));
             setStep('request');
             return;
         }
-        
-        // Client-side password validation
+
         if (!isPasswordValid()) {
             toast.error(t('auth.forgotPassword.toastMeetRequirements'));
             return;
         }
-        
+
         setResetting(true);
 
         try {
-            const response = await axios.post(AUTH_ENDPOINTS.PASSWORD_RESET, { 
-                token, 
+            const response = await axios.post(AUTH_ENDPOINTS.PASSWORD_RESET, {
+                token,
                 code: activeCode,
-                password, 
-                password_confirmation: passwordConfirmation 
+                password,
+                password_confirmation: passwordConfirmation,
             });
 
             if (response.data.success) {
@@ -167,7 +168,7 @@ const ForgotPassword = () => {
             uppercase: /[A-Z]/.test(pwd),
             lowercase: /[a-z]/.test(pwd),
             number: /[0-9]/.test(pwd),
-            match: pwd === confirmation && pwd !== ''
+            match: pwd === confirmation && pwd !== '',
         });
     };
 
@@ -195,12 +196,12 @@ const ForgotPassword = () => {
         let interval = null;
         if (resendTimer > 0) {
             interval = setInterval(() => {
-                setResendTimer((t) => {
-                    if (t <= 1) {
+                setResendTimer((timer) => {
+                    if (timer <= 1) {
                         setIsResendDisabled(false);
                         return 0;
                     }
-                    return t - 1;
+                    return timer - 1;
                 });
             }, 1000);
         }
@@ -286,267 +287,278 @@ const ForgotPassword = () => {
         return `${maskedUser}@${domain}`;
     };
 
+    const forgotCardTitle = useMemo(() => {
+        switch (step) {
+            case 'request':
+                return t('auth.forgotPassword.requestTitle');
+            case 'verify':
+                return t('auth.forgotPassword.verifyTitle');
+            case 'reset':
+                return t('auth.forgotPassword.setNewTitle');
+            case 'done':
+                return t('auth.forgotPassword.doneTitle');
+            default:
+                return '';
+        }
+    }, [step, t]);
+
+    const forgotCardSub = useMemo(() => {
+        switch (step) {
+            case 'request':
+                return t('auth.forgotPassword.requestSubtitle');
+            case 'verify':
+                return (
+                    <>
+                        {t('auth.forgotPassword.verifyCodeLead')}{' '}
+                        <strong>{maskEmail(email)}</strong>
+                    </>
+                );
+            case 'reset':
+                return (
+                    <>
+                        {t('auth.forgotPassword.setNewVerifiedLead')}{' '}
+                        <strong>{maskEmail(email)}</strong>.
+                    </>
+                );
+            case 'done':
+                return t('auth.forgotPassword.doneSubtitle');
+            default:
+                return null;
+        }
+    }, [step, t, email]);
+
+    const mobileTip = useMemo(() => pickForgotPasswordMobileTip(step, t), [step, t]);
+
     return (
-        <>
-            {/* Page background image - matching Login layout */}
-            <style>{`
-                body {
-                    background-image: url('/assets/media/auth/bg4.jpg');
-                }
-                [data-bs-theme="dark"] body {
-                    background-image: url('/assets/media/auth/bg4-dark.jpg');
-                }
-            `}</style>
-            
-            <div className="d-flex flex-column flex-root" id="kt_app_root" style={{ minHeight: '100vh' }}>
-                <div className="d-flex flex-column flex-lg-row" style={{ minHeight: '100vh' }}>
-                    {/* Left side - Branding - Hidden on small screens - 50% width */}
-                    <div className="d-none d-lg-flex justify-content-center align-items-center" style={{ flex: '1', minHeight: '100vh' }}>
-                        <div className="d-flex flex-column flex-center p-10">
-                            <img 
-                                className="theme-light-show mx-auto mw-100 w-150px w-lg-300px mb-10 mb-lg-20" 
-                                src="/assets/media/auth/agency.png" 
-                                alt={t('auth.common.logoAlt')} 
-                            />
-                            <img 
-                                className="theme-dark-show mx-auto mw-100 w-150px w-lg-300px mb-10 mb-lg-20" 
-                                src="/assets/media/auth/agency-dark.png" 
-                                alt={t('auth.common.logoAlt')} 
-                            />
-                            <h1 className="text-gray-800 fs-2qx fw-bold text-center mb-7">
-                                {t('auth.forgotPassword.brandTitle')}
-                            </h1>
-                            <div className="text-gray-600 fs-base text-center fw-semibold">
-                                {t('auth.forgotPassword.brandSubtitle')}
-                            </div>
+        <MerchantAuthPageLayout
+            cardTitle={forgotCardTitle}
+            cardSub={forgotCardSub}
+            asideHeadlineBefore={t('auth.forgotPassword.asideHeadlineBefore')}
+            asideHeadlineAccent={t('auth.forgotPassword.asideHeadlineAccent')}
+            asideSub={t('auth.forgotPassword.asideSub')}
+            showAsideFeatures={false}
+            showAsideTrust={false}
+            showMobileMarketing={false}
+            mobileFooter={
+                <MerchantAuthMobileTip
+                    title={mobileTip.title}
+                    body={mobileTip.body}
+                    iconClass={mobileTip.iconClass}
+                />
+            }
+        >
+            {step === 'request' && (
+                <form className="form w-100" onSubmit={handleRequestReset} noValidate>
+                    <label className="ml-label" htmlFor="forgot-email">
+                        {t('auth.login.emailLabel')}
+                    </label>
+                    <div className="ml-input-wrap">
+                        <span className="ml-input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                                <polyline points="22,6 12,13 2,6" />
+                            </svg>
+                        </span>
+                        <input
+                            id="forgot-email"
+                            type="email"
+                            placeholder={t('auth.forgotPassword.emailPlaceholder')}
+                            name="email"
+                            autoComplete="email"
+                            className="ml-field"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                        />
+                    </div>
+                    <div className="ml-actions-row">
+                        <button type="submit" className="ml-btn-primary" disabled={submitting}>
+                            {submitting ? (
+                                <span>
+                                    {t('auth.common.sendingCode')}
+                                    <span className="spinner-border spinner-border-sm align-middle ms-2" role="status" />
+                                </span>
+                            ) : (
+                                t('auth.common.submit')
+                            )}
+                        </button>
+                        <Link to="/login" className="ml-btn-outline">
+                            {t('auth.common.cancel')}
+                        </Link>
+                    </div>
+                </form>
+            )}
+
+            {step === 'verify' && (
+                <form className="form w-100" onSubmit={handleVerifyCode} noValidate>
+                    <label className="ml-label">{t('auth.forgotPassword.verificationCodeLabel')}</label>
+                    <div className="ml-verification-wrap">
+                        <VerificationInput
+                            ref={verificationInputRef}
+                            length={6}
+                            onComplete={(val) => {
+                                setCode(val);
+                            }}
+                        />
+                    </div>
+                    <div className="ml-resend-row">
+                        <button
+                            type="button"
+                            className="ml-text-btn"
+                            disabled={isResendDisabled || isResending || verifying}
+                            onClick={resendCode}
+                        >
+                            {isResending ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                                    {t('auth.common.resending')}
+                                </>
+                            ) : isResendDisabled ? (
+                                t('auth.forgotPassword.resendCodeIn', { seconds: resendTimer })
+                            ) : (
+                                t('auth.forgotPassword.resendCode')
+                            )}
+                        </button>
+                    </div>
+                    <div className="ml-actions-row">
+                        <button type="submit" className="ml-btn-primary" disabled={verifying || !code || code.length !== 6}>
+                            {verifying ? (
+                                <span>
+                                    {t('auth.common.verifying')}
+                                    <span className="spinner-border spinner-border-sm align-middle ms-2" role="status" />
+                                </span>
+                            ) : (
+                                t('auth.forgotPassword.verifyCode')
+                            )}
+                        </button>
+                        <button type="button" className="ml-btn-outline" onClick={handleBackToRequest} disabled={verifying}>
+                            {t('auth.common.back')}
+                        </button>
+                    </div>
+                </form>
+            )}
+
+            {step === 'reset' && (
+                <form className="form w-100" onSubmit={handleResetPassword} noValidate>
+                    <label className="ml-label" htmlFor="forgot-new-password">
+                        {t('auth.common.password')}
+                    </label>
+                    <div className={`ml-input-wrap ml-password-wrap ${password && !isPasswordValid() ? 'ml-has-error' : ''}`}>
+                        <span className="ml-input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                        </span>
+                        <input
+                            id="forgot-new-password"
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder={t('auth.forgotPassword.enterPasswordPlaceholder')}
+                            name="password"
+                            autoComplete="new-password"
+                            className="ml-field"
+                            value={password}
+                            onChange={handlePasswordChange}
+                            required
+                        />
+                        <button
+                            type="button"
+                            className="ml-password-toggle"
+                            onClick={() => setShowPassword((p) => !p)}
+                            tabIndex={-1}
+                            aria-label={showPassword ? t('auth.common.hidePassword') : t('auth.common.showPassword')}
+                        >
+                            <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} />
+                        </button>
+                    </div>
+
+                    <label className="ml-label" htmlFor="forgot-confirm-password">
+                        {t('auth.common.confirmPassword')}
+                    </label>
+                    <div className={`ml-input-wrap ml-password-wrap ${passwordConfirmation && !passwordValidation.match ? 'ml-has-error' : ''}`}>
+                        <span className="ml-input-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                        </span>
+                        <input
+                            id="forgot-confirm-password"
+                            type={showPasswordConfirmation ? 'text' : 'password'}
+                            placeholder={t('auth.forgotPassword.confirmPasswordPlaceholder')}
+                            name="password_confirmation"
+                            autoComplete="new-password"
+                            className="ml-field"
+                            value={passwordConfirmation}
+                            onChange={handlePasswordChange}
+                            required
+                        />
+                        <button
+                            type="button"
+                            className="ml-password-toggle"
+                            onClick={() => setShowPasswordConfirmation((p) => !p)}
+                            tabIndex={-1}
+                            aria-label={
+                                showPasswordConfirmation ? t('auth.common.hidePassword') : t('auth.common.showPassword')
+                            }
+                        >
+                            <i className={`bi ${showPasswordConfirmation ? 'bi-eye-slash' : 'bi-eye'}`} />
+                        </button>
+                    </div>
+                    {!passwordValidation.match && passwordConfirmation ? (
+                        <div className="ml-err">{t('auth.passwordRules.doNotMatch')}</div>
+                    ) : null}
+
+                    <div className="ml-password-rules">
+                        <div className={`ml-password-rule ${passwordValidation.length ? 'ml-password-rule--ok' : 'ml-password-rule--bad'}`}>
+                            <i className={`bi ${passwordValidation.length ? 'bi-check-lg' : 'bi-x-lg'}`} aria-hidden />
+                            {t('auth.passwordRules.atLeast8')}
+                        </div>
+                        <div className={`ml-password-rule ${passwordValidation.uppercase ? 'ml-password-rule--ok' : 'ml-password-rule--bad'}`}>
+                            <i className={`bi ${passwordValidation.uppercase ? 'bi-check-lg' : 'bi-x-lg'}`} aria-hidden />
+                            {t('auth.passwordRules.uppercase')}
+                        </div>
+                        <div className={`ml-password-rule ${passwordValidation.lowercase ? 'ml-password-rule--ok' : 'ml-password-rule--bad'}`}>
+                            <i className={`bi ${passwordValidation.lowercase ? 'bi-check-lg' : 'bi-x-lg'}`} aria-hidden />
+                            {t('auth.passwordRules.lowercase')}
+                        </div>
+                        <div className={`ml-password-rule ${passwordValidation.number ? 'ml-password-rule--ok' : 'ml-password-rule--bad'}`}>
+                            <i className={`bi ${passwordValidation.number ? 'bi-check-lg' : 'bi-x-lg'}`} aria-hidden />
+                            {t('auth.passwordRules.number')}
                         </div>
                     </div>
 
-                    {/* Right side - Password Reset Form - 50% width on desktop, 100% on mobile */}
-                    <div className="d-flex justify-content-center align-items-center p-12" style={{ flex: '1', minHeight: '100vh' }}>
-                        <div className="bg-body d-flex flex-column flex-center rounded-4 w-md-600px py-15 px-10">
-                            <div className="d-flex flex-center flex-column align-items-stretch w-md-400px">
-                                <div className="d-flex flex-center flex-column flex-column-fluid py-10 w-100">
-                                    
-                                    {step === 'request' && (
-                                        <form className="form w-100" onSubmit={handleRequestReset} noValidate>
-                                            <div className="text-center mb-10">
-                                                <h1 className="text-gray-900 fw-bolder mb-3">{t('auth.forgotPassword.requestTitle')}</h1>
-                                                <div className="text-gray-500 fw-semibold fs-6">{t('auth.forgotPassword.requestSubtitle')}</div>
-                                            </div>
-
-                                            <div className="fv-row mb-8">
-                                                <input
-                                                    type="email"
-                                                    placeholder={t('auth.forgotPassword.emailPlaceholder')}
-                                                    name="email"
-                                                    autoComplete="off"
-                                                    className="form-control bg-transparent"
-                                                    value={email}
-                                                    onChange={(e) => setEmail(e.target.value)}
-                                                    required
-                                                />
-                                            </div>
-
-                                            <div className="d-flex flex-wrap justify-content-center pb-lg-0">
-                                                <button type="submit" className="btn btn-primary me-4" disabled={submitting}>
-                                                    <span className={submitting ? 'd-none' : 'indicator-label'}>{t('auth.common.submit')}</span>
-                                                    {submitting && (
-                                                        <span className="indicator-progress" style={{ display: 'block' }}>
-                                                            {t('auth.common.sendingCode')}
-                                                            <span className="spinner-border spinner-border-sm align-middle ms-2"></span>
-                                                        </span>
-                                                    )}
-                                                </button>
-                                                <Link to="/login" className="btn btn-light">{t('auth.common.cancel')}</Link>
-                                            </div>
-                                        </form>
-                                    )}
-
-                                    {step === 'verify' && (
-                                        <form className="form w-100" onSubmit={handleVerifyCode} noValidate>
-                                            <div className="text-center mb-10">
-                                                <h1 className="text-gray-900 fw-bolder mb-3">{t('auth.forgotPassword.verifyTitle')}</h1>
-                                                <div className="text-gray-500 fw-semibold fs-6">
-                                                    {t('auth.forgotPassword.verifyCodeLead')}{' '}
-                                                    <strong>{maskEmail(email)}</strong>
-                                                </div>
-                                            </div>
-
-                                            <div className="fv-row mb-8">
-                                                <label className="form-label fw-bolder text-dark fs-6">{t('auth.forgotPassword.verificationCodeLabel')}</label>
-                                                <VerificationInput
-                                                    ref={verificationInputRef}
-                                                    length={6}
-                                                    onComplete={(val) => {
-                                                        setCode(val);
-                                                    }}
-                                                />
-                                                <div className="text-center mt-3">
-                                                    <button
-                                                        type="button"
-                                                        className={`btn btn-sm ${isResendDisabled ? 'btn-secondary' : 'btn-link'}`}
-                                                        disabled={isResendDisabled || isResending || verifying}
-                                                        onClick={resendCode}
-                                                    >
-                                                        {isResending ? (
-                                                            <>
-                                                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                                {t('auth.common.resending')}
-                                                            </>
-                                                        ) : isResendDisabled ? (
-                                                            t('auth.forgotPassword.resendCodeIn', { seconds: resendTimer })
-                                                        ) : (
-                                                            t('auth.forgotPassword.resendCode')
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <div className="d-flex flex-wrap justify-content-center pb-lg-0">
-                                                <button type="submit" className="btn btn-primary me-4" disabled={verifying || !code || code.length !== 6}>
-                                                    <span className={verifying ? 'd-none' : 'indicator-label'}>{t('auth.forgotPassword.verifyCode')}</span>
-                                                    {verifying && (
-                                                        <span className="indicator-progress" style={{ display: 'block' }}>
-                                                            {t('auth.common.verifying')}
-                                                            <span className="spinner-border spinner-border-sm align-middle ms-2"></span>
-                                                        </span>
-                                                    )}
-                                                </button>
-                                                <button 
-                                                    type="button" 
-                                                    className="btn btn-light" 
-                                                    onClick={handleBackToRequest} 
-                                                    disabled={verifying}
-                                                >
-                                                    {t('auth.common.back')}
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-
-                                    {step === 'reset' && (
-                                        <form className="form w-100" onSubmit={handleResetPassword} noValidate>
-                                            <div className="text-center mb-10">
-                                                <h1 className="text-gray-900 fw-bolder mb-3">{t('auth.forgotPassword.setNewTitle')}</h1>
-                                                <div className="text-gray-500 fw-semibold fs-6">
-                                                    {t('auth.forgotPassword.setNewVerifiedLead')}{' '}
-                                                    <strong>{maskEmail(email)}</strong>.
-                                                </div>
-                                            </div>
-
-                                            <div className="fv-row mb-8">
-                                                <label className="form-label fw-bolder text-dark fs-6">{t('auth.common.password')}</label>
-                                                <div className="position-relative">
-                                                    <input
-                                                        type={showPassword ? 'text' : 'password'}
-                                                        placeholder={t('auth.forgotPassword.enterPasswordPlaceholder')}
-                                                        name="password"
-                                                        className={`form-control form-control-lg form-control-solid ${password && (isPasswordValid() ? 'is-valid' : 'is-invalid')}`}
-                                                        value={password}
-                                                        onChange={handlePasswordChange}
-                                                        style={{ textTransform: 'none', paddingLeft: '40px' }}
-                                                        required
-                                                    />
-                                                    <span
-                                                        className="btn btn-sm btn-icon position-absolute translate-middle-y top-50 start-0 ms-2"
-                                                        onClick={() => setShowPassword(!showPassword)}
-                                                        style={{ cursor: 'pointer' }}
-                                                    >
-                                                        <i className={`fas fa-${showPassword ? 'eye-slash' : 'eye'}`}></i>
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div className="fv-row mb-8">
-                                                <label className="form-label fw-bolder text-dark fs-6">{t('auth.common.confirmPassword')}</label>
-                                                <div className="position-relative">
-                                                    <input
-                                                        type={showPasswordConfirmation ? 'text' : 'password'}
-                                                        placeholder={t('auth.forgotPassword.confirmPasswordPlaceholder')}
-                                                        name="password_confirmation"
-                                                        className={`form-control form-control-lg form-control-solid ${passwordConfirmation && (passwordValidation.match ? 'is-valid' : 'is-invalid')}`}
-                                                        value={passwordConfirmation}
-                                                        onChange={handlePasswordChange}
-                                                        style={{ textTransform: 'none', paddingLeft: '40px' }}
-                                                        required
-                                                    />
-                                                    <span
-                                                        className="btn btn-sm btn-icon position-absolute translate-middle-y top-50 start-0 ms-2"
-                                                        onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)}
-                                                        style={{ cursor: 'pointer' }}
-                                                    >
-                                                        <i className={`fas fa-${showPasswordConfirmation ? 'eye-slash' : 'eye'}`}></i>
-                                                    </span>
-                                                </div>
-                                                {!passwordValidation.match && passwordConfirmation && (
-                                                    <div className="text-danger mt-2">{t('auth.passwordRules.doNotMatch')}</div>
-                                                )}
-                                            </div>
-
-                                            <div className="fv-row mb-8">
-                                                <div className="password-validation mt-3">
-                                                    <div className={`validation-item ${passwordValidation.length ? 'text-success' : 'text-danger'}`}>
-                                                        <i className={`fas fa-${passwordValidation.length ? 'check' : 'times'} me-2`}></i>
-                                                        {t('auth.passwordRules.atLeast8')}
-                                                    </div>
-                                                    <div className={`validation-item ${passwordValidation.uppercase ? 'text-success' : 'text-danger'}`}>
-                                                        <i className={`fas fa-${passwordValidation.uppercase ? 'check' : 'times'} me-2`}></i>
-                                                        {t('auth.passwordRules.uppercase')}
-                                                    </div>
-                                                    <div className={`validation-item ${passwordValidation.lowercase ? 'text-success' : 'text-danger'}`}>
-                                                        <i className={`fas fa-${passwordValidation.lowercase ? 'check' : 'times'} me-2`}></i>
-                                                        {t('auth.passwordRules.lowercase')}
-                                                    </div>
-                                                    <div className={`validation-item ${passwordValidation.number ? 'text-success' : 'text-danger'}`}>
-                                                        <i className={`fas fa-${passwordValidation.number ? 'check' : 'times'} me-2`}></i>
-                                                        {t('auth.passwordRules.number')}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="d-flex flex-wrap justify-content-center pb-lg-0">
-                                                <button type="submit" className="btn btn-primary me-4" disabled={resetting || !isPasswordValid() || !verifiedCode || verifiedCode.length !== 6}>
-                                                    <span className={resetting ? 'd-none' : 'indicator-label'}>{t('auth.forgotPassword.resetPassword')}</span>
-                                                    {resetting && (
-                                                        <span className="indicator-progress" style={{ display: 'block' }}>
-                                                            {t('auth.common.resetting')}
-                                                            <span className="spinner-border spinner-border-sm align-middle ms-2"></span>
-                                                        </span>
-                                                    )}
-                                                </button>
-                                                <button 
-                                                    type="button" 
-                                                    className="btn btn-light" 
-                                                    onClick={handleBackToVerify} 
-                                                    disabled={resetting}
-                                                >
-                                                    {t('auth.common.back')}
-                                                </button>
-                                            </div>
-                                        </form>
-                                    )}
-
-                                    {step === 'done' && (
-                                        <div className="w-100 text-center">
-                                            <div className="text-center mb-10">
-                                                <h1 className="text-gray-900 fw-bolder mb-3">{t('auth.forgotPassword.doneTitle')}</h1>
-                                                <div className="text-gray-500 fw-semibold fs-6">
-                                                    {t('auth.forgotPassword.doneSubtitle')}
-                                                </div>
-                                            </div>
-                                            <Link to="/login" className="btn btn-primary">{t('auth.common.goToLogin')}</Link>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+                    <div className="ml-actions-row">
+                        <button
+                            type="submit"
+                            className="ml-btn-primary"
+                            disabled={resetting || !isPasswordValid() || !verifiedCode || verifiedCode.length !== 6}
+                        >
+                            {resetting ? (
+                                <span>
+                                    {t('auth.common.resetting')}
+                                    <span className="spinner-border spinner-border-sm align-middle ms-2" role="status" />
+                                </span>
+                            ) : (
+                                t('auth.forgotPassword.resetPassword')
+                            )}
+                        </button>
+                        <button type="button" className="ml-btn-outline" onClick={handleBackToVerify} disabled={resetting}>
+                            {t('auth.common.back')}
+                        </button>
                     </div>
+                </form>
+            )}
+
+            {step === 'done' && (
+                <div className="ml-actions-row">
+                    <Link to="/login" className="ml-btn-primary">
+                        {t('auth.common.goToLogin')}
+                    </Link>
                 </div>
-            </div>
-        </>
+            )}
+        </MerchantAuthPageLayout>
     );
 };
 
 export default ForgotPassword;
-

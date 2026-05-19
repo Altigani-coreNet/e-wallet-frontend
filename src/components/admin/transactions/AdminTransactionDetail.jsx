@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
@@ -8,8 +9,18 @@ import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { useCan } from '../../../utils/permissions';
 import useMerchantCountryInfo from '../../../hooks/useMerchantCountryInfo';
+import { getTransactionStatusLabel } from '../../../utils/transactionStatusHelpers';
+import {
+    getPaymentCardBrandOrMethodLabel,
+    getPaymentChannelLabel,
+    getEntryModeLabel,
+    getTransactionPaymentTypeFieldLabel,
+} from '../../../utils/transactionPaymentHelpers';
+
+const TD_NS = 'admin.transactionDetail';
 
 const AdminTransactionDetail = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
@@ -41,12 +52,14 @@ const AdminTransactionDetail = () => {
         hasPendingRequest,
     } = useMerchantCountryInfo(transactionMerchantId ? [transactionMerchantId] : []);
 
+    const na = t('admin.common.na');
+
     // Helper function to get merchant info
     const getMerchantInfo = useCallback(() => {
         if (!transactionMerchantId) {
             return {
-                merchantName: transaction?.merchant?.business_name || transaction?.merchant?.name || 'N/A',
-                countryName: transaction?.merchant?.country?.name || 'N/A',
+                merchantName: transaction?.merchant?.business_name || transaction?.merchant?.name || na,
+                countryName: transaction?.merchant?.country?.name || na,
             };
         }
 
@@ -54,16 +67,16 @@ const AdminTransactionDetail = () => {
 
         if (record) {
             return {
-                merchantName: record.name || transaction?.merchant?.business_name || transaction?.merchant?.name || 'N/A',
-                countryName: record.countryName || 'N/A',
+                merchantName: record.name || transaction?.merchant?.business_name || transaction?.merchant?.name || na,
+                countryName: record.countryName || na,
             };
         }
 
         return {
-            merchantName: transaction?.merchant?.business_name || transaction?.merchant?.name || 'N/A',
-            countryName: 'N/A',
+            merchantName: transaction?.merchant?.business_name || transaction?.merchant?.name || na,
+            countryName: na,
         };
-    }, [transaction, transactionMerchantId, getMerchantInfoById]);
+    }, [transaction, transactionMerchantId, getMerchantInfoById, na]);
 
     /** Opens SoftPOS invoice page; URL segment should use encrypted transaction id. */
     const handleViewReceipt = useCallback(() => {
@@ -72,25 +85,29 @@ const AdminTransactionDetail = () => {
             transaction?.encrypted_id ||
             transaction?.id;
         if (!invoiceToken) {
-            toast.error('Invoice link not available');
+            toast.error(t(`${TD_NS}.invoiceLinkNotAvailable`));
             return;
         }
         const invoiceUrl = `/pos-invoice/${encodeURIComponent(String(invoiceToken))}`;
         try {
             const newWindow = window.open(invoiceUrl, '_blank', 'noopener,noreferrer');
             if (!newWindow) {
-                toast.error('Please allow pop-ups to view the invoice');
+                toast.error(t(`${TD_NS}.allowPopupsForInvoice`));
             }
         } catch (error) {
             console.error('Error opening invoice page:', error);
-            toast.error('Unable to open invoice');
+            toast.error(t(`${TD_NS}.unableToOpenInvoice`));
         }
-    }, [transaction]);
+    }, [transaction, t]);
 
     useEffect(() => {
-        setTitle('Transaction Details');
+        if (transaction) {
+            setTitle(t(`${TD_NS}.title`, { id: transaction.transaction_id || id }));
+        } else {
+            setTitle(t(`${TD_NS}.pageTitle`));
+        }
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, transaction, id, t]);
 
     useEffect(() => {
         fetchTransaction();
@@ -108,7 +125,7 @@ const AdminTransactionDetail = () => {
                         onClick={handleSendReceipt}
                     >
                         <i className="ki-duotone ki-message-text-2 fs-3"></i>
-                        Send Receipt
+                        {t(`${TD_NS}.sendReceipt`)}
                     </button>
                     
                     <button
@@ -116,7 +133,7 @@ const AdminTransactionDetail = () => {
                         onClick={handleViewReceipt}
                     >
                         <i className="ki-duotone ki-eye fs-3"></i>
-                        View Receipt
+                        {t(`${TD_NS}.viewReceipt`)}
                     </button>
                     
                     {canRefundTransaction && (
@@ -126,7 +143,7 @@ const AdminTransactionDetail = () => {
                             disabled={!canRefund}
                         >
                             <i className="ki-duotone ki-arrow-left fs-3"></i>
-                            Refund
+                            {t(`${TD_NS}.refund`)}
                         </button>
                     )}
                     
@@ -137,13 +154,13 @@ const AdminTransactionDetail = () => {
                             disabled={!canVoid}
                         >
                             <i className="ki-duotone ki-cross fs-3"></i>
-                            Void
+                            {t(`${TD_NS}.void`)}
                         </button>
                     )}
                 </div>
             );
         }
-    }, [transaction, canRefundTransaction, canVoidTransaction, handleViewReceipt]);
+    }, [transaction, canRefundTransaction, canVoidTransaction, handleViewReceipt, t]);
 
     useEffect(() => {
         if (transaction?.partner_id) {
@@ -188,7 +205,7 @@ const AdminTransactionDetail = () => {
             }
         } catch (error) {
             console.error('Error fetching transaction:', error);
-            toast.error('Failed to load transaction details');
+            toast.error(t(`${TD_NS}.loadFailed`));
         } finally {
             setLoading(false);
         }
@@ -254,22 +271,22 @@ const AdminTransactionDetail = () => {
 
     const handleSendReceipt = async () => {
         const result = await Swal.fire({
-            title: 'Send Receipt',
+            title: t(`${TD_NS}.sendReceiptTitle`),
             html: `
-                <input type="email" id="swal-email" class="swal2-input" placeholder="Email address" required>
-                <textarea id="swal-message" class="swal2-textarea" placeholder="Optional message"></textarea>
+                <input type="email" id="swal-email" class="swal2-input" placeholder="${t(`${TD_NS}.emailPlaceholder`)}" required>
+                <textarea id="swal-message" class="swal2-textarea" placeholder="${t(`${TD_NS}.messagePlaceholder`)}"></textarea>
             `,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Send',
-            cancelButtonText: 'Cancel',
+            confirmButtonText: t(`${TD_NS}.sendConfirm`),
+            cancelButtonText: t('admin.common.cancel'),
             preConfirm: () => {
                 const email = document.getElementById('swal-email').value;
                 const message = document.getElementById('swal-message').value;
                 if (!email) {
-                    Swal.showValidationMessage('Email is required');
+                    Swal.showValidationMessage(t(`${TD_NS}.emailRequired`));
                 }
                 return { email, message };
             }
@@ -288,17 +305,17 @@ const AdminTransactionDetail = () => {
                     }
                 });
                 
-                toast.success(response.data.message || 'Receipt sent successfully');
+                toast.success(response.data.message || t(`${TD_NS}.receiptSentSuccess`));
             } catch (error) {
                 console.error('Send receipt error:', error);
-                toast.error(error.response?.data?.message || 'Failed to send receipt');
+                toast.error(error.response?.data?.message || t(`${TD_NS}.receiptSentFailed`));
             }
         }
     };
 
     const handleRefund = async () => {
         if (!refundAmount || !refundReason) {
-            toast.error('Please fill in all fields');
+            toast.error(t(`${TD_NS}.fillAllFieldsRequired`));
             return;
         }
 
@@ -314,30 +331,30 @@ const AdminTransactionDetail = () => {
                 }
             });
             
-            toast.success(response.data.message || 'Refund initiated successfully');
+            toast.success(response.data.message || t(`${TD_NS}.refundSuccess`));
             setShowRefundModal(false);
             setRefundAmount('');
             setRefundReason('');
             fetchTransaction();
         } catch (error) {
             console.error('Refund error:', error);
-            toast.error(error.response?.data?.message || 'Failed to process refund');
+            toast.error(error.response?.data?.message || t(`${TD_NS}.refundFailed`));
         }
     };
 
     const handleVoid = async () => {
         const result = await Swal.fire({
-            title: 'Void Transaction',
-            text: 'Void confirmation',
+            title: t(`${TD_NS}.voidTitle`),
+            text: t(`${TD_NS}.voidConfirmText`),
             icon: 'warning',
             input: 'textarea',
-            inputLabel: 'Void Reason',
-            inputPlaceholder: 'Enter void reason',
+            inputLabel: t(`${TD_NS}.voidReasonLabel`),
+            inputPlaceholder: t(`${TD_NS}.voidPlaceholder`),
             showCancelButton: true,
             confirmButtonColor: '#dc3545',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Void',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t(`${TD_NS}.voidConfirm`),
+            cancelButtonText: t('admin.common.cancel')
         });
 
         if (result.isConfirmed) {
@@ -352,11 +369,11 @@ const AdminTransactionDetail = () => {
                     }
                 });
                 
-                toast.success(response.data.message || 'Transaction voided successfully');
+                toast.success(response.data.message || t(`${TD_NS}.voidSuccess`));
                 fetchTransaction();
             } catch (error) {
                 console.error('Void error:', error);
-                toast.error(error.response?.data?.message || 'Failed to void transaction');
+                toast.error(error.response?.data?.message || t(`${TD_NS}.voidFailed`));
             }
         }
     };
@@ -483,7 +500,7 @@ const AdminTransactionDetail = () => {
         return (
             <div className="card">
                 <div className="card-body text-center py-10">
-                    <p>Transaction not found</p>
+                    <p>{t(`${TD_NS}.notFoundTitle`)}</p>
                 </div>
             </div>
         );
@@ -496,6 +513,17 @@ const AdminTransactionDetail = () => {
 
     const resolvedPartner = partnerDetails?.partner || partnerDetails || transaction.partner || {};
     const resolvedService = serviceDetails?.service || serviceDetails || transaction.service || {};
+    const notAvail = t(`${TD_NS}.notAvailable`);
+    const loadingLabel = t('admin.common.loading');
+
+    const paymentChannelRaw =
+        transaction.paymentMethod?.payment_channel || transaction.payment_method?.payment_channel;
+    const entryModeRaw =
+        transaction.paymentMethod?.entry_mode || transaction.payment_method?.entry_mode;
+    const paymentMethodRaw =
+        transaction.method ||
+        transaction.payment_method?.card_type ||
+        transaction.paymentMethod?.card_type;
 
     return (
         <>
@@ -507,16 +535,23 @@ const AdminTransactionDetail = () => {
                             <div className="d-flex align-items-center">
                                 <div className="flex-grow-1">
                                     <div className="text-black fw-bolder fs-2 mb-2">
-                                        {transaction.status}
+                                        {getTransactionStatusLabel(transaction.status, t) || transaction.status}
                                         {(transaction.status === 'approved' || transaction.status === 'APPROVED') && (
-                                            <span className="badge badge-light-success fs-6 ms-2">Badge Number</span>
+                                            <span className="badge badge-light-success fs-6 ms-2">
+                                                {t(`${TD_NS}.badgeNumber`)}
+                                            </span>
                                         )}
                                     </div>
                                     <div className="fw-bold text-black">
-                                        {transaction.transaction_type} - {transaction.transaction_id}
+                                        {t(`${TD_NS}.typeAndTransactionId`, {
+                                            type: transaction.transaction_type || na,
+                                            id: transaction.transaction_id || na,
+                                        })}
                                     </div>
                                     <div className="text-muted fs-6">
-                                        {transaction.created_at ? new Date(transaction.created_at).toLocaleString() : 'N/A'} (GMT+4)
+                                        {transaction.created_at
+                                            ? `${new Date(transaction.created_at).toLocaleString(i18n.language)} ${t(`${TD_NS}.gmtSuffix`)}`
+                                            : na}
                                     </div>
                                 </div>
                                 <div className="text-end">
@@ -524,7 +559,7 @@ const AdminTransactionDetail = () => {
                                         {transaction.currency_symbol || '$'} {parseFloat(transaction.amount || 0).toFixed(2)}
                                     </div>
                                     <div className="fw-bold text-black">
-                                        {currency?.currency_code || 'USD'}
+                                        {currency?.currency_code || t(`${TD_NS}.defaultCurrencyCode`)}
                                     </div>
                                 </div>
                             </div>
@@ -539,9 +574,11 @@ const AdminTransactionDetail = () => {
                     <div className="card card-dashed h-xl-100 flex-row flex-stack flex-wrap p-6">
                         <div className="d-flex flex-column py-2">
                             <div className="d-flex align-items-center fs-4 fw-bolder mb-5">
-                                {transaction.paymentMethod?.cardholder_name || 'Card Information'}
+                                {transaction.paymentMethod?.cardholder_name ||
+                                    transaction.payment_method?.cardholder_name ||
+                                    t(`${TD_NS}.cardInformation`)}
                                 <span className="badge badge-light-primary fs-7 ms-2">
-                                    {transaction.transaction_type || 'N/A'}
+                                    {transaction.transaction_type || na}
                                 </span>
                             </div>
                             
@@ -552,24 +589,36 @@ const AdminTransactionDetail = () => {
                                 
                                 <div>
                                     <div className="fs-4 fw-bolder">
-                                        {(transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || 'Card').toString().toUpperCase()}
-                                        {transaction.card_number && ` **** ${transaction.card_number.slice(-4)}`}
+                                        {getPaymentCardBrandOrMethodLabel(paymentMethodRaw, t, TD_NS) ||
+                                            t(`${TD_NS}.methodCard`)}
+                                        {transaction.card_number &&
+                                            t(`${TD_NS}.cardMaskedLast4`, {
+                                                last4: transaction.card_number.slice(-4),
+                                            })}
                                     </div>
                                     <div className="fs-6 fw-bold text-gray-400">
-                                        {transaction.expiry ? `Card expires at ${transaction.expiry}` : 'Expiry information not available'}
+                                        {transaction.expiry
+                                            ? t(`${TD_NS}.cardExpiresAt`, { expiry: transaction.expiry })
+                                            : t(`${TD_NS}.cardExpiryNotAvailable`)}
                                     </div>
                                     <div className="mt-3">
                                         <div className="fs-7 text-muted">
-                                            Payment Type: {transaction.payment_type || transaction.transaction_type || 'N/A'}
+                                            {t(`${TD_NS}.paymentTypeInline`)}:{' '}
+                                            {getTransactionPaymentTypeFieldLabel(transaction.payment_type, t) ||
+                                                getTransactionPaymentTypeFieldLabel(transaction.transaction_type, t) ||
+                                                na}
                                         </div>
                                         <div className="fs-7 text-muted">
-                                            Payment Method: {transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || 'N/A'}
+                                            {t(`${TD_NS}.paymentMethodInline`)}:{' '}
+                                            {getPaymentCardBrandOrMethodLabel(paymentMethodRaw, t, TD_NS) || na}
                                         </div>
                                         <div className="fs-7 text-muted">
-                                            Payment Channel: {transaction.paymentMethod?.payment_channel || transaction.payment_method?.payment_channel || 'N/A'}
+                                            {t(`${TD_NS}.paymentChannelInline`)}:{' '}
+                                            {getPaymentChannelLabel(paymentChannelRaw, t, TD_NS) || na}
                                         </div>
                                         <div className="fs-7 text-muted">
-                                            Entry mode: {transaction.paymentMethod?.entry_mode || transaction.payment_method?.entry_mode || 'N/A'}
+                                            {t(`${TD_NS}.entryModeInline`)}:{' '}
+                                            {getEntryModeLabel(entryModeRaw, t, TD_NS) || na}
                                         </div>
                                     </div>
                                 </div>
@@ -582,32 +631,32 @@ const AdminTransactionDetail = () => {
                 <div className="col-xl-6">
                     <div className="card card-dashed h-xl-100 flex-row flex-stack flex-wrap p-6">
                         <div className="d-flex flex-column py-2 w-100">
-                            <div className="fs-4 fw-bolder mb-5">Transaction Details</div>
+                            <div className="fs-4 fw-bolder mb-5">{t(`${TD_NS}.sectionTransactionDetails`)}</div>
                             
                             <div className="row g-3">
                                 <div className="col-6">
-                                    <div className="fs-7 text-muted">RRN ID</div>
-                                    <div className="fs-6 fw-bold">{transaction.rrn || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.rrnId`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.rrn || notAvail}</div>
                                 </div>
                                 <div className="col-6">
-                                    <div className="fs-7 text-muted">Batch No</div>
-                                    <div className="fs-6 fw-bold">{transaction.batch_no || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.batchNo`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.batch_no || notAvail}</div>
                                 </div>
                                 <div className="col-6">
-                                    <div className="fs-7 text-muted">Trace</div>
-                                    <div className="fs-6 fw-bold">{transaction.trace_no || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.trace`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.trace_no || notAvail}</div>
                                 </div>
                                 <div className="col-6">
-                                    <div className="fs-7 text-muted">Approval Code</div>
-                                    <div className="fs-6 fw-bold">{transaction.auth_code || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.approvalCode`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.auth_code || notAvail}</div>
                                 </div>
                                 <div className="col-6">
-                                    <div className="fs-7 text-muted">Device Alias</div>
-                                    <div className="fs-6 fw-bold">{transaction.terminal_id || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.deviceAlias`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.terminal_id || notAvail}</div>
                                 </div>
                                 <div className="col-6">
-                                    <div className="fs-7 text-muted">SDK ID</div>
-                                    <div className="fs-6 fw-bold">{transaction.sdk || transaction.sdk_id || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.sdkId`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.sdk || transaction.sdk_id || notAvail}</div>
                                 </div>
                             </div>
                         </div>
@@ -620,11 +669,11 @@ const AdminTransactionDetail = () => {
                 <div className="col-xl-12">
                     <div className="card card-dashed h-xl-100 flex-row flex-stack flex-wrap p-6">
                         <div className="d-flex flex-column py-2 w-100">
-                            <div className="fs-4 fw-bolder mb-5">Additional Information</div>
+                            <div className="fs-4 fw-bolder mb-5">{t(`${TD_NS}.sectionAdditionalInformation`)}</div>
                             
                             <div className="row g-4">
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Merchant</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.merchant`)}</div>
                                     <div className="fs-6 fw-bold">
                                         {(() => {
                                             const merchantLoading = transactionMerchantId && (merchantInfoLoading || hasPendingRequest(transactionMerchantId));
@@ -638,7 +687,7 @@ const AdminTransactionDetail = () => {
                                     </div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Country</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.country`)}</div>
                                     <div className="fs-6 fw-bold">
                                         {(() => {
                                             const merchantLoading = transactionMerchantId && (merchantInfoLoading || hasPendingRequest(transactionMerchantId));
@@ -652,32 +701,32 @@ const AdminTransactionDetail = () => {
                                     </div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Terminal</div>
-                                    <div className="fs-6 fw-bold">{transaction.terminal_id || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.terminal`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.terminal_id || notAvail}</div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Invoice No</div>
-                                    <div className="fs-6 fw-bold">{transaction.invoice_no || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.invoiceNo`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.invoice_no || notAvail}</div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Linked Trans</div>
-                                    <div className="fs-6 fw-bold">No linked transaction</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.linkedTrans`)}</div>
+                                    <div className="fs-6 fw-bold">{t(`${TD_NS}.noLinkedTransaction`)}</div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">Geo Fence Result</div>
-                                    <div className="fs-6 fw-bold">Not available</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.geoFenceResult`)}</div>
+                                    <div className="fs-6 fw-bold">{notAvail}</div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">MID</div>
-                                    <div className="fs-6 fw-bold">{transaction.mid || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.mid`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.mid || notAvail}</div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">TID</div>
-                                    <div className="fs-6 fw-bold">{transaction.tid || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.tid`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.tid || notAvail}</div>
                                 </div>
                                 <div className="col-md-3">
-                                    <div className="fs-7 text-muted">ATC</div>
-                                    <div className="fs-6 fw-bold">{transaction.atc || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.atc`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.atc || notAvail}</div>
                                 </div>
                             </div>
                         </div>
@@ -690,14 +739,14 @@ const AdminTransactionDetail = () => {
                 <div className="col-xl-6">
                     <div className="card card-dashed h-xl-100 p-6">
                         <div className="d-flex flex-column py-2 w-100">
-                            <div className="fs-4 fw-bolder mb-5">Partner Information</div>
+                            <div className="fs-4 fw-bolder mb-5">{t(`${TD_NS}.sectionPartnerInformation`)}</div>
                             <div className="row g-4">
                                 <div className="col-12">
                                     <div className="d-flex align-items-center mb-3">
                                         {(resolvedPartner?.logo_url || resolvedPartner?.logo || transaction.partner?.logo_url || transaction.partner?.logo) ? (
                                             <img
                                                 src={resolvedPartner?.logo_url || resolvedPartner?.logo || transaction.partner?.logo_url || transaction.partner?.logo}
-                                                alt="Partner logo"
+                                                alt={t(`${TD_NS}.partnerLogoAlt`)}
                                                 style={{
                                                     width: '48px',
                                                     height: '48px',
@@ -717,26 +766,26 @@ const AdminTransactionDetail = () => {
                                     </div>
                                 </div>
                                 <div className="col-12">
-                                    <div className="fs-7 text-muted">Partner Name</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.partnerName`)}</div>
                                     <div className="fs-6 fw-bold">
                                         {partnerLoading
-                                            ? 'Loading...'
+                                            ? loadingLabel
                                             : (resolvedPartner?.name ||
                                                 resolvedPartner?.business_name ||
                                                 transaction.partner?.name ||
                                                 transaction.partner?.business_name ||
                                                 transaction.partner_name ||
-                                                'Not available')}
+                                                notAvail)}
                                     </div>
                                 </div>
                                 <div className="col-12">
-                                    <div className="fs-7 text-muted">Owner Name</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.ownerName`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {resolvedPartner?.owner_name || transaction.partner?.owner_name || 'Not available'}
+                                        {resolvedPartner?.owner_name || transaction.partner?.owner_name || notAvail}
                                     </div>
                                 </div>
                                 <div className="col-12">
-                                    <div className="fs-7 text-muted">Description</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.description`)}</div>
                                     <div className="fs-6 fw-bold text-wrap">
                                         {resolvedPartner?.description ||
                                             transaction.partner?.description ||
@@ -744,12 +793,12 @@ const AdminTransactionDetail = () => {
                                             transaction.partner?.business_name ||
                                             resolvedPartner?.address ||
                                             transaction.partner?.address ||
-                                            'Not available'}
+                                            notAvail}
                                     </div>
                                 </div>
                                 <div className="col-12">
                                     <div className="fs-7 text-muted">Partner ID</div>
-                                    <div className="fs-6 fw-bold">{transaction.partner_id || 'Not available'}</div>
+                                    <div className="fs-6 fw-bold">{transaction.partner_id || notAvail}</div>
                                 </div>
                             </div>
                         </div>
@@ -759,14 +808,14 @@ const AdminTransactionDetail = () => {
                 <div className="col-xl-6">
                     <div className="card card-dashed h-xl-100 p-6">
                         <div className="d-flex flex-column py-2 w-100">
-                            <div className="fs-4 fw-bolder mb-5">Service Information</div>
+                            <div className="fs-4 fw-bolder mb-5">{t(`${TD_NS}.sectionServiceInformation`)}</div>
                             <div className="row g-4">
                                 <div className="col-12">
                                     <div className="d-flex align-items-center mb-3">
                                         {(resolvedService?.image || transaction.service?.image) ? (
                                             <img
                                                 src={resolvedService?.image || transaction.service?.image}
-                                                alt="Service image"
+                                                alt={t(`${TD_NS}.serviceImageAlt`)}
                                                 style={{
                                                     width: '48px',
                                                     height: '48px',
@@ -786,48 +835,48 @@ const AdminTransactionDetail = () => {
                                     </div>
                                 </div>
                                 <div className="col-12">
-                                    <div className="fs-7 text-muted">Service Category</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.serviceCategory`)}</div>
                                     <div className="fs-6 fw-bold">
                                         {serviceLoading
-                                            ? 'Loading...'
+                                            ? loadingLabel
                                             : (resolvedService?.category?.name_en ||
                                                 resolvedService?.category_name ||
                                                 transaction.service_category?.name_en ||
                                                 transaction.service_category_name ||
-                                                'Not available')}
+                                                notAvail)}
                                     </div>
                                 </div>
                                 <div className="col-12">
-                                    <div className="fs-7 text-muted">Service Name</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.serviceName`)}</div>
                                     <div className="fs-6 fw-bold">
                                         {serviceLoading
-                                            ? 'Loading...'
+                                            ? loadingLabel
                                             : (resolvedService?.service_name?.en ||
                                                 resolvedService?.name_en ||
                                                 transaction.service?.service_name?.en ||
                                                 transaction.service_name ||
-                                                'Not available')}
+                                                notAvail)}
                                     </div>
                                 </div>
                                 <div className="col-12">
-                                    <div className="fs-7 text-muted">Description</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.description`)}</div>
                                     <div className="fs-6 fw-bold text-wrap">
                                         {serviceLoading
-                                            ? 'Loading...'
+                                            ? loadingLabel
                                             : (resolvedService?.description?.en ||
                                                 resolvedService?.description ||
                                                 transaction.service?.description?.en ||
                                                 transaction.service?.description ||
-                                                'Not available')}
+                                                notAvail)}
                                     </div>
                                 </div>
                                 <div className="col-12">
-                                    <div className="fs-7 text-muted">Service ID</div>
-                                    <div className="fs-6 fw-bold">{transaction.service_id || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.serviceId`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.service_id || notAvail}</div>
                                 </div>
                                 <div className="col-12">
-                                    <div className="fs-7 text-muted">Service Category ID</div>
-                                    <div className="fs-6 fw-bold">{transaction.service_category_id || 'Not available'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.serviceCategoryId`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.service_category_id || notAvail}</div>
                                 </div>
                             </div>
                         </div>
@@ -845,63 +894,67 @@ const AdminTransactionDetail = () => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Payment Request
+                                {t(`${TD_NS}.sectionPaymentRequest`)}
                             </div>
 
                             <div className="row g-4">
                                 {/* Core request details */}
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Transaction ID</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.transactionId`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.transaction_id || 'N/A'}
+                                        {transaction.transaction_id || na}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Amount</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.amount`)}</div>
                                     <div className="fs-6 fw-bold">
                                         {transaction.currency_symbol || '$'} {parseFloat(transaction.original_amount || transaction.amount || 0).toFixed(2)}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Currency</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.currency`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {(transaction.currency_symbol || '$')} ({currency?.currency_code || transaction.currency?.currency_code || 'USD'})
+                                        {(transaction.currency_symbol || '$')} ({currency?.currency_code || transaction.currency?.currency_code || t(`${TD_NS}.defaultCurrencyCode`)})
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Request Timestamp</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.requestTimestamp`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.timestamp || transaction.created_at ? new Date(transaction.timestamp || transaction.created_at).toLocaleString() : 'N/A'}
+                                        {transaction.timestamp || transaction.created_at
+                                            ? new Date(transaction.timestamp || transaction.created_at).toLocaleString(i18n.language)
+                                            : na}
                                     </div>
                                 </div>
 
                                 {/* Merchant / terminal on request */}
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Merchant ID (MID)</div>
-                                    <div className="fs-6 fw-bold">{transaction.mid || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.merchantIdMid`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.mid || na}</div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Terminal ID (TID)</div>
-                                    <div className="fs-6 fw-bold">{transaction.tid || transaction.terminal_id || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.terminalIdTid`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.tid || transaction.terminal_id || na}</div>
                                 </div>
 
                                 {/* Payment routing on request */}
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Payment Type</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.paymentTypeInline`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.payment_type || transaction.transaction_type || 'N/A'}
+                                        {getTransactionPaymentTypeFieldLabel(transaction.payment_type, t) ||
+                                            getTransactionPaymentTypeFieldLabel(transaction.transaction_type, t) ||
+                                            na}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Payment Method</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.paymentMethodInline`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || 'N/A'}
+                                        {transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || na}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Payment Channel</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.paymentChannelInline`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.paymentMethod?.payment_channel || transaction.payment_method?.payment_channel || 'N/A'}
+                                        {transaction.paymentMethod?.payment_channel || transaction.payment_method?.payment_channel || na}
                                     </div>
                                 </div>
 
@@ -909,15 +962,15 @@ const AdminTransactionDetail = () => {
                                 {(transaction.paymentMethod || transaction.payment_method) && (
                                     <>
                                         <div className="col-md-4">
-                                            <div className="fs-7 text-muted">Cardholder Name</div>
+                                            <div className="fs-7 text-muted">{t(`${TD_NS}.cardholderName`)}</div>
                                             <div className="fs-6 fw-bold">
-                                                {transaction.paymentMethod?.cardholder_name || transaction.payment_method?.cardholder_name || 'N/A'}
+                                                {transaction.paymentMethod?.cardholder_name || transaction.payment_method?.cardholder_name || na}
                                             </div>
                                         </div>
                                         <div className="col-md-4">
-                                            <div className="fs-7 text-muted">Entry Mode</div>
+                                            <div className="fs-7 text-muted">{t(`${TD_NS}.entryMode`)}</div>
                                             <div className="fs-6 fw-bold">
-                                                {transaction.paymentMethod?.entry_mode || transaction.payment_method?.entry_mode || 'N/A'}
+                                                {getEntryModeLabel(entryModeRaw, t, TD_NS) || na}
                                             </div>
                                         </div>
                                     </>
@@ -938,40 +991,41 @@ const AdminTransactionDetail = () => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Payment Response
+                                {t(`${TD_NS}.sectionPaymentResponse`)}
                             </div>
 
                             <div className="row g-4">
                                 {/* Status / basic identifiers */}
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">SDK Status</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.sdkStatus`)}</div>
                                     <div className="fs-6 fw-bold">
                                         <span className={`badge badge-light-${getStatusClass(transaction.state || transaction.status)}`}>
-                                            {transaction.state || transaction.status || 'N/A'}
+                                            {getTransactionStatusLabel(transaction.state || transaction.status, t) ||
+                                                (transaction.state || transaction.status || na)}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">RRN ID</div>
-                                    <div className="fs-6 fw-bold">{transaction.rrn || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.rrnId`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.rrn || na}</div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Approval Code</div>
-                                    <div className="fs-6 fw-bold">{transaction.auth_code || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.approvalCode`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.auth_code || na}</div>
                                 </div>
 
                                 {/* Merchant / terminal / routing */}
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Merchant ID (MID)</div>
-                                    <div className="fs-6 fw-bold">{transaction.mid || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.merchantIdMid`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.mid || na}</div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Terminal ID (TID)</div>
-                                    <div className="fs-6 fw-bold">{transaction.tid || transaction.terminal_id || 'N/A'}</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.terminalIdTid`)}</div>
+                                    <div className="fs-6 fw-bold">{transaction.tid || transaction.terminal_id || na}</div>
                                 </div>
                                 {(transaction.sdk || transaction.sdk_id) && (
                                     <div className="col-md-4">
-                                        <div className="fs-7 text-muted">SDK ID</div>
+                                        <div className="fs-7 text-muted">{t(`${TD_NS}.sdkId`)}</div>
                                         <div className="fs-6 fw-bold">{transaction.sdk || transaction.sdk_id}</div>
                                     </div>
                                 )}
@@ -979,59 +1033,61 @@ const AdminTransactionDetail = () => {
                                 {/* Card / EMV technical data */}
                                 {transaction.atc && (
                                     <div className="col-md-4">
-                                        <div className="fs-7 text-muted">ATC</div>
+                                        <div className="fs-7 text-muted">{t(`${TD_NS}.atc`)}</div>
                                         <div className="fs-6 fw-bold">{transaction.atc}</div>
                                     </div>
                                 )}
                                 {transaction.tvr && (
                                     <div className="col-md-4">
-                                        <div className="fs-7 text-muted">TVR</div>
+                                        <div className="fs-7 text-muted">{t(`${TD_NS}.fieldTvr`)}</div>
                                         <div className="fs-6 fw-bold">{transaction.tvr}</div>
                                     </div>
                                 )}
                                 {transaction.tsi && (
                                     <div className="col-md-4">
-                                        <div className="fs-7 text-muted">TSI</div>
+                                        <div className="fs-7 text-muted">{t(`${TD_NS}.fieldTsi`)}</div>
                                         <div className="fs-6 fw-bold">{transaction.tsi}</div>
                                     </div>
                                 )}
                                 {transaction.app_name && (
                                     <div className="col-md-4">
-                                        <div className="fs-7 text-muted">Application Name</div>
+                                        <div className="fs-7 text-muted">{t(`${TD_NS}.applicationName`)}</div>
                                         <div className="fs-6 fw-bold">{transaction.app_name}</div>
                                     </div>
                                 )}
 
                                 {/* Payment method breakdown */}
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Payment Type</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.paymentTypeInline`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.payment_type || transaction.transaction_type || 'N/A'}
+                                        {getTransactionPaymentTypeFieldLabel(transaction.payment_type, t) ||
+                                            getTransactionPaymentTypeFieldLabel(transaction.transaction_type, t) ||
+                                            na}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Payment Method</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.paymentMethodInline`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || 'N/A'}
+                                        {transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || na}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Payment Channel</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.paymentChannelInline`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.paymentMethod?.payment_channel || transaction.payment_method?.payment_channel || 'N/A'}
+                                        {transaction.paymentMethod?.payment_channel || transaction.payment_method?.payment_channel || na}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
-                                    <div className="fs-7 text-muted">Entry Mode</div>
+                                    <div className="fs-7 text-muted">{t(`${TD_NS}.entryMode`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.paymentMethod?.entry_mode || transaction.payment_method?.entry_mode || 'N/A'}
+                                        {getEntryModeLabel(entryModeRaw, t, TD_NS) || na}
                                     </div>
                                 </div>
 
                                 {/* Response / error details */}
                                 {(transaction.decline_reason || transaction.error_message) && (
                                     <div className="col-md-8">
-                                        <div className="fs-7 text-muted">Gateway Response</div>
+                                        <div className="fs-7 text-muted">{t(`${TD_NS}.gatewayResponse`)}</div>
                                         <div className="fs-6 fw-bold text-wrap">
                                             {transaction.decline_reason || transaction.error_message}
                                         </div>
@@ -1049,7 +1105,7 @@ const AdminTransactionDetail = () => {
                     <div className="modal-dialog">
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title">Refund Transaction</h5>
+                                <h5 className="modal-title">{t(`${TD_NS}.refundTitle`)}</h5>
                                 <button
                                     type="button"
                                     className="btn-close"
@@ -1058,23 +1114,23 @@ const AdminTransactionDetail = () => {
                             </div>
                             <div className="modal-body">
                                 <div className="mb-3 d-flex justify-content-between align-items-center">
-                                    <span className="fw-bold">Transaction ID</span>
+                                    <span className="fw-bold">{t(`${TD_NS}.transactionId`)}</span>
                                     <span className="badge bg-light-primary">{transaction.transaction_id}</span>
                                 </div>
                                 <div className="mb-3 d-flex justify-content-between align-items-center">
-                                    <span className="fw-bold">Amount</span>
+                                    <span className="fw-bold">{t(`${TD_NS}.amount`)}</span>
                                     <span className="badge bg-light-info">
                                         {transaction.currency_symbol || '$'} {parseFloat(transaction.amount || 0).toFixed(2)}
                                     </span>
                                 </div>
                                 <div className="mb-3 d-flex justify-content-between align-items-center">
-                                    <span className="fw-bold">Refundable Amount</span>
+                                    <span className="fw-bold">{t(`${TD_NS}.refundableAmount`)}</span>
                                     <span className="badge bg-light-success">
                                         {transaction.currency_symbol || '$'} {parseFloat(transaction.refundable_amount || transaction.amount || 0).toFixed(2)}
                                     </span>
                                 </div>
                                 <div className="mb-3">
-                                    <label htmlFor="refund-amount" className="form-label">Refund Amount</label>
+                                    <label htmlFor="refund-amount" className="form-label">{t(`${TD_NS}.refundAmountLabel`)}</label>
                                     <input
                                         type="number"
                                         step="0.01"
@@ -1088,7 +1144,7 @@ const AdminTransactionDetail = () => {
                                     />
                                 </div>
                                 <div className="mb-3">
-                                    <label htmlFor="refund-reason" className="form-label">Refund Reason</label>
+                                    <label htmlFor="refund-reason" className="form-label">{t(`${TD_NS}.refundReasonLabel`)}</label>
                                     <textarea
                                         className="form-control"
                                         id="refund-reason"
@@ -1105,14 +1161,14 @@ const AdminTransactionDetail = () => {
                                     className="btn btn-secondary"
                                     onClick={() => setShowRefundModal(false)}
                                 >
-                                    Cancel
+                                    {t('admin.common.cancel')}
                                 </button>
                                 <button
                                     type="button"
                                     className="btn btn-warning"
                                     onClick={handleRefund}
                                 >
-                                    Refund
+                                    {t(`${TD_NS}.refundConfirm`)}
                                 </button>
                             </div>
                         </div>

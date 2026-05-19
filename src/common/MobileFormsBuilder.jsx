@@ -1,5 +1,25 @@
 import React, { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import IPhoneMockup from './IPhoneMockup';
+
+const FB = 'admin.paymentGetway.formsBuilder';
+
+const FIELD_TYPE_I18N_KEYS = {
+    'Text Field': 'fieldTypeTextField',
+    'Email Field': 'fieldTypeEmailField',
+    'Number Field': 'fieldTypeNumberField',
+    'Date Field': 'fieldTypeDateField',
+    'Password Field': 'fieldTypePasswordField',
+    'Radio Buttons': 'fieldTypeRadioButtons',
+    Checkbox: 'fieldTypeCheckbox',
+    Dropdown: 'fieldTypeDropdown',
+    'Multiline Text Field': 'fieldTypeMultilineTextField',
+};
+
+const translateFieldType = (type, t) => {
+    const key = FIELD_TYPE_I18N_KEYS[type];
+    return key ? t(`${FB}.${key}`) : type;
+};
 
 const makeId = () => `${Date.now()}_${Math.random().toString(16).slice(2)}`;
 const getOptionIdentity = (option, index) => (option?.id ? `${option.id}` : `idx_${index}`);
@@ -63,7 +83,8 @@ const isTextCustomizationType = (type) => {
 };
 const getFieldCustomization = (field) =>
     field?.customization && typeof field.customization === 'object' ? field.customization : {};
-const getFormTitle = (form) => form?.form_name?.en?.trim() || form?.title?.trim() || 'Mobile Services Form';
+const getFormTitle = (form, defaultTitle = '') =>
+    form?.form_name?.en?.trim() || form?.title?.trim() || defaultTitle;
 
 const previewScreenShellStyle = {
     flex: 1,
@@ -75,7 +96,9 @@ const previewScreenShellStyle = {
     flexDirection: 'column',
 };
 
-const ServiceFormPreview = ({ formData, label, subLabel }) => (
+const ServiceFormPreview = ({ formData, label, subLabel }) => {
+    const { t } = useTranslation();
+    return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <div
             className="d-flex align-items-center px-4 py-3 mb-4"
@@ -93,7 +116,7 @@ const ServiceFormPreview = ({ formData, label, subLabel }) => (
                     <span className="path2"></span>
                 </i>
                 <div>
-                    <h3 className="mb-0 fs-5 fw-bold text-dark">{label || 'Live Form Preview'}</h3>
+                    <h3 className="mb-0 fs-5 fw-bold text-dark">{label || t(`${FB}.liveFormPreview`)}</h3>
                     {subLabel ? <div className="text-muted fs-8">{subLabel}</div> : null}
                 </div>
             </div>
@@ -113,7 +136,7 @@ const ServiceFormPreview = ({ formData, label, subLabel }) => (
 
                     return (
                         <div className="form-group mb-4" key={field.id}>
-                            <label className="form-label fw-bold">{field.label_en || 'Field'}</label>
+                            <label className="form-label fw-bold">{field.label_en || t(`${FB}.defaultFieldLabel`)}</label>
 
                             {field.type === 'Text Field' && (
                                 <input type="text" className="form-control" placeholder={field.label_en || ''} />
@@ -173,7 +196,7 @@ const ServiceFormPreview = ({ formData, label, subLabel }) => (
                     );
                 })
             ) : (
-                <p className="text-muted">No fields to preview.</p>
+                <p className="text-muted">{t(`${FB}.noFieldsPreview`)}</p>
             )}
         </div>
 
@@ -198,7 +221,7 @@ const ServiceFormPreview = ({ formData, label, subLabel }) => (
                         background: '#ffffff',
                     }}
                 >
-                    Cancel
+                    {t(`${FB}.cancel`)}
                 </button>
                 <button
                     type="button"
@@ -212,14 +235,16 @@ const ServiceFormPreview = ({ formData, label, subLabel }) => (
                         boxShadow: '0 6px 14px rgba(25, 118, 210, 0.25)',
                     }}
                 >
-                    Process
+                    {t(`${FB}.process`)}
                 </button>
             </div>
         </div>
     </div>
-);
+    );
+};
 
 const InteractiveServiceFormPreview = ({ label, subLabel, formId, fields, values, errors, onChange, onCancel, onProcess, completed }) => {
+    const { t } = useTranslation();
     const previewFields = (fields || []).map((field) => ({
         ...field,
         options_json: JSON.stringify(field.options || []),
@@ -244,7 +269,7 @@ const InteractiveServiceFormPreview = ({ label, subLabel, formId, fields, values
                             <span className="path2"></span>
                         </i>
                         <div>
-                            <h3 className="mb-0 fs-5 fw-bold text-dark">{label || 'Live Form Preview'}</h3>
+                            <h3 className="mb-0 fs-5 fw-bold text-dark">{label || t(`${FB}.liveFormPreview`)}</h3>
                             {subLabel ? <div className="text-muted fs-8">{subLabel}</div> : null}
                         </div>
                     </div>
@@ -269,8 +294,8 @@ const InteractiveServiceFormPreview = ({ label, subLabel, formId, fields, values
                             <span className="path2"></span>
                         </i>
                     </div>
-                    <h4 className="fw-bold mb-2">Success</h4>
-                    <div className="text-muted mb-0">You have completed the process successfully.</div>
+                    <h4 className="fw-bold mb-2">{t(`${FB}.success`)}</h4>
+                    <div className="text-muted mb-0">{t(`${FB}.successMessage`)}</div>
                 </div>
                 <div
                     style={{
@@ -294,7 +319,7 @@ const InteractiveServiceFormPreview = ({ label, subLabel, formId, fields, values
                         }}
                         onClick={onCancel}
                     >
-                        Close
+                        {t(`${FB}.close`)}
                     </button>
                 </div>
             </div>
@@ -319,7 +344,7 @@ const InteractiveServiceFormPreview = ({ label, subLabel, formId, fields, values
                         <span className="path2"></span>
                     </i>
                     <div>
-                        <h3 className="mb-0 fs-5 fw-bold text-dark">{label || 'Live Form Preview'}</h3>
+                        <h3 className="mb-0 fs-5 fw-bold text-dark">{label || t(`${FB}.liveFormPreview`)}</h3>
                         {subLabel ? <div className="text-muted fs-8">{subLabel}</div> : null}
                     </div>
                 </div>
@@ -343,7 +368,7 @@ const InteractiveServiceFormPreview = ({ label, subLabel, formId, fields, values
 
                         return (
                             <div className="form-group mb-4" key={field.id}>
-                                <label className="form-label fw-bold">{field.label_en || 'Field'}</label>
+                                <label className="form-label fw-bold">{field.label_en || t(`${FB}.defaultFieldLabel`)}</label>
 
                                 {field.type === 'Text Field' && (
                                     <input
@@ -405,7 +430,7 @@ const InteractiveServiceFormPreview = ({ label, subLabel, formId, fields, values
                                         value={value}
                                         onChange={(e) => onChange(formId, fieldKey, e.target.value)}
                                     >
-                                        <option value="">Select</option>
+                                        <option value="">{t(`${FB}.select`)}</option>
                                         {options.map((opt, idx) => (
                                             <option value={opt.value || `${idx}`} key={`${opt.value || 'opt'}-${idx}`}>
                                                 {opt.label_en || ''}
@@ -475,12 +500,12 @@ const InteractiveServiceFormPreview = ({ label, subLabel, formId, fields, values
                                         onChange={(e) => onChange(formId, fieldKey, e.target.value)}
                                     />
                                 )}
-                                {hasError && <div className="invalid-feedback d-block">This field is required.</div>}
+                                {hasError && <div className="invalid-feedback d-block">{t(`${FB}.fieldRequired`)}</div>}
                             </div>
                         );
                     })
                 ) : (
-                    <p className="text-muted">No fields to preview.</p>
+                    <p className="text-muted">{t(`${FB}.noFieldsPreview`)}</p>
                 )}
             </div>
 
@@ -506,7 +531,7 @@ const InteractiveServiceFormPreview = ({ label, subLabel, formId, fields, values
                         }}
                         onClick={onCancel}
                     >
-                        Cancel
+                        {t(`${FB}.cancel`)}
                     </button>
                     <button
                         type="button"
@@ -521,7 +546,7 @@ const InteractiveServiceFormPreview = ({ label, subLabel, formId, fields, values
                         }}
                         onClick={onProcess}
                     >
-                        Process
+                        {t(`${FB}.process`)}
                     </button>
                 </div>
             </div>
@@ -554,6 +579,8 @@ const ensureBaseForm = (existing) => {
 };
 
 const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions = false }, ref) => {
+    const { t } = useTranslation();
+    const defaultFormTitle = t('admin.paymentGetway.mobileServicesForm');
     const [builderErrors, setBuilderErrors] = useState({});
 
     const [previewOpen, setPreviewOpen] = useState(false);
@@ -565,16 +592,19 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
     const forms = useMemo(() => ensureBaseForm(value), [value]);
 
     const setForms = (next) => {
-        onChange(next);
+        const base = ensureBaseForm(value);
+        onChange(typeof next === 'function' ? next(base) : next);
     };
 
     const addMobileServiceForm = () => {
+        const formNumber = forms.length + 1;
+        const numberedTitle = t(`${FB}.mobileServicesFormNumbered`, { number: formNumber });
         setForms([
             ...forms,
             {
                 id: makeId(),
-                title: `Mobile Services Form ${forms.length + 1}`,
-                form_name: { en: `Mobile Services Form ${forms.length + 1}`, ar: '' },
+                title: numberedTitle,
+                form_name: { en: numberedTitle, ar: '' },
                 form_url: '',
                 fields: [
                     {
@@ -686,7 +716,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                 const next = { ...prev };
                 const perForm = { ...(next[formId] || {}) };
                 if (!trimmed) {
-                    perForm[fieldId] = 'Key is required';
+                    perForm[fieldId] = t(`${FB}.keyRequired`);
                 } else {
                     delete perForm[fieldId];
                 }
@@ -830,7 +860,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                         <div className="card p-5 mt-4 col-md-7">
                             <div className="card-header d-flex justify-content-between align-items-center flex-nowrap gap-2">
                                 <div className="card-title">
-                                    <h3 className="card-label">{getFormTitle(mobileForm)}</h3>
+                                    <h3 className="card-label">{getFormTitle(mobileForm, defaultFormTitle)}</h3>
                                 </div>
                                 <div className="card-toolbar">
                                     <button
@@ -838,7 +868,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                         className="btn btn-sm btn-success me-2"
                                         onClick={() => addServiceField(mobileForm.id)}
                                     >
-                                        <i className="la la-plus"></i> Add Field
+                                        <i className="la la-plus"></i> {t(`${FB}.addField`)}
                                     </button>
                                     <button
                                         type="button"
@@ -846,30 +876,39 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                         onClick={() => removeMobileServiceForm(mobileForm.id)}
                                         disabled={(forms || []).length === 1}
                                     >
-                                        <i className="la la-trash"></i> Remove Form
+                                        <i className="la la-trash"></i> {t(`${FB}.removeForm`)}
                                     </button>
                                 </div>
                             </div>
                             <div className="card-body p-3">
                                 <div className="row mb-5">
                                     <div className="col-md-6">
-                                        <label className="form-label fw-semibold">Form Name (English)</label>
+                                        <label className="form-label fw-semibold">{t(`${FB}.formNameEnglish`)}</label>
                                         <input
                                             type="text"
                                             className="form-control"
                                             value={mobileForm.form_name?.en ?? mobileForm.title ?? ''}
                                             onChange={(e) => {
                                                 const nextEn = e.target.value;
-                                                updateMobileFormMeta(mobileForm.id, 'form_name', {
-                                                    en: nextEn,
-                                                    ar: mobileForm.form_name?.ar ?? '',
-                                                });
-                                                updateMobileFormMeta(mobileForm.id, 'title', nextEn);
+                                                setForms((prevForms) =>
+                                                    prevForms.map((f) =>
+                                                        f.id === mobileForm.id
+                                                            ? {
+                                                                  ...f,
+                                                                  title: nextEn,
+                                                                  form_name: {
+                                                                      en: nextEn,
+                                                                      ar: f.form_name?.ar ?? '',
+                                                                  },
+                                                              }
+                                                            : f
+                                                    )
+                                                );
                                             }}
                                         />
                                     </div>
                                     <div className="col-md-6">
-                                        <label className="form-label fw-semibold">Form Name (Arabic)</label>
+                                        <label className="form-label fw-semibold">{t(`${FB}.formNameArabic`)}</label>
                                         <input
                                             type="text"
                                             className="form-control"
@@ -884,7 +923,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                         />
                                     </div>
                                     <div className="col-md-6">
-                                        <label className="form-label fw-semibold">Form URL</label>
+                                        <label className="form-label fw-semibold">{t(`${FB}.formUrl`)}</label>
                                         <input
                                             type="text"
                                             className="form-control"
@@ -909,7 +948,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                             return (
                                         <div className="row">
                                             <div className="col-md-6 mb-4">
-                                                <label className="form-label">Label English</label>
+                                                <label className="form-label">{t(`${FB}.labelEnglish`)}</label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
@@ -918,7 +957,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-4">
-                                                <label className="form-label">Label Arabic</label>
+                                                <label className="form-label">{t(`${FB}.labelArabic`)}</label>
                                                 <input
                                                     type="text"
                                                     className="form-control"
@@ -927,7 +966,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                 />
                                             </div>
                                             <div className="col-md-6 mb-4">
-                                                <label className="form-label">Key</label>
+                                                <label className="form-label">{t(`${FB}.key`)}</label>
                                                 <input
                                                     type="text"
                                                     className={`form-control ${builderErrors?.[mobileForm.id]?.[field.id] ? 'is-invalid' : ''}`}
@@ -941,7 +980,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                 )}
                                             </div>
                                             <div className="col-md-6 mb-4">
-                                                <label className="form-label">Type</label>
+                                                <label className="form-label">{t(`${FB}.type`)}</label>
                                                 <select
                                                     className="form-select"
                                                     value={field.type}
@@ -949,7 +988,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                 >
                                                     {FIELD_TYPES.map((type) => (
                                                         <option key={type} value={type}>
-                                                            {type}
+                                                            {translateFieldType(type, t)}
                                                         </option>
                                                     ))}
                                                 </select>
@@ -964,7 +1003,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                         onChange={(e) => updateServiceField(mobileForm.id, field.id, 'is_required', e.target.checked)}
                                                     />
                                                     <label className="form-check-label fw-semibold" htmlFor={`required-${mobileForm.id}-${field.id}`}>
-                                                        Required Field
+                                                        {t(`${FB}.requiredField`)}
                                                     </label>
                                                 </div>
                                             </div>
@@ -983,7 +1022,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                             }}
                                                         />
                                                         <label className="form-check-label fw-semibold" htmlFor={`customization-enable-${mobileForm.id}-${field.id}`}>
-                                                            Enable Customization
+                                                            {t(`${FB}.enableCustomization`)}
                                                         </label>
                                                     </div>
                                                 </div>
@@ -991,13 +1030,13 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                             {showTextCustomization && (
                                                 <>
                                                     <div className="col-md-4 mb-4">
-                                                        <label className="form-label">Min</label>
+                                                        <label className="form-label">{t(`${FB}.min`)}</label>
                                                         <input
                                                             type="number"
                                                             className="form-control"
                                                             min="0"
                                                             value={customization.min ?? ''}
-                                                            placeholder="Minimum length"
+                                                            placeholder={t(`${FB}.minLengthPlaceholder`)}
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -1009,13 +1048,13 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                         />
                                                     </div>
                                                     <div className="col-md-4 mb-4">
-                                                        <label className="form-label">Max</label>
+                                                        <label className="form-label">{t(`${FB}.max`)}</label>
                                                         <input
                                                             type="number"
                                                             className="form-control"
                                                             min="0"
                                                             value={customization.max ?? ''}
-                                                            placeholder="Maximum length"
+                                                            placeholder={t(`${FB}.maxLengthPlaceholder`)}
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -1027,7 +1066,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                         />
                                                     </div>
                                                     <div className="col-md-4 mb-4">
-                                                        <label className="form-label">Regex</label>
+                                                        <label className="form-label">{t(`${FB}.regex`)}</label>
                                                         <input
                                                             type="text"
                                                             className="form-control"
@@ -1040,16 +1079,16 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                                     { ...customization, enabled: true, regex: e.target.value }
                                                                 )
                                                             }
-                                                            placeholder="e.g. ^[a-zA-Z0-9]+$"
+                                                            placeholder={t(`${FB}.regexPlaceholder`)}
                                                         />
                                                     </div>
                                                     <div className="col-12 mb-4">
-                                                        <label className="form-label">Hint</label>
+                                                        <label className="form-label">{t(`${FB}.hint`)}</label>
                                                         <input
                                                             type="text"
                                                             className="form-control"
                                                             value={customization.hint ?? ''}
-                                                            placeholder="e.g. Enter your account number"
+                                                            placeholder={t(`${FB}.hintPlaceholderAccount`)}
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -1061,21 +1100,19 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                         />
                                                     </div>
                                                     <div className="col-12 mb-2">
-                                                        <small className="text-muted">
-                                                            Hint: for text fields, Min/Max are saved as Min Length/Max Length.
-                                                        </small>
+                                                        <small className="text-muted">{t(`${FB}.textCustomizationHint`)}</small>
                                                     </div>
                                                 </>
                                             )}
                                             {showNumberCustomization && (
                                                 <>
                                                     <div className="col-md-6 mb-4">
-                                                        <label className="form-label">Min</label>
+                                                        <label className="form-label">{t(`${FB}.min`)}</label>
                                                         <input
                                                             type="number"
                                                             className="form-control"
                                                             value={customization.min ?? ''}
-                                                            placeholder="Minimum value"
+                                                            placeholder={t(`${FB}.minValuePlaceholder`)}
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -1087,12 +1124,12 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                         />
                                                     </div>
                                                     <div className="col-md-6 mb-4">
-                                                        <label className="form-label">Max</label>
+                                                        <label className="form-label">{t(`${FB}.max`)}</label>
                                                         <input
                                                             type="number"
                                                             className="form-control"
                                                             value={customization.max ?? ''}
-                                                            placeholder="Maximum value"
+                                                            placeholder={t(`${FB}.maxValuePlaceholder`)}
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -1104,12 +1141,12 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                         />
                                                     </div>
                                                     <div className="col-12 mb-4">
-                                                        <label className="form-label">Hint</label>
+                                                        <label className="form-label">{t(`${FB}.hint`)}</label>
                                                         <input
                                                             type="text"
                                                             className="form-control"
                                                             value={customization.hint ?? ''}
-                                                            placeholder="e.g. Enter amount between 1 and 100"
+                                                            placeholder={t(`${FB}.hintPlaceholderAmount`)}
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -1121,21 +1158,19 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                         />
                                                     </div>
                                                     <div className="col-12 mb-2">
-                                                        <small className="text-muted">
-                                                            Hint: for number fields, Min/Max are numeric value limits.
-                                                        </small>
+                                                        <small className="text-muted">{t(`${FB}.numberCustomizationHint`)}</small>
                                                     </div>
                                                 </>
                                             )}
                                             {showDateCustomization && (
                                                 <>
                                                     <div className="col-md-6 mb-4">
-                                                        <label className="form-label">Min Date</label>
+                                                        <label className="form-label">{t(`${FB}.minDate`)}</label>
                                                         <input
                                                             type="date"
                                                             className="form-control"
                                                             value={customization.min ?? ''}
-                                                            placeholder="Earliest date"
+                                                            placeholder={t(`${FB}.earliestDatePlaceholder`)}
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -1147,12 +1182,12 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                         />
                                                     </div>
                                                     <div className="col-md-6 mb-4">
-                                                        <label className="form-label">Max Date</label>
+                                                        <label className="form-label">{t(`${FB}.maxDate`)}</label>
                                                         <input
                                                             type="date"
                                                             className="form-control"
                                                             value={customization.max ?? ''}
-                                                            placeholder="Latest date"
+                                                            placeholder={t(`${FB}.latestDatePlaceholder`)}
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -1164,12 +1199,12 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                         />
                                                     </div>
                                                     <div className="col-12 mb-4">
-                                                        <label className="form-label">Hint</label>
+                                                        <label className="form-label">{t(`${FB}.hint`)}</label>
                                                         <input
                                                             type="text"
                                                             className="form-control"
                                                             value={customization.hint ?? ''}
-                                                            placeholder="e.g. Choose a date within the allowed range"
+                                                            placeholder={t(`${FB}.hintPlaceholderDate`)}
                                                             onChange={(e) =>
                                                                 updateServiceField(
                                                                     mobileForm.id,
@@ -1181,9 +1216,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                         />
                                                     </div>
                                                     <div className="col-12 mb-2">
-                                                        <small className="text-muted">
-                                                            Hint: for date fields, Min/Max are date limits.
-                                                        </small>
+                                                        <small className="text-muted">{t(`${FB}.dateCustomizationHint`)}</small>
                                                     </div>
                                                 </>
                                             )}
@@ -1208,7 +1241,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                                 <input
                                                                     type="text"
                                                                     className={`form-control ${duplicateOptionIds.has(optionIdentity) ? 'is-invalid' : ''}`}
-                                                                    placeholder="Label (EN)"
+                                                                    placeholder={t(`${FB}.optionLabelEn`)}
                                                                     value={opt.label_en}
                                                                     onChange={(e) => updateOption(mobileForm.id, field.id, optionIdentity, 'label_en', e.target.value)}
                                                                 />
@@ -1217,7 +1250,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                                 <input
                                                                     type="text"
                                                                     className="form-control"
-                                                                    placeholder="Label (AR)"
+                                                                    placeholder={t(`${FB}.optionLabelAr`)}
                                                                     value={opt.label_ar}
                                                                     onChange={(e) => updateOption(mobileForm.id, field.id, optionIdentity, 'label_ar', e.target.value)}
                                                                 />
@@ -1226,13 +1259,13 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                                 <input
                                                                     type="text"
                                                                     className={`form-control ${duplicateOptionIds.has(optionIdentity) ? 'is-invalid' : ''}`}
-                                                                    placeholder="Value"
+                                                                    placeholder={t(`${FB}.optionValue`)}
                                                                     value={opt.value}
                                                                     onChange={(e) => updateOption(mobileForm.id, field.id, optionIdentity, 'value', e.target.value)}
                                                                 />
                                                                 {duplicateOptionIds.has(optionIdentity) && (
                                                                     <div className="invalid-feedback d-block">
-                                                                        Duplicate option label/value detected.
+                                                                        {t(`${FB}.duplicateOptionError`)}
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -1250,7 +1283,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                     })}
                                                     {hasDuplicateOptions && (
                                                         <div className="text-warning fs-7 mt-2">
-                                                            Duplicate options are allowed while editing, but only unique values will be saved.
+                                                            {t(`${FB}.duplicateOptionsWarning`)}
                                                         </div>
                                                     )}
                                                 </div>
@@ -1263,7 +1296,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                                     onClick={() => removeServiceField(mobileForm.id, field.id)}
                                                     disabled={(mobileForm.fields || []).length === 1}
                                                 >
-                                                    Remove Field
+                                                    {t(`${FB}.removeField`)}
                                                 </button>
                                             </div>
                                         </div>
@@ -1281,7 +1314,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                         <div className="p-4 bg-white" style={previewScreenShellStyle}>
                                             <ServiceFormPreview
                                                 formData={previewFields}
-                                                label={serviceLabel || 'Live Form Preview'}
+                                                label={serviceLabel || t(`${FB}.liveFormPreview`)}
                                                 subLabel={mobileForm.form_name?.en?.trim() || mobileForm.title?.trim() || ''}
                                             />
                                         </div>
@@ -1296,7 +1329,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
             {!hideGlobalActions && (
                 <div className="mt-5 d-flex justify-content-end flex-wrap gap-2">
                     <button type="button" className="btn btn-light-primary" onClick={addMobileServiceForm}>
-                        <i className="la la-plus"></i> Add Form
+                        <i className="la la-plus"></i> {t('admin.paymentGetway.addForm')}
                     </button>
                     <button type="button" className="btn btn-primary" onClick={openPreview}>
                         <i className="ki-duotone ki-eye fs-2">
@@ -1304,7 +1337,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                             <span className="path2"></span>
                             <span className="path3"></span>
                         </i>
-                        Preview the Process
+                        {t('admin.paymentGetway.previewProcess')}
                     </button>
                 </div>
             )}
@@ -1319,30 +1352,34 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                     <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '980px' }}>
                         <div className="modal-content">
                             <div className="modal-header">
-                                <h5 className="modal-title">Preview Message</h5>
+                                <h5 className="modal-title">{t(`${FB}.previewMessage`)}</h5>
                                 <button type="button" className="btn-close" onClick={closePreview}></button>
                             </div>
                             <div className="modal-body">
                                 <div className="row g-6">
                                     <div className="col-lg-6">
                                         <div className="alert alert-info">
-                                            Click <b>Process</b> to move through forms in sequence.
+                                            {t(`${FB}.previewProcessHint`)}
                                         </div>
                                         <div className="d-flex align-items-center justify-content-between mb-3">
                                             <div className="fw-semibold">
-                                                Step {previewFormIndex + 1} / {(forms || []).length}
+                                                {t(`${FB}.step`, {
+                                                    current: previewFormIndex + 1,
+                                                    total: (forms || []).length,
+                                                })}
                                             </div>
                                             <div className="text-muted">
-                                                {(forms || [])[previewFormIndex]?.form_name?.en ||
-                                                    (forms || [])[previewFormIndex]?.title ||
-                                                    'Mobile Services Form'}
+                                                {getFormTitle(
+                                                    (forms || [])[previewFormIndex],
+                                                    defaultFormTitle
+                                                )}
                                             </div>
                                         </div>
                                         <div className="d-flex justify-content-center">
                                             <IPhoneMockup screenWidth={320} frameColor="#000000">
                                                 <div className="p-4 bg-white" style={previewScreenShellStyle}>
                                                     <InteractiveServiceFormPreview
-                                                        label={serviceLabel || 'Live Form Preview'}
+                                                        label={serviceLabel || t(`${FB}.liveFormPreview`)}
                                                         subLabel={
                                                             (forms || [])[previewFormIndex]?.form_name?.en?.trim() ||
                                                             (forms || [])[previewFormIndex]?.title?.trim() ||
@@ -1364,7 +1401,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                                     <div className="col-lg-6">
                                         <div className="card">
                                             <div className="card-header">
-                                                <div className="card-title">Entered Values</div>
+                                                <div className="card-title">{t(`${FB}.enteredValues`)}</div>
                                             </div>
                                             <div className="card-body">
                                                 <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>
@@ -1377,7 +1414,7 @@ const MobileFormsBuilder = ({ value, onChange, serviceLabel, hideGlobalActions =
                             </div>
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-light" onClick={closePreview}>
-                                    Close
+                                    {t(`${FB}.close`)}
                                 </button>
                             </div>
                         </div>

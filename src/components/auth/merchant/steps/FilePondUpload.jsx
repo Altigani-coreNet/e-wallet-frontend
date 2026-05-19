@@ -5,7 +5,8 @@ import FilePondPluginFileValidateType from 'filepond-plugin-file-validate-type';
 import FilePondPluginFileValidateSize from 'filepond-plugin-file-validate-size';
 import FilePondPluginImagePreview from 'filepond-plugin-image-preview';
 import { AUTH_SERVICE_BASE } from '../../../../utils/constants';
-import { getToken } from '../../../../utils/api';
+import { getRegistrationAuthToken } from '../../../../utils/api';
+import useRegistrationStore from '../../../../stores/useRegistrationStore';
 
 // Import FilePond styles
 import 'filepond/dist/filepond.min.css';
@@ -32,6 +33,8 @@ const FilePondUpload = ({
     isImage = false
 }) => {
     const { t } = useTranslation();
+    const registrationToken = useRegistrationStore((s) => s.registrationToken);
+    const registrationBearer = getRegistrationAuthToken(registrationToken) || '';
     const [files, setFiles] = useState([]);
     const [uploadedFileId, setUploadedFileId] = useState(null);
     const [modalImageUrl, setModalImageUrl] = useState(null);
@@ -120,7 +123,7 @@ const FilePondUpload = ({
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getToken() || ''}`
+                    'Authorization': `Bearer ${registrationBearer}`
                 },
                 body: JSON.stringify({
                     field_name: name
@@ -143,7 +146,7 @@ const FilePondUpload = ({
             url: `${AUTH_SERVICE_BASE}/upload-merchant-file`,
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${getToken() || ''}`
+                'Authorization': `Bearer ${registrationBearer}`,
             },
             ondata: (formData) => {
                 // Add field name to form data

@@ -1,10 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import { getTransactionStatusLabel } from '../../../utils/transactionStatusHelpers';
+import { getServiceTransactionStatusLabel } from '../../../utils/serviceTransactionStatusHelpers';
+
+const STD_NS = 'admin.serviceTransactionDetail';
 
 const JsonBlock = ({ value }) => (
     <pre className="bg-light p-4 rounded fs-7 mb-0" style={{ maxHeight: 420, overflow: 'auto' }}>
@@ -20,29 +25,60 @@ const getStatusClass = (status) => {
     return 'secondary';
 };
 
+function pickLocalized(value, lang) {
+    if (value == null || value === '') return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') {
+        if (lang === 'ar') return value.ar || value.en || '';
+        return value.en || value.ar || '';
+    }
+    return '';
+}
+
 const AdminServiceTransactionDetail = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
     const [loading, setLoading] = useState(true);
     const [item, setItem] = useState(null);
 
+    const na = t('admin.common.na');
+
+    const getServiceStatusLabel = useCallback(
+        (status) => {
+            const s = String(status || '').toLowerCase();
+            const map = {
+                pending: 'admin.serviceTransactionsIndex.statusPending',
+                completed: 'admin.serviceTransactionsIndex.statusCompleted',
+                failed: 'admin.serviceTransactionsIndex.statusFailed',
+                skipped: 'admin.serviceTransactionsIndex.statusSkipped',
+            };
+            if (map[s]) return t(map[s]);
+            return status ? String(status) : na;
+        },
+        [t, na]
+    );
+
     useEffect(() => {
-        setTitle('Service Transaction Details');
+        setTitle(t(`${STD_NS}.title`));
         setActions(
             <div className="d-flex gap-2">
                 {item?.transaction?.id && (
-                    <button className="btn btn-sm btn-light-primary" onClick={() => navigate(`/admin/transactions/${item.transaction.id}`)}>
-                        Transaction Details
+                    <button
+                        className="btn btn-sm btn-light-primary"
+                        onClick={() => navigate(`/admin/transactions/${item.transaction.id}`)}
+                    >
+                        {t(`${STD_NS}.transactionDetails`)}
                     </button>
                 )}
                 <button className="btn btn-sm btn-light" onClick={() => navigate('/admin/service-transactions')}>
-                    Back
+                    {t(`${STD_NS}.back`)}
                 </button>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, navigate, item]);
+    }, [setTitle, setActions, navigate, item, t]);
 
     useEffect(() => {
         fetchDetail();
@@ -58,7 +94,7 @@ const AdminServiceTransactionDetail = () => {
             setItem(response.data?.data || null);
         } catch (error) {
             console.error('Error fetching service transaction detail:', error);
-            toast.error('Failed to load details');
+            toast.error(t(`${STD_NS}.loadFailed`));
         } finally {
             setLoading(false);
         }
@@ -136,26 +172,59 @@ const AdminServiceTransactionDetail = () => {
                 <div className="row gx-9 gy-6 mt-4 mb-5">
                     <div className="col-xl-6">
                         <div className="card card-dashed h-xl-100">
-                            <div className="card-header"><div className="skeleton" style={{ width: 180, height: 20 }}></div></div>
-                            <div className="card-body"><div className="skeleton" style={{ width: '100%', height: 260 }}></div></div>
+                            <div className="card-header">
+                                <div className="skeleton" style={{ width: 180, height: 20 }}></div>
+                            </div>
+                            <div className="card-body">
+                                <div className="skeleton" style={{ width: '100%', height: 260 }}></div>
+                            </div>
                         </div>
                     </div>
                     <div className="col-xl-6">
                         <div className="card card-dashed h-xl-100">
-                            <div className="card-header"><div className="skeleton" style={{ width: 180, height: 20 }}></div></div>
-                            <div className="card-body"><div className="skeleton" style={{ width: '100%', height: 260 }}></div></div>
+                            <div className="card-header">
+                                <div className="skeleton" style={{ width: 180, height: 20 }}></div>
+                            </div>
+                            <div className="card-body">
+                                <div className="skeleton" style={{ width: '100%', height: 260 }}></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </>
         );
     }
-    if (!item) return <div className="card"><div className="card-body py-10 text-center">Not found</div></div>;
 
-    const serviceName = item.service_name || item.service?.service_name?.en || item.service?.service_name?.ar || 'N/A';
-    const productName = item.product_name || item.product?.name?.en || item.product?.name?.ar || 'N/A';
-    const merchantName = item.merchant_name || item.merchant?.business_name || item.merchant?.name || 'N/A';
-    const partnerName = item.partner_name || item.partner?.name || item.partner?.business_name || 'N/A';
+    if (!item) {
+        return (
+            <div className="card">
+                <div className="card-body py-10 text-center">{t(`${STD_NS}.notFound`)}</div>
+            </div>
+        );
+    }
+
+    const lang = i18n.language;
+    const serviceName =
+        item.service_name ||
+        pickLocalized(item.service?.service_name, lang) ||
+        na;
+    const productName =
+        item.product_name ||
+        pickLocalized(item.product?.name, lang) ||
+        na;
+    const merchantName =
+        item.merchant_name ||
+        item.merchant?.business_name ||
+        item.merchant?.name ||
+        na;
+    const partnerName =
+        item.partner_name ||
+        item.partner?.name ||
+        item.partner?.business_name ||
+        na;
+
+    const txStatus = item.transaction?.status;
+    const txStatusLabel = txStatus ? getTransactionStatusLabel(txStatus, t) || txStatus : na;
 
     return (
         <>
@@ -165,9 +234,17 @@ const AdminServiceTransactionDetail = () => {
                         <div className="card-body">
                             <div className="d-flex align-items-center justify-content-between">
                                 <div>
-                                    <div className="text-black fw-bolder fs-2 mb-2 text-capitalize">{item.status || 'N/A'}</div>
-                                    <div className="fw-bold text-black">Service Transaction #{item.id}</div>
-                                    <div className="text-muted fs-6">{item.created_at ? new Date(item.created_at).toLocaleString() : 'N/A'}</div>
+                                    <div className="text-black fw-bolder fs-2 mb-2 text-capitalize">
+                                        {getServiceTransactionStatusLabel(item.status, t) || na}
+                                    </div>
+                                    <div className="fw-bold text-black">
+                                        {t(`${STD_NS}.serviceTransactionId`, { id: item.id })}
+                                    </div>
+                                    <div className="text-muted fs-6">
+                                        {item.created_at
+                                            ? new Date(item.created_at).toLocaleString(lang)
+                                            : na}
+                                    </div>
                                 </div>
                                 <div className="text-end">
                                     <div className="fw-bold text-black fs-5">{serviceName}</div>
@@ -182,19 +259,31 @@ const AdminServiceTransactionDetail = () => {
             <div className="row gx-9 gy-6">
                 <div className="col-xl-6">
                     <div className="card card-dashed h-xl-100 p-6">
-                        <div className="fs-4 fw-bolder mb-5">Merchant & Partner</div>
+                        <div className="fs-4 fw-bolder mb-5">{t(`${STD_NS}.sectionMerchantPartner`)}</div>
                         <div className="row g-4">
-                            <div className="col-12"><div className="fs-7 text-muted">Merchant</div><div className="fs-6 fw-bold">{merchantName}</div></div>
-                            <div className="col-12"><div className="fs-7 text-muted">Partner</div><div className="fs-6 fw-bold">{partnerName}</div></div>
+                            <div className="col-12">
+                                <div className="fs-7 text-muted">{t(`${STD_NS}.merchant`)}</div>
+                                <div className="fs-6 fw-bold">{merchantName}</div>
+                            </div>
+                            <div className="col-12">
+                                <div className="fs-7 text-muted">{t(`${STD_NS}.partner`)}</div>
+                                <div className="fs-6 fw-bold">{partnerName}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div className="col-xl-6">
                     <div className="card card-dashed h-xl-100 p-6">
-                        <div className="fs-4 fw-bolder mb-5">Service & Product</div>
+                        <div className="fs-4 fw-bolder mb-5">{t(`${STD_NS}.sectionServiceProduct`)}</div>
                         <div className="row g-4">
-                            <div className="col-12"><div className="fs-7 text-muted">Service</div><div className="fs-6 fw-bold">{serviceName}</div></div>
-                            <div className="col-12"><div className="fs-7 text-muted">Product</div><div className="fs-6 fw-bold">{productName}</div></div>
+                            <div className="col-12">
+                                <div className="fs-7 text-muted">{t(`${STD_NS}.service`)}</div>
+                                <div className="fs-6 fw-bold">{serviceName}</div>
+                            </div>
+                            <div className="col-12">
+                                <div className="fs-7 text-muted">{t(`${STD_NS}.product`)}</div>
+                                <div className="fs-6 fw-bold">{productName}</div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -204,18 +293,42 @@ const AdminServiceTransactionDetail = () => {
                 <div className="col-xl-12">
                     <div className="card card-dashed p-6">
                         <div className="d-flex justify-content-between align-items-center mb-4">
-                            <div className="fs-4 fw-bolder">Base POS Transaction</div>
+                            <div className="fs-4 fw-bolder">{t(`${STD_NS}.sectionBasePosTransaction`)}</div>
                             {item.transaction?.id && (
-                                <button className="btn btn-sm btn-light-primary" onClick={() => navigate(`/admin/transactions/${item.transaction.id}`)}>
-                                    Open Transaction Details
+                                <button
+                                    className="btn btn-sm btn-light-primary"
+                                    onClick={() => navigate(`/admin/transactions/${item.transaction.id}`)}
+                                >
+                                    {t(`${STD_NS}.openTransactionDetails`)}
                                 </button>
                             )}
                         </div>
                         <div className="row g-4">
-                            <div className="col-md-3"><div className="fs-7 text-muted">Transaction ID</div><div className="fs-6 fw-bold">{item.transaction?.transaction_id || item.transaction_id || 'N/A'}</div></div>
-                            <div className="col-md-3"><div className="fs-7 text-muted">Status</div><div className="fs-6 fw-bold">{item.transaction?.status || 'N/A'}</div></div>
-                            <div className="col-md-3"><div className="fs-7 text-muted">Amount</div><div className="fs-6 fw-bold">{item.transaction?.currency_symbol || '$'} {item.transaction?.amount || '0.00'}</div></div>
-                            <div className="col-md-3"><div className="fs-7 text-muted">Created</div><div className="fs-6 fw-bold">{item.transaction?.created_at ? new Date(item.transaction.created_at).toLocaleString() : 'N/A'}</div></div>
+                            <div className="col-md-3">
+                                <div className="fs-7 text-muted">{t(`${STD_NS}.transactionId`)}</div>
+                                <div className="fs-6 fw-bold">
+                                    {item.transaction?.transaction_id || item.transaction_id || na}
+                                </div>
+                            </div>
+                            <div className="col-md-3">
+                                <div className="fs-7 text-muted">{t(`${STD_NS}.status`)}</div>
+                                <div className="fs-6 fw-bold">{txStatusLabel}</div>
+                            </div>
+                            <div className="col-md-3">
+                                <div className="fs-7 text-muted">{t(`${STD_NS}.amount`)}</div>
+                                <div className="fs-6 fw-bold">
+                                    {item.transaction?.currency_symbol || '$'}{' '}
+                                    {item.transaction?.amount || '0.00'}
+                                </div>
+                            </div>
+                            <div className="col-md-3">
+                                <div className="fs-7 text-muted">{t(`${STD_NS}.created`)}</div>
+                                <div className="fs-6 fw-bold">
+                                    {item.transaction?.created_at
+                                        ? new Date(item.transaction.created_at).toLocaleString(lang)
+                                        : na}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -224,14 +337,22 @@ const AdminServiceTransactionDetail = () => {
             <div className="row gx-9 gy-6 mt-4 mb-5">
                 <div className="col-xl-6">
                     <div className="card card-dashed h-xl-100">
-                        <div className="card-header"><h3 className="card-title text-primary">User Request Payload</h3></div>
-                        <div className="card-body"><JsonBlock value={item.request_payload} /></div>
+                        <div className="card-header">
+                            <h3 className="card-title text-primary">{t(`${STD_NS}.userRequestPayload`)}</h3>
+                        </div>
+                        <div className="card-body">
+                            <JsonBlock value={item.request_payload} />
+                        </div>
                     </div>
                 </div>
                 <div className="col-xl-6">
                     <div className="card card-dashed h-xl-100">
-                        <div className="card-header"><h3 className="card-title text-success">Third-Party Response</h3></div>
-                        <div className="card-body"><JsonBlock value={item.service_response} /></div>
+                        <div className="card-header">
+                            <h3 className="card-title text-success">{t(`${STD_NS}.thirdPartyResponse`)}</h3>
+                        </div>
+                        <div className="card-body">
+                            <JsonBlock value={item.service_response} />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -240,4 +361,3 @@ const AdminServiceTransactionDetail = () => {
 };
 
 export default AdminServiceTransactionDetail;
-

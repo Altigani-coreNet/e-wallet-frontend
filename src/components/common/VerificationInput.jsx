@@ -94,8 +94,8 @@ const VerificationInput = forwardRef(({ length = 6, onComplete }, ref) => {
     };
 
     return (
-        <div className="w-100 mx-auto">
-            <div className="d-flex flex-nowrap justify-content-center overflow-auto opt_container">
+        <div className="w-100 mx-auto" style={{ overflow: 'hidden' }}>
+            <div className="d-flex flex-nowrap justify-content-center opt_container">
                 {code.map((digit, idx) => (
                     <input
                         key={idx}
@@ -104,8 +104,16 @@ const VerificationInput = forwardRef(({ length = 6, onComplete }, ref) => {
                         maxLength="1"
                         ref={el => inputs.current[idx] = el}
                         value={digit}
-                        className="form-control verification_input form-control-solid h-md-100px h-xl-60px fs-2qx text-center border-primary border-hover mx-1 my-2"
-                        style={{ width: '60px' }}
+                        className="form-control form-control-solid text-center border-primary border-hover mx-1"
+                        style={{
+                            width:      'clamp(42px, 10vw, 52px)',
+                            height:     'clamp(42px, 10vw, 52px)',
+                            fontSize:   'clamp(17px, 3.8vw, 21px)',
+                            fontWeight: '700',
+                            padding:    0,
+                            flexShrink: 0,
+                            boxSizing:  'border-box',
+                        }}
                         onChange={e => handleChange(e.target, idx)}
                         onKeyDown={e => handleKeyDown(e, idx)}
                         onPaste={handlePaste}

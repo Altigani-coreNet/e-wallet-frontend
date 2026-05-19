@@ -7,9 +7,9 @@ import { showApiWarningToast } from './apiWarnings';
 const I18NEXT_LNG_STORAGE_KEY = 'i18nextLng';
 
 /**
- * RFC 7231-style Accept-Language from the active UI locale (browser i18next storage).
+ * Active UI locale from i18next storage: only `ar` or `en`.
  */
-function getAcceptLanguageHeaderValue() {
+export function resolveUiLocale() {
     let raw = 'en';
     try {
         raw = localStorage.getItem(I18NEXT_LNG_STORAGE_KEY) || 'en';
@@ -17,24 +17,58 @@ function getAcceptLanguageHeaderValue() {
         /* private mode / no storage */
     }
     const base = String(raw).split(/[-_]/)[0].toLowerCase();
-    const primary = base === 'ar' ? 'ar' : 'en';
-    const secondary = primary === 'ar' ? 'en' : 'ar';
-    return `${primary},${secondary};q=0.9`;
+    return base === 'ar' ? 'ar' : 'en';
+}
+
+/**
+ * Accept-Language for API calls (axios). Browsers ignore this on raw fetch().
+ */
+export function getAcceptLanguageHeaderValue() {
+    return resolveUiLocale();
+}
+
+/** Headers every API request should send for locale (axios + fetch fallback). */
+export function getLocaleHeaders() {
+    const locale = getAcceptLanguageHeaderValue();
+    return {
+        'Accept-Language': locale,
+        'X-App-Locale': locale,
+    };
+}
+
+/**
+ * JSON headers for registration/auth fetch() calls (includes Accept-Language).
+ * @param {{ token?: string | null, extra?: Record<string, string> }} [options]
+ */
+export function getJsonFetchHeaders(options = {}) {
+    const { token = null, extra = {} } = options;
+    const headers = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        ...getLocaleHeaders(),
+        ...extra,
+    };
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
 }
 
 /**
  * @param {import('axios').InternalAxiosRequestConfig} config
  */
 function applyAcceptLanguageHeader(config) {
-    const value = getAcceptLanguageHeaderValue();
+    const localeHeaders = getLocaleHeaders();
     if (!config.headers) {
         config.headers = {};
     }
-    if (typeof config.headers.set === 'function') {
-        config.headers.set('Accept-Language', value);
-    } else {
-        config.headers['Accept-Language'] = value;
-    }
+    Object.entries(localeHeaders).forEach(([key, value]) => {
+        if (typeof config.headers.set === 'function') {
+            config.headers.set(key, value);
+        } else {
+            config.headers[key] = value;
+        }
+    });
 }
 
 /**
@@ -74,6 +108,46 @@ export const removeToken = () => {
     // Clear Zustand persisted store (auth-storage) to remove all user data including regions
     localStorage.removeItem('auth-storage');
 };
+
+// ─── Registration-only session (separate from dashboard login) ─────────────
+
+export const setRegistrationTokenStorage = (token) => {
+    if (token) {
+        localStorage.setItem(APP_CONFIG.REGISTRATION_TOKEN_KEY, token);
+    }
+};
+
+export const getRegistrationToken = () =>
+    localStorage.getItem(APP_CONFIG.REGISTRATION_TOKEN_KEY);
+
+export const setRegistrationUserStorage = (user) => {
+    if (user) {
+        localStorage.setItem(APP_CONFIG.REGISTRATION_USER_KEY, JSON.stringify(user));
+    }
+};
+
+export const getRegistrationUserStorage = () => {
+    try {
+        const raw = localStorage.getItem(APP_CONFIG.REGISTRATION_USER_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+};
+
+export const clearRegistrationSession = () => {
+    localStorage.removeItem(APP_CONFIG.REGISTRATION_TOKEN_KEY);
+    localStorage.removeItem(APP_CONFIG.REGISTRATION_USER_KEY);
+    // Legacy keys from older registration builds
+    localStorage.removeItem('auth_token');
+};
+
+/**
+ * Token for onboarding API calls (register merchant, uploads, etc.).
+ * Never falls back to the dashboard login token.
+ */
+export const getRegistrationAuthToken = (storeToken = null) =>
+    storeToken || getRegistrationToken() || null;
 
 /**
  * Store user data in localStorage
@@ -227,7 +301,7 @@ const getHeaders = (url = '') => {
     const headers = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Accept-Language': getAcceptLanguageHeaderValue(),
+        ...getLocaleHeaders(),
     };
 
     if (token) {
@@ -523,11 +597,19 @@ export default {
     uploadFile,
     setToken,
     getToken,
+    setRegistrationTokenStorage,
+    getRegistrationToken,
+    getRegistrationAuthToken,
+    clearRegistrationSession,
     removeToken,
     setUser,
     getUser,
     setMerchant,
     getMerchant,
+    resolveUiLocale,
+    getAcceptLanguageHeaderValue,
+    getLocaleHeaders,
+    getJsonFetchHeaders,
     apiClient, // Also export in default object
     apiClientAuthBehavior,
 };

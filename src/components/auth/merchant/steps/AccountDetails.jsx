@@ -59,12 +59,20 @@ const AccountDetails = ({ formData, setFormData, fieldErrors }) => {
                             <label htmlFor="phone" className="form-label">
                                 {t('auth.accountDetails.phone')}
                             </label>
-                            <div className={`form-control p-0 ${fieldErrors.phone ? 'is-invalid' : ''}`}>
+                            <div
+                                className={`form-control p-0 mr-phone-ltr ${fieldErrors.phone ? 'is-invalid' : ''}`}
+                                dir="ltr"
+                            >
                                 <PhoneInput
                                     country={REGISTRATION_PHONE.defaultCountry}
                                     onlyCountries={REGISTRATION_PHONE.onlyCountries}
                                     preferredCountries={REGISTRATION_PHONE.onlyCountries}
-                                    inputProps={{ id: 'phone', name: 'phone', required: true }}
+                                    inputProps={{
+                                        id: 'phone',
+                                        name: 'phone',
+                                        required: true,
+                                        'data-testid': 'merchant-registration-phone',
+                                    }}
                                     value={(formData.phone || '').replace(/^\+/, '')}
                                     onChange={(value) => {
                                         const e164 = value ? `+${value}` : '';

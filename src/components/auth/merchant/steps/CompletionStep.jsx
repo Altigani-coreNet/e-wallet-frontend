@@ -1,15 +1,23 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { releaseRegistrationForLogin } from '../../../../utils/registrationAuth';
 
 const CompletionStep = ({ onRegisterAnother, variant = 'merchant' }) => {
     const { t } = useTranslation();
+    const navigate = useNavigate();
     const v = variant === 'partner' ? 'partner' : 'merchant';
 
     const handleRegisterAnother = () => {
         if (typeof onRegisterAnother === 'function') {
             onRegisterAnother();
         }
+    };
+
+    const handleGoToLogin = (e) => {
+        e.preventDefault();
+        releaseRegistrationForLogin();
+        navigate('/login', { replace: true });
     };
 
     return (
@@ -31,9 +39,9 @@ const CompletionStep = ({ onRegisterAnother, variant = 'merchant' }) => {
                 </div>
 
                 <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center">
-                    <Link to="/login" className="btn btn-primary w-100">
+                    <button type="button" className="btn btn-primary w-100" onClick={handleGoToLogin}>
                         {t('auth.completion.goToLogin')}
-                    </Link>
+                    </button>
                     <button type="button" className="btn btn-light w-100" onClick={handleRegisterAnother}>
                         {t('auth.completion.registerAnother')}
                     </button>

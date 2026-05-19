@@ -1,16 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardNumberElement, CardExpiryElement, CardCvcElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { getStripePromise } from '../../utils/lazyStripe';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { apiGet, apiPost } from '../../utils/apiUtils';
 import { SOFTPOS_API_BASE } from '../../utils/constants';
 import './PaymentLinkRedirect.css';
 import { PaymentCheckoutHeader, PaymentCheckoutFooter } from './PaymentCheckoutChrome';
-
-const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ?? '';
-const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 /** Matches `.pl-input` / Stripe Elements iframe styling */
 const STRIPE_ELEMENT_OPTIONS = {
@@ -431,7 +428,31 @@ const CardPaymentFormInner = ({
 };
 
 const CardPaymentForm = (props) => {
-    if (!stripePromise) {
+    const [stripe, setStripe] = useState(null);
+    const [stripeLoadState, setStripeLoadState] = useState('loading');
+
+    useEffect(() => {
+        let cancelled = false;
+        getStripePromise()
+            .then((instance) => {
+                if (cancelled) return;
+                setStripe(instance);
+                setStripeLoadState(instance ? 'ready' : 'unavailable');
+            })
+            .catch(() => {
+                if (!cancelled) setStripeLoadState('unavailable');
+            });
+        return () => { cancelled = true; };
+    }, []);
+
+    if (stripeLoadState === 'loading') {
+        return (
+            <div className="pl-card-info-section d-flex justify-content-center py-4">
+                <span className="spinner-border spinner-border-sm text-primary" role="status" />
+            </div>
+        );
+    }
+    if (!stripe) {
         return (
             <div className="pl-card-info-section">
                 <p style={{ color: '#b45309', fontSize: 14, margin: 0 }}>
@@ -441,7 +462,7 @@ const CardPaymentForm = (props) => {
         );
     }
     return (
-        <Elements stripe={stripePromise}>
+        <Elements stripe={stripe}>
             <CardPaymentFormInner {...props} />
         </Elements>
     );

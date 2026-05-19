@@ -12,76 +12,78 @@ function norm(value) {
         .replace(/-/g, '_');
 }
 
-const PAYMENT_CHANNEL_MAP = {
-    NFC: 'merchant.transactionDetail.channelNfc',
-    SWIPE: 'merchant.transactionDetail.channelSwipe',
-    SWIPED: 'merchant.transactionDetail.channelSwipe',
-    MAGSTRIPE: 'merchant.transactionDetail.channelSwipe',
-    MAG_STRIPE: 'merchant.transactionDetail.channelSwipe',
-    MSR: 'merchant.transactionDetail.channelSwipe',
-    CONTACTLESS: 'merchant.transactionDetail.channelContactless',
-    CONTACT_LESS: 'merchant.transactionDetail.channelContactless',
-    CHIP: 'merchant.transactionDetail.channelChip',
-    INSERT: 'merchant.transactionDetail.channelChip',
-    ICC: 'merchant.transactionDetail.channelChip',
-    EMV: 'merchant.transactionDetail.channelChip',
-    MANUAL: 'merchant.transactionDetail.channelManual',
-    KEYED: 'merchant.transactionDetail.channelManual',
-    KEY_ENTRY: 'merchant.transactionDetail.channelManual',
-    KEYENTRY: 'merchant.transactionDetail.channelManual',
-    QR: 'merchant.transactionDetail.channelQr',
-    QR_CODE: 'merchant.transactionDetail.channelQr',
-    BARCODE: 'merchant.transactionDetail.channelBarcode',
-    MOBILE: 'merchant.transactionDetail.channelMobile',
-    ECOMMERCE: 'merchant.transactionDetail.channelEcommerce',
-    E_COMMERCE: 'merchant.transactionDetail.channelEcommerce',
-    WEB: 'merchant.transactionDetail.channelWeb',
-    MOTO: 'merchant.transactionDetail.channelMoto',
+const PAYMENT_CHANNEL_SUFFIX = {
+    NFC: 'channelNfc',
+    SWIPE: 'channelSwipe',
+    SWIPED: 'channelSwipe',
+    MAGSTRIPE: 'channelSwipe',
+    MAG_STRIPE: 'channelSwipe',
+    MSR: 'channelSwipe',
+    CONTACTLESS: 'channelContactless',
+    CONTACT_LESS: 'channelContactless',
+    CHIP: 'channelChip',
+    INSERT: 'channelChip',
+    ICC: 'channelChip',
+    EMV: 'channelChip',
+    MANUAL: 'channelManual',
+    KEYED: 'channelManual',
+    KEY_ENTRY: 'channelManual',
+    KEYENTRY: 'channelManual',
+    QR: 'channelQr',
+    QR_CODE: 'channelQr',
+    BARCODE: 'channelBarcode',
+    MOBILE: 'channelMobile',
+    ECOMMERCE: 'channelEcommerce',
+    E_COMMERCE: 'channelEcommerce',
+    WEB: 'channelWeb',
+    MOTO: 'channelMoto',
 };
 
-const ENTRY_MODE_MAP = {
-    NFC: 'merchant.transactionDetail.entryNfc',
-    SWIPE: 'merchant.transactionDetail.entrySwipe',
-    SWIPED: 'merchant.transactionDetail.entrySwipe',
-    MAGSTRIPE: 'merchant.transactionDetail.entrySwipe',
-    CHIP: 'merchant.transactionDetail.entryChip',
-    ICC: 'merchant.transactionDetail.entryChip',
-    CONTACTLESS: 'merchant.transactionDetail.entryContactless',
-    CONTACT_LESS: 'merchant.transactionDetail.entryContactless',
-    MANUAL: 'merchant.transactionDetail.entryManual',
-    KEYED: 'merchant.transactionDetail.entryManual',
-    QR: 'merchant.transactionDetail.entryQr',
-    FALLBACK: 'merchant.transactionDetail.entryFallback',
-    UNKNOWN: 'merchant.transactionDetail.entryUnknown',
+const ENTRY_MODE_SUFFIX = {
+    NFC: 'entryNfc',
+    SWIPE: 'entrySwipe',
+    SWIPED: 'entrySwipe',
+    MAGSTRIPE: 'entrySwipe',
+    CHIP: 'entryChip',
+    ICC: 'entryChip',
+    CONTACTLESS: 'entryContactless',
+    CONTACT_LESS: 'entryContactless',
+    MANUAL: 'entryManual',
+    KEYED: 'entryManual',
+    QR: 'entryQr',
+    FALLBACK: 'entryFallback',
+    UNKNOWN: 'entryUnknown',
 };
 
-const METHOD_GENERIC_MAP = {
-    CARD: 'merchant.transactionDetail.methodCard',
-    DEBIT: 'merchant.transactionDetail.methodDebit',
-    CREDIT: 'merchant.transactionDetail.methodCredit',
+const METHOD_GENERIC_SUFFIX = {
+    CARD: 'methodCard',
+    DEBIT: 'methodDebit',
+    CREDIT: 'methodCredit',
 };
 
 /**
  * @param {string | null | undefined} raw
  * @param {(key: string) => string} t
+ * @param {string} [detailNs='merchant.transactionDetail']
  */
-export function getPaymentChannelLabel(raw, t) {
+export function getPaymentChannelLabel(raw, t, detailNs = 'merchant.transactionDetail') {
     const k = norm(raw);
     if (!k) return '';
-    const i18nKey = PAYMENT_CHANNEL_MAP[k];
-    if (i18nKey) return t(i18nKey);
+    const suffix = PAYMENT_CHANNEL_SUFFIX[k];
+    if (suffix) return t(`${detailNs}.${suffix}`);
     return String(raw).trim();
 }
 
 /**
  * @param {string | null | undefined} raw
  * @param {(key: string) => string} t
+ * @param {string} [detailNs='merchant.transactionDetail']
  */
-export function getEntryModeLabel(raw, t) {
+export function getEntryModeLabel(raw, t, detailNs = 'merchant.transactionDetail') {
     const k = norm(raw);
     if (!k) return '';
-    const i18nKey = ENTRY_MODE_MAP[k];
-    if (i18nKey) return t(i18nKey);
+    const suffix = ENTRY_MODE_SUFFIX[k];
+    if (suffix) return t(`${detailNs}.${suffix}`);
     return String(raw).trim();
 }
 
@@ -112,10 +114,15 @@ export function getTransactionPaymentTypeFieldLabel(raw, t) {
  * @param {string | null | undefined} raw
  * @param {(key: string) => string} t
  */
-export function getPaymentCardBrandOrMethodLabel(raw, t) {
+/**
+ * @param {string | null | undefined} raw
+ * @param {(key: string) => string} t
+ * @param {string} [detailNs='merchant.transactionDetail']
+ */
+export function getPaymentCardBrandOrMethodLabel(raw, t, detailNs = 'merchant.transactionDetail') {
     if (raw == null || raw === '') return '';
     const k = norm(raw);
-    const i18nKey = METHOD_GENERIC_MAP[k];
-    if (i18nKey) return t(i18nKey);
+    const suffix = METHOD_GENERIC_SUFFIX[k];
+    if (suffix) return t(`${detailNs}.${suffix}`);
     return String(raw).trim().toUpperCase();
 }

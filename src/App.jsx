@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import LocaleSyncOutlet from './i18n/LocaleSyncOutlet';
@@ -47,9 +47,24 @@ import Error500 from './pages/Error500';
 import PaymentError from './pages/PaymentError';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancel from './pages/PaymentCancel';
-import PaymentLinkRedirect from './components/payment-links/PaymentLinkRedirect';
-import PaymentLinkRedirectV2 from './components/payment-links/PaymentLinkRedirectV2';
 import MerchantPublicProfile from './components/payment-links/MerchantPublicProfile';
+
+/** Stripe lives only in these chunks — not in the main app bundle */
+const PaymentLinkRedirect = lazy(() => import('./components/payment-links/PaymentLinkRedirect'));
+const PaymentLinkRedirectV2 = lazy(() => import('./components/payment-links/PaymentLinkRedirectV2'));
+
+function PaymentCheckoutRouteFallback() {
+    return (
+        <div
+            className="d-flex align-items-center justify-content-center"
+            style={{ minHeight: '100vh' }}
+            aria-busy="true"
+            aria-live="polite"
+        >
+            <span className="spinner-border text-primary" role="status" />
+        </div>
+    );
+}
 
 // Dashboard Components
 import MerchantDashboard from './components/merchant/MerchantDashboard';
@@ -303,10 +318,26 @@ function App() {
                         <Route path="payment/success" element={<PaymentSuccess />} />
                         <Route path="payments/success" element={<PaymentSuccess />} />
                         <Route path="payments/merchant/:merchantUuid" element={<MerchantPublicProfile />} />
-                        <Route path="payments" element={<PaymentLinkRedirect />} />
-                        <Route path="payments/:uuid" element={<PaymentLinkRedirect />} />
-                        <Route path="v2/payments" element={<PaymentLinkRedirectV2 />} />
-                        <Route path="v2/payments/:uuid" element={<PaymentLinkRedirectV2 />} />
+                        <Route path="payments" element={
+                            <Suspense fallback={<PaymentCheckoutRouteFallback />}>
+                                <PaymentLinkRedirect />
+                            </Suspense>
+                        } />
+                        <Route path="payments/:uuid" element={
+                            <Suspense fallback={<PaymentCheckoutRouteFallback />}>
+                                <PaymentLinkRedirect />
+                            </Suspense>
+                        } />
+                        <Route path="v2/payments" element={
+                            <Suspense fallback={<PaymentCheckoutRouteFallback />}>
+                                <PaymentLinkRedirectV2 />
+                            </Suspense>
+                        } />
+                        <Route path="v2/payments/:uuid" element={
+                            <Suspense fallback={<PaymentCheckoutRouteFallback />}>
+                                <PaymentLinkRedirectV2 />
+                            </Suspense>
+                        } />
 
                         <Route path="admin/login" element={<AdminLogin />} />
                         <Route path="admin" element={<AdminLayoutOutlet />}>

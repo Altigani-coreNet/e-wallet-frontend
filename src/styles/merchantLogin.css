@@ -76,7 +76,7 @@ body.app-i18n-rtl .ml-root {
     min-height: 100vh;
     min-height: 100dvh;
     width: 100%;
-    max-width: min(1280px, calc(100% - clamp(12px, 4vw, 28px)));
+    max-width: min(1440px, calc(100% - clamp(12px, 4vw, 28px)));
     margin-inline: auto;
     box-sizing: border-box;
 }
@@ -84,6 +84,8 @@ body.app-i18n-rtl .ml-root {
 @media (min-width: 992px) {
     .ml-shell {
         flex-direction: row;
+        gap: clamp(24px, 4vw, 56px);
+        align-items: stretch;
     }
 }
 
@@ -150,13 +152,13 @@ body.app-i18n-rtl .ml-root {
 }
 
 .ml-brand-logo--aside {
-    height: clamp(30px, 8vw, 36px);
-    max-width: min(100%, 15rem);
+    height: clamp(44px, 10vw, 58px);
+    max-width: min(100%, 18rem);
 }
 
 .ml-brand-logo--mobile {
-    height: clamp(28px, 7.5vw, 36px);
-    max-width: min(100%, 14rem);
+    height: clamp(40px, 9vw, 52px);
+    max-width: min(100%, 17rem);
 }
 
 .ml-headline {
@@ -165,14 +167,16 @@ body.app-i18n-rtl .ml-root {
     line-height: 1.2;
     margin-bottom: clamp(8px, 2vw, 16px);
     letter-spacing: -0.02em;
+    color: #fff;
 }
 
 .ml-headline-accent {
-    color: #00d1ff;
+    color: #fff;
 }
 
 .ml-sub {
     font-size: var(--ml-font-sub);
+    color: #fff;
     opacity: 0.92;
     line-height: 1.55;
     margin-bottom: var(--ml-space-section);
@@ -270,7 +274,7 @@ body.app-i18n-rtl .ml-root {
     grid-template-columns: 1fr auto;
     align-items: center;
     width: 100%;
-    max-width: min(440px, 100%);
+    max-width: min(500px, 100%);
     margin-inline: auto;
     box-sizing: border-box;
     gap: 0.5rem;
@@ -336,7 +340,7 @@ body.app-i18n-rtl .ml-root {
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-    max-width: min(440px, 100%);
+    max-width: min(500px, 100%);
     margin-inline: auto;
     padding-bottom: max(clamp(8px, 2vw, 14px), env(safe-area-inset-bottom, 0px));
     gap: clamp(14px, 3.5vw, 22px);
@@ -392,10 +396,39 @@ body.app-i18n-rtl .ml-root {
     flex-wrap: wrap;
 }
 
+.ml-mobile-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: clamp(8px, 2vw, 10px);
+    width: 100%;
+    max-width: min(500px, 100%);
+    margin-inline: auto;
+    box-sizing: border-box;
+}
+
+.ml-mobile-tip-icon {
+    flex-shrink: 0;
+    color: #00d1ff;
+    font-size: clamp(1rem, 2.8vw, 1.1rem);
+}
+
+.ml-mobile-tip-text {
+    font-size: var(--ml-font-trust);
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.ml-mobile-tip-title {
+    display: block;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 0.2em;
+}
+
 
 .ml-card {
     width: 100%;
-    max-width: min(440px, 100%);
+    max-width: min(500px, 100%);
     background: #fff;
     border-radius: var(--ml-radius);
     box-shadow: 0 24px 48px rgba(0, 26, 87, 0.18);
@@ -422,33 +455,48 @@ body.app-i18n-rtl .ml-root {
         max-width: 100%;
     }
 
-    /* --- main column ------------------------------------------ */
+    /* --- main column: header · form card · footer marketing --- */
     .ml-main {
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: 100%;
         padding-top: max(env(safe-area-inset-top, 0px), 16px);
         padding-inline: 18px;
-        padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
-        row-gap: 20px;
-        align-items: center;
+        padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+        justify-content: space-between;
+        align-items: stretch;
+        row-gap: clamp(12px, 3vh, 24px);
     }
 
-    /* --- mobile logo bar -------------------------------------- */
+    /* --- mobile logo bar (top) -------------------------------- */
     .ml-mobile-logo {
+        flex: 0 0 auto;
         max-width: 100%;
         margin-bottom: 0;
         padding-inline: 0;
     }
 
     .ml-brand-logo--mobile {
-        height: 43px;
-        max-width: 190px;
+        height: 56px;
+        max-width: 240px;
     }
 
-    /* --- login card ------------------------------------------- */
+    /* --- login card (center) ---------------------------------- */
     .ml-card {
-        margin-top: 12px;
+        flex: 0 1 auto;
+        align-self: center;
+        width: 100%;
+        max-width: min(500px, 100%);
+        margin-top: 0;
         border-radius: 20px;
         box-shadow: 0 16px 40px rgba(0, 26, 87, 0.22);
         padding: 24px 22px 20px;
+    }
+
+    .ml-card .form {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
     }
 
     .ml-card-title {
@@ -460,7 +508,7 @@ body.app-i18n-rtl .ml-root {
 
     .ml-card-sub {
         font-size: 13px;
-        margin-bottom: 18px;
+        margin-bottom: 28px;
     }
 
     /* fields */
@@ -476,7 +524,7 @@ body.app-i18n-rtl .ml-root {
     .ml-field {
         font-size: 14px;
         padding-block: 11px;
-        padding-inline: 40px 12px;
+        padding-inline: 52px 12px;
         border-radius: 10px;
     }
 
@@ -551,10 +599,11 @@ body.app-i18n-rtl .ml-root {
         border-radius: 9px;
     }
 
-    /* --- mobile marketing block ------------------------------- */
+    /* --- mobile marketing block (bottom) ---------------------- */
     .ml-mobile-marketing {
+        flex: 0 0 auto;
         margin-top: 0;
-        padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+        padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
         gap: 20px;
         max-width: 100%;
     }
@@ -627,12 +676,43 @@ body.app-i18n-rtl .ml-root {
         color: rgba(255, 255, 255, 0.8);
         line-height: 1.5;
     }
+
+    /* forgot-password / custom mobile tip footer */
+    .ml-mobile-tip {
+        justify-content: flex-start;
+        text-align: start;
+        flex-wrap: nowrap;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.28);
+        padding: 9px 13px;
+        gap: 8px;
+        max-width: 100%;
+    }
+
+    .ml-mobile-tip-icon {
+        font-size: 16px;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .ml-mobile-tip-title {
+        font-size: 10px;
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .ml-mobile-tip-text {
+        font-size: 9px;
+        font-weight: 500;
+        line-height: 1.4;
+        color: rgba(255, 255, 255, 0.88);
+    }
 }
 
 .ml-card-sub {
     font-size: var(--ml-font-sub);
     color: #6b7280;
-    margin: 0 0 clamp(14px, 2.8vw, 22px);
+    margin: 0 0 clamp(24px, 4.5vw, 36px);
     line-height: 1.45;
 }
 
@@ -668,7 +748,7 @@ body.app-i18n-rtl .ml-root {
     border: 1px solid #e5e7eb;
     border-radius: var(--ml-radius-control);
     padding-block: clamp(0.55rem, 2vw, 0.7rem);
-    padding-inline: clamp(2.35rem, 6.5vw, 2.65rem) 0.85rem;
+    padding-inline: clamp(3rem, 8vw, 3.4rem) 0.85rem;
     font-size: var(--ml-font-base);
     color: #111827;
     background: #fff;
@@ -739,6 +819,14 @@ body.app-i18n-rtl .ml-root {
     padding: clamp(0.65rem, 2vw, 0.8rem) 1rem;
     cursor: pointer;
     transition: background 0.15s, opacity 0.15s;
+}
+
+a.ml-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    box-sizing: border-box;
 }
 
 .ml-btn-primary:hover:not(:disabled) {
@@ -843,10 +931,103 @@ body.app-i18n-rtl .ml-root {
     margin-bottom: clamp(10px, 2.2vw, 14px);
 }
 
+/* --- Forgot / reset password (same card chrome as login) --- */
+.ml-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.ml-actions-row .ml-btn-primary,
+.ml-actions-row .ml-btn-outline {
+    width: auto;
+    min-width: 8.5rem;
+    text-align: center;
+}
+
+.ml-btn-outline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(0.65rem, 2vw, 0.8rem) 1rem;
+    border-radius: var(--ml-radius-control);
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    color: #374151;
+    font-weight: 600;
+    font-size: var(--ml-font-base);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    font-family: inherit;
+    box-sizing: border-box;
+    min-height: 2.75rem;
+}
+
+.ml-btn-outline:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.ml-text-btn {
+    border: none;
+    background: none;
+    padding: 0.35rem 0.5rem;
+    color: #0047ab;
+    font-weight: 600;
+    font-size: var(--ml-font-label);
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.ml-text-btn:disabled {
+    color: #9ca3af;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
+.ml-verification-wrap {
+    margin-bottom: clamp(10px, 2.2vw, 14px);
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.ml-password-rules {
+    font-size: var(--ml-font-small);
+    line-height: 1.6;
+    margin-bottom: clamp(10px, 2.2vw, 14px);
+}
+
+.ml-password-rule {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 4px;
+}
+
+.ml-password-rule--ok {
+    color: #15803d;
+}
+
+.ml-password-rule--bad {
+    color: #b91c1c;
+}
+
+.ml-resend-row {
+    text-align: center;
+    margin-bottom: clamp(10px, 2.2vw, 14px);
+}
+
 /* --- Width: comfortable desktop (optional tighten) ---------- */
 @media (min-width: 901px) {
     .ml-shell {
-        max-width: min(1320px, calc(100% - clamp(16px, 3vw, 32px)));
+        max-width: min(1480px, calc(100% - clamp(16px, 3vw, 32px)));
     }
 }
 

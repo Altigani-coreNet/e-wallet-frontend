@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import useAuthStore from '../../../stores/authStore';
-import { getStoredOrDefaultLocale, replaceLocaleInPathname } from '../../../i18n/localePaths';
+import { getStoredOrDefaultLocale } from '../../../i18n/localePaths';
 import {
     validateMerchantLoginForm,
     getStaleAuthResolution,
@@ -12,108 +12,15 @@ import {
     getMerchantLoginErrorMessage,
 } from '../../../services/merchantLoginAuthService';
 import { AUTH_ENDPOINTS } from '../../../utils/constants';
+import { getRegistrationToken, getToken } from '../../../utils/api';
+import { releaseRegistrationForLogin } from '../../../utils/registrationAuth';
 import { APP_ASSETS } from '../../../assets';
-import { Store, ShieldCheck, TrendingUp } from 'lucide-react';
-import '../../../styles/merchantLogin.css';
-
-const FeatureIcon = ({ icon: Icon }) => (
-    <div className="ml-feature-icon">
-        <Icon className="ml-feature-icon-svg" size={24} strokeWidth={1.75} aria-hidden />
-    </div>
-);
-
-const MERCHANT_LOGIN_FEATURE_ITEMS = [
-    {
-        icon: Store,
-        titleKey: 'auth.login.feature1Title',
-        descKey: 'auth.login.feature1Desc',
-    },
-    {
-        icon: ShieldCheck,
-        titleKey: 'auth.login.feature2Title',
-        descKey: 'auth.login.feature2Desc',
-    },
-    {
-        icon: TrendingUp,
-        titleKey: 'auth.login.feature3Title',
-        descKey: 'auth.login.feature3Desc',
-    },
-];
-
-const LoginMarketingFeatures = ({ variant }) => {
-    const { t } = useTranslation();
-    const listClass = variant === 'mobile' ? 'ml-features ml-features--mobile' : 'ml-features';
-    return (
-        <ul className={listClass}>
-            {MERCHANT_LOGIN_FEATURE_ITEMS.map((item) => (
-                <li key={item.titleKey} className="ml-feature">
-                    <FeatureIcon icon={item.icon} />
-                    <div>
-                        <div className="ml-feature-title">{t(item.titleKey)}</div>
-                        <div className="ml-feature-desc">{t(item.descKey)}</div>
-                    </div>
-                </li>
-            ))}
-        </ul>
-    );
-};
-
-const LoginTrustBadge = ({ className = '' }) => {
-    const { t } = useTranslation();
-    return (
-        <div className={['ml-trust', className].filter(Boolean).join(' ')}>
-            <i className="bi bi-shield-check ml-trust-icon" aria-hidden />
-            <span className="ml-trust-text">
-                <strong>{t('auth.login.trustBadge')}</strong>
-                {/* <br /> */}
-                {t('auth.login.trustBadgeSub')}
-            </span>
-        </div>
-    );
-};
-
-const LoginLangToggle = () => {
-    const { i18n } = useTranslation();
-    const navigate = useNavigate();
-    const location = useLocation();
-
-    const activeLang = useMemo(() => {
-        const m = location.pathname.match(/^\/(en|ar)(?=\/|$)/);
-        if (m) return m[1];
-        return (i18n.language || 'en').split('-')[0];
-    }, [location.pathname, i18n.language]);
-
-    const switchLanguage = (lng) => {
-        if (lng === activeLang) return;
-        const nextPath = replaceLocaleInPathname(location.pathname, lng);
-        navigate(`${nextPath}${location.search}${location.hash}`, { replace: true });
-    };
-
-    return (
-        <div className="ml-lang" role="group" aria-label="Choose language">
-            <button
-                type="button"
-                className={`ml-lang-btn${activeLang === 'en' ? ' ml-lang-btn--active' : ''}`}
-                onClick={() => switchLanguage('en')}
-                aria-pressed={activeLang === 'en'}
-            >
-                EN
-            </button>
-            <button
-                type="button"
-                className={`ml-lang-btn${activeLang === 'ar' ? ' ml-lang-btn--active' : ''}`}
-                onClick={() => switchLanguage('ar')}
-                aria-pressed={activeLang === 'ar'}
-            >
-                AR
-            </button>
-        </div>
-    );
-};
+import { MerchantAuthPageLayout } from './merchantAuthShell';
 
 const Login = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const location = useLocation();
     const {
         login,
         exchangeGoogleOAuthCode,
@@ -144,6 +51,14 @@ const Login = () => {
     const sessionRevalidatedRef = useRef(false);
 
     useEffect(() => {
+        // Registration JWT must not be treated as a dashboard session
+        const regToken = getRegistrationToken();
+        const dashToken = getToken();
+        if (regToken && dashToken && regToken === dashToken) {
+            releaseRegistrationForLogin();
+            return;
+        }
+
         if (getStaleAuthResolution(isAuthenticated) === 'clear') {
             console.log('⚠️ Clearing stale auth state - no token in localStorage');
             useAuthStore.setState({
@@ -316,44 +231,7 @@ const Login = () => {
     };
 
     return (
-        <div className="ml-root" id="kt_app_root">
-                <div className="ml-shell">
-                    <aside className="ml-aside">
-                        <div className="ml-aside-container">
-                            <div className="ml-aside-brand">
-                                <img
-                                    src={APP_ASSETS.auth.merchantLogin.brandLogo}
-                                    alt={t('auth.login.brandLogoAlt')}
-                                    className="ml-brand-logo ml-brand-logo--aside"
-                                    decoding="async"
-                                />
-                                <LoginLangToggle />
-                            </div>
-                            <h1 className="ml-headline">
-                                {t('auth.login.heroHeadlineBefore')}{' '}
-                                <span className="ml-headline-accent">{t('auth.login.heroHeadlineAccent')}</span>
-                            </h1>
-                            <p className="ml-sub">{t('auth.login.heroSub')}</p>
-                            <LoginMarketingFeatures variant="aside" />
-                            <LoginTrustBadge />
-                        </div>
-                    </aside>
-
-                    <div className="ml-main">
-                        <div className="ml-mobile-logo">
-                            <img
-                                src={APP_ASSETS.auth.merchantLogin.brandLogo}
-                                alt={t('auth.login.brandLogoAlt')}
-                                className="ml-brand-logo ml-brand-logo--mobile"
-                                decoding="async"
-                            />
-                            <LoginLangToggle />
-                        </div>
-
-                        <div className="ml-card">
-                            <h2 className="ml-card-title">{t('auth.login.title')}</h2>
-                            <p className="ml-card-sub">{t('auth.login.subtitle')}</p>
-
+        <MerchantAuthPageLayout cardTitle={t('auth.login.title')} cardSub={t('auth.login.subtitle')}>
                             <form className="form w-100" onSubmit={handleSubmit} noValidate>
                                 {formErrors.submit && <div className="ml-alert">{formErrors.submit}</div>}
 
@@ -454,15 +332,7 @@ const Login = () => {
                                     <Link to="/merchant/register">{t('auth.common.registerHere')}</Link>
                                 </div>
                             </form>
-                        </div>
-
-                        <div className="ml-mobile-marketing">
-                            <LoginMarketingFeatures variant="mobile" />
-                            <LoginTrustBadge className="ml-trust--mobile" />
-                        </div>
-                    </div>
-                </div>
-            </div>
+        </MerchantAuthPageLayout>
     );
 };
 

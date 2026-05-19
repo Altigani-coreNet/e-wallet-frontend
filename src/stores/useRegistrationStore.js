@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import { setToken, setUser } from '../utils/api';
+import {
+    clearRegistrationSession,
+    getToken,
+    removeToken,
+    setRegistrationTokenStorage,
+    setRegistrationUserStorage,
+} from '../utils/api';
 
 const useRegistrationStore = create(
     devtools(
@@ -15,19 +21,30 @@ const useRegistrationStore = create(
                 savedProgress: null,
 
                 // Set registration token (received after password setup)
-                setRegistrationToken: (token, userData) => {
-                    if (token) {
-                        // Store in localStorage for API calls
-                        setToken(token);
-                        if (userData) {
-                            setUser(userData);
-                            localStorage.setItem('user_data', JSON.stringify(userData));
+                /**
+                 * @param {string} token
+                 * @param {object} [userData]
+                 * @param {{ isDashboardSession?: boolean }} [options]
+                 *   When true (logged-in user finishing onboarding), keep the dashboard JWT as-is.
+                 */
+                setRegistrationToken: (token, userData, options = {}) => {
+                    const { isDashboardSession = false } = options;
+
+                    if (token && !isDashboardSession) {
+                        setRegistrationTokenStorage(token);
+                        const dashboardToken = getToken();
+                        if (dashboardToken === token) {
+                            removeToken();
                         }
                     }
-                    set({ 
+                    if (userData && !isDashboardSession) {
+                        setRegistrationUserStorage(userData);
+                    }
+
+                    set({
                         registrationToken: token,
                         registrationUser: userData,
-                        isRegistrationInProgress: true
+                        isRegistrationInProgress: true,
                     });
                 },
 
@@ -70,26 +87,25 @@ const useRegistrationStore = create(
                             isRegistrationInProgress: true
                         });
                         
-                        // Restore token to localStorage if exists
                         if (progressData.token) {
-                            setToken(progressData.token);
+                            setRegistrationTokenStorage(progressData.token);
                         }
                         if (progressData.user) {
-                            setUser(progressData.user);
-                            localStorage.setItem('user_data', JSON.stringify(progressData.user));
+                            setRegistrationUserStorage(progressData.user);
                         }
                     }
                 },
 
                 // Clear registration data
                 clearRegistration: () => {
+                    clearRegistrationSession();
                     set({
                         registrationToken: null,
                         registrationUser: null,
                         currentStep: 0,
                         formData: {},
                         isRegistrationInProgress: false,
-                        savedProgress: null
+                        savedProgress: null,
                     });
                 },
 

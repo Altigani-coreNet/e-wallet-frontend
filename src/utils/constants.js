@@ -53,6 +53,7 @@ export const AUTH_ENDPOINTS = {
     REGISTER_VERIFY_CODE: `${AUTH_SERVICE_BASE}/register/verify-code`,
     REGISTER_USER: `${AUTH_SERVICE_BASE}/register/user`,
     REGISTER_MERCHANT: `${AUTH_SERVICE_BASE}/register/merchant`,
+    REGISTER_MERCHANT_UPDATE: `${AUTH_SERVICE_BASE}/register/merchant/update`,
     REGISTER_PARTNER: `${SOFTPOS_API_BASE}/register/partner`,
     REGISTER_SEND_CONTINUATION_EMAIL_MERCHANT: `${SOFTPOS_API_BASE}/register/merchant/send-continuation-email`,
     REGISTER_SEND_CONTINUATION_EMAIL_PARTNER: `${SOFTPOS_API_BASE}/register/partner/send-continuation-email`,
@@ -873,6 +874,9 @@ export const APP_CONFIG = {
     TOKEN_KEY: 'merchant_dashboard_token',
     USER_KEY: 'dashboard_user',
     MERCHANT_KEY: 'admin_dashboard_merchant',
+    /** Onboarding-only token — must not be read by login / dashboard auth */
+REGISTRATION_TOKEN_KEY: 'merchant_registration_token',
+REGISTRATION_USER_KEY: 'merchant_registration_user',
 };
 
 // Public (unauthenticated) endpoints

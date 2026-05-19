@@ -9,16 +9,21 @@ const getApiToken = () => {
     return getToken();
 };
 
-/** Match backend Accept-Language resolution (ar vs en). */
+/** Match backend locale resolution (ar vs en). */
 const getAcceptLanguageHeader = () => {
     if (typeof window === 'undefined') {
         return 'en';
     }
     const stored = window.localStorage?.getItem('i18nextLng') || window.localStorage?.getItem('lang');
     const fromDoc = document.documentElement?.lang;
-    const raw = stored || fromDoc || (typeof navigator !== 'undefined' ? navigator.language : 'en') || 'en';
-    const code = String(raw).toLowerCase().split('-')[0];
+    const raw = stored || fromDoc || 'en';
+    const code = String(raw).toLowerCase().split(/[-_]/)[0];
     return code === 'ar' ? 'ar' : 'en';
+};
+
+const getLocaleHeaders = () => {
+    const locale = getAcceptLanguageHeader();
+    return { 'Accept-Language': locale, 'X-App-Locale': locale };
 };
 
 /**
@@ -190,7 +195,7 @@ export const fetchProducts = async (params = {}) => {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json',
-                'Accept-Language': getAcceptLanguageHeader(),
+                ...getLocaleHeaders(),
             }
         });
         return response.data;
@@ -211,7 +216,7 @@ export const fetchProductDetails = async (id) => {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Accept': 'application/json',
-                'Accept-Language': getAcceptLanguageHeader(),
+                ...getLocaleHeaders(),
             }
         });
         return response.data;

@@ -12,9 +12,7 @@ import { showApiWarningToast } from './apiWarnings';
 /** Same key as `lookupLocalStorage` in `src/i18n/config.js` */
 const I18NEXT_LNG_STORAGE_KEY = 'i18nextLng';
 
-/**
- * RFC 7231-style Accept-Language from the active UI locale (browser i18next storage).
- */
+/** Active UI locale from i18next storage: only `ar` or `en`. */
 function getAcceptLanguageHeaderValue() {
     let raw = 'en';
     try {
@@ -23,24 +21,32 @@ function getAcceptLanguageHeaderValue() {
         /* private mode / no storage */
     }
     const base = String(raw).split(/[-_]/)[0].toLowerCase();
-    const primary = base === 'ar' ? 'ar' : 'en';
-    const secondary = primary === 'ar' ? 'en' : 'ar';
-    return `${primary},${secondary};q=0.9`;
+    return base === 'ar' ? 'ar' : 'en';
+}
+
+function getLocaleHeaders() {
+    const locale = getAcceptLanguageHeaderValue();
+    return {
+        'Accept-Language': locale,
+        'X-App-Locale': locale,
+    };
 }
 
 /**
  * @param {import('axios').InternalAxiosRequestConfig} config
  */
 function applyAcceptLanguageHeader(config) {
-    const value = getAcceptLanguageHeaderValue();
+    const localeHeaders = getLocaleHeaders();
     if (!config.headers) {
         config.headers = {};
     }
-    if (typeof config.headers.set === 'function') {
-        config.headers.set('Accept-Language', value);
-    } else {
-        config.headers['Accept-Language'] = value;
-    }
+    Object.entries(localeHeaders).forEach(([key, value]) => {
+        if (typeof config.headers.set === 'function') {
+            config.headers.set(key, value);
+        } else {
+            config.headers[key] = value;
+        }
+    });
 }
 
 /**

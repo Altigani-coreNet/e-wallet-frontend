@@ -7,8 +7,8 @@
  */
 
 export const REGISTRATION_PHONE = {
-    onlyCountries: ['ae', 'sd'],
-    defaultCountry: 'ae',
+    onlyCountries: ['sd', 'ae'],
+    defaultCountry: 'sd',
 
     byDialCode: {
         '971': {
