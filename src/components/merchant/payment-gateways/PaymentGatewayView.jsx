@@ -180,18 +180,18 @@ const PaymentGatewayView = () => {
                     <div className="mb-5">
                         <label className="form-label fw-bold mb-4">Configuration</label>
                         <div className="table-responsive">
-                            <table className="table table-bordered">
+                            <table className="table table-bordered align-middle">
                                 <thead>
-                                    <tr>
-                                        <th>Key</th>
-                                        <th>Value</th>
+                                    <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                        <th className="text-dark">Key</th>
+                                        <th className="text-end text-dark">Value</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {Object.entries(config).map(([key, value]) => (
                                         <tr key={key}>
                                             <td className="fw-bold">{key}</td>
-                                            <td>{String(value)}</td>
+                                            <td className="text-end">{String(value)}</td>
                                         </tr>
                                     ))}
                                 </tbody>

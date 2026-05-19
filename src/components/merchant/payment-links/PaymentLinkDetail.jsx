@@ -7,12 +7,14 @@ import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import RescheduleModal from './RescheduleModal';
 import SendModal from './SendModal';
+import useAuthStore from '../../../stores/authStore';
 
 const PaymentLinkDetail = () => {
     const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
+    const { formatRecordCurrency } = useAuthStore();
     
     const [showRescheduleModal, setShowRescheduleModal] = useState(false);
     const [showSendModal, setShowSendModal] = useState(false);
@@ -88,11 +90,6 @@ const PaymentLinkDetail = () => {
             second: '2-digit',
             hour12: true
         });
-    };
-
-    // Format amount
-    const formatAmount = (amount, currencySymbol = '$', currencyCode = 'USD') => {
-        return `${currencySymbol}${parseFloat(amount || 0).toFixed(2)} ${currencyCode}`;
     };
 
     // Handle copy link
@@ -244,7 +241,7 @@ const PaymentLinkDetail = () => {
                                 <div className="col-md-6 mb-3">
                                     <label className="text-gray-600 fw-bold">{t('merchant.paymentLinks.table.amount')}</label>
                                     <div className="text-gray-800 fw-bold fs-3">
-                                        {formatAmount(paymentLink.amount, paymentLink.currency_symbol, paymentLink.currency_code)}
+                                        {formatRecordCurrency(paymentLink.amount, paymentLink)}
                                     </div>
                                 </div>
                                 <div className="col-md-6 mb-3">

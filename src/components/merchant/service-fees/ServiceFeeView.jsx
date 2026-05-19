@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next';
 import { getServiceFee } from '../../../services/serviceFeesService';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import useAuthStore from '../../../stores/authStore';
 
 const ServiceFeeView = () => {
     const { t, i18n } = useTranslation();
+    const { formatCurrency } = useAuthStore();
     const { id } = useParams();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [serviceFee, setServiceFee] = useState(null);
@@ -52,14 +54,6 @@ const ServiceFeeView = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat(i18n.language === 'ar' ? 'ar' : 'en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 2
-        }).format(amount);
     };
 
     if (loading) {

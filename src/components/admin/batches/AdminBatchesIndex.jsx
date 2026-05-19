@@ -633,9 +633,9 @@ const AdminBatchesIndex = () => {
                                     </th>
                                     <th className="text-dark">Batch Number</th>
                                     <th className="text-dark">Merchant</th>
-                                    <th className="text-dark">Status</th>
-                                    <th className="text-dark">Total Amount</th>
-                                    <th className="text-dark">Transaction Count</th>
+                                    <th className="min-w-100px text-center text-dark">Status</th>
+                                    <th className="min-w-100px text-end text-dark">Total Amount</th>
+                                    <th className="min-w-100px text-end text-dark">Transaction Count</th>
                                     <th className="text-dark">Created At</th>
                                     <th className="text-dark">Country</th>
                                     <th className="text-end text-dark">Actions</th>
@@ -648,9 +648,9 @@ const AdminBatchesIndex = () => {
                                             <td><div className="skeleton" style={{width: '20px', height: '20px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '120px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '150px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '80px', height: '24px', borderRadius: '6px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '80px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '60px', height: '16px'}}></div></td>
+                                            <td className="text-center"><div className="skeleton" style={{width: '80px', height: '24px', borderRadius: '6px', margin: '0 auto'}}></div></td>
+                                            <td className="text-end"><div className="skeleton" style={{width: '80px', height: '16px', marginLeft: 'auto'}}></div></td>
+                                            <td className="text-end"><div className="skeleton" style={{width: '60px', height: '16px', marginLeft: 'auto'}}></div></td>
                                             <td><div className="skeleton" style={{width: '140px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '100px', height: '16px'}}></div></td>
                                             <td className="text-end"><div className="skeleton" style={{width: '70px', height: '32px', borderRadius: '6px', marginLeft: 'auto'}}></div></td>
@@ -695,13 +695,13 @@ const AdminBatchesIndex = () => {
                                                     return info.merchantName;
                                                 })()}
                                             </td>
-                                            <td>
+                                            <td className="text-center">
                                                 <span className={`badge ${getStatusBadgeClass(batch.status)}`}>
                                                     {batch.status ? batch.status.charAt(0).toUpperCase() + batch.status.slice(1) : 'N/A'}
                                                 </span>
                                             </td>
-                                            <td>{batch.currency_symbol || '$'}{parseFloat(batch.total_amount || 0).toFixed(2)}</td>
-                                            <td>{batch.transaction_count || 0}</td>
+                                            <td className="text-end">{batch.currency_symbol || '$'}{parseFloat(batch.total_amount || 0).toFixed(2)}</td>
+                                            <td className="text-end">{batch.transaction_count || 0}</td>
                                             <td>{batch.created_at ? new Date(batch.created_at).toLocaleString() : 'N/A'}</td>
                                             <td>
                                                 {(() => {

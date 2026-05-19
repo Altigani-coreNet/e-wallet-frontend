@@ -10,6 +10,22 @@ import { useToolbar } from '../../../contexts/ToolbarContext';
 import { exportTransactions } from '../../../utils/transactionExport';
 import { useTranslation } from 'react-i18next';
 
+function getAdminTransactionTypeBannerCopy(urlType, t) {
+    if (urlType === 'refund') {
+        return {
+            title: t('admin.transactionsIndex.typeBannerRefundTitle'),
+            subtitle: t('admin.transactionsIndex.typeBannerRefundSubtitle'),
+        };
+    }
+    if (urlType === 'void') {
+        return {
+            title: t('admin.transactionsIndex.typeBannerVoidTitle'),
+            subtitle: t('admin.transactionsIndex.typeBannerVoidSubtitle'),
+        };
+    }
+    return null;
+}
+
 const AdminTransactionsIndex = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -561,6 +577,8 @@ const AdminTransactionsIndex = () => {
             : numeric.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
+    const typeBanner = getAdminTransactionTypeBannerCopy(urlType, t);
+
     return (
         <>
             <style>{`
@@ -601,7 +619,7 @@ const AdminTransactionsIndex = () => {
             `}</style>
 
             {/* Type Alert (for refund/void views) */}
-            {urlType && (
+            {typeBanner && (
                 <div className="row g-5 g-xl-8 mb-4">
                     <div className="col-md-12">
                         <div className="alert alert-info d-flex align-items-center p-5">
@@ -611,8 +629,8 @@ const AdminTransactionsIndex = () => {
                                 <span className="path3"></span>
                             </i>
                             <div className="d-flex flex-column">
-                                <h4 className="mb-1">{t(`admin.transactionUrlTypes.${urlType}`)} {t('admin.transactionsIndex.transactions')}</h4>
-                                <span>{t('admin.transactionsIndex.showingTransactionsForType', { type: t(`admin.transactionUrlTypes.${urlType}`) })}</span>
+                                <h4 className="mb-1">{typeBanner.title}</h4>
+                                <span>{typeBanner.subtitle}</span>
                             </div>
                         </div>
                     </div>
@@ -1024,8 +1042,8 @@ const AdminTransactionsIndex = () => {
                                     <th className="text-dark">{t('admin.transactionsIndex.colPaymentMethod')}</th>
                                     <th className="text-dark">{t('admin.transactionsIndex.colTransactionId')}</th>
                                     <th className="text-dark">{t('admin.transactionsIndex.colDateTime')}</th>
-                                    <th className="text-dark">{t('admin.transactionsIndex.colAmount')}</th>
-                                    <th className="text-dark">{t('admin.transactionsIndex.colStatus')}</th>
+                                    <th className="min-w-100px text-end text-dark">{t('admin.transactionsIndex.colAmount')}</th>
+                                    <th className="min-w-100px text-center text-dark">{t('admin.transactionsIndex.colStatus')}</th>
                                     <th className="text-end text-dark">{t('admin.transactionsIndex.colAction')}</th>
                                 </tr>
                             </thead>
@@ -1041,7 +1059,8 @@ const AdminTransactionsIndex = () => {
                                             <td><div className="skeleton" style={{width: '120px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '140px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '90px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '80px', height: '24px', borderRadius: '6px'}}></div></td>
+                                            <td className="text-end"><div className="skeleton" style={{width: '80px', height: '16px', marginLeft: 'auto'}}></div></td>
+                                            <td className="text-center"><div className="skeleton" style={{width: '80px', height: '24px', borderRadius: '6px', margin: '0 auto'}}></div></td>
                                             <td className="text-end"><div className="skeleton" style={{width: '70px', height: '32px', borderRadius: '6px', marginLeft: 'auto'}}></div></td>
                                         </tr>
                                     ))
@@ -1077,8 +1096,8 @@ const AdminTransactionsIndex = () => {
                                             <td>{transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || transaction.payment_type || t('admin.common.na')}</td>
                                             <td>{transaction.transaction_id || transaction.id || t('admin.common.na')}</td>
                                             <td>{transaction.created_at ? new Date(transaction.created_at).toLocaleString() : t('admin.common.na')}</td>
-                                            <td>{transaction.currency_symbol || '$'}{parseFloat(transaction.amount || 0).toFixed(2)}</td>
-                                            <td>
+                                            <td className="text-end">{transaction.currency_symbol || '$'}{parseFloat(transaction.amount || 0).toFixed(2)}</td>
+                                            <td className="text-center">
                                                 <span className={`badge ${getStatusBadgeClass(transaction.status)}`}>
                                                     {transaction.status || t('admin.common.na')}
                                                 </span>

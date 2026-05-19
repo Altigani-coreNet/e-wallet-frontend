@@ -28,11 +28,27 @@ function formatCountryNameLabel(country, lang) {
     return '';
 }
 
+function getTransactionTypeBannerCopy(type, t) {
+    if (type === 'refunded') {
+        return {
+            title: t('merchant.transactions.typeBannerRefundedTitle'),
+            subtitle: t('merchant.transactions.typeBannerRefundedSubtitle'),
+        };
+    }
+    if (type === 'voided') {
+        return {
+            title: t('merchant.transactions.typeBannerVoidedTitle'),
+            subtitle: t('merchant.transactions.typeBannerVoidedSubtitle'),
+        };
+    }
+    return null;
+}
+
 const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }) => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { user, merchant } = useAuthStore();
+    const { user, merchant, formatRecordCurrency } = useAuthStore();
     const { setTitle, setActions } = useToolbar();
     
     // Get merchantId from props, store, or localStorage
@@ -345,14 +361,6 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
         return statusMap[status?.toUpperCase?.()] || 'badge-light-secondary';
     };
 
-    const formatTableAmount = (value) => {
-        const numeric = Number(value ?? 0);
-        const loc = i18n.language === 'ar' ? 'ar' : undefined;
-        return Number.isNaN(numeric)
-            ? '0.00'
-            : numeric.toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    };
-
     // Generate pagination numbers
     const getPaginationNumbers = () => {
         const pages = [];
@@ -382,6 +390,8 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
         
         return pages;
     };
+
+    const typeBanner = getTransactionTypeBannerCopy(filters.type, t);
 
     return (
         <>
@@ -434,7 +444,7 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
             )}
 
             {/* Type Alert */}
-            {filters.type && (
+            {typeBanner && (
                 <div className="row g-5 g-xl-8 mb-5">
                     <div className="col-md-12">
                         <div className="alert alert-info d-flex align-items-center p-5">
@@ -444,12 +454,8 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                 <span className="path3"></span>
                             </i>
                             <div className="d-flex flex-column">
-                                <h4 className="mb-1 text-capitalize">
-                                    {t('merchant.transactions.typeBannerTitle', { type: filters.type })}
-                                </h4>
-                                <span>
-                                    {t('merchant.transactions.typeBannerSubtitle', { type: filters.type })}
-                                </span>
+                                <h4 className="mb-1">{typeBanner.title}</h4>
+                                <span>{typeBanner.subtitle}</span>
                             </div>
                         </div>
                     </div>
@@ -518,21 +524,21 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                         </span>
                                     </th>
                                     <th
-                                        className="text-dark cursor-pointer"
+                                        className="min-w-100px text-end text-dark cursor-pointer"
                                         onClick={() => handleSort('amount')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        <span className="d-inline-flex align-items-center flex-nowrap gap-1">
+                                        <span className="d-inline-flex align-items-center flex-nowrap gap-1 justify-content-end">
                                             {t('merchant.transactions.colAmount')}
                                             {getSortIcon('amount')}
                                         </span>
                                     </th>
                                     <th
-                                        className="text-dark cursor-pointer"
+                                        className="min-w-100px text-center text-dark cursor-pointer"
                                         onClick={() => handleSort('status')}
                                         style={{ cursor: 'pointer' }}
                                     >
-                                        <span className="d-inline-flex align-items-center flex-nowrap gap-1">
+                                        <span className="d-inline-flex align-items-center flex-nowrap gap-1 justify-content-center">
                                             {t('merchant.transactions.colStatus')}
                                             {getSortIcon('status')}
                                         </span>
@@ -545,11 +551,17 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                     // Skeleton Loading Rows (separate loader for table)
                                     [...Array(perPage)].map((_, index) => (
                                         <tr key={`skeleton-${index}`}>
-                                            {[1, 2, 3, 4, 5, 6, 7].map((c) => (
+                                            {[1, 2, 3, 4, 5, 6].map((c) => (
                                                 <td key={c}>
-                                                    <div className="skeleton skeleton-text" style={{ width: c === 9 ? '80px' : '100px', height: '16px' }}></div>
+                                                    <div className="skeleton skeleton-text" style={{ width: '100px', height: '16px' }}></div>
                                                 </td>
                                             ))}
+                                            <td className="text-end">
+                                                <div className="skeleton skeleton-text" style={{ width: '80px', height: '16px', marginLeft: 'auto' }}></div>
+                                            </td>
+                                            <td className="text-center">
+                                                <div className="skeleton skeleton-badge" style={{ width: '80px', height: '24px', borderRadius: '6px', margin: '0 auto' }}></div>
+                                            </td>
                                             <td className="text-center">
                                                 <div className="skeleton skeleton-button d-inline-block" style={{width: '120px', height: '32px', borderRadius: '6px'}}></div>
                                             </td>
@@ -598,11 +610,10 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                                       )
                                                     : t('merchant.common.na')}
                                             </td>
-                                            <td>
-                                                {transaction.currency_symbol || '$'}
-                                                {formatTableAmount(transaction.amount)}
+                                            <td className="text-end">
+                                                {formatRecordCurrency(transaction.amount, transaction)}
                                             </td>
-                                            <td>
+                                            <td className="text-center">
                                                 <span className={`badge ${getStatusBadgeClass(transaction.status)}`}>
                                                     {getTransactionStatusLabel(transaction.status, t) ||
                                                         t('merchant.common.na')}

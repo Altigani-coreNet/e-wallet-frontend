@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import useAuthStore from '../../../stores/authStore';
 
 const ServiceFeeTableRow = ({ serviceFee }) => {
     const { t, i18n } = useTranslation();
+    const { formatCurrency } = useAuthStore();
     const formatDate = (dateString) => {
         if (!dateString) return t('merchant.common.na');
         const date = new Date(dateString);
@@ -12,13 +14,6 @@ const ServiceFeeTableRow = ({ serviceFee }) => {
             month: 'short',
             day: 'numeric',
         });
-    };
-
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }).format(amount);
     };
 
     const getTypeBadge = (type) => {
@@ -50,7 +45,7 @@ const ServiceFeeTableRow = ({ serviceFee }) => {
                 </span>
             </td>
             <td>
-                <span className="text-dark fw-bold">${formatCurrency(serviceFee.fees)}</span>
+                <span className="text-dark fw-bold">{formatCurrency(serviceFee.fees)}</span>
             </td>
             <td>
                 <span className="text-gray-600">{serviceFee.description || '-'}</span>

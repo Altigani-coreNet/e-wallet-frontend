@@ -3,12 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useSettlementDetails } from '../../../services/settlementsService';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import useAuthStore from '../../../stores/authStore';
 
 const SettlementDetail = () => {
     const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
+    const { formatRecordCurrency } = useAuthStore();
     
     // Use React Query hook
     const { data: settlement, isLoading: loading } = useSettlementDetails(id);
@@ -218,7 +220,7 @@ const SettlementDetail = () => {
                             <div className="mb-5">
                                 <label className="form-label fw-bold">{t('merchant.settlements.totalAmount')}</label>
                                 <div className="text-gray-800">
-                                    {settlement.currency_symbol || '$'}{parseFloat(settlement.total_amount || 0).toFixed(2)}
+                                    {formatRecordCurrency(settlement.total_amount, settlement)}
                                 </div>
                             </div>
                             <div className="mb-5">
@@ -269,7 +271,7 @@ const SettlementDetail = () => {
                                         <tr key={transaction.id}>
                                             <td>{transaction.transaction_id || t('merchant.common.na')}</td>
                                             <td>
-                                                {transaction.currency_symbol || '$'} {parseFloat(transaction.amount || 0).toFixed(2)}
+                                                {formatRecordCurrency(transaction.amount, transaction)}
                                             </td>
                                             <td>
                                                 <span className={`badge badge-light-${transaction.status === 'APPROVED' ? 'success' : 'secondary'}`}>

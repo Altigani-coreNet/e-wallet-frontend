@@ -1,6 +1,8 @@
 import React from 'react';
+import useAuthStore from '../../../stores/authStore';
 
 const CustomerStatistics = ({ statistics }) => {
+    const { formatCurrency } = useAuthStore();
     const {
         total = 0,
         active = 0,
@@ -73,7 +75,7 @@ const CustomerStatistics = ({ statistics }) => {
                             <div className="flex-grow-1">
                                 <span className="text-gray-400 fw-semibold d-block fs-7">Total Deposit</span>
                                 <span className="text-gray-800 fw-bold fs-2">
-                                    ${typeof total_deposit === 'number' ? total_deposit.toFixed(2) : parseFloat(total_deposit || 0).toFixed(2)}
+                                    {formatCurrency(typeof total_deposit === 'number' ? total_deposit : parseFloat(total_deposit || 0))}
                                 </span>
                             </div>
                         </div>
@@ -97,7 +99,7 @@ const CustomerStatistics = ({ statistics }) => {
                             <div className="flex-grow-1">
                                 <span className="text-gray-400 fw-semibold d-block fs-7">Total Expense</span>
                                 <span className="text-gray-800 fw-bold fs-2">
-                                    ${typeof total_expense === 'number' ? total_expense.toFixed(2) : parseFloat(total_expense || 0).toFixed(2)}
+                                    {formatCurrency(typeof total_expense === 'number' ? total_expense : parseFloat(total_expense || 0))}
                                 </span>
                             </div>
                         </div>

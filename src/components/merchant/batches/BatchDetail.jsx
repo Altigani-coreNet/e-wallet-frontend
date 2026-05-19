@@ -3,12 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useBatchDetails } from '../../../services/batchesService';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import useAuthStore from '../../../stores/authStore';
 
 const BatchDetail = () => {
     const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
+    const { formatRecordCurrency } = useAuthStore();
     
     // Use React Query hook
     const { data: batch, isLoading: loading } = useBatchDetails(id);
@@ -251,7 +253,7 @@ const BatchDetail = () => {
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
                                     <span className="text-gray-600 fw-semibold fs-6 me-2">{t('merchant.batches.totalAmount')}:</span>
-                                    <span className="text-dark fw-bold fs-6">{batch.currency_symbol || '$'}{parseFloat(batch.total_amount || 0).toFixed(2)}</span>
+                                    <span className="text-dark fw-bold fs-6">{formatRecordCurrency(batch.total_amount, batch)}</span>
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
                                     <span className="text-gray-600 fw-semibold fs-6 me-2">{t('merchant.batches.transactionCount')}:</span>
@@ -303,7 +305,7 @@ const BatchDetail = () => {
                                         <tr key={transaction.id}>
                                             <td className="text-dark fw-bold">{transaction.transaction_id || t('merchant.common.na')}</td>
                                             <td className="text-dark fw-bold">
-                                                {transaction.currency_symbol || '$'} {parseFloat(transaction.amount || 0).toFixed(2)}
+                                                {formatRecordCurrency(transaction.amount, transaction)}
                                             </td>
                                             <td>
                                                 <span className={`badge badge-light-${getTransactionStatusColor(transaction.status)} fs-7`}>

@@ -12,7 +12,7 @@ import { getToken } from '../../../utils/api';
 const SettlementTransactions = ({ merchantId: propMerchantId }) => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    const { user, merchant } = useAuthStore();
+    const { user, merchant, formatCurrency, formatRecordCurrency } = useAuthStore();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const queryClient = useQueryClient();
     const startDateRef = useRef(null);
@@ -423,7 +423,7 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                 </div>
                                 <div className="mb-2 col-6 d-flex justify-content-center align-items-center">
                                     <span className="fs-2x fw-semibold text-warning">
-                                        ${parseFloat(statistics.refundTransactionsAmount || 0).toFixed(2)}
+                                        {formatCurrency(statistics.refundTransactionsAmount || 0)}
                                     </span>
                                 </div>
                             </div>
@@ -447,7 +447,7 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                 </div>
                                 <div className="mb-2 col-6 d-flex justify-content-center align-items-center">
                                     <span className="fs-2x fw-semibold text-danger">
-                                        ${parseFloat(statistics.voidTransactionsAmount || 0).toFixed(2)}
+                                        {formatCurrency(statistics.voidTransactionsAmount || 0)}
                                     </span>
                                 </div>
                             </div>
@@ -656,10 +656,10 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                 <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th className="text-dark">{t('merchant.settlements.settlementTx.colTransactionId')}</th>
                                     <th className="text-dark">{t('merchant.settlements.settlementTx.colBatchNumber')}</th>
-                                    <th className="text-dark">{t('merchant.settlements.settlementTx.paymentChannel')}</th>
-                                    <th className="text-dark">{t('merchant.settlements.settlementTx.type')}</th>
-                                    <th className="text-dark">{t('merchant.settlements.status')}</th>
-                                    <th className="text-dark">{t('merchant.settlements.settlementTx.colAmount')}</th>
+                                    <th className="text-center text-dark">{t('merchant.settlements.settlementTx.paymentChannel')}</th>
+                                    <th className="text-center text-dark">{t('merchant.settlements.settlementTx.type')}</th>
+                                    <th className="text-center text-dark">{t('merchant.settlements.status')}</th>
+                                    <th className="min-w-100px text-end text-dark">{t('merchant.settlements.settlementTx.colAmount')}</th>
                                     <th className="text-dark">{t('merchant.settlements.settlementTx.colCreatedAt')}</th>
                                     <th className="text-end text-dark">{t('merchant.settlements.actions')}</th>
                                 </tr>
@@ -672,9 +672,9 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                             <td><div className="skeleton skeleton-text" style={{width: '120px', height: '16px'}}></div></td>
                                             <td><div className="skeleton skeleton-text" style={{width: '100px', height: '16px'}}></div></td>
                                             <td><div className="skeleton skeleton-text" style={{width: '100px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton skeleton-badge" style={{width: '80px', height: '24px', borderRadius: '6px'}}></div></td>
-                                            <td><div className="skeleton skeleton-badge" style={{width: '80px', height: '24px', borderRadius: '6px'}}></div></td>
-                                            <td><div className="skeleton skeleton-text" style={{width: '90px', height: '16px'}}></div></td>
+                                            <td className="text-center"><div className="skeleton skeleton-badge" style={{width: '80px', height: '24px', borderRadius: '6px', margin: '0 auto'}}></div></td>
+                                            <td className="text-center"><div className="skeleton skeleton-badge" style={{width: '80px', height: '24px', borderRadius: '6px', margin: '0 auto'}}></div></td>
+                                            <td className="text-end"><div className="skeleton skeleton-text" style={{width: '90px', height: '16px', marginLeft: 'auto'}}></div></td>
                                             <td><div className="skeleton skeleton-text" style={{width: '140px', height: '16px'}}></div></td>
                                             <td className="text-end"><div className="skeleton skeleton-button" style={{width: '70px', height: '32px', borderRadius: '6px', marginLeft: 'auto'}}></div></td>
                                         </tr>
@@ -696,22 +696,22 @@ const SettlementTransactions = ({ merchantId: propMerchantId }) => {
                                         <tr key={transaction.id}>
                                             <td>{transaction.transaction_id || t('merchant.common.na')}</td>
                                             <td>{transaction.batch_number || t('merchant.common.na')}</td>
-                                            <td>
+                                            <td className="text-center">
                                                 <span className="badge badge-light-primary">
                                                     {transaction.payment_channel || t('merchant.common.na')}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td className="text-center">
                                                 <span className={`badge badge-light-${getTypeColor(transaction.type)}`}>
                                                     {settlementTxTypeLabel(transaction.type)}
                                                 </span>
                                             </td>
-                                            <td>
+                                            <td className="text-center">
                                                 <span className={`badge badge-light-${getStatusColor(transaction.status)}`}>
                                                     {settlementTxStatusLabel(transaction.status)}
                                                 </span>
                                             </td>
-                                            <td>${parseFloat(transaction.amount || 0).toFixed(2)}</td>
+                                            <td className="text-end">{formatRecordCurrency(transaction.amount, transaction)}</td>
                                             <td>{transaction.created_at || t('merchant.common.na')}</td>
                                             <td className="text-end">
                                                 <button

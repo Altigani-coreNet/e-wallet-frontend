@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTransactionStatusLabel } from '../../utils/transactionStatusHelpers';
+import useAuthStore from '../../stores/authStore';
 
 const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loading }) => {
     const { t, i18n } = useTranslation();
+    const { formatRecordCurrency } = useAuthStore();
     const [showLimitMenu, setShowLimitMenu] = useState(false);
     const limitOptions = [10, 20, 50, 100];
 
@@ -18,13 +20,6 @@ const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loadi
             hour: '2-digit',
             minute: '2-digit'
         });
-    };
-
-    const formatAmount = (amount) => {
-        return new Intl.NumberFormat(i18n.language?.startsWith('ar') ? 'ar-SA' : 'en-US', {
-            style: 'currency',
-            currency: 'USD'
-        }).format(amount || 0);
     };
 
     const getStatusBadgeClass = (status) => {
@@ -161,7 +156,7 @@ const DashboardLatestTransactions = ({ transactions, limit, onLimitChange, loadi
                                             </td>
                                             <td>
                                                 <span className="text-gray-900 fw-bold d-block fs-6">
-                                                    {formatAmount(transaction.amount)}
+                                                    {formatRecordCurrency(transaction.amount, transaction)}
                                                 </span>
                                             </td>
                                             <td>

@@ -12,7 +12,7 @@ import { useToolbar } from '../../../contexts/ToolbarContext';
 const MerchantBatches = ({ merchantId: propMerchantId }) => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    const { user, merchant } = useAuthStore();
+    const { user, merchant, formatRecordCurrency } = useAuthStore();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const queryClient = useQueryClient();
     
@@ -303,21 +303,21 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
                                         {t('merchant.batches.colBatchNumber')} {getSortIcon('batch_number')}
                                     </th>
                                     <th 
-                                        className="text-dark cursor-pointer" 
+                                        className="min-w-100px text-center text-dark cursor-pointer" 
                                         onClick={() => handleSort('status')}
                                         style={{ cursor: 'pointer' }}
                                     >
                                         {t('merchant.batches.colStatus')} {getSortIcon('status')}
                                     </th>
                                     <th 
-                                        className="text-dark cursor-pointer" 
+                                        className="min-w-100px text-end text-dark cursor-pointer" 
                                         onClick={() => handleSort('total_amount')}
                                         style={{ cursor: 'pointer' }}
                                     >
                                         {t('merchant.batches.colTotalAmount')} {getSortIcon('total_amount')}
                                     </th>
                                     <th 
-                                        className="text-dark cursor-pointer" 
+                                        className="min-w-100px text-end text-dark cursor-pointer" 
                                         onClick={() => handleSort('transaction_count')}
                                         style={{ cursor: 'pointer' }}
                                     >
@@ -339,9 +339,9 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
                                     [...Array(perPage)].map((_, index) => (
                                         <tr key={`skeleton-${index}`}>
                                             <td><div className="skeleton skeleton-text" style={{width: '120px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton skeleton-badge" style={{width: '80px', height: '24px', borderRadius: '6px'}}></div></td>
-                                            <td><div className="skeleton skeleton-text" style={{width: '90px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton skeleton-text" style={{width: '60px', height: '16px'}}></div></td>
+                                            <td className="text-center"><div className="skeleton skeleton-badge" style={{width: '80px', height: '24px', borderRadius: '6px', margin: '0 auto'}}></div></td>
+                                            <td className="text-end"><div className="skeleton skeleton-text" style={{width: '90px', height: '16px', marginLeft: 'auto'}}></div></td>
+                                            <td className="text-end"><div className="skeleton skeleton-text" style={{width: '60px', height: '16px', marginLeft: 'auto'}}></div></td>
                                             <td><div className="skeleton skeleton-text" style={{width: '140px', height: '16px'}}></div></td>
                                             <td className="text-end"><div className="skeleton skeleton-button" style={{width: '70px', height: '32px', borderRadius: '6px', marginLeft: 'auto'}}></div></td>
                                         </tr>
@@ -362,13 +362,13 @@ const MerchantBatches = ({ merchantId: propMerchantId }) => {
                                     batches.map((batch) => (
                                         <tr key={batch.id}>
                                             <td>{batch.batch_number || t('merchant.common.na')}</td>
-                                            <td>
+                                            <td className="text-center">
                                                 <span className={`badge badge-light-${getStatusColor(batch.status)}`}>
                                                     {batchStatusLabel(batch.status)}
                                                 </span>
                                             </td>
-                                            <td>{batch.currency_symbol || '$'}{parseFloat(batch.total_amount || 0).toFixed(2)}</td>
-                                            <td>{batch.transaction_count || 0}</td>
+                                            <td className="text-end">{formatRecordCurrency(batch.total_amount, batch)}</td>
+                                            <td className="text-end">{batch.transaction_count || 0}</td>
                                             <td>{batch.created_at || t('merchant.common.na')}</td>
                                             <td className="text-end">
                                                 <BatchActions batch={batch} />

@@ -1,8 +1,17 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import axios from 'axios';
+import i18n from '../i18n/config';
 import { AUTH_ENDPOINTS } from '../utils/constants';
 import { setToken, removeToken, setUser, setMerchant, getToken, getUser, getMerchant } from '../utils/api';
+import {
+    formatAmountWithSymbol,
+    formatRecordCurrency as formatRecordCurrencyAmount,
+    getCurrencyLocale as resolveIntlLocale,
+    getLanguageCode,
+    resolveCurrencySymbol,
+    resolveTranslatable,
+} from '../utils/currencyUtils';
 
 const extractMerchantData = (user, merchant) => {
     return merchant || user?.merchant || null;
@@ -27,6 +36,7 @@ const useAuthStore = create(
             profileLoaded: false,
             profileError: null,
             testMode: false, // New test mode state
+            currencyLang: getLanguageCode(),
 
             // Initialize auth from localStorage
             initialize: () => {
@@ -616,6 +626,55 @@ const useAuthStore = create(
             isTestMode: () => {
                 return get().testMode;
             },
+
+            // Currency helpers (locale-aware: en / ar)
+            getCurrencyObject: () => {
+                const merchant = get().merchant;
+                if (!merchant) return null;
+                return (
+                    merchant.currency ||
+                    merchant.currency_object ||
+                    merchant.merchantCurrency ||
+                    null
+                );
+            },
+
+            getCurrencyCode: () => {
+                const currencyObj = get().getCurrencyObject();
+                const code = resolveTranslatable(currencyObj?.currency_code, get().currencyLang);
+                if (code) return code;
+                const merchant = get().merchant;
+                return merchant?.currency_code || 'USD';
+            },
+
+            getCurrencyLocale: () => resolveIntlLocale(get().currencyLang),
+
+            getCurrencySymbol: () => {
+                const merchant = get().merchant;
+                if (typeof merchant?.currency_symbol === 'string' && merchant.currency_symbol.trim()) {
+                    return merchant.currency_symbol.trim();
+                }
+                const currencyObj = get().getCurrencyObject();
+                const symbol = resolveCurrencySymbol(currencyObj, get().currencyLang);
+                return symbol || '';
+            },
+
+            formatCurrency: (amount) => {
+                return formatAmountWithSymbol(
+                    amount,
+                    get().getCurrencySymbol(),
+                    get().currencyLang
+                );
+            },
+
+            formatRecordCurrency: (amount, record) => {
+                return formatRecordCurrencyAmount(
+                    amount,
+                    record,
+                    get().currencyLang,
+                    get().getCurrencySymbol()
+                );
+            },
         }),
             {
                 name: 'auth-storage',
@@ -637,4 +696,8 @@ const useAuthStore = create(
 );
 
 export default useAuthStore;
+
+i18n.on('languageChanged', (lng) => {
+    useAuthStore.setState({ currencyLang: getLanguageCode(lng) });
+});
 

@@ -6,12 +6,14 @@ import { useToolbar } from '../../../contexts/ToolbarContext';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 import Swal from 'sweetalert2';
+import useAuthStore from '../../../stores/authStore';
 
 const CustomerView = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
+    const { formatCurrency } = useAuthStore();
     
     // Dynamically determine base path from current location
     const basePath = location.pathname.startsWith('/sales') ? '/sales' : '/merchant';
@@ -335,7 +337,7 @@ const CustomerView = () => {
                                                         <span className="path3"></span>
                                                     </i>
                                                     <div className="text-white fw-bold fs-2 mt-5">
-                                                        ${parseFloat(customer.deposit || 0).toFixed(2)}
+                                                        {formatCurrency(customer.deposit || 0)}
                                                     </div>
                                                     <div className="fw-semibold text-white">Deposit Balance</div>
                                                 </div>
@@ -533,7 +535,7 @@ const CustomerView = () => {
                                                             <td className="text-muted min-w-125px w-125px">Deposit Amount</td>
                                                             <td className="text-gray-800">
                                                                 <span className="badge badge-light-success fs-7">
-                                                                    ${parseFloat(customer.deposit || 0).toFixed(2)}
+                                                                    {formatCurrency(customer.deposit || 0)}
                                                                 </span>
                                                             </td>
                                                         </tr>
@@ -541,7 +543,7 @@ const CustomerView = () => {
                                                             <td className="text-muted min-w-125px w-125px">Expense Amount</td>
                                                             <td className="text-gray-800">
                                                                 <span className="badge badge-light-warning fs-7">
-                                                                    ${parseFloat(customer.expense || 0).toFixed(2)}
+                                                                    {formatCurrency(customer.expense || 0)}
                                                                 </span>
                                                             </td>
                                                         </tr>

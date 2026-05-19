@@ -193,6 +193,20 @@ body.app-sidebar-minimize .menu-sub .menu-item {
     direction: rtl;
 }
 
+/*
+ * Bootstrap .text-start is physical left; in RTL tables, default headers/cells should
+ * align to the right. .text-end / .text-center are mirrored for numeric/badge columns.
+ */
+#kt_app_root.app-layout-ar #kt_app_content .table thead tr.text-start > th.text-dark:not(.text-end):not(.text-center),
+#kt_app_root.app-layout-ar #kt_app_content .table tbody td:not(.text-end):not(.text-center) {
+    text-align: right !important;
+}
+
+#kt_app_root.app-layout-ar #kt_app_content .table thead th.text-end,
+#kt_app_root.app-layout-ar #kt_app_content .table tbody td.text-end {
+    text-align: left !important;
+}
+
 /* Arabic: Cairo (loaded in index.html; must match app Arabic layout class) */
 #kt_app_root.app-layout-ar,
 #kt_app_root.app-layout-ar .app-container,

@@ -1,11 +1,11 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import useAuthStore from '../../../stores/authStore';
 
 const TransactionStatistics = ({ statistics }) => {
     const { t, i18n } = useTranslation();
+    const { formatCurrency } = useAuthStore();
     const loc = i18n.language === 'ar' ? 'ar' : undefined;
-    const fmtMoney = (v) =>
-        (v ?? 0).toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const fmtInt = (v) => (v ?? 0).toLocaleString(loc);
 
     return (
@@ -31,7 +31,7 @@ const TransactionStatistics = ({ statistics }) => {
                         </div>
                         <div className="mb-2 col-6 d-flex justify-content-center align-items-center">
                             <span className="fs-2x fw-semibold text-success">
-                                ${fmtMoney(statistics.saleTransactionsAmount)}
+                                {formatCurrency(statistics.saleTransactionsAmount || 0)}
                             </span>
                         </div>
                     </div>
@@ -59,7 +59,7 @@ const TransactionStatistics = ({ statistics }) => {
                         </div>
                         <div className="mb-2 col-6 d-flex justify-content-center align-items-center">
                             <span className="fs-2x fw-semibold text-danger">
-                                ${fmtMoney(statistics.refundTransactionsAmount)}
+                                {formatCurrency(statistics.refundTransactionsAmount || 0)}
                             </span>
                         </div>
                     </div>
@@ -87,7 +87,7 @@ const TransactionStatistics = ({ statistics }) => {
                         </div>
                         <div className="mb-2 col-6 d-flex justify-content-center align-items-center">
                             <span className="fs-2x fw-semibold text-dark">
-                                ${fmtMoney(statistics.voidTransactionsAmount)}
+                                {formatCurrency(statistics.voidTransactionsAmount || 0)}
                             </span>
                         </div>
                     </div>

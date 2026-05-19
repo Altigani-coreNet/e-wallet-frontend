@@ -246,7 +246,7 @@
     "footer": {
       "thankYou": "Thank you for your purchase!",
       "poweredBy": "Powered by {{brand}}",
-      "defaultBrand": "CoreNet Technologies"
+      "defaultBrand": "FastPay"
     }
   },
   "merchant": {
@@ -340,7 +340,10 @@
       "userGroupDetails": "User group details",
       "createCustomer": "Create new customer",
       "editCustomer": "Edit customer",
-      "customerDetail": "Customer"
+      "customerDetail": "Customer",
+      "profile": "My profile",
+      "editProfile": "Edit merchant profile",
+      "editRejectedFields": "Edit rejected fields"
     },
     "common": {
       "loading": "Loading...",
@@ -516,8 +519,10 @@
       "exportSuccess": "Export completed successfully",
       "exportFailed": "Failed to export transactions",
       "totalCount": "({{count}} total)",
-      "typeBannerTitle": "{{type}} transactions",
-      "typeBannerSubtitle": "Showing transactions with type: {{type}}",
+      "typeBannerRefundedTitle": "Refund transactions",
+      "typeBannerRefundedSubtitle": "Showing refunded transactions",
+      "typeBannerVoidedTitle": "Void transactions",
+      "typeBannerVoidedSubtitle": "Showing voided transactions",
       "colCountry": "Country",
       "colUser": "User",
       "colPaymentMethod": "Payment method",
@@ -3134,6 +3139,7 @@
       "contractTermsManagement": "Contract terms management"
     },
     "transactionUrlTypes": {
+      "refund": "Refund",
       "refunded": "Refunded",
       "voided": "Voided",
       "void": "Void",
@@ -4026,7 +4032,12 @@
       "deleted": "{{count}} transaction(s) deleted successfully.",
       "deleteFailed": "Failed to delete transactions",
       "transactions": "Transactions",
-      "showingTransactionsForType": "Showing transactions with type: {{type}}",
+      "showingTransactionsForTypeRefund": "Showing refund transactions",
+      "showingTransactionsForTypeVoid": "Showing void transactions",
+      "typeBannerRefundTitle": "Refund transactions",
+      "typeBannerRefundSubtitle": "Showing refund transactions",
+      "typeBannerVoidTitle": "Void transactions",
+      "typeBannerVoidSubtitle": "Showing void transactions",
       "saleTransactions": "Sale Transactions",
       "saleTransactionsSubtitle": "Approved, Pending, Capture",
       "refundTransactions": "Refund Transactions",

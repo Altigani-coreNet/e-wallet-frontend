@@ -13,7 +13,7 @@ import { useCan } from '../../../utils/permissions';
 const MerchantSettlements = ({ merchantId: propMerchantId }) => {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    const { user, merchant } = useAuthStore();
+    const { user, merchant, formatRecordCurrency } = useAuthStore();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const queryClient = useQueryClient();
     const canViewSettlements = useCan('settlements.view_settlements');
@@ -384,7 +384,7 @@ const MerchantSettlements = ({ merchantId: propMerchantId }) => {
                                                     {settlementStatusLabel(settlement.status)}
                                                 </span>
                                             </td>
-                                            <td>{settlement.currency_symbol || '$'}{parseFloat(settlement.total_amount || 0).toFixed(2)}</td>
+                                            <td>{formatRecordCurrency(settlement.total_amount, settlement)}</td>
                                             <td>{settlement.settlement_date || t('merchant.common.na')}</td>
                                             <td>{settlement.created_at || t('merchant.common.na')}</td>
                                             <td className="text-end">

@@ -140,7 +140,7 @@ const TransactionFilters = ({ filters, onFilterChange, onClearFilters }) => {
         if (filters.status) {
             details.push(
                 t('merchant.transactions.filterStatus', {
-                    status: statusLabels[filters.status] || filters.status,
+                    status: getTransactionStatusLabel(filters.status, t),
                 })
             );
         }

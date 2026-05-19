@@ -18,6 +18,7 @@ import {
     getEntryModeLabel,
     getTransactionPaymentTypeFieldLabel,
 } from '../../../utils/transactionPaymentHelpers';
+import useAuthStore from '../../../stores/authStore';
 
 /** Matches API CountryResource: `name` may be a string or { en, ar }. */
 function formatCountryNameLabel(country, lang) {
@@ -36,6 +37,7 @@ const TransactionDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
+    const { formatRecordCurrency, getCurrencyCode } = useAuthStore();
     
     // State management
     const [transaction, setTransaction] = useState(null);
@@ -524,7 +526,7 @@ const TransactionDetail = () => {
                                 </div>
                                 <div className="text-end">
                                     <div className="text-black fw-bolder fs-1 mb-2">
-                                        {transaction.currency_symbol || '$'} {parseFloat(transaction.amount || 0).toFixed(2)}
+                                        {formatRecordCurrency(transaction.amount, transaction)}
                                     </div>
                                     <div className="fw-bold text-black">
                                         {currency?.currency_code ||
@@ -812,18 +814,13 @@ const TransactionDetail = () => {
                                 <div className="col-md-4">
                                     <div className="fs-7 text-muted">{t('merchant.transactionDetail.amount')}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.currency_symbol || '$'}{' '}
-                                        {parseFloat(transaction.original_amount || transaction.amount || 0).toFixed(2)}
+                                        {formatRecordCurrency(transaction.original_amount || transaction.amount, transaction)}
                                     </div>
                                 </div>
                                 <div className="col-md-4">
                                     <div className="fs-7 text-muted">{t('merchant.transactionDetail.currency')}</div>
                                     <div className="fs-6 fw-bold">
-                                        {transaction.currency_symbol || '$'} (
-                                        {currency?.currency_code ||
-                                            transaction.currency?.currency_code ||
-                                            t('merchant.transactionDetail.defaultCurrencyCode')}
-                                        )
+                                        {getCurrencyCode()}
                                     </div>
                                 </div>
                                 <div className="col-md-4">

@@ -523,13 +523,13 @@ const AdminSettlementsIndex = () => {
                                             />
                                         </div>
                                     </th>
-                                    <th className="text-dark">{t('admin.settlementsIndex.id')}</th>
+                                    <th className="min-w-70px text-end text-dark">{t('admin.settlementsIndex.id')}</th>
                                     <th className="min-w-125px text-dark">{t('admin.settlementsIndex.settlementNumber')}</th>
                                     <th className="min-w-125px text-dark">{t('admin.settlementsIndex.batch')}</th>
                                     <th className="text-dark">{t('admin.settlementsIndex.merchant')}</th>
-                                    <th className="text-dark">{t('admin.settlementsIndex.status')}</th>
-                                    <th className="text-dark">{t('admin.settlementsIndex.amount')}</th>
-                                    <th className="text-dark">{t('admin.settlementsIndex.transactions')}</th>
+                                    <th className="min-w-100px text-center text-dark">{t('admin.settlementsIndex.status')}</th>
+                                    <th className="min-w-100px text-end text-dark">{t('admin.settlementsIndex.amount')}</th>
+                                    <th className="min-w-100px text-end text-dark">{t('admin.settlementsIndex.transactions')}</th>
                                     <th className="text-dark">{t('admin.settlementsIndex.createdAt')}</th>
                                     <th className="text-dark">{t('admin.settlementsIndex.country')}</th>
                                     <th className="text-end text-dark">{t('admin.settlementsIndex.actions')}</th>
@@ -540,13 +540,13 @@ const AdminSettlementsIndex = () => {
                                     [...Array(pagination.per_page)].map((_, index) => (
                                         <tr key={`skeleton-${index}`}>
                                             <td><div className="skeleton" style={{width: '20px', height: '20px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '60px', height: '16px'}}></div></td>
+                                            <td className="text-end"><div className="skeleton" style={{width: '60px', height: '16px', marginLeft: 'auto'}}></div></td>
                                             <td><div className="skeleton" style={{width: '120px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '100px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '150px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '80px', height: '24px', borderRadius: '6px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '80px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton" style={{width: '60px', height: '16px'}}></div></td>
+                                            <td className="text-center"><div className="skeleton" style={{width: '80px', height: '24px', borderRadius: '6px', margin: '0 auto'}}></div></td>
+                                            <td className="text-end"><div className="skeleton" style={{width: '80px', height: '16px', marginLeft: 'auto'}}></div></td>
+                                            <td className="text-end"><div className="skeleton" style={{width: '60px', height: '16px', marginLeft: 'auto'}}></div></td>
                                             <td><div className="skeleton" style={{width: '140px', height: '16px'}}></div></td>
                                             <td><div className="skeleton" style={{width: '100px', height: '16px'}}></div></td>
                                             <td className="text-end"><div className="skeleton" style={{width: '70px', height: '32px', borderRadius: '6px', marginLeft: 'auto'}}></div></td>
@@ -577,7 +577,7 @@ const AdminSettlementsIndex = () => {
                                                     />
                                                 </div>
                                             </td>
-                                            <td>{settlement.id}</td>
+                                            <td className="text-end">{settlement.id}</td>
                                             <td>{settlement.settlement_id || t('admin.paymentLinksIndex.na')}</td>
                                             <td>{settlement.batch?.batch_number || t('admin.paymentLinksIndex.na')}</td>
                                             <td>
@@ -593,13 +593,13 @@ const AdminSettlementsIndex = () => {
                                                     return info.merchantName;
                                                 })()}
                                             </td>
-                                            <td>
+                                            <td className="text-center">
                                                 <span className={`badge ${getStatusBadgeClass(settlement.status)}`}>
                                                     {settlement.status ? settlement.status.charAt(0).toUpperCase() + settlement.status.slice(1) : t('admin.paymentLinksIndex.na')}
                                                 </span>
                                             </td>
-                                            <td>{settlement.currency_symbol || '$'}{parseFloat(settlement.total_amount || 0).toFixed(2)}</td>
-                                            <td>{settlement.transaction_count || 0}</td>
+                                            <td className="text-end">{settlement.currency_symbol || '$'}{parseFloat(settlement.total_amount || 0).toFixed(2)}</td>
+                                            <td className="text-end">{settlement.transaction_count || 0}</td>
                                             <td>{settlement.created_at ? new Date(settlement.created_at).toLocaleString(i18n.language === 'ar' ? 'ar-EG' : 'en-US') : t('admin.paymentLinksIndex.na')}</td>
                                             <td>
                                                 {(() => {

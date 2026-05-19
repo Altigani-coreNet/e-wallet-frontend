@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { deletePaymentLink } from '../../../services/paymentLinksService';
 import Swal from 'sweetalert2';
 import { useCan } from '../../../utils/permissions';
+import useAuthStore from '../../../stores/authStore';
 
 const PaymentLinkTableRow = ({
     paymentLink,
@@ -14,6 +15,7 @@ const PaymentLinkTableRow = ({
     onSend
 }) => {
     const { t, i18n } = useTranslation();
+    const { formatRecordCurrency } = useAuthStore();
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef(null);
     const triggerRef = useRef(null);
@@ -155,10 +157,6 @@ const PaymentLinkTableRow = ({
         }
     };
 
-    const formatAmount = (amount, currencySymbol = '$', currencyCode = 'USD') => {
-        return `${currencySymbol}${parseFloat(amount || 0).toFixed(2)} ${currencyCode}`;
-    };
-
     const getPaymentLinkUrl = () => {
         return `${window.location.origin}/payments?uuid=${paymentLink.uuid}`;
     };
@@ -220,7 +218,7 @@ const PaymentLinkTableRow = ({
             </td>
             <td>
                 <span className="text-gray-800 fw-bold">
-                    {formatAmount(paymentLink.amount, paymentLink.currency_symbol, paymentLink.currency_code)}
+                    {formatRecordCurrency(paymentLink.amount, paymentLink)}
                 </span>
             </td>
             <td>
