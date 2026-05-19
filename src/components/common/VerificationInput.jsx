@@ -95,7 +95,10 @@ const VerificationInput = forwardRef(({ length = 6, onComplete }, ref) => {
 
     return (
         <div className="w-100 mx-auto" style={{ overflow: 'hidden' }}>
-            <div className="d-flex flex-nowrap justify-content-center opt_container">
+            <div
+                className="d-flex flex-nowrap justify-content-center opt_container verification-otp-ltr"
+                dir="ltr"
+            >
                 {code.map((digit, idx) => (
                     <input
                         key={idx}
@@ -118,6 +121,8 @@ const VerificationInput = forwardRef(({ length = 6, onComplete }, ref) => {
                         onKeyDown={e => handleKeyDown(e, idx)}
                         onPaste={handlePaste}
                         inputMode="numeric"
+                        dir="ltr"
+                        autoComplete="one-time-code"
                     />
                 ))}
             </div>

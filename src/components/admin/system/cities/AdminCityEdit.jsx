@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { getCity, updateCity } from '../../../../services/adminCitiesService';
 import { getCountriesSelect } from '../../../../services/adminCountriesService';
 
 const AdminCityEdit = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
@@ -19,10 +21,10 @@ const AdminCityEdit = () => {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        setTitle('Edit City');
+        setTitle(t('admin.cityForm.editTitle'));
         setActions(null);
         fetchData();
-    }, [id, setTitle, setActions]);
+    }, [id, setTitle, setActions, t, i18n.language]);
 
     const fetchData = async () => {
         const [cityRes, countriesRes] = await Promise.all([
@@ -52,15 +54,15 @@ const AdminCityEdit = () => {
         try {
             const response = await updateCity(id, formData);
             if (response.success) {
-                toast.success('City updated successfully');
+                toast.success(t('admin.cityForm.updateSuccess'));
                 navigate('/admin/system/cities');
             } else {
                 if (response.errors) setErrors(response.errors);
-                toast.error(response.error || 'Failed to update city');
+                toast.error(response.error || t('admin.cityForm.updateFailed'));
             }
         } catch (error) {
             console.error('Error updating city:', error);
-            toast.error('Failed to update city');
+            toast.error(t('admin.cityForm.updateFailed'));
         } finally {
             setLoading(false);
         }
@@ -69,14 +71,14 @@ const AdminCityEdit = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Edit City</h3>
+                <h3 className="card-title">{t('admin.cityForm.editTitle')}</h3>
             </div>
 
             <form onSubmit={handleSubmit}>
                 <div className="card-body">
                     <div className="row">
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Name (English)</label>
+                            <label className="form-label required">{t('admin.table.nameEn')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors['name.en'] ? 'is-invalid' : ''}`}
@@ -87,7 +89,7 @@ const AdminCityEdit = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Name (Arabic)</label>
+                            <label className="form-label required">{t('admin.table.nameAr')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors['name.ar'] ? 'is-invalid' : ''}`}
@@ -99,13 +101,13 @@ const AdminCityEdit = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Country</label>
+                            <label className="form-label required">{t('admin.table.country')}</label>
                             <select
                                 className={`form-select ${errors.country_id ? 'is-invalid' : ''}`}
                                 value={formData.country_id}
                                 onChange={(e) => setFormData({ ...formData, country_id: e.target.value })}
                             >
-                                <option value="">Select Country</option>
+                                <option value="">{t('admin.cityForm.selectCountry')}</option>
                                 {countries.map(country => (
                                     <option key={country.id} value={country.id}>
                                         {typeof country.text === 'object' ? country.text.en : country.text}
@@ -116,14 +118,14 @@ const AdminCityEdit = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Status</label>
+                            <label className="form-label required">{t('admin.common.status')}</label>
                             <select
                                 className="form-select"
                                 value={formData.status ? '1' : '0'}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value === '1' })}
                             >
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
+                                <option value="1">{t('admin.common.active')}</option>
+                                <option value="0">{t('admin.common.inactive')}</option>
                             </select>
                         </div>
                     </div>
@@ -135,10 +137,10 @@ const AdminCityEdit = () => {
                         className="btn btn-light"
                         onClick={() => navigate('/admin/system/cities')}
                     >
-                        Cancel
+                        {t('admin.common.cancel')}
                     </button>
                     <button type="submit" className="btn btn-primary" disabled={loading}>
-                        {loading ? 'Updating...' : 'Update City'}
+                        {loading ? t('admin.cityForm.updating') : t('admin.cityForm.updateCity')}
                     </button>
                 </div>
             </form>
@@ -147,5 +149,3 @@ const AdminCityEdit = () => {
 };
 
 export default AdminCityEdit;
-
-

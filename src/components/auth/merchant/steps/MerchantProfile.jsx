@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import useMerchantProfile from '../../../../hooks/useMerchantProfile';
+import { getBusinessTypeOptionLabel } from '../../../../utils/businessTypeLabels';
 
 const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
     const { t } = useTranslation();
@@ -73,7 +74,9 @@ const MerchantProfile = ({ formData, setFormData, fieldErrors }) => {
                             {loading.businessTypes ? t('auth.common.loading') : t('auth.merchantProfile.selectBusinessType')}
                         </option>
                         {businessTypes.map(type => (
-                            <option key={type.id} value={type.value}>{type.text}</option>
+                            <option key={type.id ?? type.value} value={type.value}>
+                                {getBusinessTypeOptionLabel(type, t)}
+                            </option>
                         ))}
                     </select>
                     {fieldErrors?.business_type && <div className="invalid-feedback">{fieldErrors.business_type[0]}</div>}

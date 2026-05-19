@@ -158,6 +158,22 @@
 }
 
 /* ─── OTP input row ──────────────────────────────────────────────────── */
+/* OTP is always LTR (digit order left→right), even on Arabic pages. */
+
+.verification-otp-ltr,
+.av-otp-container,
+.opt_container {
+    direction: ltr;
+}
+
+html[dir="rtl"] .verification-otp-ltr,
+html[dir="rtl"] .av-otp-container,
+html[dir="rtl"] .opt_container,
+body.app-i18n-rtl .verification-otp-ltr,
+body.app-i18n-rtl .av-otp-container,
+body.app-i18n-rtl .opt_container {
+    direction: ltr;
+}
 
 .av-otp-container {
     display: flex;
@@ -167,6 +183,14 @@
     width: 100%;
     margin-bottom: clamp(10px, 2dvh, 18px);
     overflow: hidden;
+}
+
+.verification-otp-ltr .av-otp-input,
+.verification-otp-ltr input,
+.opt_container input {
+    direction: ltr;
+    unicode-bidi: isolate;
+    text-align: center;
 }
 
 .av-otp-input {

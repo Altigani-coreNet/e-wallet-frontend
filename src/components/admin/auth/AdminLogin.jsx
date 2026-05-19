@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import axios from 'axios';
@@ -7,12 +7,16 @@ import { ADMIN_ENDPOINTS, APP_CONFIG } from '../../../utils/constants';
 import { setToken, setUser, removeToken } from '../../../utils/api';
 import useAuthStore from '../../../stores/authStore';
 import { resolveAdminPath } from '../../../i18n/localePaths';
+import {
+    MerchantAuthPageLayout,
+    ADMIN_AUTH_FEATURE_ITEMS,
+} from '../../auth/merchant/merchantAuthShell';
 
 const AdminLogin = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { t } = useTranslation();
-    
+
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -22,53 +26,50 @@ const AdminLogin = () => {
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
-    // Clear any stale tokens on mount to prevent redirect loop
     useEffect(() => {
         const token = localStorage.getItem(APP_CONFIG.TOKEN_KEY);
         const user = localStorage.getItem(APP_CONFIG.USER_KEY);
-        
-        // If we're on login page, ensure auth state is cleared
+
         if (token || user) {
             console.log('⚠️ Clearing existing tokens on admin login page');
-            removeToken(); // Use the proper removeToken function
+            removeToken();
         }
     }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            [name]: value
+            [name]: value,
         }));
-        
-        // Clear field error when user types
+
         if (formErrors[name]) {
-            setFormErrors(prev => ({
+            setFormErrors((prev) => ({
                 ...prev,
-                [name]: ''
+                [name]: '',
             }));
         }
     };
 
     const validate = () => {
         const errors = {};
-        
+
         if (!formData.email) {
             errors.email = t('admin.login.emailRequired');
         } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
             errors.email = t('admin.login.emailInvalid');
         }
-        
+
         if (!formData.password) {
             errors.password = t('admin.login.passwordRequired');
         }
-        
+
         return errors;
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         const errors = validate();
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
@@ -79,58 +80,64 @@ const AdminLogin = () => {
         setFormErrors({});
 
         try {
-            // Call admin-specific login endpoint
             const response = await axios.post(ADMIN_ENDPOINTS.LOGIN, {
                 email: formData.email,
                 password: formData.password,
             });
 
-            // Handle both 'success' and 'status' response formats
             const isSuccess = response.data.success === true || response.data.status === true;
 
             if (isSuccess) {
                 const responseData = response.data.data || response.data;
-                const { token, access_token, admin, user, roles = [], permissions = [], scopes = [], regions = [] } = responseData;
-                
-                // Use access_token or token (support both formats)
+                const {
+                    token,
+                    access_token,
+                    admin,
+                    user,
+                    roles = [],
+                    permissions = [],
+                    scopes = [],
+                    regions = [],
+                } = responseData;
+
                 const authToken = token || access_token;
-                
-                // Extract custom_region flag (support both spellings: custom_region and custom_regeon)
+
                 const adminData = admin || user || {};
-                const customRegion = adminData.custom_region === true || adminData.custom_regeon === true;
-                
-                // Get regions list if custom_region is true
-                const regionsList = customRegion && Array.isArray(regions) && regions.length > 0 
-                    ? regions 
-                    : (Array.isArray(adminData.regions) ? adminData.regions : []);
-                
-                // Merge roles/permissions/regions into user object so store/localStorage can hydrate them
+                const customRegion =
+                    adminData.custom_region === true || adminData.custom_regeon === true;
+
+                const regionsList =
+                    customRegion && Array.isArray(regions) && regions.length > 0
+                        ? regions
+                        : Array.isArray(adminData.regions)
+                          ? adminData.regions
+                          : [];
+
                 const mergedUser = {
                     ...adminData,
                     roles: Array.isArray(roles) ? roles : (admin?.roles || user?.roles || []),
-                    permissions: Array.isArray(permissions) && permissions.length > 0 ? permissions : (Array.isArray(scopes) ? scopes : (admin?.permissions || user?.permissions || [])),
+                    permissions:
+                        Array.isArray(permissions) && permissions.length > 0
+                            ? permissions
+                            : Array.isArray(scopes)
+                              ? scopes
+                              : admin?.permissions || user?.permissions || [],
                     custom_region: customRegion,
-                    custom_regeon: customRegion, // Support both spellings
+                    custom_regeon: customRegion,
                     regions: regionsList,
                     is_admin: true,
                 };
 
-                // Store admin token and data
                 setToken(authToken);
                 setUser(mergedUser);
-                
-                // Set default axios header
                 axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
 
-                // Sync to global auth store immediately
                 try {
                     useAuthStore.getState().syncProfileData(mergedUser, null);
-                } catch (e) {
-                    // no-op if store unavailable
+                } catch {
+                    /* store unavailable */
                 }
-                
-                console.log('Admin login successful:', { admin: mergedUser, hasToken: !!authToken });
-                
+
                 toast.success(t('admin.login.loginSuccessful'));
                 navigate(resolveAdminPath('/admin/dashboard', location.pathname));
             } else {
@@ -138,7 +145,8 @@ const AdminLogin = () => {
             }
         } catch (err) {
             console.error('Admin login error:', err);
-            const errorMessage = err.response?.data?.message || err.message || t('admin.login.loginFailed');
+            const errorMessage =
+                err.response?.data?.message || err.message || t('admin.login.loginFailed');
             toast.error(errorMessage);
             setFormErrors({ submit: errorMessage });
         } finally {
@@ -147,156 +155,94 @@ const AdminLogin = () => {
     };
 
     return (
-        <>
-            {/* Page background image */}
-            <style>{`
-                body {
-                    background-image: url('/login_background.png');
-                    background-size: cover;
-                    background-position: center;
-                    background-repeat: no-repeat;
-                    background-attachment: fixed;
-                }
-                [data-bs-theme="dark"] body {
-                    background-image: url('/login_background.png');
-                    background-size: cover;
-                    background-position: center;
-                    background-repeat: no-repeat;
-                    background-attachment: fixed;
-                }
-                /* Login hero: hidden < lg; ~600px art, end-aligned on large screens */
-                .login-hero-wrap {
-                    width: 100%;
-                }
-                @media (min-width: 992px) {
-                    .login-hero-wrap {
-                        justify-content: flex-end;
-                        align-items: center;
-                    }
-                }
-                .login-hero-art {
-                    width: min(100%, 600px);
-                    max-width: 600px;
-                    margin-left: auto;
-                    margin-right: 0;
-                }
-                @media (min-width: 992px) {
-                    .login-hero-art {
-                        width: 600px;
-                        min-width: 600px;
-                    }
-                }
-            `}</style>
-            
-            <div className="d-flex flex-column flex-root" id="kt_app_root" style={{ minHeight: '100vh' }}>
-                <div className="d-flex flex-column flex-lg-row" style={{ minHeight: '100vh' }}>
-                    {/* Left: hero illustration — only from lg up */}
-                    <div
-                        className="login-hero-wrap d-none d-lg-flex px-6 px-lg-8 pe-lg-6 py-10 py-lg-0"
-                        style={{ flex: '1.6 1 0%', minWidth: 0, minHeight: '100vh' }}
-                    >
-                        <div className="login-hero-art">
-                            <img
-                                src="/login_image.png"
-                                alt=""
-                                className="w-100 d-block"
-                                style={{ height: 'auto', objectFit: 'contain' }}
-                            />
-                        </div>
-                    </div>
+        <MerchantAuthPageLayout
+            cardTitle={t('admin.login.signIn')}
+            cardSub={t('admin.login.enterCredentials')}
+            asideHeadlineBefore={t('admin.login.heroHeadlineBefore')}
+            asideHeadlineAccent={t('admin.login.heroHeadlineAccent')}
+            asideSub={t('admin.login.heroSub')}
+            featureItems={ADMIN_AUTH_FEATURE_ITEMS}
+            trustTitleKey="admin.login.trustBadge"
+            trustSubKey="admin.login.trustBadgeSub"
+        >
+            <form className="form w-100" onSubmit={handleSubmit} noValidate>
+                {formErrors.submit && <div className="ml-alert">{formErrors.submit}</div>}
 
-                    {/* Right: login form (full width on small screens) */}
-                    <div className="d-flex justify-content-center align-items-center p-12" style={{ flex: '1 1 0%', minWidth: 0, minHeight: '100vh' }}>
-                        <div className="bg-body d-flex flex-column flex-center rounded-4 w-md-600px py-15 px-10">
-                            <div className="d-flex flex-center flex-column align-items-stretch w-md-400px">
-                                <div className="d-flex flex-center flex-column flex-column-fluid py-10">
-                                    
-                                    <form className="form w-100" onSubmit={handleSubmit}>
-                                        <div className="text-center mb-13">
-                                            <h1 className="text-dark fw-bolder mb-3">{t('admin.login.signIn')}</h1>
-                                            <div className="text-gray-500 fw-semibold fs-6">{t('admin.login.enterCredentials')}</div>
-                                        </div>
-
-                                        {/* Error Messages */}
-                                        {formErrors.submit && (
-                                            <div className="alert alert-danger">
-                                                <div className="d-flex align-items-center">
-                                                    <i className="ki-duotone ki-shield-cross fs-2hx text-danger me-4">
-                                                        <span className="path1"></span>
-                                                        <span className="path2"></span>
-                                                        <span className="path3"></span>
-                                                    </i>
-                                                    <div className="d-flex flex-column">
-                                                        <h4 className="mb-1 text-dark">{t('admin.login.accessDenied')}</h4>
-                                                        <span>{formErrors.submit}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Email Field */}
-                                        <div className="fv-row mb-10">
-                                            <input
-                                                type="text"
-                                                name="email"
-                                                placeholder={t('admin.login.emailAddress')}
-                                                autoComplete="off"
-                                                className={`form-control bg-transparent ${formErrors.email ? 'is-invalid' : ''}`}
-                                                value={formData.email}
-                                                onChange={handleChange}
-                                            />
-                                            {formErrors.email && (
-                                                <div className="invalid-feedback">{formErrors.email}</div>
-                                            )}
-                                        </div>
-
-                                        {/* Password Field */}
-                                        <div className="fv-row mb-8 position-relative">
-                                            <input
-                                                type={showPassword ? 'text' : 'password'}
-                                                name="password"
-                                                placeholder={t('admin.login.password')}
-                                                className={`form-control bg-transparent ${formErrors.password ? 'is-invalid' : ''}`}
-                                                style={{ paddingRight: '3rem' }}
-                                                value={formData.password}
-                                                onChange={handleChange}
-                                            />
-                                            <button
-                                                type="button"
-                                                className="btn btn-icon btn-sm position-absolute top-50 end-0 translate-middle-y me-2"
-                                                onClick={() => setShowPassword((prev) => !prev)}
-                                                aria-label={showPassword ? t('admin.login.hidePassword') : t('admin.login.showPassword')}
-                                            >
-                                                <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}></i>
-                                            </button>
-                                        {formErrors.password && (
-                                            <div className="invalid-feedback">{formErrors.password}</div>
-                                        )}
-                                    </div>
-
-                                    {/* Submit Button */}
-                                    <div className="d-grid mb-10">
-                                        <button type="submit" className="btn btn-primary" disabled={loading}>
-                                            <span className={loading ? 'd-none' : 'indicator-label'}>{t('admin.login.signInButton')}</span>
-                                            {loading && (
-                                                <span className="indicator-progress" style={{ display: 'block' }}>
-                                                    {t('admin.login.signingIn')}
-                                                    <span className="spinner-border spinner-border-sm align-middle ms-2"></span>
-                                                </span>
-                                            )}
-                                        </button>
-                                    </div>
-                                    </form>
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <label className="ml-label" htmlFor="admin-login-email">
+                    {t('admin.login.emailAddress')}
+                </label>
+                <div className={`ml-input-wrap ${formErrors.email ? 'ml-has-error' : ''}`}>
+                    <span className="ml-input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                            <polyline points="22,6 12,13 2,6" />
+                        </svg>
+                    </span>
+                    <input
+                        id="admin-login-email"
+                        type="email"
+                        name="email"
+                        placeholder={t('admin.login.emailPlaceholder')}
+                        autoComplete="email"
+                        className="ml-field"
+                        value={formData.email}
+                        onChange={handleChange}
+                    />
+                    {formErrors.email && <div className="ml-err">{formErrors.email}</div>}
                 </div>
-            </div>
-        </>
+
+                <label className="ml-label" htmlFor="admin-login-password">
+                    {t('admin.login.password')}
+                </label>
+                <div className={`ml-input-wrap ml-password-wrap ${formErrors.password ? 'ml-has-error' : ''}`}>
+                    <span className="ml-input-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                    </span>
+                    <input
+                        id="admin-login-password"
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        placeholder={t('auth.common.enterPassword')}
+                        autoComplete="current-password"
+                        className="ml-field"
+                        value={formData.password}
+                        onChange={handleChange}
+                    />
+                    <button
+                        type="button"
+                        className="ml-password-toggle"
+                        onClick={() => setShowPassword((p) => !p)}
+                        tabIndex={-1}
+                        aria-label={
+                            showPassword ? t('auth.common.hidePassword') : t('auth.common.showPassword')
+                        }
+                    >
+                        <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} />
+                    </button>
+                    {formErrors.password && <div className="ml-err">{formErrors.password}</div>}
+                </div>
+
+                <button type="submit" className="ml-btn-primary" disabled={loading}>
+                    {loading ? (
+                        <span>
+                            {t('admin.login.signingIn')}
+                            <span className="spinner-border spinner-border-sm align-middle ms-2" role="status" />
+                        </span>
+                    ) : (
+                        t('admin.login.signInButton')
+                    )}
+                </button>
+
+                <p className="ml-footer-reg mb-0">
+                    <i className="bi bi-shield-lock me-1" aria-hidden />
+                    {t('admin.login.restrictedNotice')}
+                </p>
+            </form>
+        </MerchantAuthPageLayout>
     );
 };
 
 export default AdminLogin;
-

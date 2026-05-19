@@ -1,18 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { getCity, deleteCity } from '../../../../services/adminCitiesService';
 
 const AdminCityView = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
     const [city, setCity] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const handleDelete = useCallback(async () => {
+        if (!window.confirm(t('admin.cityForm.deleteConfirm'))) {
+            return;
+        }
+
+        try {
+            const response = await deleteCity(id);
+            if (response.success) {
+                toast.success(t('admin.cityForm.deleted'));
+                navigate('/admin/system/cities');
+            } else {
+                toast.error(response.error || t('admin.cityForm.deleteFailed'));
+            }
+        } catch (error) {
+            console.error('Error deleting city:', error);
+            toast.error(t('admin.cityForm.deleteFailed'));
+        }
+    }, [id, navigate, t]);
+
     useEffect(() => {
-        setTitle('City Details');
+        setTitle(t('admin.cityForm.viewTitle'));
         setActions(
             <div className="d-flex gap-2">
                 <Link to={`/admin/system/cities/${id}/edit`} className="btn btn-sm btn-primary">
@@ -20,7 +41,7 @@ const AdminCityView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Edit</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.common.edit')}</span>
                 </Link>
                 <button onClick={handleDelete} className="btn btn-sm btn-danger">
                     <i className="ki-duotone ki-trash fs-3">
@@ -30,13 +51,13 @@ const AdminCityView = () => {
                         <span className="path4"></span>
                         <span className="path5"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Delete</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.common.delete')}</span>
                 </button>
             </div>
         );
         fetchCity();
         return () => setActions(null);
-    }, [id, setTitle, setActions]);
+    }, [id, setTitle, setActions, t, i18n.language, handleDelete]);
 
     const fetchCity = async () => {
         setLoading(true);
@@ -45,32 +66,13 @@ const AdminCityView = () => {
             if (response.success) {
                 setCity(response.data.data);
             } else {
-                toast.error(response.error || 'Failed to fetch city');
+                toast.error(response.error || t('admin.cityForm.fetchFailed'));
             }
         } catch (error) {
             console.error('Error fetching city:', error);
-            toast.error('Failed to fetch city');
+            toast.error(t('admin.cityForm.fetchFailed'));
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this city?')) {
-            return;
-        }
-
-        try {
-            const response = await deleteCity(id);
-            if (response.success) {
-                toast.success('City deleted successfully');
-                navigate('/admin/system/cities');
-            } else {
-                toast.error(response.error || 'Failed to delete city');
-            }
-        } catch (error) {
-            console.error('Error deleting city:', error);
-            toast.error('Failed to delete city');
         }
     };
 
@@ -79,7 +81,7 @@ const AdminCityView = () => {
             <div className="card">
                 <div className="card-body text-center py-10">
                     <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
+                        <span className="visually-hidden">{t('admin.common.loading')}</span>
                     </div>
                 </div>
             </div>
@@ -90,7 +92,7 @@ const AdminCityView = () => {
         return (
             <div className="card">
                 <div className="card-body text-center py-10">
-                    <p>City not found</p>
+                    <p>{t('admin.cityForm.notFound')}</p>
                 </div>
             </div>
         );
@@ -99,12 +101,12 @@ const AdminCityView = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">City Information</h3>
+                <h3 className="card-title">{t('admin.cityForm.infoCard')}</h3>
             </div>
 
             <div className="card-body">
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Name (English)</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.table.nameEn')}</label>
                     <div className="col-lg-8">
                         <span className="fw-bold fs-6 text-gray-800">
                             {typeof city.name === 'object' ? city.name.en : city.name}
@@ -113,7 +115,7 @@ const AdminCityView = () => {
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Name (Arabic)</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.table.nameAr')}</label>
                     <div className="col-lg-8">
                         <span className="fw-bold fs-6 text-gray-800">
                             {typeof city.name === 'object' ? city.name.ar : city.name}
@@ -122,25 +124,25 @@ const AdminCityView = () => {
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Country</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.table.country')}</label>
                     <div className="col-lg-8">
                         <span className="fw-semibold text-gray-800">
-                            {city.country ? (typeof city.country.name === 'object' ? city.country.name.en : city.country.name) : 'N/A'}
+                            {city.country ? (typeof city.country.name === 'object' ? city.country.name.en : city.country.name) : t('admin.common.na')}
                         </span>
                     </div>
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Status</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.common.status')}</label>
                     <div className="col-lg-8">
                         <span className={`badge badge-light-${city.status ? 'success' : 'danger'}`}>
-                            {city.status ? 'Active' : 'Inactive'}
+                            {city.status ? t('admin.common.active') : t('admin.common.inactive')}
                         </span>
                     </div>
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Created At</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.common.createdAt')}</label>
                     <div className="col-lg-8">
                         <span className="fw-semibold text-gray-800">
                             {new Date(city.created_at).toLocaleString()}
@@ -153,5 +155,3 @@ const AdminCityView = () => {
 };
 
 export default AdminCityView;
-
-

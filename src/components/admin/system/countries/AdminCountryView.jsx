@@ -1,18 +1,39 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { getCountry, deleteCountry } from '../../../../services/adminCountriesService';
 
 const AdminCountryView = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
     const [country, setCountry] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    const handleDelete = useCallback(async () => {
+        if (!window.confirm(t('admin.countryForm.deleteConfirm'))) {
+            return;
+        }
+
+        try {
+            const response = await deleteCountry(id);
+            if (response.success) {
+                toast.success(t('admin.countryForm.deleted'));
+                navigate('/admin/system/countries');
+            } else {
+                toast.error(response.error || t('admin.countryForm.deleteFailed'));
+            }
+        } catch (error) {
+            console.error('Error deleting country:', error);
+            toast.error(t('admin.countryForm.deleteFailed'));
+        }
+    }, [id, navigate, t]);
+
     useEffect(() => {
-        setTitle('Country Details');
+        setTitle(t('admin.countryForm.viewTitle'));
         setActions(
             <div className="d-flex gap-2">
                 <Link to={`/admin/system/countries/${id}/edit`} className="btn btn-sm btn-primary">
@@ -20,7 +41,7 @@ const AdminCountryView = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Edit</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.common.edit')}</span>
                 </Link>
                 <button onClick={handleDelete} className="btn btn-sm btn-danger">
                     <i className="ki-duotone ki-trash fs-3">
@@ -30,13 +51,13 @@ const AdminCountryView = () => {
                         <span className="path4"></span>
                         <span className="path5"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Delete</span>
+                    <span className="d-none d-md-inline ms-1">{t('admin.common.delete')}</span>
                 </button>
             </div>
         );
         fetchCountry();
         return () => setActions(null);
-    }, [id, setTitle, setActions]);
+    }, [id, setTitle, setActions, t, i18n.language, handleDelete]);
 
     const fetchCountry = async () => {
         setLoading(true);
@@ -45,32 +66,13 @@ const AdminCountryView = () => {
             if (response.success) {
                 setCountry(response.data.data);
             } else {
-                toast.error(response.error || 'Failed to fetch country');
+                toast.error(response.error || t('admin.countryForm.fetchFailed'));
             }
         } catch (error) {
             console.error('Error fetching country:', error);
-            toast.error('Failed to fetch country');
+            toast.error(t('admin.countryForm.fetchFailed'));
         } finally {
             setLoading(false);
-        }
-    };
-
-    const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this country?')) {
-            return;
-        }
-
-        try {
-            const response = await deleteCountry(id);
-            if (response.success) {
-                toast.success('Country deleted successfully');
-                navigate('/admin/system/countries');
-            } else {
-                toast.error(response.error || 'Failed to delete country');
-            }
-        } catch (error) {
-            console.error('Error deleting country:', error);
-            toast.error('Failed to delete country');
         }
     };
 
@@ -79,7 +81,7 @@ const AdminCountryView = () => {
             <div className="card">
                 <div className="card-body text-center py-10">
                     <div className="spinner-border text-primary" role="status">
-                        <span className="visually-hidden">Loading...</span>
+                        <span className="visually-hidden">{t('admin.common.loading')}</span>
                     </div>
                 </div>
             </div>
@@ -90,7 +92,7 @@ const AdminCountryView = () => {
         return (
             <div className="card">
                 <div className="card-body text-center py-10">
-                    <p>Country not found</p>
+                    <p>{t('admin.countryForm.notFound')}</p>
                 </div>
             </div>
         );
@@ -99,12 +101,12 @@ const AdminCountryView = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Country Information</h3>
+                <h3 className="card-title">{t('admin.countryForm.infoCard')}</h3>
             </div>
 
             <div className="card-body">
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Name (English)</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.table.nameEn')}</label>
                     <div className="col-lg-8">
                         <span className="fw-bold fs-6 text-gray-800">
                             {typeof country.name === 'object' ? country.name.en : country.name}
@@ -113,7 +115,7 @@ const AdminCountryView = () => {
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Name (Arabic)</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.table.nameAr')}</label>
                     <div className="col-lg-8">
                         <span className="fw-bold fs-6 text-gray-800">
                             {typeof country.name === 'object' ? country.name.ar : country.name}
@@ -122,37 +124,37 @@ const AdminCountryView = () => {
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Short Name</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.table.shortName')}</label>
                     <div className="col-lg-8">
                         <span className="fw-semibold text-gray-800">{country.short_name}</span>
                     </div>
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Code</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.table.code')}</label>
                     <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800">{country.code || 'N/A'}</span>
+                        <span className="fw-semibold text-gray-800">{country.code || t('admin.common.na')}</span>
                     </div>
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Currency Code</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.table.currencyCode')}</label>
                     <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800">{country.currency_code || 'N/A'}</span>
+                        <span className="fw-semibold text-gray-800">{country.currency_code || t('admin.common.na')}</span>
                     </div>
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Status</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.common.status')}</label>
                     <div className="col-lg-8">
                         <span className={`badge badge-light-${country.status ? 'success' : 'danger'}`}>
-                            {country.status ? 'Active' : 'Inactive'}
+                            {country.status ? t('admin.common.active') : t('admin.common.inactive')}
                         </span>
                     </div>
                 </div>
 
                 <div className="row mb-7">
-                    <label className="col-lg-4 fw-semibold text-muted">Created At</label>
+                    <label className="col-lg-4 fw-semibold text-muted">{t('admin.common.createdAt')}</label>
                     <div className="col-lg-8">
                         <span className="fw-semibold text-gray-800">
                             {new Date(country.created_at).toLocaleString()}
@@ -165,5 +167,3 @@ const AdminCountryView = () => {
 };
 
 export default AdminCountryView;
-
-

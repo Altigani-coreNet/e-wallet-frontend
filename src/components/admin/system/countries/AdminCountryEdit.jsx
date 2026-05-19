@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { getCountry, updateCountry } from '../../../../services/adminCountriesService';
 import { getCurrenciesForSelect } from '../../../../services/adminCurrenciesService';
 
 const AdminCountryEdit = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
@@ -21,17 +23,17 @@ const AdminCountryEdit = () => {
     const [currencies, setCurrencies] = useState([]);
 
     useEffect(() => {
-        setTitle('Edit Country');
+        setTitle(t('admin.countryForm.editTitle'));
         setActions(null);
         fetchCountry();
         fetchCurrencies();
-    }, [id, setTitle, setActions]);
+    }, [id, setTitle, setActions, t, i18n.language]);
 
     const fetchCurrencies = async () => {
         try {
             const response = await getCurrenciesForSelect();
             if (!response.success) {
-                toast.error(response.error || 'Failed to load currencies');
+                toast.error(response.error || t('admin.countryForm.loadCurrenciesFailed'));
                 return;
             }
 
@@ -40,7 +42,7 @@ const AdminCountryEdit = () => {
             setCurrencies(options);
         } catch (error) {
             console.error('Error fetching currencies:', error);
-            toast.error('Failed to load currencies');
+            toast.error(t('admin.countryForm.loadCurrenciesFailed'));
         }
     };
 
@@ -59,7 +61,7 @@ const AdminCountryEdit = () => {
             }
         } catch (error) {
             console.error('Error fetching country:', error);
-            toast.error('Failed to fetch country');
+            toast.error(t('admin.countryForm.fetchFailed'));
         }
     };
 
@@ -71,15 +73,15 @@ const AdminCountryEdit = () => {
         try {
             const response = await updateCountry(id, formData);
             if (response.success) {
-                toast.success('Country updated successfully');
+                toast.success(t('admin.countryForm.updateSuccess'));
                 navigate('/admin/system/countries');
             } else {
                 if (response.errors) setErrors(response.errors);
-                toast.error(response.error || 'Failed to update country');
+                toast.error(response.error || t('admin.countryForm.updateFailed'));
             }
         } catch (error) {
             console.error('Error updating country:', error);
-            toast.error('Failed to update country');
+            toast.error(t('admin.countryForm.updateFailed'));
         } finally {
             setLoading(false);
         }
@@ -88,14 +90,14 @@ const AdminCountryEdit = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Edit Country</h3>
+                <h3 className="card-title">{t('admin.countryForm.editTitle')}</h3>
             </div>
 
             <form onSubmit={handleSubmit}>
                 <div className="card-body">
                     <div className="row">
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Name (English)</label>
+                            <label className="form-label required">{t('admin.table.nameEn')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors['name.en'] ? 'is-invalid' : ''}`}
@@ -106,7 +108,7 @@ const AdminCountryEdit = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Name (Arabic)</label>
+                            <label className="form-label required">{t('admin.table.nameAr')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors['name.ar'] ? 'is-invalid' : ''}`}
@@ -118,7 +120,7 @@ const AdminCountryEdit = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Short Name</label>
+                            <label className="form-label required">{t('admin.table.shortName')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors.short_name ? 'is-invalid' : ''}`}
@@ -129,7 +131,7 @@ const AdminCountryEdit = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Code</label>
+                            <label className="form-label">{t('admin.table.code')}</label>
                             <input
                                 type="text"
                                 className="form-control"
@@ -139,13 +141,13 @@ const AdminCountryEdit = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Currency</label>
+                            <label className="form-label required">{t('admin.common.currency')}</label>
                             <select
                                 className={`form-select ${errors.currency_id ? 'is-invalid' : ''}`}
                                 value={formData.currency_id}
                                 onChange={(e) => setFormData({ ...formData, currency_id: e.target.value })}
                             >
-                                <option value="">Select currency</option>
+                                <option value="">{t('admin.countryForm.selectCurrency')}</option>
                                 {currencies.map((currency) => (
                                     <option key={currency.id} value={currency.id}>
                                         {currency.text || currency.currency_code || currency.name || currency.id}
@@ -156,14 +158,14 @@ const AdminCountryEdit = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Status</label>
+                            <label className="form-label required">{t('admin.common.status')}</label>
                             <select
                                 className="form-select"
                                 value={formData.status ? '1' : '0'}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value === '1' })}
                             >
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
+                                <option value="1">{t('admin.common.active')}</option>
+                                <option value="0">{t('admin.common.inactive')}</option>
                             </select>
                         </div>
                     </div>
@@ -175,10 +177,10 @@ const AdminCountryEdit = () => {
                         className="btn btn-light"
                         onClick={() => navigate('/admin/system/countries')}
                     >
-                        Cancel
+                        {t('admin.common.cancel')}
                     </button>
                     <button type="submit" className="btn btn-primary" disabled={loading}>
-                        {loading ? 'Updating...' : 'Update Country'}
+                        {loading ? t('admin.countryForm.updating') : t('admin.countryForm.updateCountry')}
                     </button>
                 </div>
             </form>
@@ -187,5 +189,3 @@ const AdminCountryEdit = () => {
 };
 
 export default AdminCountryEdit;
-
-

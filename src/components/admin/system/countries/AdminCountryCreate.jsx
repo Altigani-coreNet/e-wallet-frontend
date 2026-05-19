@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { createCountry } from '../../../../services/adminCountriesService';
 import { getCurrenciesForSelect } from '../../../../services/adminCurrenciesService';
 
 const AdminCountryCreate = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -20,16 +22,16 @@ const AdminCountryCreate = () => {
     const [currencies, setCurrencies] = useState([]);
 
     useEffect(() => {
-        setTitle('Create Country');
+        setTitle(t('admin.countryForm.createTitle'));
         setActions(null);
         fetchCurrencies();
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t, i18n.language]);
 
     const fetchCurrencies = async () => {
         try {
             const response = await getCurrenciesForSelect();
             if (!response.success) {
-                toast.error(response.error || 'Failed to load currencies');
+                toast.error(response.error || t('admin.countryForm.loadCurrenciesFailed'));
                 return;
             }
 
@@ -38,7 +40,7 @@ const AdminCountryCreate = () => {
             setCurrencies(options);
         } catch (error) {
             console.error('Error fetching currencies:', error);
-            toast.error('Failed to load currencies');
+            toast.error(t('admin.countryForm.loadCurrenciesFailed'));
         }
     };
 
@@ -50,15 +52,15 @@ const AdminCountryCreate = () => {
         try {
             const response = await createCountry(formData);
             if (response.success) {
-                toast.success('Country created successfully');
+                toast.success(t('admin.countryForm.createSuccess'));
                 navigate('/admin/system/countries');
             } else {
                 if (response.errors) setErrors(response.errors);
-                toast.error(response.error || 'Failed to create country');
+                toast.error(response.error || t('admin.countryForm.createFailed'));
             }
         } catch (error) {
             console.error('Error creating country:', error);
-            toast.error('Failed to create country');
+            toast.error(t('admin.countryForm.createFailed'));
         } finally {
             setLoading(false);
         }
@@ -67,69 +69,69 @@ const AdminCountryCreate = () => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">Create New Country</h3>
+                <h3 className="card-title">{t('admin.countryForm.createHeading')}</h3>
             </div>
 
             <form onSubmit={handleSubmit}>
                 <div className="card-body">
                     <div className="row">
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Name (English)</label>
+                            <label className="form-label required">{t('admin.table.nameEn')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors['name.en'] ? 'is-invalid' : ''}`}
                                 value={formData.name.en}
                                 onChange={(e) => setFormData({ ...formData, name: { ...formData.name, en: e.target.value } })}
-                                placeholder="Enter country name in English"
+                                placeholder={t('admin.countryForm.nameEnPlaceholder')}
                             />
                             {errors['name.en'] && <div className="invalid-feedback">{errors['name.en'][0]}</div>}
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Name (Arabic)</label>
+                            <label className="form-label required">{t('admin.table.nameAr')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors['name.ar'] ? 'is-invalid' : ''}`}
                                 value={formData.name.ar}
                                 onChange={(e) => setFormData({ ...formData, name: { ...formData.name, ar: e.target.value } })}
-                                placeholder="أدخل اسم الدولة بالعربية"
+                                placeholder={t('admin.countryForm.nameArPlaceholder')}
                                 dir="rtl"
                             />
                             {errors['name.ar'] && <div className="invalid-feedback">{errors['name.ar'][0]}</div>}
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Short Name</label>
+                            <label className="form-label required">{t('admin.table.shortName')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors.short_name ? 'is-invalid' : ''}`}
                                 value={formData.short_name}
                                 onChange={(e) => setFormData({ ...formData, short_name: e.target.value })}
-                                placeholder="e.g., EG, SA, AE"
+                                placeholder={t('admin.countryForm.shortNamePlaceholder')}
                             />
                             {errors.short_name && <div className="invalid-feedback">{errors.short_name[0]}</div>}
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label">Code</label>
+                            <label className="form-label">{t('admin.table.code')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors.code ? 'is-invalid' : ''}`}
                                 value={formData.code}
                                 onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                                placeholder="Country code"
+                                placeholder={t('admin.countryForm.codePlaceholder')}
                             />
                             {errors.code && <div className="invalid-feedback">{errors.code[0]}</div>}
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Currency</label>
+                            <label className="form-label required">{t('admin.common.currency')}</label>
                             <select
                                 className={`form-select ${errors.currency_id ? 'is-invalid' : ''}`}
                                 value={formData.currency_id}
                                 onChange={(e) => setFormData({ ...formData, currency_id: e.target.value })}
                             >
-                                <option value="">Select currency</option>
+                                <option value="">{t('admin.countryForm.selectCurrency')}</option>
                                 {currencies.map((currency) => (
                                     <option key={currency.id} value={currency.id}>
                                         {currency.text || currency.currency_code || currency.name || currency.id}
@@ -140,14 +142,14 @@ const AdminCountryCreate = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Status</label>
+                            <label className="form-label required">{t('admin.common.status')}</label>
                             <select
                                 className={`form-select ${errors.status ? 'is-invalid' : ''}`}
                                 value={formData.status ? '1' : '0'}
                                 onChange={(e) => setFormData({ ...formData, status: e.target.value === '1' })}
                             >
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
+                                <option value="1">{t('admin.common.active')}</option>
+                                <option value="0">{t('admin.common.inactive')}</option>
                             </select>
                             {errors.status && <div className="invalid-feedback">{errors.status[0]}</div>}
                         </div>
@@ -161,10 +163,10 @@ const AdminCountryCreate = () => {
                         onClick={() => navigate('/admin/system/countries')}
                         disabled={loading}
                     >
-                        Cancel
+                        {t('admin.common.cancel')}
                     </button>
                     <button type="submit" className="btn btn-primary" disabled={loading}>
-                        {loading ? 'Creating...' : 'Create Country'}
+                        {loading ? t('admin.countryForm.creating') : t('admin.countryForm.createCountry')}
                     </button>
                 </div>
             </form>
@@ -173,5 +175,3 @@ const AdminCountryCreate = () => {
 };
 
 export default AdminCountryCreate;
-
-

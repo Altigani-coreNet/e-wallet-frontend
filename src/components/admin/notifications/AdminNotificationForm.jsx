@@ -1,26 +1,34 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { createNotification, getMerchantOptions, getNotification, getUsersByMerchant, updateNotification } from '../../../services/adminNotificationsService';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 
-const topicOptions = [
-    { value: 'payments', label: 'Payments' },
-    { value: 'service_updates', label: 'Service Updates' },
-    { value: 'logs', label: 'Logs' },
-    { value: 'alert', label: 'Alert' },
-];
-
-const targetOptions = [
-    { value: 'public', label: 'Public' },
-    { value: 'merchant', label: 'Merchant' },
-    { value: 'user', label: 'User' },
-];
-
 const AdminNotificationForm = ({ isEdit = false }) => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
+
+    const topicOptions = useMemo(
+        () => [
+            { value: 'payments', label: t('admin.notificationsIndex.topicPayments') },
+            { value: 'service_updates', label: t('admin.notificationsIndex.topicServiceUpdates') },
+            { value: 'logs', label: t('admin.notificationsIndex.topicLogs') },
+            { value: 'alert', label: t('admin.notificationsIndex.topicAlert') },
+        ],
+        [t],
+    );
+
+    const targetOptions = useMemo(
+        () => [
+            { value: 'public', label: t('admin.notificationsIndex.targetPublic') },
+            { value: 'merchant', label: t('admin.notificationsIndex.targetMerchant') },
+            { value: 'user', label: t('admin.notificationsIndex.targetUser') },
+        ],
+        [t],
+    );
 
     const [loading, setLoading] = useState(false);
     const [prefillLoading, setPrefillLoading] = useState(isEdit);
@@ -48,10 +56,10 @@ const AdminNotificationForm = ({ isEdit = false }) => {
     });
 
     useEffect(() => {
-        setTitle(isEdit ? 'Edit Notification' : 'Create Notification');
+        setTitle(isEdit ? t('admin.notificationForm.editTitle') : t('admin.notificationForm.createTitle'));
         setActions(null);
         return () => setActions(null);
-    }, [isEdit, setActions, setTitle]);
+    }, [isEdit, setActions, setTitle, t, i18n.language]);
 
     const loadMerchants = async (search = '') => {
         setLoadingMerchants(true);
@@ -113,12 +121,12 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                     image: null,
                 });
             } catch (error) {
-                toast.error('Failed to load notification');
+                toast.error(t('admin.notificationForm.loadFailed'));
             } finally {
                 setPrefillLoading(false);
             }
         })();
-    }, [id, isEdit]);
+    }, [id, isEdit, t]);
 
     useEffect(() => {
         if (!form.merchant_id) {
@@ -210,18 +218,18 @@ const AdminNotificationForm = ({ isEdit = false }) => {
             const payload = buildPayload();
             if (isEdit) {
                 await updateNotification(id, payload);
-                toast.success('Notification updated and sent');
+                toast.success(t('admin.notificationForm.updateSuccess'));
             } else {
                 await createNotification(payload);
-                toast.success('Notification created and sent');
+                toast.success(t('admin.notificationForm.createSuccess'));
             }
             navigate('/admin/system/notifications');
         } catch (error) {
             if (error?.response?.status === 422) {
                 setErrors(error?.response?.data?.errors || {});
-                toast.error(error?.response?.data?.message || 'Please check form fields');
+                toast.error(error?.response?.data?.message || t('admin.notificationForm.checkFormFields'));
             } else {
-                toast.error(error?.response?.data?.message || 'Failed to save notification');
+                toast.error(error?.response?.data?.message || t('admin.notificationForm.saveFailed'));
             }
         } finally {
             setLoading(false);
@@ -239,10 +247,12 @@ const AdminNotificationForm = ({ isEdit = false }) => {
     return (
         <div className="card">
             <div className="card-header">
-                <h3 className="card-title">{isEdit ? 'Edit Notification' : 'Create Notification'}</h3>
+                <h3 className="card-title">
+                    {isEdit ? t('admin.notificationForm.editTitle') : t('admin.notificationForm.createTitle')}
+                </h3>
                 <div className="card-toolbar">
                     <Link to="/admin/system/notifications" className="btn btn-sm btn-light">
-                        Back to Notifications
+                        {t('admin.notificationForm.backToNotifications')}
                     </Link>
                 </div>
             </div>
@@ -251,7 +261,7 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                 <div className="card-body">
                     <div className="row">
                         <div className="col-md-4 mb-7">
-                            <label className="form-label fw-bold required">Topic</label>
+                            <label className="form-label fw-bold required">{t('admin.notificationForm.topic')}</label>
                             <select className="form-select" value={form.topic} onChange={(e) => onChange('topic', e.target.value)}>
                                 {topicOptions.map((option) => (
                                     <option key={option.value} value={option.value}>{option.label}</option>
@@ -260,7 +270,7 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                         </div>
 
                         <div className="col-md-4 mb-7">
-                            <label className="form-label fw-bold required">Target</label>
+                            <label className="form-label fw-bold required">{t('admin.notificationForm.target')}</label>
                             <select
                                 className="form-select"
                                 value={form.target_type}
@@ -292,7 +302,7 @@ const AdminNotificationForm = ({ isEdit = false }) => {
 
                         {shouldShowMerchant && (
                             <div className="col-md-3 mb-7">
-                                <label className="form-label fw-bold required">Merchant</label>
+                                <label className="form-label fw-bold required">{t('admin.notificationForm.merchant')}</label>
                                 <div className="position-relative">
                                     <div
                                         className={`form-control h-50px d-flex align-items-center justify-content-between ${errors.merchant_id ? 'is-invalid' : ''}`}
@@ -303,7 +313,7 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                                             {selectedMerchant ? (
                                                 <span className="text-gray-800">{selectedMerchant.text || selectedMerchant.business_name || selectedMerchant.name}</span>
                                             ) : (
-                                                <span className="text-muted">Select Merchant</span>
+                                                <span className="text-muted">{t('admin.notificationForm.selectMerchant')}</span>
                                             )}
                                         </div>
                                         <div className="d-flex align-items-center">
@@ -335,7 +345,7 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                                                 <input
                                                     type="text"
                                                     className="form-control form-control-sm mb-2"
-                                                    placeholder="Search merchants..."
+                                                    placeholder={t('admin.notificationForm.searchMerchants')}
                                                     value={merchantSearch}
                                                     onChange={(e) => setMerchantSearch(e.target.value)}
                                                     onClick={(e) => e.stopPropagation()}
@@ -363,7 +373,7 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="p-3 text-muted text-center">No merchants found</div>
+                                                <div className="p-3 text-muted text-center">{t('admin.notificationForm.noMerchantsFound')}</div>
                                             )}
                                         </div>
                                     )}
@@ -374,7 +384,7 @@ const AdminNotificationForm = ({ isEdit = false }) => {
 
                         {shouldShowUser && (
                             <div className="col-md-3 mb-7">
-                                <label className="form-label fw-bold required">User (from selected merchant)</label>
+                                <label className="form-label fw-bold required">{t('admin.notificationForm.userFromMerchant')}</label>
                                 <div className="position-relative">
                                     <div
                                         className={`form-control h-50px d-flex align-items-center justify-content-between ${errors.user_id ? 'is-invalid' : ''}`}
@@ -388,7 +398,11 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                                             {selectedUser ? (
                                                 <span className="text-gray-800">{selectedUser.text || selectedUser.name || selectedUser.email}</span>
                                             ) : (
-                                                <span className="text-muted">{form.merchant_id ? 'Select User' : 'Select merchant first'}</span>
+                                                <span className="text-muted">
+                                                    {form.merchant_id
+                                                        ? t('admin.notificationForm.selectUser')
+                                                        : t('admin.notificationForm.selectMerchantFirst')}
+                                                </span>
                                             )}
                                         </div>
                                         <div className="d-flex align-items-center">
@@ -420,7 +434,7 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                                                 <input
                                                     type="text"
                                                     className="form-control form-control-sm mb-2"
-                                                    placeholder="Search users..."
+                                                    placeholder={t('admin.notificationForm.searchUsers')}
                                                     value={userSearch}
                                                     onChange={(e) => setUserSearch(e.target.value)}
                                                     onClick={(e) => e.stopPropagation()}
@@ -448,7 +462,7 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="p-3 text-muted text-center">No users found</div>
+                                                <div className="p-3 text-muted text-center">{t('admin.notificationForm.noUsersFound')}</div>
                                             )}
                                         </div>
                                     )}
@@ -458,31 +472,31 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                         )}
 
                         <div className="col-md-12 mb-7">
-                            <label className="form-label fw-bold required">Title</label>
+                            <label className="form-label fw-bold required">{t('admin.notificationForm.title')}</label>
                             <input
                                 type="text"
                                 className={`form-control ${errors.title ? 'is-invalid' : ''}`}
                                 value={form.title}
                                 onChange={(e) => onChange('title', e.target.value)}
-                                placeholder="Notification title"
+                                placeholder={t('admin.notificationForm.titlePlaceholder')}
                             />
                             {errors.title && <div className="invalid-feedback d-block">{errors.title}</div>}
                         </div>
 
                         <div className="col-md-12 mb-7">
-                            <label className="form-label fw-bold required">Description</label>
+                            <label className="form-label fw-bold required">{t('admin.notificationForm.description')}</label>
                             <textarea
                                 rows={4}
                                 className={`form-control ${errors.description ? 'is-invalid' : ''}`}
                                 value={form.description}
                                 onChange={(e) => onChange('description', e.target.value)}
-                                placeholder="Notification description"
+                                placeholder={t('admin.notificationForm.descriptionPlaceholder')}
                             />
                             {errors.description && <div className="invalid-feedback d-block">{errors.description}</div>}
                         </div>
 
                         <div className="col-md-6 mb-7">
-                            <label className="form-label fw-bold">Picture</label>
+                            <label className="form-label fw-bold">{t('admin.notificationForm.picture')}</label>
                             <input
                                 type="file"
                                 className={`form-control ${errors.image ? 'is-invalid' : ''}`}
@@ -496,16 +510,16 @@ const AdminNotificationForm = ({ isEdit = false }) => {
 
                 <div className="card-footer d-flex justify-content-end py-6 px-9">
                     <Link to="/admin/system/notifications" className="btn btn-light btn-active-light-primary me-2">
-                        Cancel
+                        {t('admin.common.cancel')}
                     </Link>
                     <button type="submit" className="btn btn-primary" disabled={loading}>
                         {loading ? (
                             <>
                                 <span className="spinner-border spinner-border-sm me-2"></span>
-                                Saving...
+                                {t('admin.common.saving')}
                             </>
                         ) : (
-                            <>Save & Send</>
+                            <>{t('admin.notificationForm.saveAndSend')}</>
                         )}
                     </button>
                 </div>

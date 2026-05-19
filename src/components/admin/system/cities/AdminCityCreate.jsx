@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { createCity } from '../../../../services/adminCitiesService';
 import { getCountriesSelect } from '../../../../services/adminCountriesService';
 
-// Debounce function - moved outside component to avoid recreation on each render
 const debounce = (func, delay) => {
     let timeoutId;
     return (...args) => {
@@ -15,6 +15,7 @@ const debounce = (func, delay) => {
 };
 
 const AdminCityCreate = () => {
+    const { t, i18n } = useTranslation();
     const { setTitle, setActions } = useToolbar();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -26,17 +27,14 @@ const AdminCityCreate = () => {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        setTitle('Create City');
+        setTitle(t('admin.cityForm.createTitle'));
         setActions(null);
-        // Don't load all countries initially - will load on dropdown open or search
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t, i18n.language]);
 
-    // Fetch countries from API with optional search term
     const fetchCountries = async (searchTerm = '') => {
         try {
             const response = await getCountriesSelect(searchTerm);
             if (response.success) {
-                // API returns array directly, not nested in data.data
                 const countriesList = Array.isArray(response.data) ? response.data : (response.data.data || []);
                 setFilteredCountries(countriesList);
             }
@@ -45,17 +43,14 @@ const AdminCityCreate = () => {
         }
     };
 
-    // Debounced country search function - uses server-side search
     const debouncedCountrySearch = useCallback(
         debounce((searchTerm) => {
             if (searchTerm.length >= 1) {
-                // Use server-side search
                 fetchCountries(searchTerm);
             } else {
-                // Load all countries when search is cleared
                 fetchCountries();
             }
-        }, 500), // 500ms delay for server requests
+        }, 500),
         []
     );
 
@@ -67,7 +62,6 @@ const AdminCityCreate = () => {
 
     const handleCountryDropdownToggle = () => {
         if (!showCountryList) {
-            // Opening dropdown - clear search and load all countries
             setCountrySearchTerm('');
             fetchCountries();
         }
@@ -77,11 +71,9 @@ const AdminCityCreate = () => {
     const handleCountrySelect = (country) => {
         setSelectedCountry(country);
         let displayText = country.text || country.name;
-        // text is an object: {ar: "...", en: "..."}
         if (typeof displayText === 'object' && displayText !== null) {
             displayText = displayText.en || displayText.ar || '';
         } else if (typeof displayText === 'string' && displayText.startsWith('{')) {
-            // Fallback for JSON string
             try {
                 const parsed = JSON.parse(displayText);
                 displayText = parsed.en || parsed.ar || displayText;
@@ -106,14 +98,14 @@ const AdminCityCreate = () => {
         try {
             const response = await createCity(formData);
             if (response.success) {
-                toast.success('City created successfully');
+                toast.success(t('admin.cityForm.createSuccess'));
                 navigate('/admin/system/cities');
             } else {
                 if (response.errors) setErrors(response.errors);
-                toast.error(response.error || 'Failed to create city');
+                toast.error(response.error || t('admin.cityForm.createFailed'));
             }
         } catch (error) {
-            toast.error('Failed to create city');
+            toast.error(t('admin.cityForm.createFailed'));
         } finally {
             setLoading(false);
         }
@@ -121,31 +113,31 @@ const AdminCityCreate = () => {
 
     return (
         <div className="card">
-            <div className="card-header"><h3 className="card-title">Create New City</h3></div>
+            <div className="card-header"><h3 className="card-title">{t('admin.cityForm.createHeading')}</h3></div>
             <form onSubmit={handleSubmit}>
                 <div className="card-body">
                     <div className="row">
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Name (English)</label>
-                            <input type="text" className={`form-control ${errors['name.en'] ? 'is-invalid' : ''}`} value={formData.name.en} onChange={(e) => setFormData({ ...formData, name: { ...formData.name, en: e.target.value } })} placeholder="Enter city name in English" />
+                            <label className="form-label required">{t('admin.table.nameEn')}</label>
+                            <input type="text" className={`form-control ${errors['name.en'] ? 'is-invalid' : ''}`} value={formData.name.en} onChange={(e) => setFormData({ ...formData, name: { ...formData.name, en: e.target.value } })} placeholder={t('admin.cityForm.nameEnPlaceholder')} />
                             {errors['name.en'] && <div className="invalid-feedback">{errors['name.en'][0]}</div>}
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Name (Arabic)</label>
-                            <input type="text" className={`form-control ${errors['name.ar'] ? 'is-invalid' : ''}`} value={formData.name.ar} onChange={(e) => setFormData({ ...formData, name: { ...formData.name, ar: e.target.value } })} placeholder="أدخل اسم المدينة بالعربية" dir="rtl" />
+                            <label className="form-label required">{t('admin.table.nameAr')}</label>
+                            <input type="text" className={`form-control ${errors['name.ar'] ? 'is-invalid' : ''}`} value={formData.name.ar} onChange={(e) => setFormData({ ...formData, name: { ...formData.name, ar: e.target.value } })} placeholder={t('admin.cityForm.nameArPlaceholder')} dir="rtl" />
                             {errors['name.ar'] && <div className="invalid-feedback">{errors['name.ar'][0]}</div>}
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Country</label>
+                            <label className="form-label required">{t('admin.table.country')}</label>
                             <div className="position-relative">
                                 <div className={`form-control h-50px d-flex align-items-center justify-content-between ${errors.country_id ? 'is-invalid' : ''}`} onClick={handleCountryDropdownToggle} style={{ cursor: 'pointer' }}>
                                     <div className="d-flex align-items-center">
                                         {selectedCountry ? (
                                             <span className="text-gray-800">{countrySearchTerm}</span>
                                         ) : (
-                                            <span className="text-muted">Select Country</span>
+                                            <span className="text-muted">{t('admin.cityForm.selectCountry')}</span>
                                         )}
                                     </div>
                                     <div className="d-flex align-items-center">
@@ -157,20 +149,18 @@ const AdminCityCreate = () => {
                                         <i className={`ki-duotone ki-down fs-2 ${showCountryList ? 'rotate-180' : ''}`}><span className="path1"></span><span className="path2"></span></i>
                                     </div>
                                 </div>
-                                
+
                                 {showCountryList && (
                                     <div className="position-absolute top-100 start-0 w-100 bg-white border rounded-3 shadow-sm mt-1" style={{ zIndex: 1000, maxHeight: '250px', overflowY: 'auto' }}>
                                         <div className="p-2">
-                                            <input type="text" className="form-control form-control-sm mb-2" placeholder="Search countries..." value={countrySearchTerm} onChange={(e) => handleCountrySearch(e.target.value)} onClick={(e) => e.stopPropagation()} autoFocus />
+                                            <input type="text" className="form-control form-control-sm mb-2" placeholder={t('admin.cityForm.searchCountries')} value={countrySearchTerm} onChange={(e) => handleCountrySearch(e.target.value)} onClick={(e) => e.stopPropagation()} autoFocus />
                                         </div>
                                         {filteredCountries.length > 0 ? (
                                             filteredCountries.map((country) => {
                                                 let displayText = country.text || country.name;
-                                                // text is an object: {ar: "...", en: "..."}
                                                 if (typeof displayText === 'object' && displayText !== null) {
                                                     displayText = displayText.en || displayText.ar || '';
                                                 } else if (typeof displayText === 'string' && displayText.startsWith('{')) {
-                                                    // Fallback for JSON string
                                                     try {
                                                         const parsed = JSON.parse(displayText);
                                                         displayText = parsed.en || parsed.ar || displayText;
@@ -183,7 +173,7 @@ const AdminCityCreate = () => {
                                                 );
                                             })
                                         ) : (
-                                            <div className="p-3 text-muted text-center">No countries found</div>
+                                            <div className="p-3 text-muted text-center">{t('admin.cityForm.noCountriesFound')}</div>
                                         )}
                                     </div>
                                 )}
@@ -192,10 +182,10 @@ const AdminCityCreate = () => {
                         </div>
 
                         <div className="col-md-6 mb-5">
-                            <label className="form-label required">Status</label>
+                            <label className="form-label required">{t('admin.common.status')}</label>
                             <select className={`form-select ${errors.status ? 'is-invalid' : ''}`} value={formData.status ? '1' : '0'} onChange={(e) => setFormData({ ...formData, status: e.target.value === '1' })}>
-                                <option value="1">Active</option>
-                                <option value="0">Inactive</option>
+                                <option value="1">{t('admin.common.active')}</option>
+                                <option value="0">{t('admin.common.inactive')}</option>
                             </select>
                             {errors.status && <div className="invalid-feedback">{errors.status[0]}</div>}
                         </div>
@@ -203,8 +193,8 @@ const AdminCityCreate = () => {
                 </div>
 
                 <div className="card-footer d-flex justify-content-end gap-2">
-                    <button type="button" className="btn btn-light" onClick={() => navigate('/admin/system/cities')} disabled={loading}>Cancel</button>
-                    <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Creating...' : 'Create City'}</button>
+                    <button type="button" className="btn btn-light" onClick={() => navigate('/admin/system/cities')} disabled={loading}>{t('admin.common.cancel')}</button>
+                    <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? t('admin.cityForm.creating') : t('admin.cityForm.createCity')}</button>
                 </div>
             </form>
         </div>

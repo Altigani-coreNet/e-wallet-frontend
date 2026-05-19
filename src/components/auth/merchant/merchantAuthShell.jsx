@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { replaceLocaleInPathname, pathShouldSkipLocaleRedirect } from '../../../i18n/localePaths';
 import { APP_ASSETS } from '../../../assets';
-import { Store, ShieldCheck, TrendingUp } from 'lucide-react';
+import { Store, ShieldCheck, TrendingUp, LayoutDashboard, Users, Lock } from 'lucide-react';
 import '../../../styles/merchantLogin.css';
 
 const FeatureIcon = ({ icon: Icon }) => (
@@ -18,12 +18,18 @@ const MERCHANT_AUTH_FEATURE_ITEMS = [
     { icon: TrendingUp, titleKey: 'auth.login.feature3Title', descKey: 'auth.login.feature3Desc' },
 ];
 
-export function MerchantAuthMarketingFeatures({ variant }) {
+export const ADMIN_AUTH_FEATURE_ITEMS = [
+    { icon: LayoutDashboard, titleKey: 'admin.login.feature1Title', descKey: 'admin.login.feature1Desc' },
+    { icon: Users, titleKey: 'admin.login.feature2Title', descKey: 'admin.login.feature2Desc' },
+    { icon: Lock, titleKey: 'admin.login.feature3Title', descKey: 'admin.login.feature3Desc' },
+];
+
+export function MerchantAuthMarketingFeatures({ variant, items = MERCHANT_AUTH_FEATURE_ITEMS }) {
     const { t } = useTranslation();
     const listClass = variant === 'mobile' ? 'ml-features ml-features--mobile' : 'ml-features';
     return (
         <ul className={listClass}>
-            {MERCHANT_AUTH_FEATURE_ITEMS.map((item) => (
+            {items.map((item) => (
                 <li key={item.titleKey} className="ml-feature">
                     <FeatureIcon icon={item.icon} />
                     <div>
@@ -36,14 +42,18 @@ export function MerchantAuthMarketingFeatures({ variant }) {
     );
 }
 
-export function MerchantAuthTrustBadge({ className = '' }) {
+export function MerchantAuthTrustBadge({
+    className = '',
+    trustTitleKey = 'auth.login.trustBadge',
+    trustSubKey = 'auth.login.trustBadgeSub',
+}) {
     const { t } = useTranslation();
     return (
         <div className={['ml-trust', className].filter(Boolean).join(' ')}>
             <i className="bi bi-shield-check ml-trust-icon" aria-hidden />
             <span className="ml-trust-text">
-                <strong>{t('auth.login.trustBadge')}</strong>{' '}
-                {t('auth.login.trustBadgeSub')}
+                <strong>{t(trustTitleKey)}</strong>{' '}
+                {t(trustSubKey)}
             </span>
         </div>
     );
@@ -145,6 +155,9 @@ export function MerchantAuthPageLayout({
     showMobileMarketing = true,
     /** Custom mobile footer (e.g. forgot-password tips). Shown when set, even if showMobileMarketing is false. */
     mobileFooter = null,
+    featureItems = MERCHANT_AUTH_FEATURE_ITEMS,
+    trustTitleKey = 'auth.login.trustBadge',
+    trustSubKey = 'auth.login.trustBadgeSub',
 }) {
     const { t } = useTranslation();
 
@@ -178,8 +191,12 @@ export function MerchantAuthPageLayout({
                             ) : null}
                         </h1>
                         {showAsideSub ? <p className="ml-sub">{subResolved}</p> : null}
-                        {showAsideFeatures ? <MerchantAuthMarketingFeatures variant="aside" /> : null}
-                        {showAsideTrust ? <MerchantAuthTrustBadge /> : null}
+                        {showAsideFeatures ? (
+                            <MerchantAuthMarketingFeatures variant="aside" items={featureItems} />
+                        ) : null}
+                        {showAsideTrust ? (
+                            <MerchantAuthTrustBadge trustTitleKey={trustTitleKey} trustSubKey={trustSubKey} />
+                        ) : null}
                     </div>
                 </aside>
 
@@ -206,8 +223,12 @@ export function MerchantAuthPageLayout({
                                 mobileFooter
                             ) : (
                                 <>
-                                    <MerchantAuthMarketingFeatures variant="mobile" />
-                                    <MerchantAuthTrustBadge className="ml-trust--mobile" />
+                                    <MerchantAuthMarketingFeatures variant="mobile" items={featureItems} />
+                                    <MerchantAuthTrustBadge
+                                        className="ml-trust--mobile"
+                                        trustTitleKey={trustTitleKey}
+                                        trustSubKey={trustSubKey}
+                                    />
                                 </>
                             )}
                         </div>

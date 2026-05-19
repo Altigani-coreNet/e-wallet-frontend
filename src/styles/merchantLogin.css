@@ -998,6 +998,11 @@ a.ml-btn-primary {
     width: 100%;
 }
 
+.ml-verification-wrap .verification-otp-ltr,
+.ml-verification-wrap .opt_container {
+    direction: ltr;
+}
+
 .ml-password-rules {
     font-size: var(--ml-font-small);
     line-height: 1.6;

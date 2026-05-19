@@ -94,7 +94,7 @@ const VerificationInput = forwardRef(({ length = 6, onComplete }, ref) => {
     };
 
     return (
-        <div className="av-otp-container">
+        <div className="av-otp-container verification-otp-ltr" dir="ltr">
             {code.map((digit, idx) => (
                 <input
                     key={idx}
@@ -108,6 +108,8 @@ const VerificationInput = forwardRef(({ length = 6, onComplete }, ref) => {
                     onKeyDown={e => handleKeyDown(e, idx)}
                     onPaste={handlePaste}
                     inputMode="numeric"
+                    dir="ltr"
+                    autoComplete="one-time-code"
                 />
             ))}
         </div>
