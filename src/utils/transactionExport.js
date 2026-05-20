@@ -79,30 +79,44 @@ export const exportTransactions = async (filters = {}, urlType = null, progressC
         throw new Error('No transactions found to export.');
     }
 
-    if (progressCallback) {
-        progressCallback('Loading merchant and user information...');
+    const needsMerchantLookup = allTransactions.some(
+        (t) => !t.merchant_name && t.merchant_id
+    );
+    const needsUserLookup = allTransactions.some((t) => !t.user_name && t.user_id);
+
+    let merchantInfoMap = {};
+    let userInfoMap = {};
+
+    if (needsMerchantLookup || needsUserLookup) {
+        if (progressCallback) {
+            progressCallback('Loading merchant and user information...');
+        }
+
+        const merchantIds = needsMerchantLookup
+            ? [...new Set(
+                  allTransactions
+                      .map((t) => t.merchant_id)
+                      .filter((id) => id !== null && id !== undefined && id !== '')
+                      .map((id) => String(id))
+              )]
+            : [];
+
+        const userIds = needsUserLookup
+            ? [...new Set(
+                  allTransactions
+                      .map((t) => t.user_id)
+                      .filter((id) => id !== null && id !== undefined && id !== '')
+                      .map((id) => String(id))
+              )]
+            : [];
+
+        const [merchants, users] = await Promise.all([
+            needsMerchantLookup ? fetchMerchantCountryInfo(merchantIds) : Promise.resolve({}),
+            needsUserLookup ? fetchUserInfoByIdsV2(userIds) : Promise.resolve({}),
+        ]);
+        merchantInfoMap = merchants;
+        userInfoMap = users;
     }
-
-    // Extract merchant IDs and user IDs for lookup
-    const merchantIds = [...new Set(
-        allTransactions
-            .map(t => t.merchant_id)
-            .filter(id => id !== null && id !== undefined && id !== '')
-            .map(id => String(id))
-    )];
-
-    const userIds = [...new Set(
-        allTransactions
-            .map(t => t.user_id)
-            .filter(id => id !== null && id !== undefined && id !== '')
-            .map(id => String(id))
-    )];
-
-    // Fetch merchant and user info in parallel
-    const [merchantInfoMap, userInfoMap] = await Promise.all([
-        fetchMerchantCountryInfo(merchantIds),
-        fetchUserInfoByIdsV2(userIds),
-    ]);
 
     if (progressCallback) {
         progressCallback('Preparing export data...');
@@ -119,9 +133,9 @@ export const exportTransactions = async (filters = {}, urlType = null, progressC
         return {
             'Transaction ID': transaction.transaction_id || transaction.id || 'N/A',
             'RRN': transaction.rrn || 'N/A',
-            'Merchant Name': merchantInfo.name || 'N/A',
-            'Merchant Country': merchantInfo.countryName || 'N/A',
-            'User Name': userInfo.name || 'N/A',
+            'Merchant Name': transaction.merchant_name || merchantInfo.name || 'N/A',
+            'Merchant Country': transaction.country_name || merchantInfo.countryName || 'N/A',
+            'User Name': transaction.user_name || userInfo.name || 'N/A',
             'Terminal ID': transaction.terminal_id || 'N/A',
             'Payment Method': transaction.payment_method?.name || transaction.payment_method || 'N/A',
             'Card Number': transaction.card_number 

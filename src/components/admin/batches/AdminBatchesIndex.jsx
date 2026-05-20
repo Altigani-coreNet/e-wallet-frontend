@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
@@ -10,8 +11,43 @@ import { exportBatches } from '../../../utils/batchExport';
 import useMerchantCountryInfo from '../../../hooks/useMerchantCountryInfo';
 import useAdminReferenceData from '../../../hooks/useAdminReferenceData';
 import MerchantCountryFilterFields from '../../common/filters/MerchantCountryFilterFields';
+import { formatMerchantDateTime, getDisplayLocale } from '../../../utils/dateUtils';
+import { getBatchStatusLabel } from '../../../utils/batchHelpers';
+
+const BI_NS = 'admin.batchesIndex';
 
 const AdminBatchesIndex = () => {
+    const { t, i18n } = useTranslation();
+    const na = t(`${BI_NS}.na`);
+    const displayLocale = getDisplayLocale(i18n.language);
+
+    const formatDate = useCallback(
+        (date) => (date ? formatMerchantDateTime(date, i18n.language) : na),
+        [i18n.language, na]
+    );
+
+    const formatCount = useCallback(
+        (value) => {
+            const numeric = Number(value ?? 0);
+            return Number.isNaN(numeric) ? '0' : numeric.toLocaleString(displayLocale);
+        },
+        [displayLocale]
+    );
+
+    const formatAmount = useCallback(
+        (value, symbol = '$') => {
+            const numeric = Number(value ?? 0);
+            const formatted = Number.isNaN(numeric)
+                ? '0.00'
+                : numeric.toLocaleString(displayLocale, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                  });
+            return `${symbol} ${formatted}`;
+        },
+        [displayLocale]
+    );
+
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
     
@@ -48,7 +84,7 @@ const AdminBatchesIndex = () => {
     const toDateRef = useRef(null);
 
     useEffect(() => {
-        setTitle('Batches');
+        setTitle(t(`${BI_NS}.management`));
         
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
@@ -60,14 +96,15 @@ const AdminBatchesIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Filter</span>
+                    <span className="d-none d-md-inline ms-1">{t(`${BI_NS}.filter`)}</span>
                 </button>
 
                 <button
                     className="btn btn-sm btn-icon btn-light fw-bold"
                     onClick={() => fetchBatches()}
                     disabled={loading}
-                    title="Refresh"
+                    title={t(`${BI_NS}.refreshTitle`)}
+                    aria-label={t(`${BI_NS}.refreshTitle`)}
                 >
                     <i className="ki-duotone ki-arrows-circle fs-3">
                         <span className="path1"></span>
@@ -83,12 +120,12 @@ const AdminBatchesIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Export</span>
+                    <span className="d-none d-md-inline ms-1">{t(`${BI_NS}.export`)}</span>
                 </button>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters, loading]);
+    }, [setTitle, setActions, showFilters, loading, t]);
 
     useEffect(() => {
         fetchBatches();
@@ -127,7 +164,7 @@ const AdminBatchesIndex = () => {
             }
         } catch (error) {
             console.error('Error fetching batches:', error);
-            toast.error('Failed to load batches');
+            toast.error(t(`${BI_NS}.loadFailed`));
         } finally {
             setLoading(false);
         }
@@ -160,8 +197,8 @@ const AdminBatchesIndex = () => {
             
             if (!merchantId) {
                 return {
-                    merchantName: batch.merchant?.business_name || batch.merchant?.name || 'N/A',
-                    countryName: batch.merchant?.country?.name || 'N/A',
+                    merchantName: batch.merchant?.business_name || batch.merchant?.name || na,
+                    countryName: batch.merchant?.country?.name || na,
                 };
             }
 
@@ -169,17 +206,17 @@ const AdminBatchesIndex = () => {
 
             if (record) {
                 return {
-                    merchantName: record.name || batch.merchant?.business_name || batch.merchant?.name || 'N/A',
-                    countryName: record.countryName || 'N/A',
+                    merchantName: record.name || batch.merchant?.business_name || batch.merchant?.name || na,
+                    countryName: record.countryName || na,
                 };
             }
 
             return {
-                merchantName: batch.merchant?.business_name || batch.merchant?.name || 'N/A',
-                countryName: 'N/A',
+                merchantName: batch.merchant?.business_name || batch.merchant?.name || na,
+                countryName: na,
             };
         },
-        [getMerchantInfoById]
+        [getMerchantInfoById, na]
     );
 
 
@@ -210,34 +247,31 @@ const AdminBatchesIndex = () => {
     };
 
     const handleExport = async () => {
-        const filterInfo = Object.values(filters).some(v => v) ? ' with current filters' : '';
-        const exportMessage = `Export batches${filterInfo}? Maximum 1000 batches will be exported.`;
+        const filterInfo = Object.values(filters).some((v) => v) ? t(`${BI_NS}.withFilters`) : '';
         
         const result = await Swal.fire({
-            title: 'Export Batches',
-            text: exportMessage,
+            title: t(`${BI_NS}.exportTitle`),
+            text: t(`${BI_NS}.exportConfirm`, { filterInfo }),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#28a745',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Export',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t(`${BI_NS}.export`),
+            cancelButtonText: t('admin.common.cancel'),
         });
 
         if (result.isConfirmed) {
             try {
-                // Show loading state with progress
                 Swal.fire({
-                    title: 'Exporting Batches...',
-                    html: '<div id="export-progress">Fetching batches...</div>',
+                    title: t(`${BI_NS}.exporting`),
+                    html: `<div id="export-progress">${t(`${BI_NS}.fetching`)}</div>`,
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     didOpen: () => {
                         Swal.showLoading();
-                    }
+                    },
                 });
 
-                // Progress callback to update UI
                 const progressCallback = (message) => {
                     const progressEl = document.getElementById('export-progress');
                     if (progressEl) {
@@ -245,16 +279,40 @@ const AdminBatchesIndex = () => {
                     }
                 };
 
-                // Call export function from separate file
-                const exportResult = await exportBatches(filters, progressCallback);
+                const exportResult = await exportBatches(filters, {
+                    progressCallback,
+                    labels: {
+                        batchNumber: t(`${BI_NS}.exportColBatchNumber`),
+                        merchantName: t(`${BI_NS}.exportColMerchantName`),
+                        merchantCountry: t(`${BI_NS}.exportColMerchantCountry`),
+                        status: t(`${BI_NS}.exportColStatus`),
+                        totalAmount: t(`${BI_NS}.exportColTotalAmount`),
+                        currency: t(`${BI_NS}.exportColCurrency`),
+                        transactionCount: t(`${BI_NS}.exportColTransactionCount`),
+                        createdDate: t(`${BI_NS}.exportColCreatedDate`),
+                        updatedDate: t(`${BI_NS}.exportColUpdatedDate`),
+                        na,
+                    },
+                    messages: {
+                        authRequired: t(`${BI_NS}.exportAuthRequired`),
+                        noData: t(`${BI_NS}.exportNoData`),
+                        fetching: t(`${BI_NS}.fetching`),
+                        fetchedCount: t(`${BI_NS}.exportFetchedCount`),
+                        loadingMerchants: t(`${BI_NS}.exportLoadingMerchants`),
+                        preparing: t(`${BI_NS}.exportPreparing`),
+                        generating: t(`${BI_NS}.exportGenerating`),
+                    },
+                    formatDate: (date) => formatMerchantDateTime(date, i18n.language) || na,
+                    formatStatus: (status) => getBatchStatusLabel(status, t, BI_NS) || na,
+                    formatProgressCount: formatCount,
+                });
 
-                // Close loading and show success
                 Swal.close();
-                toast.success(`Successfully exported ${exportResult.count} batches to Excel!`);
+                toast.success(t(`${BI_NS}.exportSuccess`, { count: formatCount(exportResult.count) }));
             } catch (error) {
                 console.error('Export error:', error);
                 Swal.close();
-                toast.error(error.message || 'Failed to export batches. Please try again.');
+                toast.error(error.message || t(`${BI_NS}.exportFailed`));
             }
         }
     };
@@ -350,23 +408,42 @@ const AdminBatchesIndex = () => {
         [countriesMap]
     );
 
-    const getFilterDetails = () => {
+    const getFilterDetails = useCallback(() => {
         const details = [];
-        if (filters.search) details.push(`Search: "${filters.search}"`);
-        if (filters.status) details.push(`Status: ${filters.status}`);
+        if (filters.search) {
+            details.push(t(`${BI_NS}.filterSummarySearch`, { value: filters.search }));
+        }
+        if (filters.status) {
+            details.push(
+                t(`${BI_NS}.filterSummaryStatus`, {
+                    value: getBatchStatusLabel(filters.status, t, BI_NS) || filters.status,
+                })
+            );
+        }
         if (filters.merchant_id) {
             const merchantName = resolveMerchant(filters.merchant_id);
-            if (merchantName) details.push(`Merchant: ${merchantName}`);
+            if (merchantName) {
+                details.push(t(`${BI_NS}.filterSummaryMerchant`, { value: merchantName }));
+            }
         }
         if (filters.country_id) {
             const countryName = resolveCountry(filters.country_id);
-            if (countryName) details.push(`Country: ${countryName}`);
+            if (countryName) {
+                details.push(t(`${BI_NS}.filterSummaryCountry`, { value: countryName }));
+            }
         }
-        if (filters.from_date) details.push(`From: ${filters.from_date}`);
-        if (filters.to_date) details.push(`To: ${filters.to_date}`);
-        
-        return details.slice(0, 2).join(', ') + (details.length > 2 ? '...' : '');
-    };
+        if (filters.from_date) {
+            details.push(t(`${BI_NS}.filterSummaryFrom`, { value: filters.from_date }));
+        }
+        if (filters.to_date) {
+            details.push(t(`${BI_NS}.filterSummaryTo`, { value: filters.to_date }));
+        }
+
+        return (
+            details.slice(0, 2).join(', ') +
+            (details.length > 2 ? ` ${t(`${BI_NS}.filterSummaryMore`)}` : '')
+        );
+    }, [filters, resolveMerchant, resolveCountry, t]);
 
     return (
         <>
@@ -424,9 +501,9 @@ const AdminBatchesIndex = () => {
                         >
                             <div className="card-body">
                                 <div className="text-black fw-bolder fs-2 mb-2 mt-5">
-                                    {statisticsLoading ? '...' : (statistics?.total || 0)}
+                                    {statisticsLoading ? t(`${BI_NS}.loading`) : formatCount(statistics?.total || 0)}
                                 </div>
-                                <div className="fw-bold text-black">Total Batches</div>
+                                <div className="fw-bold text-black">{t(`${BI_NS}.totalBatches`)}</div>
                             </div>
                         </div>
                     </div>
@@ -438,9 +515,9 @@ const AdminBatchesIndex = () => {
                         >
                             <div className="card-body">
                                 <div className="text-black fw-bolder fs-2 mb-2 mt-5">
-                                    {statisticsLoading ? '...' : (statistics?.settled || 0)}
+                                    {statisticsLoading ? t(`${BI_NS}.loading`) : formatCount(statistics?.settled || 0)}
                                 </div>
-                                <div className="fw-bold text-black">Settled</div>
+                                <div className="fw-bold text-black">{t(`${BI_NS}.settled`)}</div>
                             </div>
                         </div>
                     </div>
@@ -452,9 +529,9 @@ const AdminBatchesIndex = () => {
                         >
                             <div className="card-body">
                                 <div className="text-black fw-bolder fs-2 mb-2 mt-5">
-                                    {statisticsLoading ? '...' : (statistics?.pending || 0)}
+                                    {statisticsLoading ? t(`${BI_NS}.loading`) : formatCount(statistics?.pending || 0)}
                                 </div>
-                                <div className="fw-bold text-black">Pending</div>
+                                <div className="fw-bold text-black">{t(`${BI_NS}.pending`)}</div>
                             </div>
                         </div>
                     </div>
@@ -466,9 +543,9 @@ const AdminBatchesIndex = () => {
                         >
                             <div className="card-body">
                                 <div className="text-black fw-bolder fs-2 mb-2 mt-5">
-                                    {statisticsLoading ? '...' : (statistics?.failed || 0)}
+                                    {statisticsLoading ? t(`${BI_NS}.loading`) : formatCount(statistics?.failed || 0)}
                                 </div>
-                                <div className="fw-bold text-black">Failed</div>
+                                <div className="fw-bold text-black">{t(`${BI_NS}.failed`)}</div>
                             </div>
                         </div>
                     </div>
@@ -481,28 +558,28 @@ const AdminBatchesIndex = () => {
                     <div className="card-body">
                         <div className="row">
                             <div className="col-md-3">
-                                <label className="form-label">Search</label>
+                                <label className="form-label">{t(`${BI_NS}.search`)}</label>
                                 <input
                                     type="text"
                                     name="search"
                                     className="form-control"
-                                    placeholder="Search by batch number, merchant"
+                                    placeholder={t(`${BI_NS}.searchPlaceholder`)}
                                     value={filters.search}
                                     onChange={(e) => handleFilterChange('search', e.target.value)}
                                 />
                             </div>
                             <div className="col-md-3">
-                                <label className="form-label">Status</label>
+                                <label className="form-label">{t(`${BI_NS}.status`)}</label>
                                 <select
                                     name="status"
                                     className="form-select"
                                     value={filters.status}
                                     onChange={(e) => handleFilterChange('status', e.target.value)}
                                 >
-                                    <option value="">All</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="settled">Settled</option>
-                                    <option value="failed">Failed</option>
+                                    <option value="">{t(`${BI_NS}.allStatuses`)}</option>
+                                    <option value="pending">{t(`${BI_NS}.pending`)}</option>
+                                    <option value="settled">{t(`${BI_NS}.settled`)}</option>
+                                    <option value="failed">{t(`${BI_NS}.failed`)}</option>
                                 </select>
                             </div>
                             <MerchantCountryFilterFields
@@ -510,8 +587,10 @@ const AdminBatchesIndex = () => {
                                 countryValue={filters.country_id}
                                 onMerchantChange={(value) => handleFilterChange('merchant_id', value || '')}
                                 onCountryChange={(value) => handleFilterChange('country_id', value || '')}
-                                merchantPlaceholder="All Merchants"
-                                countryPlaceholder="All Countries"
+                                merchantLabel={t(`${BI_NS}.merchant`)}
+                                countryLabel={t(`${BI_NS}.country`)}
+                                merchantPlaceholder={t(`${BI_NS}.allMerchants`)}
+                                countryPlaceholder={t(`${BI_NS}.allCountries`)}
                                 merchantNameResolver={resolveMerchant}
                                 countryNameResolver={resolveCountry}
                                 merchantWrapperClassName="col-md-3"
@@ -520,7 +599,7 @@ const AdminBatchesIndex = () => {
                         </div>
                         <div className="row mt-3">
                             <div className="col-md-6">
-                                <label className="form-label fw-bold">From Date</label>
+                                <label className="form-label fw-bold">{t(`${BI_NS}.fromDate`)}</label>
                                 <input
                                     ref={fromDateRef}
                                     type="date"
@@ -533,7 +612,7 @@ const AdminBatchesIndex = () => {
                                 />
                             </div>
                             <div className="col-md-6">
-                                <label className="form-label fw-bold">To Date</label>
+                                <label className="form-label fw-bold">{t(`${BI_NS}.toDate`)}</label>
                                 <input
                                     ref={toDateRef}
                                     type="date"
@@ -554,7 +633,7 @@ const AdminBatchesIndex = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        <span id="active-filters-count">{getActiveFiltersCount()}</span> active filters
+                                        {t(`${BI_NS}.activeFilters`, { count: formatCount(getActiveFiltersCount()) })}
                                         <span className="ms-2 badge badge-light-primary fs-8" id="filter-details">
                                             {getFilterDetails()}
                                         </span>
@@ -572,7 +651,7 @@ const AdminBatchesIndex = () => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Clear Filters
+                                    {t(`${BI_NS}.clearFilters`)}
                                 </button>
                             </div>
                         </div>
@@ -592,7 +671,7 @@ const AdminBatchesIndex = () => {
                             <input
                                 type="text"
                                 className="form-control form-control-solid w-250px ps-12"
-                                placeholder="Quick search: Batch number, Merchant..."
+                                placeholder={t(`${BI_NS}.quickSearch`)}
                                 value={filters.search}
                                 onChange={(e) => handleFilterChange('search', e.target.value)}
                             />
@@ -602,14 +681,14 @@ const AdminBatchesIndex = () => {
                         {selectedIds.length > 0 && (
                             <div className="d-flex justify-content-end align-items-center">
                                 <div className="fw-bolder me-5">
-                                    <span className="me-2">{selectedIds.length}</span>Selected
+                                    <span className="me-2">{t(`${BI_NS}.selected`, { count: formatCount(selectedIds.length) })}</span>
                                 </div>
                                 <button
                                     type="button"
                                     className="btn btn-danger btn-sm"
-                                    onClick={() => toast.info('Bulk delete for batches will be implemented soon')}
+                                    onClick={() => toast.info(t(`${BI_NS}.deleteSoon`))}
                                 >
-                                    Delete Selected
+                                    {t(`${BI_NS}.deleteSelected`)}
                                 </button>
                             </div>
                         )}
@@ -631,14 +710,14 @@ const AdminBatchesIndex = () => {
                                             />
                                         </div>
                                     </th>
-                                    <th className="text-dark">Batch Number</th>
-                                    <th className="text-dark">Merchant</th>
-                                    <th className="min-w-100px text-center text-dark">Status</th>
-                                    <th className="min-w-100px text-end text-dark">Total Amount</th>
-                                    <th className="min-w-100px text-end text-dark">Transaction Count</th>
-                                    <th className="text-dark">Created At</th>
-                                    <th className="text-dark">Country</th>
-                                    <th className="text-end text-dark">Actions</th>
+                                    <th className="text-dark">{t(`${BI_NS}.batchNumber`)}</th>
+                                    <th className="text-dark">{t(`${BI_NS}.merchant`)}</th>
+                                    <th className="min-w-100px text-center text-dark">{t(`${BI_NS}.status`)}</th>
+                                    <th className="min-w-100px text-end text-dark">{t(`${BI_NS}.totalAmount`)}</th>
+                                    <th className="min-w-100px text-end text-dark">{t(`${BI_NS}.transactionCount`)}</th>
+                                    <th className="text-dark">{t(`${BI_NS}.createdAt`)}</th>
+                                    <th className="text-dark">{t(`${BI_NS}.country`)}</th>
+                                    <th className="text-end text-dark">{t(`${BI_NS}.actions`)}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -664,7 +743,7 @@ const AdminBatchesIndex = () => {
                                                     <span className="path1"></span>
                                                     <span className="path2"></span>
                                                 </i>
-                                                <p className="fw-bold">No batches found</p>
+                                                <p className="fw-bold">{t(`${BI_NS}.noBatches`)}</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -681,7 +760,7 @@ const AdminBatchesIndex = () => {
                                                     />
                                                 </div>
                                             </td>
-                                            <td>{batch.batch_number || 'N/A'}</td>
+                                            <td>{batch.batch_number || na}</td>
                                             <td>
                                                 {(() => {
                                                     const merchantId = batch.merchant?.id || batch.merchant_id;
@@ -697,12 +776,12 @@ const AdminBatchesIndex = () => {
                                             </td>
                                             <td className="text-center">
                                                 <span className={`badge ${getStatusBadgeClass(batch.status)}`}>
-                                                    {batch.status ? batch.status.charAt(0).toUpperCase() + batch.status.slice(1) : 'N/A'}
+                                                    {getBatchStatusLabel(batch.status, t, BI_NS) || na}
                                                 </span>
                                             </td>
-                                            <td className="text-end">{batch.currency_symbol || '$'}{parseFloat(batch.total_amount || 0).toFixed(2)}</td>
-                                            <td className="text-end">{batch.transaction_count || 0}</td>
-                                            <td>{batch.created_at ? new Date(batch.created_at).toLocaleString() : 'N/A'}</td>
+                                            <td className="text-end">{formatAmount(batch.total_amount, batch.currency_symbol || '$')}</td>
+                                            <td className="text-end">{formatCount(batch.transaction_count || 0)}</td>
+                                            <td>{formatDate(batch.created_at)}</td>
                                             <td>
                                                 {(() => {
                                                     const merchantId = batch.merchant?.id || batch.merchant_id;
@@ -720,8 +799,10 @@ const AdminBatchesIndex = () => {
                                                 <button
                                                     className="btn btn-sm btn-light btn-active-light-primary"
                                                     onClick={() => navigate(`/admin/batches/${batch.id}`)}
+                                                    title={t(`${BI_NS}.viewTitle`)}
+                                                    aria-label={t(`${BI_NS}.viewTitle`)}
                                                 >
-                                                    View
+                                                    {t(`${BI_NS}.view`)}
                                                 </button>
                                             </td>
                                         </tr>
@@ -737,7 +818,7 @@ const AdminBatchesIndex = () => {
                             <div className="col-sm-12 col-md-5 d-flex align-items-center">
                                 <div className="dataTables_length">
                                     <label className="d-flex align-items-center">
-                                        <span className="me-2">Show</span>
+                                        <span className="me-2">{t(`${BI_NS}.show`)}</span>
                                         <select 
                                             className="form-select form-select-sm" 
                                             value={pagination.per_page}
@@ -749,12 +830,16 @@ const AdminBatchesIndex = () => {
                                             <option value="50">50</option>
                                             <option value="100">100</option>
                                         </select>
-                                        <span className="ms-2">entries</span>
+                                        <span className="ms-2">{t(`${BI_NS}.entries`)}</span>
                                     </label>
                                 </div>
                                 <div className="ms-5">
                                     <span className="text-muted">
-                                        Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} entries
+                                        {t(`${BI_NS}.showingResults`, {
+                                            from: formatCount(((pagination.current_page - 1) * pagination.per_page) + 1),
+                                            to: formatCount(Math.min(pagination.current_page * pagination.per_page, pagination.total)),
+                                            total: formatCount(pagination.total),
+                                        })}
                                     </span>
                                 </div>
                             </div>
@@ -767,11 +852,11 @@ const AdminBatchesIndex = () => {
                                                 onClick={() => handlePageChange(pagination.current_page - 1)}
                                                 disabled={pagination.current_page === 1}
                                             >
-                                                Previous
+                                                {t(`${BI_NS}.previous`)}
                                             </button>
                                         </li>
                                         <li className="page-item active">
-                                            <span className="page-link">{pagination.current_page}</span>
+                                            <span className="page-link">{formatCount(pagination.current_page)}</span>
                                         </li>
                                         <li className={`page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}`}>
                                             <button 
@@ -779,7 +864,7 @@ const AdminBatchesIndex = () => {
                                                 onClick={() => handlePageChange(pagination.current_page + 1)}
                                                 disabled={pagination.current_page === pagination.last_page}
                                             >
-                                                Next
+                                                {t(`${BI_NS}.next`)}
                                             </button>
                                         </li>
                                     </ul>

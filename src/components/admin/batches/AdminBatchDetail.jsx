@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
@@ -8,11 +9,20 @@ import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { useCan } from '../../../utils/permissions';
 import useMerchantCountryInfo from '../../../hooks/useMerchantCountryInfo';
+import { formatMerchantDateTime } from '../../../utils/dateUtils';
+import { getBatchStatusLabel, getSettlementStatusLabel } from '../../../utils/batchHelpers';
+import { getTransactionStatusLabel } from '../../../utils/transactionStatusHelpers';
+
+const BD_NS = 'admin.batchDetail';
+const BI_NS = 'admin.batchesIndex';
+const SI_NS = 'admin.settlementsIndex';
 
 const AdminBatchDetail = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
+    const na = t(`${BI_NS}.na`);
     const canCloseBatch = useCan('pos.batches.close_batches');
     const [batch, setBatch] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -37,8 +47,8 @@ const AdminBatchDetail = () => {
     const getMerchantInfo = useCallback(() => {
         if (!batchMerchantId) {
             return {
-                merchantName: batch?.merchant?.business_name || batch?.merchant?.name || 'N/A',
-                countryName: batch?.merchant?.country?.name || 'N/A',
+                merchantName: batch?.merchant?.business_name || batch?.merchant?.name || na,
+                countryName: batch?.merchant?.country?.name || na,
             };
         }
 
@@ -46,21 +56,26 @@ const AdminBatchDetail = () => {
 
         if (record) {
             return {
-                merchantName: record.name || batch?.merchant?.business_name || batch?.merchant?.name || 'N/A',
-                countryName: record.countryName || 'N/A',
+                merchantName: record.name || batch?.merchant?.business_name || batch?.merchant?.name || na,
+                countryName: record.countryName || na,
             };
         }
 
         return {
-            merchantName: batch?.merchant?.business_name || batch?.merchant?.name || 'N/A',
-            countryName: 'N/A',
+            merchantName: batch?.merchant?.business_name || batch?.merchant?.name || na,
+            countryName: na,
         };
-    }, [batch, batchMerchantId, getMerchantInfoById]);
+    }, [batch, batchMerchantId, getMerchantInfoById, na]);
+
+    const formatDate = useCallback(
+        (date) => (date ? formatMerchantDateTime(date, i18n.language) : na),
+        [i18n.language, na]
+    );
 
     useEffect(() => {
-        setTitle('Batch Details');
+        setTitle(t(`${BD_NS}.details`));
         return () => setActions(null);
-    }, [setTitle, setActions]);
+    }, [setTitle, setActions, t]);
 
     useEffect(() => {
         fetchBatch();
@@ -80,7 +95,7 @@ const AdminBatchDetail = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Back to Batches
+                        {t(`${BD_NS}.backToBatches`)}
                     </button>
                     
                     {isPending && canCloseBatch && (
@@ -92,13 +107,13 @@ const AdminBatchDetail = () => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Process Settlement
+                            {t(`${BD_NS}.processSettlement`)}
                         </button>
                     )}
                 </div>
             );
         }
-    }, [batch, navigate, setActions]);
+    }, [batch, navigate, setActions, t, canCloseBatch]);
 
     const fetchBatch = async () => {
         setLoading(true);
@@ -127,7 +142,7 @@ const AdminBatchDetail = () => {
             }
         } catch (error) {
             console.error('Error fetching batch:', error);
-            toast.error('Failed to load batch details');
+            toast.error(t(`${BD_NS}.loadFailed`));
         } finally {
             setLoading(false);
         }
@@ -216,11 +231,11 @@ const AdminBatchDetail = () => {
                             <table className="table align-middle table-row-dashed fs-6 gy-5">
                                 <thead>
                                     <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                        <th className="text-dark">Transaction ID</th>
-                                        <th className="text-dark">Amount</th>
-                                        <th className="text-dark">Status</th>
-                                        <th className="text-dark">Terminal</th>
-                                        <th className="text-dark">Created At</th>
+                                        <th className="text-dark">{t(`${BD_NS}.transactionId`)}</th>
+                                        <th className="text-dark">{t(`${BD_NS}.amount`)}</th>
+                                        <th className="text-dark">{t(`${BD_NS}.status`)}</th>
+                                        <th className="text-dark">{t(`${BD_NS}.terminal`)}</th>
+                                        <th className="text-dark">{t(`${BD_NS}.createdAt`)}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="fw-semibold text-gray-600">
@@ -256,7 +271,7 @@ const AdminBatchDetail = () => {
         return (
             <div className="card">
                 <div className="card-body text-center py-10">
-                    <p>Batch not found</p>
+                    <p>{t(`${BD_NS}.notFound`)}</p>
                 </div>
             </div>
         );
@@ -264,14 +279,14 @@ const AdminBatchDetail = () => {
 
     const handleProcessSettlement = async () => {
         const result = await Swal.fire({
-            title: 'Process Settlement',
-            text: 'Are you sure you want to process settlement for this batch? This will mark all captured transactions as approved and create a settlement.',
+            title: t(`${BD_NS}.processSettlementTitle`),
+            text: t(`${BD_NS}.processSettlementText`),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#28a745',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, Process',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t(`${BD_NS}.yesProcess`),
+            cancelButtonText: t(`${BD_NS}.cancel`)
         });
 
         if (result.isConfirmed) {
@@ -284,11 +299,11 @@ const AdminBatchDetail = () => {
                     }
                 });
                 
-                toast.success(response.data.message || 'Settlement processed successfully');
-                fetchBatch(); // Refresh batch data
+                toast.success(response.data.message || t(`${BD_NS}.processSuccess`));
+                fetchBatch();
             } catch (error) {
                 console.error('Process settlement error:', error);
-                toast.error(error.response?.data?.message || 'Failed to process settlement');
+                toast.error(error.response?.data?.message || t(`${BD_NS}.processFailed`));
             }
         }
     };
@@ -323,13 +338,13 @@ const AdminBatchDetail = () => {
                                         {batch.batch_number}
                                     </span>
                                 </div>
-                                <span className="text-gray-400 pt-1 fw-semibold fs-6">Batch Information</span>
+                                <span className="text-gray-400 pt-1 fw-semibold fs-6">{t(`${BD_NS}.batchInformation`)}</span>
                             </div>
                         </div>
                         <div className="card-body pt-2 pb-4 d-flex align-items-center">
                             <div className="d-flex flex-column flex-grow-1">
                                 <div className="d-flex align-items-center mb-2">
-                                    <span className="text-gray-600 fw-semibold fs-6 me-2">Merchant:</span>
+                                    <span className="text-gray-600 fw-semibold fs-6 me-2">{t(`${BD_NS}.merchant`)}:</span>
                                     <span className="text-dark fw-bold fs-6">
                                         {(() => {
                                             const merchantLoading = batchMerchantId && (merchantInfoLoading || hasPendingRequest(batchMerchantId));
@@ -343,7 +358,7 @@ const AdminBatchDetail = () => {
                                     </span>
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
-                                    <span className="text-gray-600 fw-semibold fs-6 me-2">Country:</span>
+                                    <span className="text-gray-600 fw-semibold fs-6 me-2">{t(`${BD_NS}.country`)}:</span>
                                     <span className="text-dark fw-bold fs-6">
                                         {(() => {
                                             const merchantLoading = batchMerchantId && (merchantInfoLoading || hasPendingRequest(batchMerchantId));
@@ -357,32 +372,32 @@ const AdminBatchDetail = () => {
                                     </span>
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
-                                    <span className="text-gray-600 fw-semibold fs-6 me-2">Status:</span>
+                                    <span className="text-gray-600 fw-semibold fs-6 me-2">{t(`${BD_NS}.status`)}:</span>
                                     <span className={`badge ${getStatusBadge(batch.status)} fs-7`}>
-                                        {batch.status ? batch.status.charAt(0).toUpperCase() + batch.status.slice(1) : 'N/A'}
+                                        {getBatchStatusLabel(batch.status, t, BD_NS) || getTransactionStatusLabel(batch.status, t) || na}
                                     </span>
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
-                                    <span className="text-gray-600 fw-semibold fs-6 me-2">Total Amount:</span>
+                                    <span className="text-gray-600 fw-semibold fs-6 me-2">{t(`${BD_NS}.totalAmount`)}:</span>
                                     <span className="text-dark fw-bold fs-6">
                                         {batch.currency_symbol || '$'}{parseFloat(batch.total_amount || 0).toFixed(2)} {currency?.currency_code || 'USD'}
                                     </span>
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
-                                    <span className="text-gray-600 fw-semibold fs-6 me-2">Transaction Count:</span>
+                                    <span className="text-gray-600 fw-semibold fs-6 me-2">{t(`${BD_NS}.transactionCount`)}:</span>
                                     <span className="text-dark fw-bold fs-6">{batch.transaction_count || 0}</span>
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
-                                    <span className="text-gray-600 fw-semibold fs-6 me-2">Created At:</span>
+                                    <span className="text-gray-600 fw-semibold fs-6 me-2">{t(`${BD_NS}.createdAt`)}:</span>
                                     <span className="text-dark fw-bold fs-6">
-                                        {batch.created_at ? new Date(batch.created_at).toLocaleString() : 'N/A'}
+                                        {formatDate(batch.created_at)}
                                     </span>
                                 </div>
                                 {batch.settled_at && (
                                     <div className="d-flex align-items-center">
-                                        <span className="text-gray-600 fw-semibold fs-6 me-2">Settled At:</span>
+                                        <span className="text-gray-600 fw-semibold fs-6 me-2">{t(`${BD_NS}.settledAt`)}:</span>
                                         <span className="text-dark fw-bold fs-6">
-                                            {new Date(batch.settled_at).toLocaleString()}
+                                            {formatDate(batch.settled_at)}
                                         </span>
                                     </div>
                                 )}
@@ -396,7 +411,7 @@ const AdminBatchDetail = () => {
             <div className="card">
                 <div className="card-header border-0 pt-6">
                     <div className="card-title">
-                        <h3 className="card-title">Transactions</h3>
+                        <h3 className="card-title">{t(`${BD_NS}.transactions`)}</h3>
                     </div>
                 </div>
                 <div className="card-body pt-0">
@@ -404,11 +419,11 @@ const AdminBatchDetail = () => {
                         <table className="table align-middle table-row-dashed fs-6 gy-5" id="transactions-table">
                             <thead>
                                 <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                    <th className="text-dark">Transaction ID</th>
-                                    <th className="text-dark">Amount</th>
-                                    <th className="text-dark">Status</th>
-                                    <th className="text-dark">Terminal</th>
-                                    <th className="text-dark">Created At</th>
+                                    <th className="text-dark">{t(`${BD_NS}.transactionId`)}</th>
+                                    <th className="text-dark">{t(`${BD_NS}.amount`)}</th>
+                                    <th className="text-dark">{t(`${BD_NS}.status`)}</th>
+                                    <th className="text-dark">{t(`${BD_NS}.terminal`)}</th>
+                                    <th className="text-dark">{t(`${BD_NS}.createdAt`)}</th>
                                 </tr>
                             </thead>
                             <tbody className="fw-semibold text-gray-600">
@@ -419,12 +434,12 @@ const AdminBatchDetail = () => {
                                             <td className="text-dark fw-bold">{transaction.currency_symbol || '$'} {parseFloat(transaction.amount || 0).toFixed(2)}</td>
                                             <td>
                                                 <span className={`badge ${getStatusBadge(transaction.status)} fs-7`}>
-                                                    {transaction.status ? transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1) : 'N/A'}
+                                                    {getTransactionStatusLabel(transaction.status, t) || na}
                                                 </span>
                                             </td>
-                                            <td className="text-dark fw-bold">{transaction.terminal_id || 'N/A'}</td>
+                                            <td className="text-dark fw-bold">{transaction.terminal_id || na}</td>
                                             <td className="text-dark fw-bold">
-                                                {transaction.created_at ? new Date(transaction.created_at).toLocaleString() : 'N/A'}
+                                                {formatDate(transaction.created_at)}
                                             </td>
                                         </tr>
                                     ))
@@ -435,7 +450,7 @@ const AdminBatchDetail = () => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            <div>No transactions found</div>
+                                            <div>{t(`${BD_NS}.noTransactions`)}</div>
                                         </td>
                                     </tr>
                                 )}
@@ -450,7 +465,7 @@ const AdminBatchDetail = () => {
                 <div className="card mt-5">
                     <div className="card-header border-0 pt-6">
                         <div className="card-title">
-                            <h3 className="card-title">Settlements</h3>
+                            <h3 className="card-title">{t(`${BD_NS}.settlements`)}</h3>
                         </div>
                     </div>
                     <div className="card-body pt-0">
@@ -458,12 +473,12 @@ const AdminBatchDetail = () => {
                             <table className="table align-middle table-row-dashed fs-6 gy-5">
                                 <thead>
                                     <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                        <th className="text-dark">Settlement Number</th>
-                                        <th className="text-dark">Status</th>
-                                        <th className="text-dark">Amount</th>
-                                        <th className="text-dark">Transactions</th>
-                                        <th className="text-dark">Settled At</th>
-                                        <th className="text-dark">Actions</th>
+                                        <th className="text-dark">{t(`${BD_NS}.settlementNumber`)}</th>
+                                        <th className="text-dark">{t(`${BD_NS}.status`)}</th>
+                                        <th className="text-dark">{t(`${BD_NS}.amount`)}</th>
+                                        <th className="text-dark">{t(`${BD_NS}.transactions`)}</th>
+                                        <th className="text-dark">{t(`${BD_NS}.settledAt`)}</th>
+                                        <th className="text-dark">{t(`${BD_NS}.actions`)}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="fw-semibold text-gray-600">
@@ -472,13 +487,13 @@ const AdminBatchDetail = () => {
                                             <td className="text-dark fw-bold">{settlement.settlement_number || settlement.settlement_id}</td>
                                             <td>
                                                 <span className={`badge ${getStatusBadge(settlement.status)} fs-7`}>
-                                                    {settlement.status ? settlement.status.charAt(0).toUpperCase() + settlement.status.slice(1) : 'N/A'}
+                                                    {getSettlementStatusLabel(settlement.status, t, SI_NS) || na}
                                                 </span>
                                             </td>
                                             <td className="text-dark fw-bold">{settlement.currency_symbol || '$'}{parseFloat(settlement.total_amount || 0).toFixed(2)}</td>
                                             <td className="text-dark fw-bold">{settlement.transaction_count || 0}</td>
                                             <td className="text-dark fw-bold">
-                                                {settlement.settled_at ? new Date(settlement.settled_at).toLocaleString() : 'N/A'}
+                                                {formatDate(settlement.settled_at)}
                                             </td>
                                             <td>
                                                 <button

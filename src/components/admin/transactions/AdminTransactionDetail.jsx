@@ -1,14 +1,19 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
-import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
-import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { useCan } from '../../../utils/permissions';
-import useMerchantCountryInfo from '../../../hooks/useMerchantCountryInfo';
+import {
+    fetchAdminTransactionDetails,
+    sendAdminTransactionReceipt,
+    refundAdminTransaction,
+    voidAdminTransaction,
+} from '../../../services/adminTransactionsService';
+import { AdminTransactionDetailModel } from '../../../services/AdminTransactionModel';
+import ContentProviderModel from '../../../services/ContentProviderModel';
+import ServiceModel from '../../../services/ServiceModel';
 import { getTransactionStatusLabel } from '../../../utils/transactionStatusHelpers';
 import {
     getPaymentCardBrandOrMethodLabel,
@@ -32,51 +37,23 @@ const AdminTransactionDetail = () => {
     const [refundAmount, setRefundAmount] = useState('');
     const [refundReason, setRefundReason] = useState('');
     const [currency, setCurrency] = useState(null);
-    const [currencyLoading, setCurrencyLoading] = useState(false);
-    const [partnerDetails, setPartnerDetails] = useState(null);
-    const [partnerLoading, setPartnerLoading] = useState(false);
-    const [serviceDetails, setServiceDetails] = useState(null);
-    const [serviceLoading, setServiceLoading] = useState(false);
-
-    // Extract merchant ID from transaction
-    const transactionMerchantId = useMemo(() => {
-        if (!transaction) return null;
-        const merchantId = transaction.merchant?.id || transaction.merchant_id;
-        return merchantId ? String(merchantId) : null;
-    }, [transaction]);
-
-    // Fetch merchant and country info using the hook
-    const {
-        loading: merchantInfoLoading,
-        getMerchantInfoById,
-        hasPendingRequest,
-    } = useMerchantCountryInfo(transactionMerchantId ? [transactionMerchantId] : []);
 
     const na = t('admin.common.na');
 
-    // Helper function to get merchant info
+    const detail = useMemo(
+        () => (transaction ? AdminTransactionDetailModel.ensure(transaction) : null),
+        [transaction]
+    );
+
     const getMerchantInfo = useCallback(() => {
-        if (!transactionMerchantId) {
-            return {
-                merchantName: transaction?.merchant?.business_name || transaction?.merchant?.name || na,
-                countryName: transaction?.merchant?.country?.name || na,
-            };
+        if (!detail) {
+            return { merchantName: na, countryName: na };
         }
-
-        const record = getMerchantInfoById(transactionMerchantId);
-
-        if (record) {
-            return {
-                merchantName: record.name || transaction?.merchant?.business_name || transaction?.merchant?.name || na,
-                countryName: record.countryName || na,
-            };
-        }
-
         return {
-            merchantName: transaction?.merchant?.business_name || transaction?.merchant?.name || na,
-            countryName: na,
+            merchantName: detail.getMerchantName(na),
+            countryName: detail.getMerchantCountryName(i18n.language, na),
         };
-    }, [transaction, transactionMerchantId, getMerchantInfoById, na]);
+    }, [detail, i18n.language, na]);
 
     /** Opens SoftPOS invoice page; URL segment should use encrypted transaction id. */
     const handleViewReceipt = useCallback(() => {
@@ -162,110 +139,17 @@ const AdminTransactionDetail = () => {
         }
     }, [transaction, canRefundTransaction, canVoidTransaction, handleViewReceipt, t]);
 
-    useEffect(() => {
-        if (transaction?.partner_id) {
-            fetchPartnerDetails(transaction.partner_id);
-        } else {
-            setPartnerDetails(null);
-        }
-    }, [transaction?.partner_id]);
-
-    useEffect(() => {
-        if (transaction?.service_id) {
-            fetchServiceDetails(transaction.service_id);
-        } else {
-            setServiceDetails(null);
-        }
-    }, [transaction?.service_id]);
-
     const fetchTransaction = async () => {
         setLoading(true);
         try {
-            const token = getToken();
-            const response = await axios.get(ADMIN_ENDPOINTS.TRANSACTION_DETAILS(id), {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-            const transactionData = response.data.data || response.data;
+            const transactionData = await fetchAdminTransactionDetails(id);
             setTransaction(transactionData);
-            
-            // No need to fetch currency separately - we have currency_symbol in transaction data
-            // If currency_object exists, parse it for additional details
-            if (transactionData.currency_object) {
-                try {
-                    const currencyObj = typeof transactionData.currency_object === 'string' 
-                        ? JSON.parse(transactionData.currency_object) 
-                        : transactionData.currency_object;
-                    setCurrency(currencyObj);
-                } catch (e) {
-                    console.error('Error parsing currency_object:', e);
-                }
-            }
+            setCurrency(transactionData.currency || null);
         } catch (error) {
             console.error('Error fetching transaction:', error);
             toast.error(t(`${TD_NS}.loadFailed`));
         } finally {
             setLoading(false);
-        }
-    };
-
-    const fetchCurrency = async (currencyId) => {
-        setCurrencyLoading(true);
-        try {
-            const token = getToken();
-            const response = await axios.get(`${AUTH_ENDPOINTS.CURRENCIES}/${currencyId}`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-            setCurrency(response.data.data || response.data);
-        } catch (error) {
-            console.error('Error fetching currency:', error);
-            // Set default currency if fetch fails
-            setCurrency({ currency_code: 'USD', symbol: '$' });
-        } finally {
-            setCurrencyLoading(false);
-        }
-    };
-
-    const fetchPartnerDetails = async (partnerId) => {
-        setPartnerLoading(true);
-        try {
-            const token = getToken();
-            const response = await axios.get(ADMIN_ENDPOINTS.CONTENT_PROVIDER_DETAILS(partnerId), {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-            setPartnerDetails(response.data?.data || response.data || null);
-        } catch (error) {
-            console.error('Error fetching partner details:', error);
-            setPartnerDetails(null);
-        } finally {
-            setPartnerLoading(false);
-        }
-    };
-
-    const fetchServiceDetails = async (serviceId) => {
-        setServiceLoading(true);
-        try {
-            const token = getToken();
-            const response = await axios.get(ADMIN_ENDPOINTS.SERVICE_DETAILS(serviceId), {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
-            });
-            setServiceDetails(response.data?.data || response.data || null);
-        } catch (error) {
-            console.error('Error fetching service details:', error);
-            setServiceDetails(null);
-        } finally {
-            setServiceLoading(false);
         }
     };
 
@@ -294,18 +178,12 @@ const AdminTransactionDetail = () => {
 
         if (result.isConfirmed) {
             try {
-                const token = getToken();
-                const response = await axios.post(ADMIN_ENDPOINTS.TRANSACTION_SEND_RECEIPT(id), {
+                const response = await sendAdminTransactionReceipt(id, {
                     email: result.value.email,
-                    message: result.value.message
-                }, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
+                    message: result.value.message,
                 });
-                
-                toast.success(response.data.message || t(`${TD_NS}.receiptSentSuccess`));
+
+                toast.success(response.message || t(`${TD_NS}.receiptSentSuccess`));
             } catch (error) {
                 console.error('Send receipt error:', error);
                 toast.error(error.response?.data?.message || t(`${TD_NS}.receiptSentFailed`));
@@ -320,18 +198,12 @@ const AdminTransactionDetail = () => {
         }
 
         try {
-            const token = getToken();
-            const response = await axios.post(ADMIN_ENDPOINTS.TRANSACTION_REFUND(id), {
+            const response = await refundAdminTransaction(id, {
                 amount: refundAmount,
-                reason: refundReason
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
+                reason: refundReason,
             });
-            
-            toast.success(response.data.message || t(`${TD_NS}.refundSuccess`));
+
+            toast.success(response.message || t(`${TD_NS}.refundSuccess`));
             setShowRefundModal(false);
             setRefundAmount('');
             setRefundReason('');
@@ -359,17 +231,11 @@ const AdminTransactionDetail = () => {
 
         if (result.isConfirmed) {
             try {
-                const token = getToken();
-                const response = await axios.post(ADMIN_ENDPOINTS.TRANSACTION_VOID(id), {
-                    reason: result.value
-                }, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
+                const response = await voidAdminTransaction(id, {
+                    reason: result.value,
                 });
-                
-                toast.success(response.data.message || t(`${TD_NS}.voidSuccess`));
+
+                toast.success(response.message || t(`${TD_NS}.voidSuccess`));
                 fetchTransaction();
             } catch (error) {
                 console.error('Void error:', error);
@@ -511,10 +377,9 @@ const AdminTransactionDetail = () => {
                status === 'declined' || status === 'DECLINED' ? 'danger' : 'warning';
     };
 
-    const resolvedPartner = partnerDetails?.partner || partnerDetails || transaction.partner || {};
-    const resolvedService = serviceDetails?.service || serviceDetails || transaction.service || {};
+    const partner = detail?.getPartner() || (transaction?.partner ? ContentProviderModel.ensure(transaction.partner) : null);
+    const service = detail?.getService() || (transaction?.service ? ServiceModel.fromApiResponse(transaction.service) : null);
     const notAvail = t(`${TD_NS}.notAvailable`);
-    const loadingLabel = t('admin.common.loading');
 
     const paymentChannelRaw =
         transaction.paymentMethod?.payment_channel || transaction.payment_method?.payment_channel;
@@ -674,31 +539,11 @@ const AdminTransactionDetail = () => {
                             <div className="row g-4">
                                 <div className="col-md-3">
                                     <div className="fs-7 text-muted">{t(`${TD_NS}.merchant`)}</div>
-                                    <div className="fs-6 fw-bold">
-                                        {(() => {
-                                            const merchantLoading = transactionMerchantId && (merchantInfoLoading || hasPendingRequest(transactionMerchantId));
-                                            const info = getMerchantInfo();
-                                            
-                                            if (merchantLoading && !info.merchantName) {
-                                                return <div className="skeleton" style={{width: '120px', height: '16px'}}></div>;
-                                            }
-                                            return info.merchantName;
-                                        })()}
-                                    </div>
+                                    <div className="fs-6 fw-bold">{getMerchantInfo().merchantName}</div>
                                 </div>
                                 <div className="col-md-3">
                                     <div className="fs-7 text-muted">{t(`${TD_NS}.country`)}</div>
-                                    <div className="fs-6 fw-bold">
-                                        {(() => {
-                                            const merchantLoading = transactionMerchantId && (merchantInfoLoading || hasPendingRequest(transactionMerchantId));
-                                            const info = getMerchantInfo();
-                                            
-                                            if (merchantLoading && !info.countryName) {
-                                                return <div className="skeleton" style={{width: '80px', height: '16px'}}></div>;
-                                            }
-                                            return info.countryName;
-                                        })()}
-                                    </div>
+                                    <div className="fs-6 fw-bold">{getMerchantInfo().countryName}</div>
                                 </div>
                                 <div className="col-md-3">
                                     <div className="fs-7 text-muted">{t(`${TD_NS}.terminal`)}</div>
@@ -743,9 +588,9 @@ const AdminTransactionDetail = () => {
                             <div className="row g-4">
                                 <div className="col-12">
                                     <div className="d-flex align-items-center mb-3">
-                                        {(resolvedPartner?.logo_url || resolvedPartner?.logo || transaction.partner?.logo_url || transaction.partner?.logo) ? (
+                                        {(partner?.getLogoCandidate() || partner?.logo_url || partner?.logo) ? (
                                             <img
-                                                src={resolvedPartner?.logo_url || resolvedPartner?.logo || transaction.partner?.logo_url || transaction.partner?.logo}
+                                                src={partner?.getLogoCandidate() || partner?.logo_url || partner?.logo}
                                                 alt={t(`${TD_NS}.partnerLogoAlt`)}
                                                 style={{
                                                     width: '48px',
@@ -768,31 +613,23 @@ const AdminTransactionDetail = () => {
                                 <div className="col-12">
                                     <div className="fs-7 text-muted">{t(`${TD_NS}.partnerName`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {partnerLoading
-                                            ? loadingLabel
-                                            : (resolvedPartner?.name ||
-                                                resolvedPartner?.business_name ||
-                                                transaction.partner?.name ||
-                                                transaction.partner?.business_name ||
-                                                transaction.partner_name ||
-                                                notAvail)}
+                                        {partner
+                                            ? ContentProviderModel.displayName(partner)
+                                            : (transaction.partner_name || notAvail)}
                                     </div>
                                 </div>
                                 <div className="col-12">
                                     <div className="fs-7 text-muted">{t(`${TD_NS}.ownerName`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {resolvedPartner?.owner_name || transaction.partner?.owner_name || notAvail}
+                                        {partner?.owner_name || notAvail}
                                     </div>
                                 </div>
                                 <div className="col-12">
                                     <div className="fs-7 text-muted">{t(`${TD_NS}.description`)}</div>
                                     <div className="fs-6 fw-bold text-wrap">
-                                        {resolvedPartner?.description ||
-                                            transaction.partner?.description ||
-                                            resolvedPartner?.business_name ||
-                                            transaction.partner?.business_name ||
-                                            resolvedPartner?.address ||
-                                            transaction.partner?.address ||
+                                        {partner?.address ||
+                                            partner?.business_name ||
+                                            partner?.name ||
                                             notAvail}
                                     </div>
                                 </div>
@@ -812,9 +649,9 @@ const AdminTransactionDetail = () => {
                             <div className="row g-4">
                                 <div className="col-12">
                                     <div className="d-flex align-items-center mb-3">
-                                        {(resolvedService?.image || transaction.service?.image) ? (
+                                        {(service?.getImagePreviewUrl() || service?.image_url) ? (
                                             <img
-                                                src={resolvedService?.image || transaction.service?.image}
+                                                src={service?.getImagePreviewUrl() || service?.image_url}
                                                 alt={t(`${TD_NS}.serviceImageAlt`)}
                                                 style={{
                                                     width: '48px',
@@ -837,11 +674,9 @@ const AdminTransactionDetail = () => {
                                 <div className="col-12">
                                     <div className="fs-7 text-muted">{t(`${TD_NS}.serviceCategory`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {serviceLoading
-                                            ? loadingLabel
-                                            : (resolvedService?.category?.name_en ||
-                                                resolvedService?.category_name ||
-                                                transaction.service_category?.name_en ||
+                                        {service
+                                            ? ServiceModel.categoryName(service)
+                                            : (transaction.service_category?.name_en ||
                                                 transaction.service_category_name ||
                                                 notAvail)}
                                     </div>
@@ -849,25 +684,20 @@ const AdminTransactionDetail = () => {
                                 <div className="col-12">
                                     <div className="fs-7 text-muted">{t(`${TD_NS}.serviceName`)}</div>
                                     <div className="fs-6 fw-bold">
-                                        {serviceLoading
-                                            ? loadingLabel
-                                            : (resolvedService?.service_name?.en ||
-                                                resolvedService?.name_en ||
-                                                transaction.service?.service_name?.en ||
-                                                transaction.service_name ||
-                                                notAvail)}
+                                        {service
+                                            ? ServiceModel.displayName(service)
+                                            : (transaction.service_name || notAvail)}
                                     </div>
                                 </div>
                                 <div className="col-12">
                                     <div className="fs-7 text-muted">{t(`${TD_NS}.description`)}</div>
                                     <div className="fs-6 fw-bold text-wrap">
-                                        {serviceLoading
-                                            ? loadingLabel
-                                            : (resolvedService?.description?.en ||
-                                                resolvedService?.description ||
-                                                transaction.service?.description?.en ||
-                                                transaction.service?.description ||
-                                                notAvail)}
+                                        {service?.description_text ||
+                                            service?.description_en ||
+                                            (typeof service?.description === 'string'
+                                                ? service.description
+                                                : service?.description?.en) ||
+                                            notAvail}
                                     </div>
                                 </div>
                                 <div className="col-12">

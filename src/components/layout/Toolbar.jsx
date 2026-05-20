@@ -4,6 +4,41 @@ import { useTranslation } from 'react-i18next';
 import { useLocalePrefix } from '../../hooks/useLocalePrefix';
 import { stripLocalePrefix } from '../../i18n/localePaths';
 
+/** e.g. `payment-links` → `paymentLinks` for keys under merchant.breadcrumbs / admin.sidebar */
+function pathSegmentToCamelCase(segment) {
+    const lower = segment.toLowerCase();
+    return lower.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+/**
+ * When a page does not call setBreadcrumbs(), crumbs are derived from the URL.
+ * Raw segments like `admin` must use i18n (e.g. admin.header.adminBadge) instead of hardcoded "Admin".
+ */
+function defaultPathSegmentLabel(segment, t, i18n) {
+    if (/^\d+$/.test(segment)) return segment;
+
+    const lower = segment.toLowerCase();
+    if (lower === 'admin') {
+        return t('admin.header.adminBadge');
+    }
+
+    const camel = pathSegmentToCamelCase(segment);
+
+    const merchantKey = `merchant.breadcrumbs.${camel}`;
+    if (i18n.exists(merchantKey)) return t(merchantKey);
+
+    const adminSidebarKey = `admin.sidebar.${camel}`;
+    if (i18n.exists(adminSidebarKey)) return t(adminSidebarKey);
+
+    const adminPagesKey = `admin.pages.${camel}`;
+    if (i18n.exists(adminPagesKey)) return t(adminPagesKey);
+
+    return (
+        segment.charAt(0).toUpperCase() +
+        segment.slice(1).toLowerCase().replace(/-/g, ' ')
+    );
+}
+
 const Toolbar = ({ title, breadcrumbs, actions }) => {
     const { t, i18n } = useTranslation();
     const toolbarDir = i18n.dir();
@@ -14,8 +49,8 @@ const Toolbar = ({ title, breadcrumbs, actions }) => {
     // Generate default breadcrumbs based on path if not provided
     const getDefaultBreadcrumbs = () => {
         const paths = pathNoLocale.split('/').filter(Boolean);
-        return paths.map((path, index) => ({
-            label: path.charAt(0).toUpperCase() + path.slice(1).replace('-', ' '),
+        return paths.map((pathSeg, index) => ({
+            label: defaultPathSegmentLabel(pathSeg, t, i18n),
             path: p(`/${paths.slice(0, index + 1).join('/')}`),
             active: index === paths.length - 1
         }));

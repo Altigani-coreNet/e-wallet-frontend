@@ -4,54 +4,93 @@ import { getToken } from './api';
 import { exportToExcel } from './excelExport';
 import { fetchMerchantCountryInfo } from '../services/adminMerchantLookupService';
 
+const DEFAULT_LABELS = {
+    settlementId: 'Settlement ID',
+    settlementNumber: 'Settlement Number',
+    batchNumber: 'Batch Number',
+    merchantName: 'Merchant Name',
+    merchantCountry: 'Merchant Country',
+    status: 'Status',
+    totalAmount: 'Total Amount',
+    currency: 'Currency',
+    transactionCount: 'Transaction Count',
+    createdDate: 'Created Date',
+    updatedDate: 'Updated Date',
+    na: 'N/A',
+};
+
+const DEFAULT_MESSAGES = {
+    authRequired: 'Authentication required. Please login again.',
+    noData: 'No settlements found to export.',
+    fetching: 'Fetching settlements...',
+    fetchedCount: 'Fetched {{count}} settlements...',
+    loadingMerchants: 'Loading merchant information...',
+    preparing: 'Preparing export data...',
+    generating: 'Generating Excel file...',
+};
+
 /**
  * Export settlements to Excel
  * @param {Object} filters - Filter parameters
- * @param {Function} progressCallback - Optional callback for progress updates
+ * @param {Object} [options]
+ * @param {Function} [options.progressCallback] - Progress updates
+ * @param {Object} [options.labels] - Localized Excel column headers
+ * @param {Object} [options.messages] - Localized progress/error messages
+ * @param {Function} [options.formatDate] - Format ISO date for export cells
+ * @param {Function} [options.formatStatus] - Localized settlement status label
+ * @param {Function} [options.formatProgressCount] - Localize counts in progress text
  * @returns {Promise<Object>} - Returns count and filename
  */
-export const exportSettlements = async (filters = {}, progressCallback = null) => {
+export const exportSettlements = async (filters = {}, options = {}) => {
+    const {
+        progressCallback = null,
+        labels: labelsInput = {},
+        messages: messagesInput = {},
+        formatDate = (date) => (date ? new Date(date).toLocaleString() : DEFAULT_LABELS.na),
+        formatStatus = (status) => status || DEFAULT_LABELS.na,
+        formatProgressCount = (count) => String(count),
+    } = options;
+
+    const labels = { ...DEFAULT_LABELS, ...labelsInput };
+    const messages = { ...DEFAULT_MESSAGES, ...messagesInput };
+
     const token = getToken();
     if (!token) {
-        throw new Error('Authentication required. Please login again.');
+        throw new Error(messages.authRequired);
     }
 
-    // Set max limit for export
     const MAX_EXPORT_LIMIT = 1000;
     const EXPORT_PER_PAGE = 100;
 
-    // Build query parameters for fetching settlements
     const exportFilters = { ...filters };
 
-    // Remove empty filter values
-    Object.keys(exportFilters).forEach(key => {
+    Object.keys(exportFilters).forEach((key) => {
         if (exportFilters[key] === '' || exportFilters[key] === null || exportFilters[key] === undefined) {
             delete exportFilters[key];
         }
     });
 
-    // Fetch settlements in batches (pagination)
     let allSettlements = [];
     let currentPage = 1;
     let hasMore = true;
 
     if (progressCallback) {
-        progressCallback('Fetching settlements...');
+        progressCallback(messages.fetching);
     }
 
     while (hasMore && allSettlements.length < MAX_EXPORT_LIMIT) {
         const params = {
             page: currentPage,
             per_page: EXPORT_PER_PAGE,
-            ...exportFilters
+            ...exportFilters,
         };
 
         const response = await axios.get(ADMIN_ENDPOINTS.SETTLEMENTS, {
             params,
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'application/json'
-            }
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json',
+            },
         });
 
         const settlementsData = response.data?.data?.data || [];
@@ -61,76 +100,73 @@ export const exportSettlements = async (filters = {}, progressCallback = null) =
         hasMore = currentPage < totalPages && allSettlements.length < MAX_EXPORT_LIMIT;
         currentPage++;
 
-        // Update progress
         if (progressCallback) {
-            progressCallback(`Fetched ${allSettlements.length} settlements...`);
+            progressCallback(
+                messages.fetchedCount.replace('{{count}}', formatProgressCount(allSettlements.length))
+            );
         }
     }
 
-    // Limit to MAX_EXPORT_LIMIT
     allSettlements = allSettlements.slice(0, MAX_EXPORT_LIMIT);
 
     if (allSettlements.length === 0) {
-        throw new Error('No settlements found to export.');
+        throw new Error(messages.noData);
     }
 
     if (progressCallback) {
-        progressCallback('Loading merchant information...');
+        progressCallback(messages.loadingMerchants);
     }
 
-    // Extract merchant IDs for lookup
-    const merchantIds = [...new Set(
-        allSettlements
-            .map(s => s.merchant_id || s.merchant?.id)
-            .filter(id => id !== null && id !== undefined && id !== '')
-            .map(id => String(id))
-    )];
+    const merchantIds = [
+        ...new Set(
+            allSettlements
+                .map((s) => s.merchant_id || s.merchant?.id)
+                .filter((id) => id !== null && id !== undefined && id !== '')
+                .map((id) => String(id))
+        ),
+    ];
 
-    // Fetch merchant info
     const merchantInfoMap = await fetchMerchantCountryInfo(merchantIds);
 
     if (progressCallback) {
-        progressCallback('Preparing export data...');
+        progressCallback(messages.preparing);
     }
 
-    // Transform settlements to export format with merchant names
-    const exportData = allSettlements.map(settlement => {
+    const exportData = allSettlements.map((settlement) => {
         const merchantId = String(settlement.merchant_id || settlement.merchant?.id || '');
         const merchantInfo = merchantInfoMap[merchantId] || {};
 
         return {
-            'Settlement ID': settlement.id || 'N/A',
-            'Settlement Number': settlement.settlement_id || 'N/A',
-            'Batch Number': settlement.batch?.batch_number || settlement.batch_number || 'N/A',
-            'Merchant Name': merchantInfo.name || settlement.merchant?.business_name || settlement.merchant?.name || 'N/A',
-            'Merchant Country': merchantInfo.countryName || settlement.merchant?.country?.name || 'N/A',
-            'Status': settlement.status || 'N/A',
-            'Total Amount': parseFloat(settlement.total_amount || 0).toFixed(2),
-            'Currency': settlement.currency || settlement.currency_symbol || '$',
-            'Transaction Count': settlement.transaction_count || 0,
-            'Created Date': settlement.created_at 
-                ? new Date(settlement.created_at).toLocaleString() 
-                : 'N/A',
-            'Updated Date': settlement.updated_at 
-                ? new Date(settlement.updated_at).toLocaleString() 
-                : 'N/A',
+            [labels.settlementId]: settlement.id || labels.na,
+            [labels.settlementNumber]: settlement.settlement_id || labels.na,
+            [labels.batchNumber]: settlement.batch?.batch_number || settlement.batch_number || labels.na,
+            [labels.merchantName]:
+                merchantInfo.name ||
+                settlement.merchant?.business_name ||
+                settlement.merchant?.name ||
+                labels.na,
+            [labels.merchantCountry]:
+                merchantInfo.countryName || settlement.merchant?.country?.name || labels.na,
+            [labels.status]: formatStatus(settlement.status) || labels.na,
+            [labels.totalAmount]: parseFloat(settlement.total_amount || 0).toFixed(2),
+            [labels.currency]: settlement.currency || settlement.currency_symbol || '$',
+            [labels.transactionCount]: settlement.transaction_count || 0,
+            [labels.createdDate]: formatDate(settlement.created_at) || labels.na,
+            [labels.updatedDate]: formatDate(settlement.updated_at) || labels.na,
         };
     });
 
     if (progressCallback) {
-        progressCallback('Generating Excel file...');
+        progressCallback(messages.generating);
     }
 
-    // Generate filename with timestamp
     const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '_');
     const filename = `admin_settlements_${timestamp}.xlsx`;
 
-    // Export to Excel
     exportToExcel(exportData, filename);
 
     return {
         count: exportData.length,
-        filename
+        filename,
     };
 };
-

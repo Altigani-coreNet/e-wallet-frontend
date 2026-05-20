@@ -1,104 +1,23 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useBatchDetails } from '../../../services/batchesService';
-import { useToolbar } from '../../../contexts/ToolbarContext';
+import { Link } from 'react-router-dom';
 import useAuthStore from '../../../stores/authStore';
+import { useMerchantBatchDetail } from '../../../hooks/useMerchantBatchDetail';
 
 const BatchDetail = () => {
-    const { t, i18n } = useTranslation();
-    const { id } = useParams();
-    const navigate = useNavigate();
-    const { setTitle, setBreadcrumbs, setActions } = useToolbar();
+    const { t } = useTranslation();
     const { formatRecordCurrency } = useAuthStore();
-    
-    // Use React Query hook
-    const { data: batch, isLoading: loading } = useBatchDetails(id);
-
-    // Set toolbar title, breadcrumbs and actions
-    useEffect(() => {
-        if (batch) {
-            setTitle(t('merchant.pages.batchDetail', { id: batch.batch_number || id }));
-            
-            setBreadcrumbs([
-                { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
-                { label: t('merchant.breadcrumbs.batches'), path: '/merchant/batches' },
-                { label: batch.batch_number || t('merchant.breadcrumbs.batches'), path: `/merchant/batches/${id}`, active: true }
-            ]);
-            
-            setActions(
-                <button
-                    className="btn btn-sm btn-light btn-active-light-primary"
-                    onClick={() => navigate('/merchant/batches')}
-                >
-                    <i className="ki-duotone ki-arrow-left fs-5">
-                        <span className="path1"></span>
-                        <span className="path2"></span>
-                    </i>
-                    {t('merchant.common.backToBatches')}
-                </button>
-            );
-        }
-
-        return () => {
-            setActions(null);
-            setBreadcrumbs([]);
-        };
-    }, [batch, id, navigate, setTitle, setBreadcrumbs, setActions, t, i18n.language]);
-
-    // Get status badge color
-    const getStatusColor = (status) => {
-        const statusMap = {
-            'pending': 'warning',
-            'settled': 'success',
-            'failed': 'danger'
-        };
-        return statusMap[status?.toLowerCase()] || 'secondary';
-    };
-
-    // Get transaction status badge color
-    const getTransactionStatusColor = (status) => {
-        const statusMap = {
-            'approved': 'success',
-            'captured': 'success',
-            'pending': 'warning',
-            'declined': 'danger',
-            'failed': 'danger',
-            'voided': 'danger',
-            'refunded': 'danger',
-            'cancelled': 'danger',
-            'expired': 'danger',
-            'reversed': 'danger'
-        };
-        return statusMap[status?.toLowerCase()] || 'secondary';
-    };
-
-    const batchStatusLabel = (s) => {
-        const m = { settled: 'statusSettled', pending: 'statusPending', failed: 'statusFailed' }[s?.toLowerCase()];
-        return m ? t(`merchant.batches.${m}`) : (s ? s.charAt(0).toUpperCase() + s.slice(1) : t('merchant.common.na'));
-    };
-
-    const txStatusLabel = (s) => {
-        const key = (s || '').toLowerCase();
-        const path = `merchant.batches.txStatus.${key}`;
-        if (i18n.exists(path)) return t(path);
-        return s ? s.charAt(0).toUpperCase() + s.slice(1) : t('merchant.common.na');
-    };
-
-    // Format date
-    const formatDate = (date) => {
-        if (!date) return t('merchant.common.na');
-        const loc = (i18n.language || 'en').toLowerCase().startsWith('ar') ? 'ar-SA' : 'en-US';
-        return new Date(date).toLocaleString(loc, {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: false
-        }).replace(',', '');
-    };
+    const {
+        batch,
+        loading,
+        navigate,
+        batchStatusLabel,
+        getBatchStatusColor,
+        getTransactionStatusColor,
+        txStatusLabel,
+        formatDate,
+        formatTerminal,
+    } = useMerchantBatchDetail();
 
     // Skeleton placeholder for loading
     if (loading) {
@@ -247,13 +166,18 @@ const BatchDetail = () => {
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
                                     <span className="text-gray-600 fw-semibold fs-6 me-2">{t('merchant.batches.colStatus')}:</span>
-                                    <span className={`badge badge-light-${getStatusColor(batch.status)} fs-7`}>
+                                    <span className={`badge badge-light-${getBatchStatusColor(batch.status)} fs-7`}>
                                         {batchStatusLabel(batch.status)}
                                     </span>
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
                                     <span className="text-gray-600 fw-semibold fs-6 me-2">{t('merchant.batches.totalAmount')}:</span>
-                                    <span className="text-dark fw-bold fs-6">{formatRecordCurrency(batch.total_amount, batch)}</span>
+                                    <span className="text-dark fw-bold fs-6">
+                                        {formatRecordCurrency(
+                                            batch.total_amount,
+                                            batch.toRecord ? batch.toRecord() : batch
+                                        )}
+                                    </span>
                                 </div>
                                 <div className="d-flex align-items-center mb-2">
                                     <span className="text-gray-600 fw-semibold fs-6 me-2">{t('merchant.batches.transactionCount')}:</span>
@@ -305,14 +229,19 @@ const BatchDetail = () => {
                                         <tr key={transaction.id}>
                                             <td className="text-dark fw-bold">{transaction.transaction_id || t('merchant.common.na')}</td>
                                             <td className="text-dark fw-bold">
-                                                {formatRecordCurrency(transaction.amount, transaction)}
+                                                {formatRecordCurrency(
+                                                    transaction.amount,
+                                                    transaction.toRecord
+                                                        ? transaction.toRecord()
+                                                        : transaction
+                                                )}
                                             </td>
                                             <td>
                                                 <span className={`badge badge-light-${getTransactionStatusColor(transaction.status)} fs-7`}>
-                                                    {transaction.status ? transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1) : 'N/A'}
+                                                    {txStatusLabel(transaction.status)}
                                                 </span>
                                             </td>
-                                            <td className="text-dark fw-bold">{transaction.terminal?.terminal_id || transaction.terminal?.name || 'N/A'}</td>
+                                            <td className="text-dark fw-bold">{formatTerminal(transaction)}</td>
                                             <td className="text-dark fw-bold">
                                                 {formatDate(transaction.created_at)}
                                             </td>

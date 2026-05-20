@@ -19,6 +19,7 @@ import {
     getTransactionPaymentTypeFieldLabel,
 } from '../../../utils/transactionPaymentHelpers';
 import useAuthStore from '../../../stores/authStore';
+import { formatMerchantDateTime } from '../../../utils/dateUtils';
 
 /** Matches API CountryResource: `name` may be a string or { en, ar }. */
 function formatCountryNameLabel(country, lang) {
@@ -382,15 +383,7 @@ const TransactionDetail = () => {
 
     const formatDate = (date) => {
         if (!date) return t('merchant.common.na');
-        const loc = i18n.language === 'ar' ? 'ar' : 'en-US';
-        return new Date(date).toLocaleString(loc, {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        });
+        return formatMerchantDateTime(date, i18n.language) || t('merchant.common.na');
     };
 
 

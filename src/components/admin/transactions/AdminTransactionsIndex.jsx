@@ -6,6 +6,12 @@ import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
 import ContentProviderModel from '../../../services/ContentProviderModel';
 import { getToken } from '../../../utils/api';
+import {
+    fetchAdminTransactions,
+    fetchAdminTransactionStatistics,
+    bulkDeleteAdminTransactions,
+} from '../../../services/adminTransactionsService';
+import { AdminTransactionModel } from '../../../services/AdminTransactionModel';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { exportTransactions } from '../../../utils/transactionExport';
 import { useTranslation } from 'react-i18next';
@@ -196,34 +202,19 @@ const AdminTransactionsIndex = () => {
     const fetchTransactions = async () => {
         setLoading(true);
         try {
-            const token = getToken();
-            const params = {
+            const result = await fetchAdminTransactions({
                 page: pagination.current_page,
-                per_page: pagination.per_page,
-                ...filters
-            };
-            
-            if (urlType) {
-                params.type = urlType;
-            }
-
-            const response = await axios.get(ADMIN_ENDPOINTS.TRANSACTIONS, {
-                params,
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
+                perPage: pagination.per_page,
+                filters,
+                type: urlType || null,
             });
 
-            if (response.data && response.data.data) {
-                const transactionsData = response.data.data.data || [];
-                setTransactions(transactionsData);
-                setPagination(prev => ({
-                    ...prev,
-                    total: response.data.data.total || 0,
-                    last_page: response.data.data.last_page || 1
-                }));
-            }
+            setTransactions(result.data);
+            setPagination((prev) => ({
+                ...prev,
+                total: result.total,
+                last_page: result.last_page,
+            }));
         } catch (error) {
             console.error('Error fetching transactions:', error);
             toast.error(t('admin.transactionsIndex.fetchFailed'));
@@ -360,22 +351,12 @@ const AdminTransactionsIndex = () => {
     const fetchStatistics = async () => {
         setStatisticsLoading(true);
         try {
-            const token = getToken();
-            const params = {
+            const stats = await fetchAdminTransactionStatistics({
                 merchant_id: filters.merchant_id,
-                date_from: filters.start_date,
-                date_to: filters.end_date
-            };
-
-            const response = await axios.get(ADMIN_ENDPOINTS.TRANSACTION_STATISTICS, {
-                params,
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json'
-                }
+                start_date: filters.start_date,
+                end_date: filters.end_date,
             });
-
-            setStatistics(response.data.data || response.data);
+            setStatistics(stats);
         } catch (error) {
             console.error('Error fetching statistics:', error);
         } finally {
@@ -452,16 +433,8 @@ const AdminTransactionsIndex = () => {
 
         if (result.isConfirmed) {
             try {
-                const token = getToken();
-                await axios.post(ADMIN_ENDPOINTS.TRANSACTION_BULK_DELETE || `${ADMIN_ENDPOINTS.TRANSACTIONS}/bulk-delete`, {
-                    ids: selectedIds
-                }, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
-                });
-                
+                await bulkDeleteAdminTransactions(selectedIds);
+
                 toast.success(t('admin.transactionsIndex.deleted', { count: selectedIds.length }));
                 setSelectedIds([]);
                 fetchTransactions();
@@ -542,23 +515,6 @@ const AdminTransactionsIndex = () => {
             per_page: parseInt(e.target.value),
             current_page: 1
         }));
-    };
-
-    const getStatusBadgeClass = (status) => {
-        const statusMap = {
-            'APPROVED': 'badge-light-success',
-            'DECLINED': 'badge-light-danger',
-            'PENDING': 'badge-light-warning',
-            'FAILED': 'badge-light-danger',
-            'VOIDED': 'badge-light-secondary',
-            'REFUNDED': 'badge-light-info',
-            'PROCESSED': 'badge-light-success',
-            'CAPTURED': 'badge-light-info',
-            'CANCELLED': 'badge-light-secondary',
-            'EXPIRED': 'badge-light-dark',
-            'REVERSED': 'badge-light-dark'
-        };
-        return statusMap[status?.toUpperCase()] || 'badge-light-secondary';
     };
 
     const getActiveFiltersCount = () => {
@@ -1077,7 +1033,10 @@ const AdminTransactionsIndex = () => {
                                         </td>
                                     </tr>
                                 ) : (
-                                    transactions.map((transaction) => (
+                                    transactions.map((row) => {
+                                        const transaction = AdminTransactionModel.ensure(row);
+                                        const na = t('admin.common.na');
+                                        return (
                                         <tr key={transaction.id}>
                                             <td>
                                                 <div className="form-check form-check-sm form-check-custom form-check-solid">
@@ -1089,17 +1048,17 @@ const AdminTransactionsIndex = () => {
                                                     />
                                                 </div>
                                             </td>
-                                            <td>{transaction.country_name || transaction.country?.name || t('admin.common.na')}</td>
-                                            <td>{transaction.partner?.name || transaction.partner?.business_name || transaction.partner_name || t('admin.common.na')}</td>
-                                            <td>{transaction.merchant_name || transaction.merchant?.business_name || transaction.merchant?.name || t('admin.common.na')}</td>
-                                            <td>{transaction.service_category?.name_en || transaction.service_category_name || t('admin.common.na')}</td>
-                                            <td>{transaction.method || transaction.payment_method?.card_type || transaction.paymentMethod?.card_type || transaction.payment_type || t('admin.common.na')}</td>
-                                            <td>{transaction.transaction_id || transaction.id || t('admin.common.na')}</td>
-                                            <td>{transaction.created_at ? new Date(transaction.created_at).toLocaleString() : t('admin.common.na')}</td>
-                                            <td className="text-end">{transaction.currency_symbol || '$'}{parseFloat(transaction.amount || 0).toFixed(2)}</td>
+                                            <td>{transaction.getCountryName(na)}</td>
+                                            <td>{transaction.getPartnerName(na)}</td>
+                                            <td>{transaction.getMerchantName(na)}</td>
+                                            <td>{transaction.getServiceCategoryName(na)}</td>
+                                            <td>{transaction.getPaymentMethodLabel(na)}</td>
+                                            <td>{transaction.getDisplayTransactionId(na)}</td>
+                                            <td>{transaction.getFormattedCreatedAt(i18n.language, na)}</td>
+                                            <td className="text-end">{transaction.currency_symbol}{transaction.getFormattedAmount()}</td>
                                             <td className="text-center">
-                                                <span className={`badge ${getStatusBadgeClass(transaction.status)}`}>
-                                                    {transaction.status || t('admin.common.na')}
+                                                <span className={`badge ${transaction.getStatusBadgeClass()}`}>
+                                                    {transaction.status || na}
                                                 </span>
                                             </td>
                                             <td className="text-end">
@@ -1111,7 +1070,8 @@ const AdminTransactionsIndex = () => {
                                                 </button>
                                             </td>
                                         </tr>
-                                    ))
+                                        );
+                                    })
                                 )}
                             </tbody>
                         </table>

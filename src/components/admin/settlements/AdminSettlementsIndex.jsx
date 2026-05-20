@@ -9,9 +9,53 @@ import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { exportSettlements } from '../../../utils/settlementExport';
 import useMerchantCountryInfo from '../../../hooks/useMerchantCountryInfo';
+import { formatMerchantDateTime, getDisplayLocale } from '../../../utils/dateUtils';
+import { getSettlementStatusLabel } from '../../../utils/batchHelpers';
+
+const SI_NS = 'admin.settlementsIndex';
 
 const AdminSettlementsIndex = () => {
     const { t, i18n } = useTranslation();
+    const na = t(`${SI_NS}.na`);
+    const displayLocale = getDisplayLocale(i18n.language);
+
+    const formatDate = useCallback(
+        (date) => (date ? formatMerchantDateTime(date, i18n.language) : na),
+        [i18n.language, na]
+    );
+
+    const formatCount = useCallback(
+        (value) => {
+            const numeric = Number(value ?? 0);
+            return Number.isNaN(numeric) ? '0' : numeric.toLocaleString(displayLocale);
+        },
+        [displayLocale]
+    );
+
+    const formatAmount = useCallback(
+        (value, symbol = '$') => {
+            const numeric = Number(value ?? 0);
+            const formatted = Number.isNaN(numeric)
+                ? '0.00'
+                : numeric.toLocaleString(displayLocale, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                  });
+            return `${symbol} ${formatted}`;
+        },
+        [displayLocale]
+    );
+
+    const getCountryLabel = useCallback(
+        (country) => {
+            if (!country) return na;
+            if (typeof country.name === 'object') {
+                return country.name[i18n.language] || country.name.ar || country.name.en || na;
+            }
+            return country.name || na;
+        },
+        [i18n.language, na]
+    );
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
     
@@ -46,7 +90,7 @@ const AdminSettlementsIndex = () => {
     const toDateRef = useRef(null);
 
     useEffect(() => {
-        setTitle(t('admin.settlementsIndex.management'));
+        setTitle(t(`${SI_NS}.management`));
         
         setActions(
             <div className="d-flex align-items-center gap-2 gap-lg-3">
@@ -58,7 +102,20 @@ const AdminSettlementsIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">{t('admin.settlementsIndex.filter')}</span>
+                    <span className="d-none d-md-inline ms-1">{t(`${SI_NS}.filter`)}</span>
+                </button>
+
+                <button
+                    className="btn btn-sm btn-icon btn-light fw-bold"
+                    onClick={() => fetchSettlements()}
+                    disabled={loading}
+                    title={t(`${SI_NS}.refreshTitle`)}
+                    aria-label={t(`${SI_NS}.refreshTitle`)}
+                >
+                    <i className="ki-duotone ki-arrows-circle fs-3">
+                        <span className="path1"></span>
+                        <span className="path2"></span>
+                    </i>
                 </button>
 
                 <button
@@ -69,12 +126,12 @@ const AdminSettlementsIndex = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">{t('admin.settlementsIndex.export')}</span>
+                    <span className="d-none d-md-inline ms-1">{t(`${SI_NS}.export`)}</span>
                 </button>
             </div>
         );
         return () => setActions(null);
-    }, [setTitle, setActions, showFilters, t]);
+    }, [setTitle, setActions, showFilters, loading, t]);
 
     useEffect(() => {
         fetchSettlements();
@@ -113,7 +170,7 @@ const AdminSettlementsIndex = () => {
             }
         } catch (error) {
             console.error('Error fetching settlements:', error);
-            toast.error(t('admin.settlementsIndex.loadFailed'));
+            toast.error(t(`${SI_NS}.loadFailed`));
         } finally {
             setLoading(false);
         }
@@ -146,8 +203,8 @@ const AdminSettlementsIndex = () => {
             
             if (!merchantId) {
                 return {
-                    merchantName: settlement.merchant?.business_name || settlement.merchant?.name || t('admin.paymentLinksIndex.na'),
-                    countryName: settlement.merchant?.country?.name || t('admin.paymentLinksIndex.na'),
+                    merchantName: settlement.merchant?.business_name || settlement.merchant?.name || na,
+                    countryName: getCountryLabel(settlement.merchant?.country) || na,
                 };
             }
 
@@ -155,17 +212,17 @@ const AdminSettlementsIndex = () => {
 
             if (record) {
                 return {
-                    merchantName: record.name || settlement.merchant?.business_name || settlement.merchant?.name || t('admin.paymentLinksIndex.na'),
-                    countryName: record.countryName || t('admin.paymentLinksIndex.na'),
+                    merchantName: record.name || settlement.merchant?.business_name || settlement.merchant?.name || na,
+                    countryName: record.countryName || getCountryLabel(settlement.merchant?.country) || na,
                 };
             }
 
             return {
-                merchantName: settlement.merchant?.business_name || settlement.merchant?.name || t('admin.paymentLinksIndex.na'),
-                countryName: t('admin.paymentLinksIndex.na'),
+                merchantName: settlement.merchant?.business_name || settlement.merchant?.name || na,
+                countryName: getCountryLabel(settlement.merchant?.country) || na,
             };
         },
-        [getMerchantInfoById, t]
+        [getMerchantInfoById, na, getCountryLabel]
     );
 
     const fetchFilterDropdowns = async () => {
@@ -204,26 +261,25 @@ const AdminSettlementsIndex = () => {
     };
 
     const handleExport = async () => {
-        const filterInfo = Object.values(filters).some(v => v) ? t('admin.settlementsIndex.withFilters') : '';
-        const exportMessage = t('admin.settlementsIndex.exportConfirm', { filterInfo });
+        const filterInfo = Object.values(filters).some(v => v) ? t(`${SI_NS}.withFilters`) : '';
+        const exportMessage = t(`${SI_NS}.exportConfirm`, { filterInfo });
         
         const result = await Swal.fire({
-            title: t('admin.settlementsIndex.exportTitle'),
+            title: t(`${SI_NS}.exportTitle`),
             text: exportMessage,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#28a745',
             cancelButtonColor: '#6c757d',
-            confirmButtonText: t('admin.settlementsIndex.export'),
+            confirmButtonText: t(`${SI_NS}.export`),
             cancelButtonText: t('admin.common.cancel')
         });
 
         if (result.isConfirmed) {
             try {
-                // Show loading state with progress
                 Swal.fire({
-                    title: t('admin.settlementsIndex.exporting'),
-                    html: `<div id="export-progress">${t('admin.settlementsIndex.fetching')}</div>`,
+                    title: t(`${SI_NS}.exporting`),
+                    html: `<div id="export-progress">${t(`${SI_NS}.fetching`)}</div>`,
                     allowOutsideClick: false,
                     allowEscapeKey: false,
                     didOpen: () => {
@@ -240,15 +296,43 @@ const AdminSettlementsIndex = () => {
                 };
 
                 // Call export function from separate file
-                const exportResult = await exportSettlements(filters, progressCallback);
+                const exportResult = await exportSettlements(filters, {
+                    progressCallback,
+                    labels: {
+                        settlementId: t(`${SI_NS}.exportColSettlementId`),
+                        settlementNumber: t(`${SI_NS}.exportColSettlementNumber`),
+                        batchNumber: t(`${SI_NS}.exportColBatchNumber`),
+                        merchantName: t(`${SI_NS}.exportColMerchantName`),
+                        merchantCountry: t(`${SI_NS}.exportColMerchantCountry`),
+                        status: t(`${SI_NS}.exportColStatus`),
+                        totalAmount: t(`${SI_NS}.exportColTotalAmount`),
+                        currency: t(`${SI_NS}.exportColCurrency`),
+                        transactionCount: t(`${SI_NS}.exportColTransactionCount`),
+                        createdDate: t(`${SI_NS}.exportColCreatedDate`),
+                        updatedDate: t(`${SI_NS}.exportColUpdatedDate`),
+                        na,
+                    },
+                    messages: {
+                        authRequired: t(`${SI_NS}.exportAuthRequired`),
+                        noData: t(`${SI_NS}.exportNoData`),
+                        fetching: t(`${SI_NS}.fetching`),
+                        fetchedCount: t(`${SI_NS}.exportFetchedCount`),
+                        loadingMerchants: t(`${SI_NS}.exportLoadingMerchants`),
+                        preparing: t(`${SI_NS}.exportPreparing`),
+                        generating: t(`${SI_NS}.exportGenerating`),
+                    },
+                    formatDate: (date) => formatMerchantDateTime(date, i18n.language) || na,
+                    formatStatus: (status) => getSettlementStatusLabel(status, t, SI_NS) || na,
+                    formatProgressCount: formatCount,
+                });
 
                 // Close loading and show success
                 Swal.close();
-                toast.success(t('admin.settlementsIndex.exportSuccess', { count: exportResult.count }));
+                toast.success(t(`${SI_NS}.exportSuccess`, { count: formatCount(exportResult.count) }));
             } catch (error) {
                 console.error('Export error:', error);
                 Swal.close();
-                toast.error(error.message || t('admin.settlementsIndex.exportFailed'));
+                toast.error(error.message || t(`${SI_NS}.exportFailed`));
             }
         }
     };
@@ -364,41 +448,41 @@ const AdminSettlementsIndex = () => {
                     <div className="card-body">
                         <div className="row">
                             <div className="col-md-6 mb-3">
-                                <label className="form-label">{t('admin.settlementsIndex.searchPlaceholder')}</label>
+                                <label className="form-label">{t(`${SI_NS}.search`)}</label>
                                 <input
                                     type="text"
                                     name="search"
                                     className="form-control"
-                                    placeholder={t('admin.settlementsIndex.searchPlaceholder')}
+                                    placeholder={t(`${SI_NS}.searchPlaceholder`)}
                                     value={filters.search}
                                     onChange={(e) => handleFilterChange('search', e.target.value)}
                                 />
                             </div>
                             <div className="col-md-6 mb-3">
-                                <label className="form-label">{t('admin.settlementsIndex.status')}</label>
+                                <label className="form-label">{t(`${SI_NS}.status`)}</label>
                                 <select
                                     name="status"
                                     className="form-select"
                                     value={filters.status}
                                     onChange={(e) => handleFilterChange('status', e.target.value)}
                                 >
-                                    <option value="">{t('admin.settlementsIndex.allStatuses')}</option>
-                                    <option value="pending">{t('admin.settlementsIndex.pending')}</option>
-                                    <option value="settled">{t('admin.settlementsIndex.settled')}</option>
-                                    <option value="failed">{t('admin.settlementsIndex.failed')}</option>
+                                    <option value="">{t(`${SI_NS}.allStatuses`)}</option>
+                                    <option value="pending">{t(`${SI_NS}.pending`)}</option>
+                                    <option value="settled">{t(`${SI_NS}.settled`)}</option>
+                                    <option value="failed">{t(`${SI_NS}.failed`)}</option>
                                 </select>
                             </div>
                         </div>
                         <div className="row mt-3">
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">{t('admin.settlementsIndex.merchant')}</label>
+                                <label className="form-label">{t(`${SI_NS}.merchant`)}</label>
                                 <select
                                     className="form-select"
                                     value={filters.merchant_id}
                                     onChange={(e) => handleFilterChange('merchant_id', e.target.value)}
                                     disabled={dropdownsLoading}
                                 >
-                                    <option value="">{t('admin.settlementsIndex.allMerchants')}</option>
+                                    <option value="">{t(`${SI_NS}.allMerchants`)}</option>
                                     {merchantsList.map((merchant) => (
                                         <option key={merchant.id} value={merchant.id}>
                                             {merchant.business_name || merchant.name}
@@ -407,23 +491,23 @@ const AdminSettlementsIndex = () => {
                                 </select>
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">{t('admin.settlementsIndex.country')}</label>
+                                <label className="form-label">{t(`${SI_NS}.country`)}</label>
                                 <select
                                     className="form-select"
                                     value={filters.country_id}
                                     onChange={(e) => handleFilterChange('country_id', e.target.value)}
                                     disabled={dropdownsLoading}
                                 >
-                                    <option value="">{t('admin.settlementsIndex.allCountries')}</option>
+                                    <option value="">{t(`${SI_NS}.allCountries`)}</option>
                                     {countriesList.map((country) => (
                                         <option key={country.id} value={country.id}>
-                                            {typeof country.name === 'object' ? (country.name[i18n.language] || country.name.en || country.name.ar || t('admin.paymentLinksIndex.na')) : country.name}
+                                            {getCountryLabel(country)}
                                         </option>
                                     ))}
                                 </select>
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">{t('admin.settlementsIndex.fromDate')}</label>
+                                <label className="form-label">{t(`${SI_NS}.fromDate`)}</label>
                                 <input
                                     ref={fromDateRef}
                                     type="date"
@@ -436,7 +520,7 @@ const AdminSettlementsIndex = () => {
                                 />
                             </div>
                             <div className="col-md-3 mb-3">
-                                <label className="form-label">{t('admin.settlementsIndex.toDate')}</label>
+                                <label className="form-label">{t(`${SI_NS}.toDate`)}</label>
                                 <input
                                     ref={toDateRef}
                                     type="date"
@@ -457,7 +541,7 @@ const AdminSettlementsIndex = () => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        <span>{t('admin.settlementsIndex.activeFilters', { count: getActiveFiltersCount() })}</span>
+                                        <span>{t(`${SI_NS}.activeFilters`, { count: formatCount(getActiveFiltersCount()) })}</span>
                                     </div>
                                 </div>
                             )}
@@ -471,7 +555,7 @@ const AdminSettlementsIndex = () => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    {t('admin.settlementsIndex.clearFilters')}
+                                    {t(`${SI_NS}.clearFilters`)}
                                 </button>
                             </div>
                         </div>
@@ -491,7 +575,7 @@ const AdminSettlementsIndex = () => {
                             <input
                                 type="text"
                                 className="form-control form-control-solid w-250px ps-12"
-                                placeholder={t('admin.settlementsIndex.quickSearch')}
+                                placeholder={t(`${SI_NS}.quickSearch`)}
                                 value={filters.search}
                                 onChange={(e) => handleFilterChange('search', e.target.value)}
                             />
@@ -501,7 +585,7 @@ const AdminSettlementsIndex = () => {
                         {selectedIds.length > 0 && (
                             <div className="d-flex justify-content-end align-items-center">
                                 <div className="fw-bolder me-5">
-                                    <span className="me-2">{t('admin.settlementsIndex.selected', { count: selectedIds.length })}</span>
+                                    <span className="me-2">{t(`${SI_NS}.selected`, { count: formatCount(selectedIds.length) })}</span>
                                 </div>
                             </div>
                         )}
@@ -523,16 +607,16 @@ const AdminSettlementsIndex = () => {
                                             />
                                         </div>
                                     </th>
-                                    <th className="min-w-70px text-end text-dark">{t('admin.settlementsIndex.id')}</th>
-                                    <th className="min-w-125px text-dark">{t('admin.settlementsIndex.settlementNumber')}</th>
-                                    <th className="min-w-125px text-dark">{t('admin.settlementsIndex.batch')}</th>
-                                    <th className="text-dark">{t('admin.settlementsIndex.merchant')}</th>
-                                    <th className="min-w-100px text-center text-dark">{t('admin.settlementsIndex.status')}</th>
-                                    <th className="min-w-100px text-end text-dark">{t('admin.settlementsIndex.amount')}</th>
-                                    <th className="min-w-100px text-end text-dark">{t('admin.settlementsIndex.transactions')}</th>
-                                    <th className="text-dark">{t('admin.settlementsIndex.createdAt')}</th>
-                                    <th className="text-dark">{t('admin.settlementsIndex.country')}</th>
-                                    <th className="text-end text-dark">{t('admin.settlementsIndex.actions')}</th>
+                                    <th className="min-w-70px text-end text-dark">{t(`${SI_NS}.id`)}</th>
+                                    <th className="min-w-125px text-dark">{t(`${SI_NS}.settlementNumber`)}</th>
+                                    <th className="min-w-125px text-dark">{t(`${SI_NS}.batch`)}</th>
+                                    <th className="text-dark">{t(`${SI_NS}.merchant`)}</th>
+                                    <th className="min-w-100px text-center text-dark">{t(`${SI_NS}.status`)}</th>
+                                    <th className="min-w-100px text-end text-dark">{t(`${SI_NS}.amount`)}</th>
+                                    <th className="min-w-100px text-end text-dark">{t(`${SI_NS}.transactions`)}</th>
+                                    <th className="text-dark">{t(`${SI_NS}.createdAt`)}</th>
+                                    <th className="text-dark">{t(`${SI_NS}.country`)}</th>
+                                    <th className="text-end text-dark">{t(`${SI_NS}.actions`)}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -560,7 +644,7 @@ const AdminSettlementsIndex = () => {
                                                     <span className="path1"></span>
                                                     <span className="path2"></span>
                                                 </i>
-                                                <p className="fw-bold">{t('admin.settlementsIndex.noSettlements')}</p>
+                                                <p className="fw-bold">{t(`${SI_NS}.noSettlements`)}</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -577,9 +661,9 @@ const AdminSettlementsIndex = () => {
                                                     />
                                                 </div>
                                             </td>
-                                            <td className="text-end">{settlement.id}</td>
-                                            <td>{settlement.settlement_id || t('admin.paymentLinksIndex.na')}</td>
-                                            <td>{settlement.batch?.batch_number || t('admin.paymentLinksIndex.na')}</td>
+                                            <td className="text-end">{formatCount(settlement.id)}</td>
+                                            <td>{settlement.settlement_id || na}</td>
+                                            <td>{settlement.batch?.batch_number || na}</td>
                                             <td>
                                                 {(() => {
                                                     const merchantId = settlement.merchant?.id || settlement.merchant_id;
@@ -595,12 +679,12 @@ const AdminSettlementsIndex = () => {
                                             </td>
                                             <td className="text-center">
                                                 <span className={`badge ${getStatusBadgeClass(settlement.status)}`}>
-                                                    {settlement.status ? settlement.status.charAt(0).toUpperCase() + settlement.status.slice(1) : t('admin.paymentLinksIndex.na')}
+                                                    {getSettlementStatusLabel(settlement.status, t, SI_NS) || na}
                                                 </span>
                                             </td>
-                                            <td className="text-end">{settlement.currency_symbol || '$'}{parseFloat(settlement.total_amount || 0).toFixed(2)}</td>
-                                            <td className="text-end">{settlement.transaction_count || 0}</td>
-                                            <td>{settlement.created_at ? new Date(settlement.created_at).toLocaleString(i18n.language === 'ar' ? 'ar-EG' : 'en-US') : t('admin.paymentLinksIndex.na')}</td>
+                                            <td className="text-end">{formatAmount(settlement.total_amount, settlement.currency_symbol || '$')}</td>
+                                            <td className="text-end">{formatCount(settlement.transaction_count || 0)}</td>
+                                            <td>{formatDate(settlement.created_at)}</td>
                                             <td>
                                                 {(() => {
                                                     const merchantId = settlement.merchant?.id || settlement.merchant_id;
@@ -618,8 +702,10 @@ const AdminSettlementsIndex = () => {
                                                 <button
                                                     className="btn btn-sm btn-light btn-active-light-primary"
                                                     onClick={() => navigate(`/admin/settlements/${settlement.id}`)}
+                                                    title={t(`${SI_NS}.viewTitle`)}
+                                                    aria-label={t(`${SI_NS}.viewTitle`)}
                                                 >
-                                                    {t('admin.settlementsIndex.view')}
+                                                    {t(`${SI_NS}.view`)}
                                                 </button>
                                             </td>
                                         </tr>
@@ -635,7 +721,7 @@ const AdminSettlementsIndex = () => {
                             <div className="col-sm-12 col-md-5 d-flex align-items-center">
                                 <div className="dataTables_length">
                                     <label className="d-flex align-items-center">
-                                        <span className="me-2">{t('admin.settlementsIndex.show')}</span>
+                                        <span className="me-2">{t(`${SI_NS}.show`)}</span>
                                         <select 
                                             className="form-select form-select-sm" 
                                             value={pagination.per_page}
@@ -647,15 +733,15 @@ const AdminSettlementsIndex = () => {
                                             <option value="50">50</option>
                                             <option value="100">100</option>
                                         </select>
-                                        <span className="ms-2">{t('admin.settlementsIndex.entries')}</span>
+                                        <span className="ms-2">{t(`${SI_NS}.entries`)}</span>
                                     </label>
                                 </div>
                                 <div className="ms-5">
                                     <span className="text-muted">
-                                        {t('admin.settlementsIndex.showingResults', {
-                                            from: ((pagination.current_page - 1) * pagination.per_page) + 1,
-                                            to: Math.min(pagination.current_page * pagination.per_page, pagination.total),
-                                            total: pagination.total
+                                        {t(`${SI_NS}.showingResults`, {
+                                            from: formatCount(((pagination.current_page - 1) * pagination.per_page) + 1),
+                                            to: formatCount(Math.min(pagination.current_page * pagination.per_page, pagination.total)),
+                                            total: formatCount(pagination.total),
                                         })}
                                     </span>
                                 </div>
@@ -669,11 +755,11 @@ const AdminSettlementsIndex = () => {
                                                 onClick={() => handlePageChange(pagination.current_page - 1)}
                                                 disabled={pagination.current_page === 1}
                                             >
-                                                {t('admin.settlementsIndex.previous')}
+                                                {t(`${SI_NS}.previous`)}
                                             </button>
                                         </li>
                                         <li className="page-item active">
-                                            <span className="page-link">{pagination.current_page}</span>
+                                            <span className="page-link">{formatCount(pagination.current_page)}</span>
                                         </li>
                                         <li className={`page-item ${pagination.current_page === pagination.last_page ? 'disabled' : ''}`}>
                                             <button 
@@ -681,7 +767,7 @@ const AdminSettlementsIndex = () => {
                                                 onClick={() => handlePageChange(pagination.current_page + 1)}
                                                 disabled={pagination.current_page === pagination.last_page}
                                             >
-                                                {t('admin.settlementsIndex.next')}
+                                                {t(`${SI_NS}.next`)}
                                             </button>
                                         </li>
                                     </ul>

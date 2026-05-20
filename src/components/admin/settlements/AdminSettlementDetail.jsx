@@ -7,6 +7,13 @@ import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import useMerchantCountryInfo from '../../../hooks/useMerchantCountryInfo';
+import { formatMerchantDateTime } from '../../../utils/dateUtils';
+import { getBatchStatusLabel, getSettlementStatusLabel } from '../../../utils/batchHelpers';
+import { getTransactionStatusLabel } from '../../../utils/transactionStatusHelpers';
+
+const SD_NS = 'admin.settlementDetail';
+const SI_NS = 'admin.settlementsIndex';
+const BD_NS = 'admin.batchDetail';
 
 const AdminSettlementDetail = () => {
     const { t, i18n } = useTranslation();
@@ -56,8 +63,15 @@ const AdminSettlementDetail = () => {
         };
     }, [settlement, settlementMerchantId, getMerchantInfoById, t]);
 
+    const na = t('admin.paymentLinksIndex.na');
+
+    const formatDate = useCallback(
+        (date) => (date ? formatMerchantDateTime(date, i18n.language) : na),
+        [i18n.language, na]
+    );
+
     useEffect(() => {
-        setTitle(t('admin.settlementDetail.details'));
+        setTitle(t(`${SD_NS}.details`));
         return () => setActions(null);
     }, [setTitle, setActions, t]);
 
@@ -77,7 +91,7 @@ const AdminSettlementDetail = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        {t('admin.settlementDetail.backToSettlements')}
+                        {t(`${SD_NS}.backToSettlements`)}
                     </button>
                 </div>
             );
@@ -111,7 +125,7 @@ const AdminSettlementDetail = () => {
             }
         } catch (error) {
             console.error('Error fetching settlement:', error);
-            toast.error(t('admin.settlementDetail.loadFailed'));
+            toast.error(t(`${SD_NS}.loadFailed`));
         } finally {
             setLoading(false);
         }
@@ -312,7 +326,7 @@ const AdminSettlementDetail = () => {
         return (
             <div className="card">
                 <div className="card-body text-center py-10">
-                    <p>{t('admin.settlementDetail.notFound')}</p>
+                    <p>{t(`${SD_NS}.notFound`)}</p>
                 </div>
             </div>
         );
@@ -341,25 +355,25 @@ const AdminSettlementDetail = () => {
                                         {settlement.settlement_id || settlement.settlement_number}
                                     </span>
                                 </div>
-                                <span className="text-gray-400 pt-1 fw-semibold fs-6">{t('admin.settlementDetail.number')}</span>
+                                <span className="text-gray-400 pt-1 fw-semibold fs-6">{t(`${SD_NS}.number`)}</span>
                             </div>
                         </div>
                         <div className="card-body pt-2 pb-4 d-flex align-items-center flex-wrap">
                             <div className="d-flex flex-column flex-grow-1 pe-8">
                                 <div className="d-flex align-items-center">
-                                    <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.statusLabel')}</span>
+                                    <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.statusLabel`)}</span>
                                     <span className={`badge ${getStatusBadge(settlement.status)} fs-7 fw-bold`}>
-                                        {settlement.status ? settlement.status.charAt(0).toUpperCase() + settlement.status.slice(1) : t('admin.paymentLinksIndex.na')}
+                                        {getSettlementStatusLabel(settlement.status, t, SI_NS) || na}
                                     </span>
                                 </div>
                                 <div className="d-flex align-items-center mt-2">
-                                    <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.amountLabel')}</span>
+                                    <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.amountLabel`)}</span>
                                     <span className="fs-6 fw-bold text-dark">
                                         {settlement.currency_symbol || '$'}{parseFloat(settlement.total_amount || 0).toFixed(2)} {currency?.currency_code || 'USD'}
                                     </span>
                                 </div>
                                 <div className="d-flex align-items-center mt-2">
-                                    <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.transactionsLabel')}</span>
+                                    <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.transactionsLabel`)}</span>
                                     <span className="fs-6 fw-bold text-dark">{settlement.transaction_count || 0}</span>
                                 </div>
                             </div>
@@ -378,25 +392,25 @@ const AdminSettlementDetail = () => {
                                             {settlement.batch.batch_number}
                                         </span>
                                     </div>
-                                    <span className="text-gray-400 pt-1 fw-semibold fs-6">{t('admin.settlementDetail.relatedBatch')}</span>
+                                    <span className="text-gray-400 pt-1 fw-semibold fs-6">{t(`${SD_NS}.relatedBatch`)}</span>
                                 </div>
                             </div>
                             <div className="card-body pt-2 pb-4 d-flex align-items-center flex-wrap">
                                 <div className="d-flex flex-column flex-grow-1 pe-8">
                                     <div className="d-flex align-items-center">
-                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.statusLabel')}</span>
+                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.statusLabel`)}</span>
                                         <span className={`badge ${getStatusBadge(settlement.batch.status)} fs-7 fw-bold`}>
-                                            {settlement.batch.status ? settlement.batch.status.charAt(0).toUpperCase() + settlement.batch.status.slice(1) : t('admin.paymentLinksIndex.na')}
+                                            {getBatchStatusLabel(settlement.batch.status, t, BD_NS) || na}
                                         </span>
                                     </div>
                                     <div className="d-flex align-items-center mt-2">
-                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.amountLabel')}</span>
+                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.amountLabel`)}</span>
                                         <span className="fs-6 fw-bold text-dark">
                                             {settlement.batch.currency_symbol || '$'}{parseFloat(settlement.batch.total_amount || 0).toFixed(2)} {currency?.currency_code || 'USD'}
                                         </span>
                                     </div>
                                     <div className="d-flex align-items-center mt-2">
-                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.transactionsLabel')}</span>
+                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.transactionsLabel`)}</span>
                                         <span className="fs-6 fw-bold text-dark">{settlement.batch.transaction_count || 0}</span>
                                     </div>
                                     <div className="d-flex align-items-center mt-2">
@@ -409,7 +423,7 @@ const AdminSettlementDetail = () => {
                                                 <span className="path2"></span>
                                                 <span className="path3"></span>
                                             </i>
-                                            {t('admin.settlementDetail.viewBatch')}
+                                            {t(`${SD_NS}.viewBatch`)}
                                         </button>
                                     </div>
                                 </div>
@@ -432,21 +446,21 @@ const AdminSettlementDetail = () => {
                                             {settlement.merchant.business_name || settlement.merchant.name}
                                         </span>
                                     </div>
-                                    <span className="text-gray-400 pt-1 fw-semibold fs-6">{t('admin.settlementDetail.merchant')}</span>
+                                    <span className="text-gray-400 pt-1 fw-semibold fs-6">{t(`${SD_NS}.merchant`)}</span>
                                 </div>
                             </div>
                             <div className="card-body pt-2 pb-4 d-flex align-items-center flex-wrap">
                                 <div className="d-flex flex-column flex-grow-1 pe-8">
                                     <div className="d-flex align-items-center">
-                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.emailLabel')}</span>
-                                        <span className="fs-6 fw-bold text-dark">{settlement.merchant.email || t('admin.paymentLinksIndex.na')}</span>
+                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.emailLabel`)}</span>
+                                        <span className="fs-6 fw-bold text-dark">{settlement.merchant.email || na}</span>
                                     </div>
                                     <div className="d-flex align-items-center mt-2">
-                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.phoneLabel')}</span>
-                                        <span className="fs-6 fw-bold text-dark">{settlement.merchant.phone || t('admin.paymentLinksIndex.na')}</span>
+                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.phoneLabel`)}</span>
+                                        <span className="fs-6 fw-bold text-dark">{settlement.merchant.phone || na}</span>
                                     </div>
                                     <div className="d-flex align-items-center mt-2">
-                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.countryLabel')}</span>
+                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.countryLabel`)}</span>
                                         <span className="fs-6 fw-bold text-dark">
                                             {(() => {
                                                 const merchantLoading = settlementMerchantId && (merchantInfoLoading || hasPendingRequest(settlementMerchantId));
@@ -460,8 +474,8 @@ const AdminSettlementDetail = () => {
                                         </span>
                                     </div>
                                     <div className="d-flex align-items-center mt-2">
-                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.businessTypeLabel')}</span>
-                                        <span className="fs-6 fw-bold text-dark">{settlement.merchant.business_type || t('admin.paymentLinksIndex.na')}</span>
+                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.businessTypeLabel`)}</span>
+                                        <span className="fs-6 fw-bold text-dark">{settlement.merchant.business_type || na}</span>
                                     </div>
                                 </div>
                             </div>
@@ -475,32 +489,32 @@ const AdminSettlementDetail = () => {
                         <div className="card-header pt-5">
                             <div className="card-title d-flex flex-column">
                                 <div className="d-flex align-items-center">
-                                    <span className="fs-2hx fw-bold text-dark me-2 lh-1 ls-n2">{t('admin.settlementDetail.timeline')}</span>
+                                    <span className="fs-2hx fw-bold text-dark me-2 lh-1 ls-n2">{t(`${SD_NS}.timeline`)}</span>
                                 </div>
-                                <span className="text-gray-400 pt-1 fw-semibold fs-6">{t('admin.settlementDetail.history')}</span>
+                                <span className="text-gray-400 pt-1 fw-semibold fs-6">{t(`${SD_NS}.history`)}</span>
                             </div>
                         </div>
                         <div className="card-body pt-2 pb-4 d-flex align-items-center flex-wrap">
                             <div className="d-flex flex-column flex-grow-1 pe-8">
                                 <div className="d-flex align-items-center">
-                                    <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.createdLabel')}</span>
+                                    <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.createdLabel`)}</span>
                                     <span className="fs-6 fw-bold text-dark">
-                                        {settlement.created_at ? new Date(settlement.created_at).toLocaleString(i18n.language === 'ar' ? 'ar-EG' : 'en-US') : t('admin.paymentLinksIndex.na')}
+                                        {formatDate(settlement.created_at)}
                                     </span>
                                 </div>
                                 {settlement.settled_at && (
                                     <div className="d-flex align-items-center mt-2">
-                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.settledLabel')}</span>
+                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.settledLabel`)}</span>
                                         <span className="fs-6 fw-bold text-dark">
-                                            {new Date(settlement.settled_at).toLocaleString(i18n.language === 'ar' ? 'ar-EG' : 'en-US')}
+                                            {formatDate(settlement.settled_at)}
                                         </span>
                                     </div>
                                 )}
                                 {settlement.failed_at && (
                                     <div className="d-flex align-items-center mt-2">
-                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t('admin.settlementDetail.failedLabel')}</span>
+                                        <span className="fs-6 fw-semibold text-gray-400 d-block align-self-start me-2">{t(`${SD_NS}.failedLabel`)}</span>
                                         <span className="fs-6 fw-bold text-dark">
-                                            {new Date(settlement.failed_at).toLocaleString(i18n.language === 'ar' ? 'ar-EG' : 'en-US')}
+                                            {formatDate(settlement.failed_at)}
                                         </span>
                                     </div>
                                 )}
@@ -514,29 +528,29 @@ const AdminSettlementDetail = () => {
             <div className="card mb-5 mb-xl-8">
                 <div className="card-header border-0 pt-5">
                     <h3 className="card-title align-items-start flex-column">
-                        <span className="card-label fw-bold fs-3 mb-1">{t('admin.settlementDetail.details')}</span>
-                        <span className="text-muted mt-1 fw-semibold fs-7">{t('admin.settlementDetail.completeInfo')}</span>
+                        <span className="card-label fw-bold fs-3 mb-1">{t(`${SD_NS}.details`)}</span>
+                        <span className="text-muted mt-1 fw-semibold fs-7">{t(`${SD_NS}.completeInfo`)}</span>
                     </h3>
                 </div>
                 <div className="card-body">
                     <div className="row">
                         <div className="col-md-6">
                             <div className="d-flex flex-column mb-7">
-                                <span className="fs-6 fw-semibold mb-2 text-muted">{t('admin.settlementDetail.number')}</span>
+                                <span className="fs-6 fw-semibold mb-2 text-muted">{t(`${SD_NS}.number`)}</span>
                                 <span className="fs-5 fw-bold">{settlement.settlement_id || settlement.settlement_number}</span>
                             </div>
                         </div>
                         <div className="col-md-6">
                             <div className="d-flex flex-column mb-7">
-                                <span className="fs-6 fw-semibold mb-2 text-muted">{t('admin.settlementsIndex.status')}</span>
+                                <span className="fs-6 fw-semibold mb-2 text-muted">{t(`${SI_NS}.status`)}</span>
                                 <span className="fs-5 fw-bold">
-                                    {settlement.status ? settlement.status.charAt(0).toUpperCase() + settlement.status.slice(1) : t('admin.paymentLinksIndex.na')}
+                                    {getSettlementStatusLabel(settlement.status, t, SI_NS) || na}
                                 </span>
                             </div>
                         </div>
                         <div className="col-md-6">
                             <div className="d-flex flex-column mb-7">
-                                <span className="fs-6 fw-semibold mb-2 text-muted">{t('admin.settlementDetail.totalAmount')}</span>
+                                <span className="fs-6 fw-semibold mb-2 text-muted">{t(`${SD_NS}.totalAmount`)}</span>
                                 <span className="fs-5 fw-bold text-success">
                                     {settlement.currency_symbol || '$'}{parseFloat(settlement.total_amount || 0).toFixed(2)} {currency?.currency_code || 'USD'}
                                 </span>
@@ -544,14 +558,14 @@ const AdminSettlementDetail = () => {
                         </div>
                         <div className="col-md-6">
                             <div className="d-flex flex-column mb-7">
-                                <span className="fs-6 fw-semibold mb-2 text-muted">{t('admin.settlementDetail.transactionCount')}</span>
+                                <span className="fs-6 fw-semibold mb-2 text-muted">{t(`${SD_NS}.transactionCount`)}</span>
                                 <span className="fs-5 fw-bold">{settlement.transaction_count || 0}</span>
                             </div>
                         </div>
                         {settlement.settlement_reference && (
                             <div className="col-md-6">
                                 <div className="d-flex flex-column mb-7">
-                                    <span className="fs-6 fw-semibold mb-2 text-muted">{t('admin.settlementDetail.reference')}</span>
+                                    <span className="fs-6 fw-semibold mb-2 text-muted">{t(`${SD_NS}.reference`)}</span>
                                     <span className="fs-5 fw-bold">{settlement.settlement_reference}</span>
                                 </div>
                             </div>
@@ -559,7 +573,7 @@ const AdminSettlementDetail = () => {
                         {settlement.notes && (
                             <div className="col-12">
                                 <div className="d-flex flex-column mb-7">
-                                    <span className="fs-6 fw-semibold mb-2 text-muted">{t('admin.settlementDetail.notes')}</span>
+                                    <span className="fs-6 fw-semibold mb-2 text-muted">{t(`${SD_NS}.notes`)}</span>
                                     <span className="fs-5">{settlement.notes}</span>
                                 </div>
                             </div>
@@ -573,8 +587,8 @@ const AdminSettlementDetail = () => {
                 <div className="card mb-5 mb-xl-8">
                     <div className="card-header border-0 pt-5">
                         <h3 className="card-title align-items-start flex-column">
-                            <span className="card-label fw-bold fs-3 mb-1">{t('admin.settlementDetail.relatedTransactions')}</span>
-                            <span className="text-muted mt-1 fw-semibold fs-7">{t('admin.settlementDetail.transactionsInSettlement')}</span>
+                            <span className="card-label fw-bold fs-3 mb-1">{t(`${SD_NS}.relatedTransactions`)}</span>
+                            <span className="text-muted mt-1 fw-semibold fs-7">{t(`${SD_NS}.transactionsInSettlement`)}</span>
                         </h3>
                     </div>
                     <div className="card-body">
@@ -582,12 +596,12 @@ const AdminSettlementDetail = () => {
                             <table className="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
                                 <thead>
                                     <tr className="fw-bold text-muted">
-                                        <th className="min-w-150px">{t('admin.settlementDetail.transactionId')}</th>
-                                        <th className="min-w-140px">{t('admin.settlementsIndex.amount')}</th>
-                                        <th className="min-w-120px">{t('admin.settlementsIndex.status')}</th>
-                                        <th className="min-w-120px">{t('admin.settlementDetail.cardNumber')}</th>
-                                        <th className="min-w-100px">{t('admin.settlementsIndex.createdAt')}</th>
-                                        <th className="min-w-100px text-end">{t('admin.settlementDetail.actions')}</th>
+                                        <th className="min-w-150px">{t(`${SD_NS}.transactionId`)}</th>
+                                        <th className="min-w-140px">{t(`${SI_NS}.amount`)}</th>
+                                        <th className="min-w-120px">{t(`${SI_NS}.status`)}</th>
+                                        <th className="min-w-120px">{t(`${SD_NS}.cardNumber`)}</th>
+                                        <th className="min-w-100px">{t(`${SI_NS}.createdAt`)}</th>
+                                        <th className="min-w-100px text-end">{t(`${SD_NS}.actions`)}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -605,17 +619,17 @@ const AdminSettlementDetail = () => {
                                             </td>
                                             <td>
                                                 <span className={`badge ${getStatusBadge(transaction.status)}`}>
-                                                    {transaction.status ? transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1) : t('admin.paymentLinksIndex.na')}
+                                                    {getTransactionStatusLabel(transaction.status, t) || na}
                                                 </span>
                                             </td>
                                             <td>
                                                 <span className="text-dark fw-bold text-hover-primary fs-6">
-                                                    {transaction.card_number || t('admin.paymentLinksIndex.na')}
+                                                    {transaction.card_number || na}
                                                 </span>
                                             </td>
                                             <td>
                                                 <span className="text-muted fw-semibold text-muted d-block fs-7">
-                                                    {transaction.created_at ? new Date(transaction.created_at).toLocaleString(i18n.language === 'ar' ? 'ar-EG' : 'en-US') : t('admin.paymentLinksIndex.na')}
+                                                    {formatDate(transaction.created_at)}
                                                 </span>
                                             </td>
                                             <td className="text-end">

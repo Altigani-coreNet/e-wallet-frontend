@@ -15,6 +15,7 @@ import { useToolbar } from '../../../contexts/ToolbarContext';
 import { toast } from 'react-toastify';
 import { canExport } from '../../../utils/permissions';
 import { getTransactionStatusLabel } from '../../../utils/transactionStatusHelpers';
+import { formatMerchantDateTime } from '../../../utils/dateUtils';
 
 /** Matches API CountryResource: `name` may be a string or { en, ar }. */
 function formatCountryNameLabel(country, lang) {
@@ -605,9 +606,10 @@ const MerchantTransactions = ({ merchantId: propMerchantId, initialType = null }
                                             </td>
                                             <td>
                                                 {transaction.created_at
-                                                    ? new Date(transaction.created_at).toLocaleString(
-                                                          i18n.language === 'ar' ? 'ar' : undefined
-                                                      )
+                                                    ? formatMerchantDateTime(
+                                                          transaction.created_at,
+                                                          i18n.language
+                                                      ) || t('merchant.common.na')
                                                     : t('merchant.common.na')}
                                             </td>
                                             <td className="text-end">

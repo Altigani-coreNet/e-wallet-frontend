@@ -1,4 +1,37 @@
 /**
+ * Intl locale for UI display from an i18n language code.
+ * @param {string} language - e.g. `ar`, `en`, `ar-SA`
+ * @returns {string}
+ */
+export const getDisplayLocale = (language) =>
+    (language || 'en').toLowerCase().startsWith('ar') ? 'ar-SA' : 'en-US';
+
+/**
+ * Format date+time for merchant screens (Arabic numerals/months when lang is ar).
+ * @param {string|Date} date
+ * @param {string} language - i18n.language
+ * @returns {string} Empty string when input is missing or invalid.
+ */
+export const formatMerchantDateTime = (date, language) => {
+    if (!date) return '';
+    const parsed = new Date(date);
+    if (Number.isNaN(parsed.getTime())) return '';
+
+    const loc = getDisplayLocale(language);
+    const formatted = parsed.toLocaleString(loc, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+    });
+
+    return loc.startsWith('ar') ? formatted.replace(/,/g, '') : formatted;
+};
+
+/**
  * Format a date string to a readable format
  * @param {string} dateString - ISO date string
  * @param {string} locale - Locale string (default: 'en-US')

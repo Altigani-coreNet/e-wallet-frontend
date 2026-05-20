@@ -3,6 +3,7 @@ import axios from 'axios';
 import { SOFTPOS_ENDPOINTS } from '../utils/constants';
 import { getToken } from '../utils/api';
 import { toast } from 'react-toastify';
+import BatchModel, { BatchStatisticsModel } from './BatchModel';
 
 /**
  * Get API token
@@ -48,7 +49,15 @@ export const fetchBatches = async ({ merchantId, page, perPage, filters, sortBy 
         }
     });
     
-    return response.data;
+    const body = response.data;
+    const rows = Array.isArray(body.data) ? body.data : [];
+    return {
+        data: BatchModel.fromApiResponseArray(rows),
+        total: body.total ?? 0,
+        per_page: body.per_page ?? perPage,
+        current_page: body.current_page ?? page,
+        last_page: body.last_page ?? 1,
+    };
 };
 
 /**
@@ -70,7 +79,7 @@ export const fetchBatchStatistics = async (merchantId) => {
         }
     });
     
-    return response.data;
+    return BatchStatisticsModel.fromApiResponse(response.data);
 };
 
 /**
@@ -86,7 +95,9 @@ export const fetchBatchDetails = async (batchId) => {
         }
     });
     
-    return response.data.data || response.data;
+    const body = response.data;
+    const payload = body?.data ?? body;
+    return BatchModel.fromApiResponse(payload);
 };
 
 /**
