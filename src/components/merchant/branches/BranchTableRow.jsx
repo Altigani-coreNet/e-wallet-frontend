@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { deleteBranch, updateBranch } from '../../../services/branchesService';
@@ -6,6 +7,7 @@ import Swal from 'sweetalert2';
 import { useCan } from '../../../utils/permissions';
 
 const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [deleting, setDeleting] = useState(false);
     const [updating, setUpdating] = useState(false);
@@ -15,14 +17,14 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
 
     const handleDelete = async () => {
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete "${branch.name}". This action cannot be undone!`,
+            title: t('merchant.common.areYouSure'),
+            text: t('merchant.branchesIndex.deleteConfirm'),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('merchant.common.yesDelete'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -35,8 +37,8 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
                 queryClient.invalidateQueries({ queryKey: ['branch-details', branch.id] });
                 
                 Swal.fire({
-                    title: 'Deleted!',
-                    text: 'Branch deleted successfully!',
+                    title: t('merchant.common.deleted'),
+                    text: t('merchant.branchesIndex.deleteSuccess'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
@@ -44,19 +46,19 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
                 if (onRefresh) onRefresh();
             } else {
                 Swal.fire({
-                    title: 'Error!',
-                    text: response.error || 'Failed to delete branch',
+                    title: t('merchant.common.error'),
+                    text: response.error || t('merchant.branchesIndex.deleteFailed'),
                     icon: 'error',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: t('merchant.common.ok')
                 });
             }
         } catch (error) {
             console.error('Error deleting branch:', error);
             Swal.fire({
-                title: 'Error!',
-                text: 'An error occurred while deleting the branch',
+                title: t('merchant.common.error'),
+                text: t('merchant.branches.deleteError'),
                 icon: 'error',
-                confirmButtonText: 'OK'
+                confirmButtonText: t('merchant.common.ok')
             });
         } finally {
             setDeleting(false);
@@ -64,16 +66,19 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
     };
 
     const handleStatusChange = async (newStatus) => {
-        const statusText = newStatus ? 'activate' : 'deactivate';
         const result = await Swal.fire({
-            title: 'Confirm Status Change',
-            text: `Are you sure you want to ${statusText} "${branch.name}"?`,
+            title: t('merchant.common.areYouSure'),
+            text: newStatus
+                ? t('merchant.userGroupsIndex.activateConfirm')
+                : t('merchant.userGroupsIndex.deactivateConfirm'),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: `Yes, ${statusText}!`,
-            cancelButtonText: 'Cancel'
+            confirmButtonText: newStatus
+                ? t('merchant.users.table.activate')
+                : t('merchant.users.table.deactivate'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -91,8 +96,8 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
                 queryClient.invalidateQueries({ queryKey: ['branch-details', branch.id] });
                 
                 Swal.fire({
-                    title: 'Success!',
-                    text: `Branch ${statusText}d successfully!`,
+                    title: t('merchant.common.success'),
+                    text: t('merchant.branchesIndex.statusUpdateSuccess'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
@@ -100,19 +105,19 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
                 if (onRefresh) onRefresh();
             } else {
                 Swal.fire({
-                    title: 'Error!',
-                    text: response.error || 'Failed to update branch status',
+                    title: t('merchant.common.error'),
+                    text: response.error || t('merchant.branchesIndex.statusUpdateFailed'),
                     icon: 'error',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: t('merchant.common.ok')
                 });
             }
         } catch (error) {
             console.error('Error updating branch:', error);
             Swal.fire({
-                title: 'Error!',
-                text: 'An error occurred while updating the branch',
+                title: t('merchant.common.error'),
+                text: t('merchant.branches.deleteError'),
                 icon: 'error',
-                confirmButtonText: 'OK'
+                confirmButtonText: t('merchant.common.ok')
             });
         } finally {
             setUpdating(false);
@@ -127,12 +132,12 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
             'suspended': { class: 'badge-secondary', text: 'SUSPENDED' },
             'viewed': { class: 'badge-info', text: 'VIEWED' }
         };
-        const config = statusConfig[status] || { class: 'badge-secondary', text: status?.toUpperCase() || 'N/A' };
+        const config = statusConfig[status] || { class: 'badge-secondary', text: status?.toUpperCase() || t('merchant.common.na') };
         return `badge ${config.class}`;
     };
 
     const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
+        if (!dateString) return t('merchant.common.na');
         const date = new Date(dateString);
         const now = new Date();
         const diffTime = Math.abs(now - date);
@@ -168,15 +173,15 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
                 <span className="text-dark fw-bolder d-block fs-6">{branch.name}</span>
             </td>
             <td>
-                <span className="text-gray-600">{branch.address || 'N/A'}</span>
+                <span className="text-gray-600">{branch.address || t('merchant.common.na')}</span>
             </td>
             <td>
                 <div className="d-flex flex-column">
                     <span className={getStatusBadge(branch.status)}>
-                        {branch.status?.toUpperCase() || 'N/A'}
+                        {branch.status?.toUpperCase() || t('merchant.common.na')}
                     </span>
                     <span className={`badge ${branch.is_active ? 'badge-light-success' : 'badge-light-secondary'} mt-1`}>
-                        {branch.is_active ? 'Active' : 'Inactive'}
+                        {branch.is_active ? t('merchant.common.active') : t('merchant.common.inactive')}
                     </span>
                 </div>
             </td>
@@ -194,7 +199,7 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
                             disabled
                             style={{ cursor: 'not-allowed', opacity: 0.5 }}
                         >
-                            Actions 
+                            {t('merchant.branchesIndex.actions')}
                             <i className="ki-duotone ki-down fs-5 ms-1"></i>
                         </button>
                     ) : (
@@ -210,7 +215,7 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
                                 {updating || deleting ? (
                                     <span className="spinner-border spinner-border-sm me-2" role="status"></span>
                                 ) : null}
-                                Actions
+                                {t('merchant.branchesIndex.actions')}
                             </button>
                             <ul className="dropdown-menu dropdown-menu-end">
                                 {/* View */}
@@ -225,7 +230,7 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
                                                 <span className="path2"></span>
                                                 <span className="path3"></span>
                                             </i>
-                                            View Details
+                                            {t('merchant.common.viewDetails')}
                                         </Link>
                                     </li>
                                 )}
@@ -241,7 +246,7 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Edit Branch
+                                            {t('merchant.breadcrumbs.editBranch')}
                                         </Link>
                                     </li>
                                 )}
@@ -261,7 +266,7 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
                                                     <span className="path1"></span>
                                                     <span className="path2"></span>
                                                 </i>
-                                                Deactivate
+                                                {t('merchant.users.table.deactivate')}
                                             </button>
                                         </li>
                                     ) : (
@@ -275,7 +280,7 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
                                                     <span className="path1"></span>
                                                     <span className="path2"></span>
                                                 </i>
-                                                Activate
+                                                {t('merchant.users.table.activate')}
                                             </button>
                                         </li>
                                     )
@@ -298,7 +303,7 @@ const BranchTableRow = ({ branch, isSelected, onSelect, onRefresh }) => {
                                                 <span className="path4"></span>
                                                 <span className="path5"></span>
                                             </i>
-                                            Delete Branch
+                                            {t('merchant.common.delete')}
                                         </button>
                                     </li>
                                 )}

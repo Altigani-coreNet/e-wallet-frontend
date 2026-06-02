@@ -52,8 +52,8 @@ const BranchCreate = () => {
 
             if (response.success) {
                 await Swal.fire({
-                    title: 'Success!',
-                    text: 'Branch request submitted successfully! It will be reviewed by administrators.',
+                    title: t('merchant.branchForm.requestSuccessTitle'),
+                    text: t('merchant.branchForm.requestSuccessText'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
@@ -66,15 +66,15 @@ const BranchCreate = () => {
                     setShowPlanUpgradeModal(true);
                     setError(null);
                 } else {
-                    const errorData = response.error || response.errors || 'Failed to create branch';
+                    const errorData = response.error || response.errors || t('merchant.branchForm.createFailed');
                     setError(errorData);
-                    Swal.fire('Error!', errorData, 'error');
+                    Swal.fire(t('merchant.common.error'), errorData, 'error');
                 }
             }
         } catch (err) {
             console.error('Error creating branch:', err);
-            setError('An unexpected error occurred while creating the branch');
-            Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+            setError(t('merchant.branchForm.unexpectedError'));
+            Swal.fire(t('merchant.common.error'), t('merchant.branchForm.unexpectedError'), 'error');
         } finally {
             setLoading(false);
         }

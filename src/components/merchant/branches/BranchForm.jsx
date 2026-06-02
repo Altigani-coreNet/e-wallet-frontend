@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import ErrorAlert from '../../../components/common/ErrorAlert';
 
 const BranchForm = ({ mode = 'create', initialData = {}, onSubmit, loading, error }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         name: '',
         address: '',
@@ -35,7 +37,9 @@ const BranchForm = ({ mode = 'create', initialData = {}, onSubmit, loading, erro
         <div className="card">
             <div className="card-header">
                 <h3 className="card-title">
-                    {mode === 'create' ? 'Create New Branch' : 'Edit Branch'}
+                    {mode === 'create'
+                        ? t('merchant.branchForm.createTitle')
+                        : t('merchant.branchForm.editTitle')}
                 </h3>
             </div>
 
@@ -51,47 +55,44 @@ const BranchForm = ({ mode = 'create', initialData = {}, onSubmit, loading, erro
                                 <span className="path3"></span>
                             </i>
                             <div className="d-flex flex-column">
-                                <h5 className="mb-1">Branch Request</h5>
-                                <span>Your branch request will be submitted for admin approval. You'll be notified once it's reviewed.</span>
+                                <h5 className="mb-1">{t('merchant.branchForm.requestTitle')}</h5>
+                                <span>{t('merchant.branchForm.requestMessage')}</span>
                             </div>
                         </div>
                     )}
 
-                    {/* Branch Name */}
                     <div className="mb-6">
-                        <label className="form-label required">Branch Name</label>
+                        <label className="form-label required">{t('merchant.branchForm.branchName')}</label>
                         <input
                             type="text"
                             name="name"
                             className="form-control"
-                            placeholder="Enter branch name"
+                            placeholder={t('merchant.branchForm.branchNamePh')}
                             value={formData.name}
                             onChange={handleChange}
                             required
                             disabled={loading}
                         />
-                        <div className="form-text">Enter a unique name for this branch</div>
+                        <div className="form-text">{t('merchant.branchForm.branchNameHint')}</div>
                     </div>
 
-                    {/* Address */}
                     <div className="mb-6">
-                        <label className="form-label">Address</label>
+                        <label className="form-label">{t('merchant.branchForm.address')}</label>
                         <textarea
                             name="address"
                             className="form-control"
                             rows="3"
-                            placeholder="Enter branch address"
+                            placeholder={t('merchant.branchForm.addressPh')}
                             value={formData.address}
                             onChange={handleChange}
                             disabled={loading}
                         />
-                        <div className="form-text">Enter the full address of the branch</div>
+                        <div className="form-text">{t('merchant.branchForm.addressHint')}</div>
                     </div>
 
-                    {/* Status - Only show in edit mode */}
                     {mode === 'edit' && (
                         <div className="mb-6">
-                            <label className="form-label">Status</label>
+                            <label className="form-label">{t('merchant.branchForm.status')}</label>
                             <div className="form-check form-switch">
                                 <input
                                     className="form-check-input"
@@ -103,13 +104,15 @@ const BranchForm = ({ mode = 'create', initialData = {}, onSubmit, loading, erro
                                     disabled={loading}
                                 />
                                 <label className="form-check-label" htmlFor="is_active">
-                                    {formData.is_active ? 'Active' : 'Inactive'}
+                                    {formData.is_active
+                                        ? t('merchant.branchForm.active')
+                                        : t('merchant.branchForm.inactive')}
                                 </label>
                             </div>
                             <div className="form-text">
-                                {formData.is_active 
-                                    ? 'This branch is currently active' 
-                                    : 'This branch is currently inactive'}
+                                {formData.is_active
+                                    ? t('merchant.branchForm.activeHint')
+                                    : t('merchant.branchForm.inactiveHint')}
                             </div>
                         </div>
                     )}
@@ -122,7 +125,7 @@ const BranchForm = ({ mode = 'create', initialData = {}, onSubmit, loading, erro
                         className="btn btn-light"
                         disabled={loading}
                     >
-                        Cancel
+                        {t('merchant.branchForm.cancel')}
                     </button>
                     <button 
                         type="submit" 
@@ -132,7 +135,9 @@ const BranchForm = ({ mode = 'create', initialData = {}, onSubmit, loading, erro
                         {loading ? (
                             <>
                                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                {mode === 'create' ? 'Creating...' : 'Updating...'}
+                                {mode === 'create'
+                                    ? t('merchant.branchForm.creating')
+                                    : t('merchant.branchForm.updating')}
                             </>
                         ) : (
                             <>
@@ -140,7 +145,9 @@ const BranchForm = ({ mode = 'create', initialData = {}, onSubmit, loading, erro
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                {mode === 'create' ? 'Submit Request' : 'Update Branch'}
+                                {mode === 'create'
+                                    ? t('merchant.branchForm.submitRequest')
+                                    : t('merchant.branchForm.updateBranch')}
                             </>
                         )}
                     </button>
@@ -151,5 +158,3 @@ const BranchForm = ({ mode = 'create', initialData = {}, onSubmit, loading, erro
 };
 
 export default BranchForm;
-
-

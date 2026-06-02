@@ -77,7 +77,7 @@ const BranchView = () => {
     if (fetchError || !branch) {
         return (
             <div className="alert alert-danger">
-                <strong>Error:</strong> {fetchError?.message || 'Branch not found'}
+                <strong>{t('merchant.branchView.errorPrefix')}</strong> {fetchError?.message || t('merchant.branchView.notFound')}
                 <div className="mt-3">
                     <button className="btn btn-primary" onClick={() => navigate('/merchant/branches')}>
                         Back to Branches

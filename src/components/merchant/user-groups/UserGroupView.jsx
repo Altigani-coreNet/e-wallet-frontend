@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getUserGroup, deleteUserGroup, toggleUserGroupStatus } from '../../../services/userGroupsService';
@@ -7,6 +8,7 @@ import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 
 const UserGroupView = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { id } = useParams();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -20,9 +22,9 @@ const UserGroupView = () => {
 
     useEffect(() => {
         if (userGroup) {
-            setTitle(userGroup.name || 'User Group Details');
+            setTitle(userGroup.name || t('merchant.userGroupsUI.pages.detailsTitle'));
             setBreadcrumbs([
-                { label: 'User Groups', path: '/merchant/user-groups' },
+                { label: t('merchant.breadcrumbs.userGroups'), path: '/merchant/user-groups' },
                 { label: userGroup.name, path: `/merchant/user-groups/${id}`, active: true }
             ]);
 
@@ -36,7 +38,7 @@ const UserGroupView = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Edit
+                        {t('merchant.userGroupsUI.view.edit')}
                     </Link>
                     <button
                         className={`btn btn-sm ${userGroup.is_active ? 'btn-warning' : 'btn-success'}`}
@@ -47,7 +49,9 @@ const UserGroupView = () => {
                             <span className="path2"></span>
                             <span className="path3"></span>
                         </i>
-                        {userGroup.is_active ? 'Deactivate' : 'Activate'}
+                        {userGroup.is_active
+                            ? t('merchant.userGroupsUI.view.deactivate')
+                            : t('merchant.userGroupsUI.view.activate')}
                     </button>
                     <button
                         className="btn btn-sm btn-danger"
@@ -57,18 +61,18 @@ const UserGroupView = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Delete
+                        {t('merchant.userGroupsUI.view.delete')}
                     </button>
                 </div>
             );
         }
 
         return () => {
-            setTitle('Dashboard');
+            setTitle(t('merchant.breadcrumbs.dashboard'));
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [userGroup, id]);
+    }, [userGroup, id, t, setTitle, setBreadcrumbs, setActions]);
 
     const fetchUserGroup = async () => {
         setLoading(true);
@@ -81,18 +85,18 @@ const UserGroupView = () => {
                 const userGroupData = response.data?.data || response.data?.user_group || response.data;
                 setUserGroup(userGroupData);
             } else {
-                setError(response.error || 'Failed to fetch user group');
+                setError(response.error || t('merchant.userGroupsUI.form.loadFailed'));
             }
         } catch (err) {
             console.error('Error fetching user group:', err);
-            setError('An unexpected error occurred while fetching the user group');
+            setError(t('merchant.userGroupsUI.form.unexpectedError'));
         } finally {
             setLoading(false);
         }
     };
 
     const handleDelete = async () => {
-        if (!window.confirm('Are you sure you want to delete this user group?')) {
+        if (!window.confirm(t('merchant.userGroupsIndex.deleteOneConfirm'))) {
             return;
         }
 
@@ -100,14 +104,14 @@ const UserGroupView = () => {
             const response = await deleteUserGroup(id);
 
             if (response.success) {
-                toast.success('User group deleted successfully');
+                toast.success(t('merchant.userGroupsUI.view.deleteSuccess'));
                 navigate('/merchant/user-groups');
             } else {
-                toast.error(response.error || 'Failed to delete user group');
+                toast.error(response.error || t('merchant.userGroupsUI.view.deleteFailed'));
             }
         } catch (err) {
             console.error('Error deleting user group:', err);
-            toast.error('An unexpected error occurred');
+            toast.error(t('merchant.userGroupsUI.form.unexpectedError'));
         }
     };
 
@@ -116,14 +120,14 @@ const UserGroupView = () => {
             const response = await toggleUserGroupStatus(id);
 
             if (response.success) {
-                toast.success(response.data?.message || 'Status updated successfully');
+                toast.success(response.data?.message || t('merchant.userGroupsUI.view.statusUpdated'));
                 fetchUserGroup();
             } else {
-                toast.error(response.error || 'Failed to update status');
+                toast.error(response.error || t('merchant.userGroupsUI.view.statusUpdateFailed'));
             }
         } catch (err) {
             console.error('Error toggling status:', err);
-            toast.error('An unexpected error occurred');
+            toast.error(t('merchant.userGroupsUI.form.unexpectedError'));
         }
     };
 
@@ -154,9 +158,9 @@ const UserGroupView = () => {
                     <div className="card">
                         <div className="card-body">
                             <div className="text-center py-10">
-                                <p>User group not found</p>
+                                <p>{t('merchant.userGroupsUI.view.notFound')}</p>
                                 <Link to="/merchant/user-groups" className="btn btn-primary">
-                                    Back to User Groups
+                                    {t('merchant.userGroupsUI.view.backToUserGroups')}
                                 </Link>
                             </div>
                         </div>
@@ -172,54 +176,54 @@ const UserGroupView = () => {
                 <div className="card">
                     <div className="card-header border-0 pt-6">
                         <div className="card-title">
-                            <h2>User Group Details</h2>
+                            <h2>{t('merchant.userGroupsUI.view.title')}</h2>
                         </div>
                     </div>
 
                     <div className="card-body">
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Group Name</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.userGroupsUI.view.groupName')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-bolder fs-6 text-dark">{userGroup.name}</span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Group ID</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.userGroupsUI.view.groupId')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-bolder fs-6 text-dark">{userGroup.group_id}</span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Branch</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.userGroupsUI.view.branch')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-bolder fs-6 text-dark">
-                                    {userGroup.branch?.name || 'N/A'}
+                                    {userGroup.branch?.name || t('merchant.common.na')}
                                 </span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Status</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.userGroupsUI.view.status')}</label>
                             <div className="col-lg-8">
                                 <span className={`badge ${userGroup.is_active ? 'badge-light-success' : 'badge-light-warning'}`}>
-                                    {userGroup.is_active ? 'Active' : 'Inactive'}
+                                    {userGroup.is_active ? t('merchant.common.active') : t('merchant.common.inactive')}
                                 </span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Description</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.userGroupsUI.view.description')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-bolder fs-6 text-dark">
-                                    {userGroup.description || 'N/A'}
+                                    {userGroup.description || t('merchant.common.na')}
                                 </span>
                             </div>
                         </div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Number of Users</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.userGroupsUI.view.numberOfUsers')}</label>
                             <div className="col-lg-8">
                                 <span className="badge badge-light-primary badge-lg">
                                     {userGroup.users_count || (userGroup.users?.length || 0)}
@@ -227,27 +231,26 @@ const UserGroupView = () => {
                             </div>
                         </div>
 
-                        {/* Users List */}
                         {userGroup.users && userGroup.users.length > 0 && (
                             <>
                                 <div className="separator mb-7"></div>
                                 <div className="mb-7">
-                                    <label className="fw-bold text-muted mb-4 d-block">Assigned Users</label>
+                                    <label className="fw-bold text-muted mb-4 d-block">{t('merchant.userGroupsUI.view.assignedUsers')}</label>
                                     <div className="table-responsive">
                                         <table className="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
                                             <thead>
                                                 <tr className="fw-bolder text-muted">
-                                                    <th className="min-w-150px">Name</th>
-                                                    <th className="min-w-150px">Email</th>
-                                                    <th className="min-w-100px">Phone</th>
+                                                    <th className="min-w-150px">{t('merchant.userGroupsUI.view.colName')}</th>
+                                                    <th className="min-w-150px">{t('merchant.userGroupsUI.view.colEmail')}</th>
+                                                    <th className="min-w-100px">{t('merchant.userGroupsUI.view.colPhone')}</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {userGroup.users.map((user) => (
                                                     <tr key={user.id}>
-                                                        <td>{user.name || 'N/A'}</td>
-                                                        <td>{user.email || 'N/A'}</td>
-                                                        <td>{user.phone || 'N/A'}</td>
+                                                        <td>{user.name || t('merchant.common.na')}</td>
+                                                        <td>{user.email || t('merchant.common.na')}</td>
+                                                        <td>{user.phone || t('merchant.common.na')}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -260,7 +263,7 @@ const UserGroupView = () => {
                         <div className="separator mb-7"></div>
 
                         <div className="row mb-7">
-                            <label className="col-lg-4 fw-bold text-muted">Created At</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.userGroupsUI.view.createdAt')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-bolder fs-6 text-dark">
                                     {new Date(userGroup.created_at).toLocaleString()}
@@ -269,7 +272,7 @@ const UserGroupView = () => {
                         </div>
 
                         <div className="row">
-                            <label className="col-lg-4 fw-bold text-muted">Last Updated</label>
+                            <label className="col-lg-4 fw-bold text-muted">{t('merchant.userGroupsUI.view.lastUpdated')}</label>
                             <div className="col-lg-8">
                                 <span className="fw-bolder fs-6 text-dark">
                                     {new Date(userGroup.updated_at).toLocaleString()}
@@ -280,7 +283,7 @@ const UserGroupView = () => {
 
                     <div className="card-footer d-flex justify-content-end">
                         <Link to="/merchant/user-groups" className="btn btn-light me-2">
-                            Back to List
+                            {t('merchant.userGroupsUI.view.backToList')}
                         </Link>
                     </div>
                 </div>
@@ -290,4 +293,3 @@ const UserGroupView = () => {
 };
 
 export default UserGroupView;
-

@@ -1,10 +1,13 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 const UserGroupTableRow = ({ userGroup, onDelete, onToggleStatus, basePath, onSelect, isSelected }) => {
+    const { t } = useTranslation();
+
     const handleDelete = (e) => {
         e.preventDefault();
-        if (window.confirm('Are you sure you want to delete this user group?')) {
+        if (window.confirm(t('merchant.userGroupsIndex.deleteOneConfirm'))) {
             onDelete(userGroup.id);
         }
     };
@@ -33,7 +36,7 @@ const UserGroupTableRow = ({ userGroup, onDelete, onToggleStatus, basePath, onSe
                     <div className="text-muted fs-7">{userGroup.group_id}</div>
                 </div>
             </td>
-            <td>{userGroup.branch?.name || 'N/A'}</td>
+            <td>{userGroup.branch?.name || t('merchant.common.na')}</td>
             <td>
                 <span className="badge badge-light-primary badge-sm">
                     {userGroup.users_count || (userGroup.users?.length || 0)}
@@ -41,13 +44,15 @@ const UserGroupTableRow = ({ userGroup, onDelete, onToggleStatus, basePath, onSe
             </td>
             <td>
                 <span className={`badge ${userGroup.is_active ? 'badge-light-success' : 'badge-light-warning'}`}>
-                    {userGroup.is_active ? 'Active' : 'Inactive'}
+                    {userGroup.is_active ? t('merchant.common.active') : t('merchant.common.inactive')}
                 </span>
             </td>
             <td className="text-end">
                 <div className="menu menu-sub menu-sub-dropdown w-250px w-md-300px" data-kt-menu="true">
                     <div className="menu-item px-3">
-                        <div className="menu-content fs-6 text-dark fw-bold px-3 py-4">Quick Actions</div>
+                        <div className="menu-content fs-6 text-dark fw-bold px-3 py-4">
+                            {t('merchant.userGroupsIndex.quickActions')}
+                        </div>
                     </div>
 
                     <div className="separator mb-3 opacity-75"></div>
@@ -62,7 +67,7 @@ const UserGroupTableRow = ({ userGroup, onDelete, onToggleStatus, basePath, onSe
                                 <span className="path2"></span>
                                 <span className="path3"></span>
                             </i>
-                            View Details
+                            {t('merchant.common.viewDetails')}
                         </Link>
                     </div>
 
@@ -75,7 +80,7 @@ const UserGroupTableRow = ({ userGroup, onDelete, onToggleStatus, basePath, onSe
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Edit
+                            {t('merchant.common.edit')}
                         </Link>
                     </div>
 
@@ -92,7 +97,9 @@ const UserGroupTableRow = ({ userGroup, onDelete, onToggleStatus, basePath, onSe
                                 <span className="path2"></span>
                                 <span className="path3"></span>
                             </i>
-                            {userGroup.is_active ? 'Deactivate' : 'Activate'}
+                            {userGroup.is_active
+                                ? t('merchant.users.table.deactivate')
+                                : t('merchant.users.table.activate')}
                         </a>
                     </div>
 
@@ -106,7 +113,7 @@ const UserGroupTableRow = ({ userGroup, onDelete, onToggleStatus, basePath, onSe
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Delete
+                            {t('merchant.common.delete')}
                         </a>
                     </div>
                 </div>
@@ -116,7 +123,7 @@ const UserGroupTableRow = ({ userGroup, onDelete, onToggleStatus, basePath, onSe
                     data-kt-menu-trigger="click"
                     data-kt-menu-placement="bottom-end"
                 >
-                    Actions
+                    {t('merchant.userGroupsIndex.colActions')}
                     <i className="ki-duotone ki-down fs-5 ms-1">
                         <span className="path1"></span>
                         <span className="path2"></span>
@@ -128,4 +135,3 @@ const UserGroupTableRow = ({ userGroup, onDelete, onToggleStatus, basePath, onSe
 };
 
 export default UserGroupTableRow;
-

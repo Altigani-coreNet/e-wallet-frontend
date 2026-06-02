@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { deleteTerminal, updateTerminal } from '../../../services/terminalsService';
@@ -6,6 +7,7 @@ import Swal from 'sweetalert2';
 import { useCan } from '../../../utils/permissions';
 
 const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh }) => {
+    const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [deleting, setDeleting] = useState(false);
     const [updating, setUpdating] = useState(false);
@@ -15,14 +17,14 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
 
     const handleDelete = async () => {
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete terminal "${terminal.name}". This action cannot be undone!`,
+            title: t('merchant.common.areYouSure'),
+            text: t('merchant.terminals.deleteOneConfirm', { name: terminal.name }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('merchant.common.yesDelete'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -35,8 +37,8 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
                 queryClient.invalidateQueries({ queryKey: ['terminal-details', terminal.id] });
                 
                 Swal.fire({
-                    title: 'Deleted!',
-                    text: 'Terminal deleted successfully!',
+                    title: t('merchant.common.deleted'),
+                    text: t('merchant.terminals.deletedOne'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
@@ -44,19 +46,19 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
                 if (onRefresh) onRefresh();
             } else {
                 Swal.fire({
-                    title: 'Error!',
-                    text: response.error || 'Failed to delete terminal',
+                    title: t('merchant.common.error'),
+                    text: response.error || t('merchant.terminals.deleteOneFailed'),
                     icon: 'error',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: t('merchant.common.ok')
                 });
             }
         } catch (error) {
             console.error('Error deleting terminal:', error);
             Swal.fire({
-                title: 'Error!',
-                text: 'An error occurred while deleting the terminal',
+                title: t('merchant.common.error'),
+                text: t('merchant.terminals.deleteError'),
                 icon: 'error',
-                confirmButtonText: 'OK'
+                confirmButtonText: t('merchant.common.ok')
             });
         } finally {
             setDeleting(false);
@@ -64,16 +66,19 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
     };
 
     const handleStatusChange = async (newStatus) => {
-        const statusText = newStatus ? 'activate' : 'deactivate';
         const result = await Swal.fire({
-            title: 'Confirm Status Change',
-            text: `Are you sure you want to ${statusText} "${terminal.name}"?`,
+            title: t('merchant.common.areYouSure'),
+            text: newStatus
+                ? t('merchant.userGroupsIndex.activateConfirm')
+                : t('merchant.userGroupsIndex.deactivateConfirm'),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: `Yes, ${statusText}!`,
-            cancelButtonText: 'Cancel'
+            confirmButtonText: newStatus
+                ? t('merchant.users.table.activate')
+                : t('merchant.users.table.deactivate'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -101,8 +106,8 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
                 queryClient.invalidateQueries({ queryKey: ['terminal-details', terminal.id] });
                 
                 Swal.fire({
-                    title: 'Success!',
-                    text: `Terminal ${statusText}d successfully!`,
+                    title: t('merchant.common.success'),
+                    text: t('merchant.terminalsIndex.statusUpdateSuccess'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
@@ -110,19 +115,19 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
                 if (onRefresh) onRefresh();
             } else {
                 Swal.fire({
-                    title: 'Error!',
-                    text: response.error || 'Failed to update terminal status',
+                    title: t('merchant.common.error'),
+                    text: response.error || t('merchant.terminalsIndex.statusUpdateFailed'),
                     icon: 'error',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: t('merchant.common.ok')
                 });
             }
         } catch (error) {
             console.error('Error updating terminal:', error);
             Swal.fire({
-                title: 'Error!',
-                text: 'An error occurred while updating the terminal',
+                title: t('merchant.common.error'),
+                text: t('merchant.terminals.deleteError'),
                 icon: 'error',
-                confirmButtonText: 'OK'
+                confirmButtonText: t('merchant.common.ok')
             });
         } finally {
             setUpdating(false);
@@ -149,16 +154,16 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
                 </Link>
             </td>
             <td>
-                <span className="badge badge-light-info">{terminal.terminal_id || 'N/A'}</span>
+                <span className="badge badge-light-info">{terminal.terminal_id || t('merchant.common.na')}</span>
             </td>
-            <td>{branch ? branch.name : (terminal.branch_id ? 'Loading...' : 'N/A')}</td>
-            <td>{terminal.model || 'N/A'}</td>
-            <td>{terminal.manufacturer || 'N/A'}</td>
+            <td>{branch ? branch.name : (terminal.branch_id ? t('merchant.terminalsIndex.loadingBranch') : t('merchant.common.na'))}</td>
+            <td>{terminal.model || t('merchant.common.na')}</td>
+            <td>{terminal.manufacturer || t('merchant.common.na')}</td>
             <td>
                 {(terminal.is_active === 'active' || terminal.is_active === true || terminal.is_active === 1 || terminal.is_active === '1') ? (
-                    <span className="badge badge-light-success">Active</span>
+                    <span className="badge badge-light-success">{t('merchant.common.active')}</span>
                 ) : (
-                    <span className="badge badge-light-danger">Inactive</span>
+                    <span className="badge badge-light-danger">{t('merchant.common.inactive')}</span>
                 )}
             </td>
             <td className="text-end">
@@ -174,10 +179,9 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
                             {updating || deleting ? (
                                 <span className="spinner-border spinner-border-sm me-2" role="status"></span>
                             ) : null}
-                            Actions
+                            {t('merchant.terminalsIndex.colActions')}
                         </button>
                         <ul className="dropdown-menu dropdown-menu-end">
-                            {/* View */}
                             {canView && (
                                 <li>
                                     <Link 
@@ -189,12 +193,11 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
                                             <span className="path2"></span>
                                             <span className="path3"></span>
                                         </i>
-                                        View Details
+                                        {t('merchant.common.viewDetails')}
                                     </Link>
                                 </li>
                             )}
                             
-                            {/* Edit */}
                             {canEdit && (
                                 <li>
                                     <Link 
@@ -205,14 +208,13 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Edit Terminal
+                                        {t('merchant.breadcrumbs.editTerminal')}
                                     </Link>
                                 </li>
                             )}
                             
                             <li><hr className="dropdown-divider" /></li>
                             
-                            {/* Activate/Deactivate */}
                             {canEdit && (
                                 isActive ? (
                                     <li>
@@ -225,7 +227,7 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Deactivate
+                                            {t('merchant.users.table.deactivate')}
                                         </button>
                                     </li>
                                 ) : (
@@ -239,7 +241,7 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Activate
+                                            {t('merchant.users.table.activate')}
                                         </button>
                                     </li>
                                 )
@@ -247,7 +249,6 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
                             
                             <li><hr className="dropdown-divider" /></li>
                             
-                            {/* Delete */}
                             {canDelete && (
                                 <li>
                                     <button 
@@ -262,7 +263,7 @@ const TerminalTableRow = ({ terminal, branch, isSelected, onSelect, onRefresh })
                                             <span className="path4"></span>
                                             <span className="path5"></span>
                                         </i>
-                                        Delete Terminal
+                                        {t('merchant.terminals.delete')}
                                     </button>
                                 </li>
                             )}

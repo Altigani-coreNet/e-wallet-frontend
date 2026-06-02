@@ -1,6 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const UserGroupFilters = ({ filters, onFilterChange, onClearFilters }) => {
+    const { t } = useTranslation();
+
     const handleInputChange = (field, value) => {
         onFilterChange({ [field]: value });
     };
@@ -11,37 +14,34 @@ const UserGroupFilters = ({ filters, onFilterChange, onClearFilters }) => {
         <div className="card bg-white card-xl-stretch mb-5 mb-xl-8">
             <div className="card-body">
                 <div className="row">
-                    {/* Search */}
                     <div className="col-md-4 mb-3">
-                        <label htmlFor="search" className="form-label">Search</label>
+                        <label htmlFor="search" className="form-label">{t('merchant.userGroupsUI.filters.search')}</label>
                         <input
                             type="text"
                             className="form-control"
                             id="search"
-                            placeholder="Name, Group ID, Description"
+                            placeholder={t('merchant.userGroupsUI.filters.searchPlaceholder')}
                             value={filters.search || ''}
                             onChange={(e) => handleInputChange('search', e.target.value)}
                         />
                     </div>
 
-                    {/* Status */}
                     <div className="col-md-4 mb-3">
-                        <label htmlFor="status" className="form-label">Status</label>
+                        <label htmlFor="status" className="form-label">{t('merchant.userGroupsUI.filters.status')}</label>
                         <select
                             className="form-select"
                             id="status"
                             value={filters.status || ''}
                             onChange={(e) => handleInputChange('status', e.target.value)}
                         >
-                            <option value="">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="">{t('merchant.userGroupsUI.filters.allStatus')}</option>
+                            <option value="active">{t('merchant.userGroupsUI.filters.active')}</option>
+                            <option value="inactive">{t('merchant.userGroupsUI.filters.inactive')}</option>
                         </select>
                     </div>
 
-                    {/* Date From */}
                     <div className="col-md-4 mb-3">
-                        <label htmlFor="date_from" className="form-label">Date From</label>
+                        <label htmlFor="date_from" className="form-label">{t('merchant.userGroupsUI.filters.dateFrom')}</label>
                         <input
                             type="date"
                             className="form-control"
@@ -51,9 +51,8 @@ const UserGroupFilters = ({ filters, onFilterChange, onClearFilters }) => {
                         />
                     </div>
 
-                    {/* Date To */}
                     <div className="col-md-4 mb-3">
-                        <label htmlFor="date_to" className="form-label">Date To</label>
+                        <label htmlFor="date_to" className="form-label">{t('merchant.userGroupsUI.filters.dateTo')}</label>
                         <input
                             type="date"
                             className="form-control"
@@ -64,7 +63,6 @@ const UserGroupFilters = ({ filters, onFilterChange, onClearFilters }) => {
                     </div>
                 </div>
 
-                {/* Clear Filters Button */}
                 {hasActiveFilters && (
                     <div className="d-flex justify-content-between align-items-center mt-4">
                         <div className="text-muted fs-7">
@@ -73,7 +71,7 @@ const UserGroupFilters = ({ filters, onFilterChange, onClearFilters }) => {
                                 <span className="path2"></span>
                                 <span className="path3"></span>
                             </i>
-                            Filters apply automatically as you type
+                            {t('merchant.userGroupsUI.filters.filtersAutoApply')}
                         </div>
                         <button
                             type="button"
@@ -84,7 +82,7 @@ const UserGroupFilters = ({ filters, onFilterChange, onClearFilters }) => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Clear Filters
+                            {t('merchant.userGroupsUI.filters.clearFilters')}
                         </button>
                     </div>
                 )}
@@ -94,4 +92,3 @@ const UserGroupFilters = ({ filters, onFilterChange, onClearFilters }) => {
 };
 
 export default UserGroupFilters;
-

@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const BranchesFilters = ({ filters, onFilterChange, onClear }) => {
+    const { t } = useTranslation();
     const dateFromRef = useRef(null);
     const dateToRef = useRef(null);
 
@@ -10,21 +12,16 @@ const BranchesFilters = ({ filters, onFilterChange, onClear }) => {
             ...prev,
             [name]: value
         }));
-        // Filters apply automatically on change - no need for Apply button
     };
 
     const handleDateInputClick = (ref) => {
         if (ref && ref.current) {
-            // Try to use the showPicker() method if available (modern browsers)
             if (ref.current.showPicker && typeof ref.current.showPicker === 'function') {
-                ref.current.showPicker().catch((err) => {
-                    // Fallback: if showPicker fails, just focus the input
+                ref.current.showPicker().catch(() => {
                     ref.current.focus();
                 });
             } else {
-                // Fallback for browsers that don't support showPicker()
                 ref.current.focus();
-                // For some browsers, we need to trigger click after focus
                 setTimeout(() => {
                     ref.current.click();
                 }, 10);
@@ -36,7 +33,7 @@ const BranchesFilters = ({ filters, onFilterChange, onClear }) => {
         <div className="card bg-white card-xl-stretch mb-5 mb-xl-8">
             <div className="card-header border-0 pt-6">
                 <div className="card-title">
-                    <h3 className="fw-bold m-0">Filters</h3>
+                    <h3 className="fw-bold m-0">{t('merchant.branchesIndex.filters')}</h3>
                 </div>
                 <div className="card-toolbar">
                     <button 
@@ -48,47 +45,42 @@ const BranchesFilters = ({ filters, onFilterChange, onClear }) => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Clear Filters
+                        {t('merchant.branchesIndex.clearFilters')}
                     </button>
                 </div>
             </div>
 
             <div className="card-body">
                 <div className="row g-4">
-                    {/* Search */}
                     <div className="col-md-3">
-                        <label className="form-label fw-bold">Search</label>
+                        <label className="form-label fw-bold">{t('merchant.branchesIndex.search')}</label>
                         <input
                             type="text"
                             className="form-control"
                             name="search"
-                            placeholder="Search by name, address..."
+                            placeholder={t('merchant.branchesIndex.searchPlaceholder')}
                             value={filters.search || ''}
                             onChange={handleChange}
                         />
                     </div>
 
-                    {/* Status Filter */}
                     <div className="col-md-3">
-                        <label className="form-label fw-bold">Status</label>
+                        <label className="form-label fw-bold">{t('merchant.branchesIndex.status')}</label>
                         <select
                             className="form-select"
                             name="status"
                             value={filters.status || ''}
                             onChange={handleChange}
                         >
-                            <option value="">All Statuses</option>
-                            <option value="pending">Pending</option>
-                            <option value="approved">Approved</option>
-                            <option value="rejected">Rejected</option>
-                            <option value="suspended">Suspended</option>
-                            <option value="viewed">Viewed</option>
+                            <option value="">{t('merchant.branchesIndex.allStatuses')}</option>
+                            <option value="pending">{t('merchant.branchesIndex.statusPending')}</option>
+                            <option value="approved">{t('merchant.branchesIndex.statusApproved')}</option>
+                            <option value="rejected">{t('merchant.branchesIndex.statusRejected')}</option>
                         </select>
                     </div>
 
-                    {/* Date From */}
                     <div className="col-md-3">
-                        <label className="form-label fw-bold">Created Date From</label>
+                        <label className="form-label fw-bold">{t('merchant.branchesIndex.dateFrom')}</label>
                         <input
                             ref={dateFromRef}
                             type="date"
@@ -97,13 +89,11 @@ const BranchesFilters = ({ filters, onFilterChange, onClear }) => {
                             value={filters.date_from || ''}
                             onChange={handleChange}
                             onClick={() => handleDateInputClick(dateFromRef)}
-                            onFocus={() => handleDateInputClick(dateFromRef)}
                         />
                     </div>
 
-                    {/* Date To */}
                     <div className="col-md-3">
-                        <label className="form-label fw-bold">Created Date To</label>
+                        <label className="form-label fw-bold">{t('merchant.branchesIndex.dateTo')}</label>
                         <input
                             ref={dateToRef}
                             type="date"
@@ -112,7 +102,6 @@ const BranchesFilters = ({ filters, onFilterChange, onClear }) => {
                             value={filters.date_to || ''}
                             onChange={handleChange}
                             onClick={() => handleDateInputClick(dateToRef)}
-                            onFocus={() => handleDateInputClick(dateToRef)}
                         />
                     </div>
                 </div>
@@ -122,5 +111,3 @@ const BranchesFilters = ({ filters, onFilterChange, onClear }) => {
 };
 
 export default BranchesFilters;
-
-

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import UserGroupTableRow from './UserGroupTableRow';
 import Pagination from '../../common/Pagination';
 
@@ -12,6 +13,7 @@ const UserGroupsTable = ({
     onPageChange,
     basePath
 }) => {
+    const { t } = useTranslation();
     const safeUserGroups = Array.isArray(userGroups) ? userGroups : [];
     const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
 
@@ -34,7 +36,6 @@ const UserGroupsTable = ({
 
     const allSelected = safeUserGroups.length > 0 && safeSelectedIds.length === safeUserGroups.length;
 
-    // Reinitialize KTMenu after render
     React.useEffect(() => {
         if (typeof window.KTMenu !== 'undefined' && typeof window.KTMenu.createInstances === 'function') {
             setTimeout(() => {
@@ -59,12 +60,12 @@ const UserGroupsTable = ({
                                     />
                                 </div>
                             </th>
-                            <th className="text-dark">ID</th>
-                            <th className="min-w-125px text-dark">Name / Group ID</th>
-                            <th className="text-dark">Branch</th>
-                            <th className="text-dark">Users</th>
-                            <th className="text-dark">Status</th>
-                            <th className="text-end text-dark">Actions</th>
+                            <th className="text-dark">{t('merchant.userGroupsIndex.colId')}</th>
+                            <th className="min-w-125px text-dark">{t('merchant.userGroupsIndex.colNameGroupId')}</th>
+                            <th className="text-dark">{t('merchant.userGroupsIndex.colBranch')}</th>
+                            <th className="text-dark">{t('merchant.userGroupsIndex.colUsers')}</th>
+                            <th className="text-dark">{t('merchant.userGroupsIndex.colStatus')}</th>
+                            <th className="text-end text-dark">{t('merchant.userGroupsIndex.colActions')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -76,8 +77,8 @@ const UserGroupsTable = ({
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        <span className="text-gray-600 fs-5">No user groups found</span>
-                                        <span className="text-gray-400 fs-7 mt-2">Try adjusting your filters or create a new user group</span>
+                                        <span className="text-gray-600 fs-5">{t('merchant.userGroupsIndex.noUserGroupsFound')}</span>
+                                        <span className="text-gray-400 fs-7 mt-2">{t('merchant.userGroupsIndex.emptyHint')}</span>
                                     </div>
                                 </td>
                             </tr>
@@ -112,4 +113,3 @@ const UserGroupsTable = ({
 };
 
 export default UserGroupsTable;
-

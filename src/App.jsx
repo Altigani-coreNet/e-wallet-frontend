@@ -47,6 +47,7 @@ import Error500 from './pages/Error500';
 import PaymentError from './pages/PaymentError';
 import PaymentSuccess from './pages/PaymentSuccess';
 import PaymentCancel from './pages/PaymentCancel';
+import TestLogoLoader from './pages/TestLogoLoader';
 import MerchantPublicProfile from './components/payment-links/MerchantPublicProfile';
 
 /** Stripe lives only in these chunks — not in the main app bundle */
@@ -137,11 +138,11 @@ import MerchantUserView from './components/merchant/users/MerchantUserView';
 // Test Components
 import PlanLimitsTest from './components/common/PlanLimitsTest';
 
-// Roles Components - COMMENTED OUT (Not needed)
-// import RolesIndex from './components/roles/RolesIndex';
-// import RoleCreate from './components/roles/RoleCreate';
-// import RoleEdit from './components/roles/RoleEdit';
-// import RoleView from './components/roles/RoleView';
+// Roles Components
+import RolesIndex from './components/roles/RolesIndex';
+import RoleCreate from './components/roles/RoleCreate';
+import RoleEdit from './components/roles/RoleEdit';
+import RoleView from './components/roles/RoleView';
 
 // User Groups Components
 import UserGroupsIndex from './components/merchant/user-groups/UserGroupsIndex';
@@ -308,6 +309,8 @@ function App() {
                         <Route index element={<LandingPage />} />
                         <Route path="privacy" element={<PrivacyPage />} />
                         <Route path="terms" element={<TermsPage />} />
+                        <Route path="test-logo" element={<TestLogoLoader />} />
+                        <Route path="test-loader" element={<TestLogoLoader />} />
                         <Route path="payment/error/:uuid" element={<PaymentError />} />
                         <Route path="payments/error/:uuid" element={<PaymentError />} />
                         <Route path="payment/success/:uuid" element={<PaymentSuccess />} />
@@ -481,19 +484,18 @@ function App() {
                         } />
                         <Route path="users/:id/edit" element={<UserEdit />} />
                         <Route path="users/:id" element={<MerchantUserView />} />
-                        {/* Roles Routes - COMMENTED OUT (Not needed) */}
-                        {/* <Route path="roles" element={
-                            <PermissionRoute anyOf={['pos.roles.view_roles','view_roles']}>
+                        <Route path="roles" element={
+                            <PermissionRoute anyOf={['pos.roles.view_roles', 'view_roles']}>
                                 <RolesIndex />
                             </PermissionRoute>
                         } />
                         <Route path="roles/create" element={
-                            <PermissionRoute anyOf={['pos.roles.create_roles','create_roles']}>
+                            <PermissionRoute anyOf={['pos.roles.create_roles', 'create_roles']}>
                                 <RoleCreate />
                             </PermissionRoute>
                         } />
                         <Route path="roles/:id/edit" element={<RoleEdit />} />
-                        <Route path="roles/:id" element={<RoleView />} /> */}
+                        <Route path="roles/:id" element={<RoleView />} />
                         
                         {/* User Groups */}
                         <Route path="user-groups" element={

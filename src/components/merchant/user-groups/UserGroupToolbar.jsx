@@ -1,12 +1,14 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useCan } from '../../../utils/permissions';
 
 const UserGroupToolbar = ({ onRefresh, loading, statusFilter, onStatusFilter, onToggleFilters, basePath }) => {
+    const { t } = useTranslation();
     const canCreate = useCan('userGroups.create');
+
     return (
         <div className="d-flex align-items-center gap-2 gap-lg-3">
-            {/* Filter Button */}
             <button
                 type="button"
                 className="btn btn-sm btn-flex btn-secondary fw-bold"
@@ -16,27 +18,25 @@ const UserGroupToolbar = ({ onRefresh, loading, statusFilter, onStatusFilter, on
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                <span className="d-none d-md-inline ms-1">Filter</span>
+                <span className="d-none d-md-inline ms-1">{t('merchant.userGroupsUI.toolbar.filter')}</span>
             </button>
 
-            {/* Status Filter */}
             <select
                 className="form-select form-select-sm w-150px"
                 value={statusFilter || ''}
                 onChange={(e) => onStatusFilter(e.target.value)}
             >
-                <option value="">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="">{t('merchant.userGroupsUI.toolbar.allStatus')}</option>
+                <option value="active">{t('merchant.userGroupsUI.filters.active')}</option>
+                <option value="inactive">{t('merchant.userGroupsUI.filters.inactive')}</option>
             </select>
 
-            {/* Refresh Button - Icon only */}
             <button
                 type="button"
                 className="btn btn-sm btn-icon btn-light"
                 onClick={onRefresh}
                 disabled={loading}
-                title="Refresh"
+                title={t('merchant.userGroupsUI.toolbar.refresh')}
             >
                 <i className="ki-duotone ki-arrows-circle fs-3">
                     <span className="path1"></span>
@@ -44,7 +44,6 @@ const UserGroupToolbar = ({ onRefresh, loading, statusFilter, onStatusFilter, on
                 </i>
             </button>
 
-            {/* Create Button */}
             {canCreate && (
                 <Link
                     to={`${basePath}/user-groups/create`}
@@ -54,7 +53,7 @@ const UserGroupToolbar = ({ onRefresh, loading, statusFilter, onStatusFilter, on
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Add User Group</span>
+                    <span className="d-none d-md-inline ms-1">{t('merchant.userGroupsUI.toolbar.addUserGroup')}</span>
                 </Link>
             )}
         </div>
@@ -62,4 +61,3 @@ const UserGroupToolbar = ({ onRefresh, loading, statusFilter, onStatusFilter, on
 };
 
 export default UserGroupToolbar;
-

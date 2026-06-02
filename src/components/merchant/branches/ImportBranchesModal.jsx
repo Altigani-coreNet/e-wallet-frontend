@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { importBranches, previewImport, exportTemplate } from '../../../services/branchesService';
 import Swal from 'sweetalert2';
 
 const ImportBranchesModal = ({ onClose, onSuccess }) => {
+    const { t } = useTranslation();
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -16,14 +18,12 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
         setFile(selectedFile);
         setError(null);
         setPreview(null);
-
-        // Auto-preview
         await handlePreview(selectedFile);
     };
 
     const handlePreview = async (fileToPreview = file) => {
         if (!fileToPreview) {
-            setError('Please select a file first');
+            setError(t('merchant.importBranches.selectFileFirst'));
             return;
         }
 
@@ -36,15 +36,15 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
             if (response.success) {
                 setPreview(response.data);
                 if (response.errors && response.errors.length > 0) {
-                    setError(`Preview contains ${response.errors.length} error(s). Please review before importing.`);
+                    setError(t('merchant.importBranches.previewErrors', { count: response.errors.length }));
                 }
             } else {
-                setError(response.error || response.message || 'Failed to preview file');
+                setError(response.error || response.message || t('merchant.importBranches.previewFailed'));
                 setPreview(null);
             }
         } catch (err) {
             console.error('Preview error:', err);
-            setError('Failed to preview file');
+            setError(t('merchant.importBranches.previewFailed'));
             setPreview(null);
         } finally {
             setLoading(false);
@@ -53,19 +53,19 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
 
     const handleImport = async () => {
         if (!file) {
-            setError('Please select a file to import');
+            setError(t('merchant.importBranches.selectFileToImport'));
             return;
         }
 
         const result = await Swal.fire({
-            title: 'Confirm Import',
-            text: 'Are you sure you want to import these branches?',
+            title: t('merchant.importBranches.confirmTitle'),
+            text: t('merchant.importBranches.confirmText'),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, import!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('merchant.importBranches.yesImport'),
+            cancelButtonText: t('merchant.common.cancel')
         });
 
         if (!result.isConfirmed) return;
@@ -79,26 +79,29 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
             if (response.success) {
                 if (response.errors && response.errors.length > 0) {
                     Swal.fire({
-                        title: 'Partially Imported',
-                        html: `Successfully imported ${response.imported_count} branches!<br><br><strong>Warning:</strong> ${response.errors.length} rows had errors.`,
+                        title: t('merchant.importBranches.partialTitle'),
+                        html: t('merchant.importBranches.partialHtml', {
+                            count: response.imported_count,
+                            errors: response.errors.length
+                        }),
                         icon: 'warning',
-                        confirmButtonText: 'OK'
+                        confirmButtonText: t('merchant.common.ok')
                     });
                 } else {
                     Swal.fire({
-                        title: 'Success!',
-                        text: `Successfully imported ${response.imported_count} branches!`,
+                        title: t('merchant.importBranches.successTitle'),
+                        text: t('merchant.importBranches.successText', { count: response.imported_count }),
                         icon: 'success',
-                        confirmButtonText: 'OK'
+                        confirmButtonText: t('merchant.common.ok')
                     });
                 }
                 onSuccess();
             } else {
-                setError(response.message || response.error || 'Failed to import branches');
+                setError(response.message || response.error || t('merchant.importBranches.importFailed'));
             }
         } catch (err) {
             console.error('Import error:', err);
-            setError('Failed to import branches');
+            setError(t('merchant.importBranches.importFailed'));
         } finally {
             setImporting(false);
         }
@@ -109,19 +112,19 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
             const response = await exportTemplate();
             if (!response.success) {
                 Swal.fire({
-                    title: 'Error!',
-                    text: 'Failed to download template',
+                    title: t('merchant.common.error'),
+                    text: t('merchant.importBranches.templateDownloadFailed'),
                     icon: 'error',
-                    confirmButtonText: 'OK'
+                    confirmButtonText: t('merchant.common.ok')
                 });
             }
-        } catch (error) {
-            console.error('Error downloading template:', error);
+        } catch (downloadError) {
+            console.error('Error downloading template:', downloadError);
             Swal.fire({
-                title: 'Error!',
-                text: 'An error occurred while downloading the template',
+                title: t('merchant.common.error'),
+                text: t('merchant.importBranches.templateDownloadError'),
                 icon: 'error',
-                confirmButtonText: 'OK'
+                confirmButtonText: t('merchant.common.ok')
             });
         }
     };
@@ -131,7 +134,7 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
             <div className="modal-dialog modal-lg modal-dialog-centered">
                 <div className="modal-content">
                     <div className="modal-header">
-                        <h5 className="modal-title fw-bold">Import Branches</h5>
+                        <h5 className="modal-title fw-bold">{t('merchant.importBranches.title')}</h5>
                         <button 
                             type="button" 
                             className="btn btn-sm btn-icon" 
@@ -143,12 +146,11 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
                     </div>
 
                     <div className="modal-body">
-                        {/* Info Alert */}
                         <div className="alert alert-info d-flex align-items-start">
                             <i className="ki-duotone ki-information-2 fs-2x me-3"></i>
                             <div>
-                                <div className="fw-bold mb-2">Expected file columns</div>
-                                <div className="text-gray-800">name, address, is_active</div>
+                                <div className="fw-bold mb-2">{t('merchant.importBranches.expectedColumns')}</div>
+                                <div className="text-gray-800">{t('merchant.importBranches.columnsList')}</div>
                                 <div className="mt-2">
                                     <button 
                                         type="button" 
@@ -159,22 +161,20 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Download Template
+                                        {t('merchant.importBranches.downloadTemplate')}
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Error Alert */}
                         {error && (
                             <div className="alert alert-danger">
-                                <strong>Error:</strong> {error}
+                                <strong>{t('merchant.branchView.errorPrefix')}</strong> {error}
                             </div>
                         )}
 
-                        {/* File Input */}
                         <div className="mb-5">
-                            <label className="form-label fw-bold">Select File</label>
+                            <label className="form-label fw-bold">{t('merchant.importBranches.selectFile')}</label>
                             <input
                                 type="file"
                                 className="form-control"
@@ -182,20 +182,19 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
                                 onChange={handleFileChange}
                                 disabled={loading || importing}
                             />
-                            <div className="form-text">Supported formats: CSV, XLSX, XLS (Max: 2MB)</div>
+                            <div className="form-text">{t('merchant.importBranches.fileFormats')}</div>
                         </div>
 
-                        {/* Preview Table */}
                         {preview && preview.length > 0 && (
                             <div className="table-responsive" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                                 <table className="table table-sm table-row-bordered">
                                     <thead>
                                         <tr className="fw-bold text-gray-800">
-                                            <th>Row</th>
-                                            <th>Name</th>
-                                            <th>Address</th>
-                                            <th>Active</th>
-                                            <th>Status</th>
+                                            <th>{t('merchant.importBranches.colRow')}</th>
+                                            <th>{t('merchant.importBranches.colName')}</th>
+                                            <th>{t('merchant.importBranches.colAddress')}</th>
+                                            <th>{t('merchant.importBranches.colActive')}</th>
+                                            <th>{t('merchant.importBranches.colStatus')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -206,7 +205,7 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
                                                 <td>{row.address || '-'}</td>
                                                 <td>
                                                     <span className={`badge ${row.is_active ? 'badge-success' : 'badge-secondary'}`}>
-                                                        {row.is_active ? 'Yes' : 'No'}
+                                                        {row.is_active ? t('merchant.importBranches.yes') : t('merchant.importBranches.no')}
                                                     </span>
                                                 </td>
                                                 <td>
@@ -215,7 +214,7 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
                                                             {row.errors.join(', ')}
                                                         </span>
                                                     ) : (
-                                                        <span className="badge badge-success">Valid</span>
+                                                        <span className="badge badge-success">{t('merchant.importBranches.valid')}</span>
                                                     )}
                                                 </td>
                                             </tr>
@@ -225,13 +224,12 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
                             </div>
                         )}
 
-                        {/* Loading State */}
                         {loading && (
                             <div className="text-center py-5">
                                 <div className="spinner-border text-primary" role="status">
-                                    <span className="visually-hidden">Loading...</span>
+                                    <span className="visually-hidden">{t('merchant.common.loading')}</span>
                                 </div>
-                                <div className="mt-3 text-gray-600">Previewing file...</div>
+                                <div className="mt-3 text-gray-600">{t('merchant.importBranches.previewing')}</div>
                             </div>
                         )}
                     </div>
@@ -243,7 +241,7 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
                             onClick={onClose}
                             disabled={importing}
                         >
-                            Cancel
+                            {t('merchant.importBranches.cancel')}
                         </button>
                         <button 
                             type="button" 
@@ -254,7 +252,7 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
                             {importing ? (
                                 <>
                                     <span className="spinner-border spinner-border-sm me-2"></span>
-                                    Importing...
+                                    {t('merchant.importBranches.importing')}
                                 </>
                             ) : (
                                 <>
@@ -262,7 +260,7 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Import Branches
+                                    {t('merchant.importBranches.importBranchesBtn')}
                                 </>
                             )}
                         </button>
@@ -274,5 +272,3 @@ const ImportBranchesModal = ({ onClose, onSuccess }) => {
 };
 
 export default ImportBranchesModal;
-
-

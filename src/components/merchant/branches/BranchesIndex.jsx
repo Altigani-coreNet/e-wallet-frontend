@@ -366,12 +366,12 @@ const BranchesIndex = ({ merchantId: propMerchantId }) => {
                                 <thead>
                                     <tr className="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                         <th className="w-10px pe-2"></th>
-                                        <th className="text-dark">ID</th>
-                                        <th className="min-w-125px text-dark">Name</th>
-                                        <th className="min-w-125px text-dark">Address</th>
-                                        <th className="text-dark">Status</th>
-                                        <th className="text-dark">Created At</th>
-                                        <th className="text-end text-dark">Actions</th>
+                                        <th className="text-dark">{t('merchant.branchesIndex.id')}</th>
+                                        <th className="min-w-125px text-dark">{t('merchant.branchesIndex.name')}</th>
+                                        <th className="min-w-125px text-dark">{t('merchant.branchesIndex.address')}</th>
+                                        <th className="text-dark">{t('merchant.branchesIndex.status')}</th>
+                                        <th className="text-dark">{t('merchant.branchesIndex.createdAt')}</th>
+                                        <th className="text-end text-dark">{t('merchant.branchesIndex.actions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>

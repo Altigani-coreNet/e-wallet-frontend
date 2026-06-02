@@ -65,17 +65,17 @@ const BranchEdit = () => {
                 queryClient.invalidateQueries({ queryKey: ['branches'] });
                 
                 await Swal.fire({
-                    title: 'Success!',
-                    text: 'Branch updated successfully!',
+                    title: t('merchant.common.success'),
+                    text: t('merchant.branchForm.updateSuccess'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
                 });
                 navigate(`/merchant/branches/${id}`);
             } else {
-                const errorData = response.error || response.errors || 'Failed to update branch';
+                const errorData = response.error || response.errors || t('merchant.branchForm.updateFailed');
                 setError(errorData);
-                Swal.fire('Error!', errorData, 'error');
+                Swal.fire(t('merchant.common.error'), errorData, 'error');
             }
         } catch (err) {
             console.error('Error updating branch:', err);

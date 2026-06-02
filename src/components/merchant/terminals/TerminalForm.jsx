@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getBranchesForSelect } from '../../../services/branchesService';
 import ErrorAlert from '../../../components/common/ErrorAlert';
 
 const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, error }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         name: '',
         terminal_id: '',
@@ -151,7 +153,9 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
         <div className="card">
             <div className="card-header">
                 <h3 className="card-title">
-                    {mode === 'create' ? 'Create New Terminal' : 'Edit Terminal'}
+                    {mode === 'create'
+                        ? t('merchant.terminalForm.createTitle')
+                        : t('merchant.terminalForm.editTitle')}
                 </h3>
             </div>
 
@@ -162,38 +166,36 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
                     <div className="row">
                         {/* Terminal Name */}
                         <div className="col-md-6 mb-6">
-                            <label className="form-label required">Terminal Name</label>
+                            <label className="form-label required">{t('merchant.terminalForm.terminalName')}</label>
                             <input
                                 type="text"
                                 name="name"
                                 className="form-control"
-                                placeholder="Enter terminal name"
+                                placeholder={t('merchant.terminalForm.terminalNamePh')}
                                 value={formData.name}
                                 onChange={handleChange}
                                 required
                                 disabled={loading}
                             />
-                            <div className="form-text">Enter a unique name for this terminal</div>
+                            <div className="form-text">{t('merchant.terminalForm.terminalNameHint')}</div>
                         </div>
 
-                        {/* Terminal ID */}
                         <div className="col-md-6 mb-6">
-                            <label className="form-label">Terminal ID</label>
+                            <label className="form-label">{t('merchant.terminalForm.terminalId')}</label>
                             <input
                                 type="text"
                                 name="terminal_id"
                                 className="form-control"
-                                placeholder="Auto-generated if left empty"
+                                placeholder={t('merchant.terminalForm.terminalIdPh')}
                                 value={formData.terminal_id}
                                 onChange={handleChange}
                                 disabled={loading}
                             />
-                            <div className="form-text">Leave empty to auto-generate</div>
+                            <div className="form-text">{t('merchant.terminalForm.terminalIdHint')}</div>
                         </div>
 
-                        {/* Branch - Searchable Select */}
                         <div className="col-md-6 mb-6">
-                            <label className="form-label">Branch</label>
+                            <label className="form-label">{t('merchant.terminalForm.branch')}</label>
                             <div className="position-relative" id="branch-select-container">
                                 <div className="input-group">
                                     <input
@@ -201,10 +203,10 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
                                         className="form-control"
                                         placeholder={
                                             loadingBranches 
-                                                ? "Loading branches..." 
+                                                ? t('merchant.terminalForm.loadingBranches')
                                                 : branches.length > 0 
-                                                    ? "Search and select branch..." 
-                                                    : "No branches available"
+                                                    ? t('merchant.terminalForm.searchBranchPh')
+                                                    : t('merchant.terminalForm.noBranchesAvailable')
                                         }
                                         value={branchSearchTerm || selectedBranchName}
                                         onChange={(e) => {
@@ -232,7 +234,7 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
                                             className="btn btn-icon btn-light"
                                             onClick={handleClearBranch}
                                             disabled={loading || loadingBranches}
-                                            title="Clear selection"
+                                            title={t('merchant.terminalForm.clearSelection')}
                                         >
                                             <i className="ki-duotone ki-cross fs-2">
                                                 <span className="path1"></span>
@@ -269,7 +271,7 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
                                             })
                                         ) : (
                                             <div className="dropdown-item-text text-muted">
-                                                No branches found matching "{branchSearchTerm}"
+                                                {t('merchant.terminalForm.noBranchesMatch', { term: branchSearchTerm })}
                                             </div>
                                         )}
                                     </div>
@@ -279,19 +281,19 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
                                 {loadingBranches ? (
                                     <span className="text-muted">
                                         <span className="spinner-border spinner-border-sm me-1"></span>
-                                        Loading branches...
+                                        {t('merchant.terminalForm.loadingBranches')}
                                     </span>
                                 ) : branches.length > 0 ? (
-                                    `Type to search and select branch (${branches.length} available)`
+                                    t('merchant.terminalForm.branchSearchHint', { count: branches.length })
                                 ) : (
-                                    <span className="text-warning">No branches found. Please create branches first.</span>
+                                    <span className="text-warning">{t('merchant.terminalForm.noBranchesWarning')}</span>
                                 )}
                             </div>
                         </div>
 
                         {/* Status */}
                         <div className="col-md-6 mb-6">
-                            <label className="form-label required">Status</label>
+                            <label className="form-label required">{t('merchant.terminalForm.status')}</label>
                             <select
                                 name="is_active"
                                 className="form-select"
@@ -299,20 +301,19 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
                                 onChange={handleChange}
                                 disabled={loading}
                             >
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option value="active">{t('merchant.terminalForm.active')}</option>
+                                <option value="inactive">{t('merchant.terminalForm.inactive')}</option>
                             </select>
-                            <div className="form-text">Set the terminal status</div>
+                            <div className="form-text">{t('merchant.terminalForm.statusHint')}</div>
                         </div>
 
-                        {/* Model */}
                         <div className="col-md-6 mb-6">
-                            <label className="form-label">Model</label>
+                            <label className="form-label">{t('merchant.terminalForm.model')}</label>
                             <input
                                 type="text"
                                 name="model"
                                 className="form-control"
-                                placeholder="Enter model"
+                                placeholder={t('merchant.terminalForm.modelPh')}
                                 value={formData.model}
                                 onChange={handleChange}
                                 disabled={loading}
@@ -321,12 +322,12 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
 
                         {/* Manufacturer */}
                         <div className="col-md-6 mb-6">
-                            <label className="form-label">Manufacturer</label>
+                            <label className="form-label">{t('merchant.terminalForm.manufacturer')}</label>
                             <input
                                 type="text"
                                 name="manufacturer"
                                 className="form-control"
-                                placeholder="Enter manufacturer"
+                                placeholder={t('merchant.terminalForm.manufacturerPh')}
                                 value={formData.manufacturer}
                                 onChange={handleChange}
                                 disabled={loading}
@@ -335,12 +336,12 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
 
                         {/* Serial Number */}
                         <div className="col-md-6 mb-6">
-                            <label className="form-label">Serial Number</label>
+                            <label className="form-label">{t('merchant.terminalForm.serialNumber')}</label>
                             <input
                                 type="text"
                                 name="serial_no"
                                 className="form-control"
-                                placeholder="Enter serial number"
+                                placeholder={t('merchant.terminalForm.serialNumberPh')}
                                 value={formData.serial_no}
                                 onChange={handleChange}
                                 disabled={loading}
@@ -349,12 +350,12 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
 
                         {/* SDK ID */}
                         <div className="col-md-6 mb-6">
-                            <label className="form-label">SDK ID</label>
+                            <label className="form-label">{t('merchant.terminalForm.sdkId')}</label>
                             <input
                                 type="text"
                                 name="sdk_id"
                                 className="form-control"
-                                placeholder="Enter SDK ID"
+                                placeholder={t('merchant.terminalForm.sdkIdPh')}
                                 value={formData.sdk_id}
                                 onChange={handleChange}
                                 disabled={loading}
@@ -363,12 +364,12 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
 
                         {/* SDK Version */}
                         <div className="col-md-6 mb-6">
-                            <label className="form-label">SDK Version</label>
+                            <label className="form-label">{t('merchant.terminalForm.sdkVersion')}</label>
                             <input
                                 type="text"
                                 name="sdk_version"
                                 className="form-control"
-                                placeholder="Enter SDK version"
+                                placeholder={t('merchant.terminalForm.sdkVersionPh')}
                                 value={formData.sdk_version}
                                 onChange={handleChange}
                                 disabled={loading}
@@ -377,12 +378,12 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
 
                         {/* Android OS */}
                         <div className="col-md-6 mb-6">
-                            <label className="form-label">Android OS</label>
+                            <label className="form-label">{t('merchant.terminalForm.androidOs')}</label>
                             <input
                                 type="text"
                                 name="android_os"
                                 className="form-control"
-                                placeholder="Enter Android OS version"
+                                placeholder={t('merchant.terminalForm.androidOsPh')}
                                 value={formData.android_os}
                                 onChange={handleChange}
                                 disabled={loading}
@@ -391,7 +392,7 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
 
                         {/* Add Type */}
                         <div className="col-md-6 mb-6">
-                            <label className="form-label">Add Type</label>
+                            <label className="form-label">{t('merchant.terminalForm.addType')}</label>
                             <select
                                 name="add_type"
                                 className="form-select"
@@ -399,10 +400,10 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
                                 onChange={handleChange}
                                 disabled={loading}
                             >
-                                <option value="static">Static</option>
-                                <option value="auto">Auto</option>
+                                <option value="static">{t('merchant.terminalForm.addTypeStatic')}</option>
+                                <option value="auto">{t('merchant.terminalForm.addTypeAuto')}</option>
                             </select>
-                            <div className="form-text">How this terminal was added</div>
+                            <div className="form-text">{t('merchant.terminalForm.addTypeHint')}</div>
                         </div>
                     </div>
                 </div>
@@ -414,7 +415,7 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
                         onClick={() => window.history.back()}
                         disabled={loading}
                     >
-                        Cancel
+                        {t('merchant.terminalForm.cancel')}
                     </button>
                     <button 
                         type="submit" 
@@ -424,10 +425,12 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
                         {loading ? (
                             <>
                                 <span className="spinner-border spinner-border-sm me-2"></span>
-                                Saving...
+                                {t('merchant.terminalForm.saving')}
                             </>
                         ) : (
-                            mode === 'create' ? 'Create Terminal' : 'Update Terminal'
+                            mode === 'create'
+                                ? t('merchant.terminalForm.createTerminal')
+                                : t('merchant.terminalForm.updateTerminal')
                         )}
                     </button>
                 </div>

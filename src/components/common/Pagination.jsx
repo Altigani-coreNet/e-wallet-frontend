@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const Pagination = ({ currentPage, lastPage, total, perPage, onPageChange, onPerPageChange }) => {
+    const { t } = useTranslation();
     const handlePageChange = (page) => {
         if (page >= 1 && page <= lastPage && page !== currentPage) {
             onPageChange(page);
@@ -86,7 +88,7 @@ const Pagination = ({ currentPage, lastPage, total, perPage, onPageChange, onPer
     return (
         <div className="d-flex flex-stack flex-wrap pt-10">
             <div className="fs-6 fw-semibold text-gray-700">
-                Showing {startItem} to {endItem} of {total} entries
+                {t('merchant.common.showingEntries', { from: startItem, to: endItem, total })}
             </div>
 
             <ul className="pagination">

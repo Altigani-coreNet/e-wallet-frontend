@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { 
@@ -16,6 +17,7 @@ import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 
 const UserGroupsIndex = () => {
+    const { t } = useTranslation();
     const location = useLocation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     
@@ -123,21 +125,21 @@ const UserGroupsIndex = () => {
             const response = await deleteUserGroup(id);
             
             if (response.success) {
-                toast.success('User group deleted successfully');
+                toast.success(t('merchant.userGroupsUI.view.deleteSuccess'));
                 fetchUserGroups(pagination.currentPage);
             } else {
                 toast.error(response.error || 'Failed to delete user group');
             }
         } catch (err) {
             console.error('Error deleting user group:', err);
-            toast.error('An unexpected error occurred');
+            toast.error(t('merchant.userGroupsUI.form.unexpectedError'));
         }
     };
 
     // Handle bulk delete
     const handleBulkDelete = async () => {
         if (selectedIds.length === 0) {
-            toast.warning('Please select at least one user group');
+            toast.warning(t('merchant.userGroupsUI.form.usersRequired'));
             return;
         }
 
@@ -149,15 +151,15 @@ const UserGroupsIndex = () => {
             const response = await bulkDeleteUserGroups(selectedIds);
             
             if (response.success) {
-                toast.success(response.data?.message || 'User groups deleted successfully');
+                toast.success(response.data?.message || t('merchant.userGroupsIndex.bulkDeleted', { count: selectedIds.length }));
                 setSelectedIds([]);
                 fetchUserGroups(pagination.currentPage);
             } else {
-                toast.error(response.error || 'Failed to delete user groups');
+                toast.error(response.error || t('merchant.userGroupsIndex.deleteFailed'));
             }
         } catch (err) {
             console.error('Error deleting user groups:', err);
-            toast.error('An unexpected error occurred');
+            toast.error(t('merchant.userGroupsUI.form.unexpectedError'));
         }
     };
 
@@ -167,14 +169,14 @@ const UserGroupsIndex = () => {
             const response = await toggleUserGroupStatus(id);
             
             if (response.success) {
-                toast.success(response.data?.message || 'Status updated successfully');
+                toast.success(response.data?.message || t('merchant.userGroupsUI.view.statusUpdated'));
                 fetchUserGroups(pagination.currentPage);
             } else {
                 toast.error(response.error || 'Failed to update status');
             }
         } catch (err) {
             console.error('Error toggling status:', err);
-            toast.error('An unexpected error occurred');
+            toast.error(t('merchant.userGroupsUI.form.unexpectedError'));
         }
     };
 
@@ -198,10 +200,10 @@ const UserGroupsIndex = () => {
     // Set toolbar
     useEffect(() => {
         const breadcrumbs = [
-            { label: 'User Groups', path: `${basePath}/user-groups`, active: true }
+            { label: t('merchant.breadcrumbs.userGroups'), path: `${basePath}/user-groups`, active: true }
         ];
         
-        setTitle('User Groups Management');
+        setTitle(t('merchant.userGroupsIndex.managementTitle'));
         setBreadcrumbs(breadcrumbs);
         setActions(
             <UserGroupToolbar 
@@ -215,11 +217,11 @@ const UserGroupsIndex = () => {
         );
         
         return () => {
-            setTitle('Dashboard');
+            setTitle(t('merchant.breadcrumbs.dashboard'));
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [basePath, loading, statusFilter, pagination.currentPage]);
+    }, [basePath, loading, statusFilter, pagination.currentPage, t]);
 
     return (
         <>
@@ -241,8 +243,7 @@ const UserGroupsIndex = () => {
                         <div className="card-body">
                             <div className="d-flex justify-content-between align-items-center">
                                 <div className="fw-bold">
-                                    <span className="me-2">{selectedIds.length}</span>
-                                    selected
+                                    {t('merchant.userGroupsIndex.selectedCount', { count: selectedIds.length })}
                                 </div>
                                 <button
                                     className="btn btn-danger btn-sm"
@@ -252,7 +253,7 @@ const UserGroupsIndex = () => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Delete Selected
+                                    {t('merchant.userGroupsIndex.deleteSelected')}
                                 </button>
                             </div>
                         </div>

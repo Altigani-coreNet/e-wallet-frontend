@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { getUserGroup, updateUserGroup } from '../../../services/userGroupsService';
@@ -8,6 +9,7 @@ import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 
 const UserGroupEdit = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { id } = useParams();
     const { setTitle, setBreadcrumbs } = useToolbar();
@@ -22,19 +24,19 @@ const UserGroupEdit = () => {
 
     useEffect(() => {
         if (userGroup) {
-            setTitle('Edit User Group');
+            setTitle(t('merchant.userGroupsUI.pages.editTitle'));
             setBreadcrumbs([
-                { label: 'User Groups', path: '/merchant/user-groups' },
+                { label: t('merchant.breadcrumbs.userGroups'), path: '/merchant/user-groups' },
                 { label: userGroup.name, path: `/merchant/user-groups/${id}` },
-                { label: 'Edit', path: `/merchant/user-groups/${id}/edit`, active: true }
+                { label: t('merchant.userGroupsUI.pages.editBreadcrumb'), path: `/merchant/user-groups/${id}/edit`, active: true }
             ]);
         }
 
         return () => {
-            setTitle('Dashboard');
+            setTitle(t('merchant.breadcrumbs.dashboard'));
             setBreadcrumbs([]);
         };
-    }, [userGroup, id]);
+    }, [userGroup, id, t, setTitle, setBreadcrumbs]);
 
     const fetchUserGroup = async () => {
         setLoading(true);
@@ -47,11 +49,11 @@ const UserGroupEdit = () => {
                 const userGroupData = response.data?.data || response.data?.user_group || response.data;
                 setUserGroup(userGroupData);
             } else {
-                setError(response.error || 'Failed to fetch user group');
+                setError(response.error || t('merchant.userGroupsUI.form.loadFailed'));
             }
         } catch (err) {
             console.error('Error fetching user group:', err);
-            setError('An unexpected error occurred while fetching the user group');
+            setError(t('merchant.userGroupsUI.form.unexpectedError'));
         } finally {
             setLoading(false);
         }
@@ -65,13 +67,12 @@ const UserGroupEdit = () => {
             const response = await updateUserGroup(id, formData);
 
             if (response.success) {
-                toast.success('User group updated successfully');
+                toast.success(t('merchant.userGroupsUI.form.updateSuccess'));
                 navigate(`/merchant/user-groups/${id}`);
             } else {
-                const errorMessage = response.error || response.errors?.message || 'Failed to update user group';
+                const errorMessage = response.error || response.errors?.message || t('merchant.userGroupsUI.form.updateFailed');
                 setError(errorMessage);
                 
-                // Handle validation errors
                 if (response.errors && typeof response.errors === 'object') {
                     const validationErrors = Object.entries(response.errors)
                         .map(([key, value]) => `${key}: ${Array.isArray(value) ? value[0] : value}`)
@@ -81,7 +82,7 @@ const UserGroupEdit = () => {
             }
         } catch (err) {
             console.error('Error updating user group:', err);
-            setError('An unexpected error occurred while updating the user group');
+            setError(t('merchant.userGroupsUI.form.unexpectedError'));
         } finally {
             setSubmitting(false);
         }
@@ -123,4 +124,3 @@ const UserGroupEdit = () => {
 };
 
 export default UserGroupEdit;
-

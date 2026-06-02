@@ -386,12 +386,12 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
                                 <thead>
                                     <tr className="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
                                         <th className="w-10px pe-2"></th>
-                                        <th className="min-w-125px">Name</th>
-                                        <th className="min-w-125px">Terminal ID</th>
-                                        <th className="min-w-100px">Model</th>
-                                        <th className="min-w-100px">Manufacturer</th>
-                                        <th className="min-w-100px">Status</th>
-                                        <th className="text-end min-w-100px">Actions</th>
+                                        <th className="min-w-125px">{t('merchant.terminalsIndex.colName')}</th>
+                                        <th className="min-w-125px">{t('merchant.terminalsIndex.colTerminalId')}</th>
+                                        <th className="min-w-100px">{t('merchant.terminalsIndex.colModel')}</th>
+                                        <th className="min-w-100px">{t('merchant.terminalsIndex.colManufacturer')}</th>
+                                        <th className="min-w-100px">{t('merchant.terminalsIndex.colStatus')}</th>
+                                        <th className="text-end min-w-100px">{t('merchant.terminalsIndex.colActions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>

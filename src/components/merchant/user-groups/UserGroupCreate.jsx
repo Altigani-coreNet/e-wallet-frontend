@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { createUserGroup } from '../../../services/userGroupsService';
@@ -6,23 +7,24 @@ import UserGroupForm from './UserGroupForm';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 
 const UserGroupCreate = () => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs } = useToolbar();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        setTitle('Create User Group');
+        setTitle(t('merchant.userGroupsUI.pages.createTitle'));
         setBreadcrumbs([
-            { label: 'User Groups', path: '/merchant/user-groups' },
-            { label: 'Create', path: '/merchant/user-groups/create', active: true }
+            { label: t('merchant.breadcrumbs.userGroups'), path: '/merchant/user-groups' },
+            { label: t('merchant.userGroupsUI.pages.createBreadcrumb'), path: '/merchant/user-groups/create', active: true }
         ]);
 
         return () => {
-            setTitle('Dashboard');
+            setTitle(t('merchant.breadcrumbs.dashboard'));
             setBreadcrumbs([]);
         };
-    }, []);
+    }, [t, setTitle, setBreadcrumbs]);
 
     const handleSubmit = async (formData) => {
         setLoading(true);
@@ -32,13 +34,12 @@ const UserGroupCreate = () => {
             const response = await createUserGroup(formData);
 
             if (response.success) {
-                toast.success('User group created successfully');
+                toast.success(t('merchant.userGroupsUI.form.createSuccess'));
                 navigate('/merchant/user-groups');
             } else {
-                const errorMessage = response.error || response.errors?.message || 'Failed to create user group';
+                const errorMessage = response.error || response.errors?.message || t('merchant.userGroupsUI.form.createFailed');
                 setError(errorMessage);
                 
-                // Handle validation errors
                 if (response.errors && typeof response.errors === 'object') {
                     const validationErrors = Object.entries(response.errors)
                         .map(([key, value]) => `${key}: ${Array.isArray(value) ? value[0] : value}`)
@@ -48,7 +49,7 @@ const UserGroupCreate = () => {
             }
         } catch (err) {
             console.error('Error creating user group:', err);
-            setError('An unexpected error occurred while creating the user group');
+            setError(t('merchant.userGroupsUI.form.unexpectedError'));
         } finally {
             setLoading(false);
         }
@@ -69,4 +70,3 @@ const UserGroupCreate = () => {
 };
 
 export default UserGroupCreate;
-

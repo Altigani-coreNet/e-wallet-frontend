@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Pagination from '../../common/Pagination';
 import TerminalTableRow from './TerminalTableRow';
 
@@ -14,6 +15,8 @@ const TerminalsTable = ({
     loading,
     error 
 }) => {
+    const { t } = useTranslation();
+
     const handleSelectAll = (e) => {
         if (e.target.checked) {
             setSelectedIds(terminals.map(terminal => terminal.id));
@@ -53,13 +56,13 @@ const TerminalsTable = ({
                                 />
                             </div>
                         </th>
-                        <th className="min-w-125px">Name</th>
-                        <th className="min-w-125px">Terminal ID</th>
-                        <th className="min-w-125px">Branch</th>
-                        <th className="min-w-100px">Model</th>
-                        <th className="min-w-100px">Manufacturer</th>
-                        <th className="min-w-100px">Status</th>
-                        <th className="text-end min-w-100px">Actions</th>
+                        <th className="min-w-125px">{t('merchant.terminalsIndex.colName')}</th>
+                        <th className="min-w-125px">{t('merchant.terminalsIndex.colTerminalId')}</th>
+                        <th className="min-w-125px">{t('merchant.terminalsIndex.colBranch')}</th>
+                        <th className="min-w-100px">{t('merchant.terminalsIndex.colModel')}</th>
+                        <th className="min-w-100px">{t('merchant.terminalsIndex.colManufacturer')}</th>
+                        <th className="min-w-100px">{t('merchant.terminalsIndex.colStatus')}</th>
+                        <th className="text-end min-w-100px">{t('merchant.terminalsIndex.colActions')}</th>
                     </tr>
                 </thead>
                 <tbody className="fw-semibold text-gray-600">
@@ -67,9 +70,9 @@ const TerminalsTable = ({
                         <tr>
                             <td colSpan="8" className="text-center py-10">
                                 <div className="spinner-border spinner-border-sm text-primary" role="status">
-                                    <span className="visually-hidden">Loading...</span>
+                                    <span className="visually-hidden">{t('merchant.common.loading')}</span>
                                 </div>
-                                <div className="text-gray-500 mt-2">Loading terminals...</div>
+                                <div className="text-gray-500 mt-2">{t('merchant.terminalsIndex.loadingTerminals')}</div>
                             </td>
                         </tr>
                     ) : error ? (
@@ -85,7 +88,7 @@ const TerminalsTable = ({
                                         onClick={onRefresh}
                                     >
                                         <i className="bi bi-arrow-clockwise me-1"></i>
-                                        Retry
+                                        {t('merchant.common.retry')}
                                     </button>
                                 </div>
                             </td>
@@ -93,7 +96,7 @@ const TerminalsTable = ({
                     ) : terminals.length === 0 ? (
                         <tr>
                             <td colSpan="8" className="text-center py-10">
-                                <div className="text-gray-500">No terminals found</div>
+                                <div className="text-gray-500">{t('merchant.terminalsIndex.noTerminalsFound')}</div>
                             </td>
                         </tr>
                     ) : (
@@ -111,7 +114,6 @@ const TerminalsTable = ({
                 </tbody>
             </table>
 
-            {/* Pagination */}
             {terminals.length > 0 && (
                 <Pagination
                     currentPage={pagination.current_page}
@@ -127,4 +129,3 @@ const TerminalsTable = ({
 };
 
 export default TerminalsTable;
-

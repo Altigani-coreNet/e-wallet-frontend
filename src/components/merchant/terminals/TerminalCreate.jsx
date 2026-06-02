@@ -50,20 +50,20 @@ const TerminalCreate = () => {
             
             if (response.success) {
                 await Swal.fire({
-                    title: 'Success!',
-                    text: 'Terminal created successfully.',
+                    title: t('merchant.common.success'),
+                    text: t('merchant.terminalForm.createSuccess'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
                 });
                 navigate('/merchant/terminals');
             } else {
-                setError(response.error || 'Failed to create terminal');
-                Swal.fire('Error!', response.error || 'Failed to create terminal.', 'error');
+                setError(response.error || t('merchant.terminalForm.createFailed'));
+                Swal.fire(t('merchant.common.error'), response.error || t('merchant.terminalForm.createFailed'), 'error');
             }
         } catch (err) {
-            setError('An unexpected error occurred');
-            Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+            setError(t('merchant.terminalForm.unexpectedError'));
+            Swal.fire(t('merchant.common.error'), t('merchant.terminalForm.unexpectedError'), 'error');
         } finally {
             setLoading(false);
         }

@@ -2,6 +2,7 @@ import React, { useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../stores/authStore';
+import useMerchantModules from '../../hooks/useMerchantModules';
 import { useLocalePrefix } from '../../hooks/useLocalePrefix';
 import { stripLocalePrefix } from '../../i18n/localePaths';
 
@@ -26,15 +27,48 @@ const Sidebar = ({ isLoading = false, error, onRetry }) => {
     const p = useLocalePrefix();
     const pathNoLocale = stripLocalePrefix(location.pathname);
     const { merchant, logout } = useAuthStore();
+    const can = useAuthStore(state => state.can);
+    const canAny = useAuthStore(state => state.canAny);
     const profileLoading = useAuthStore(state => state.profileLoading);
     const profileLoaded = useAuthStore(state => state.profileLoaded);
-    
+    const { isScopeEnabled } = useMerchantModules();
+    const planScopes = Array.isArray(merchant?.plan?.plan_scopes) ? merchant.plan.plan_scopes : [];
+    const hasLegacyPosScope = Array.isArray(merchant?.scopes) && merchant.scopes.includes('softpos');
+    const isScopeAllowed = (scopeType) => {
+        if (planScopes.length === 0) {
+            return hasLegacyPosScope;
+        }
+        return isScopeEnabled(scopeType);
+    };
+
     const isActive = (path) => pathNoLocale.includes(path);
 
     const isActiveExact = (path) => pathNoLocale === path;
 
     const merchantStatus = merchant?.status ? String(merchant.status).toLowerCase() : null;
     const isMerchantApproved = merchantStatus === 'approved';
+
+    const isUserMgmtActive =
+        isActive('/merchant/users') ||
+        isActive('/merchant/user-groups') ||
+        isActive('/merchant/roles');
+    const isBranchesActive = isActive('/merchant/branches');
+    const isTerminalsActive = isActive('/merchant/terminals');
+    const isMerchantMgmtActive =
+        isUserMgmtActive || isBranchesActive || isTerminalsActive;
+
+    const showUserMgmtSection =
+        (isScopeAllowed('users') && canAny(['pos.users.view_users', 'view_users', 'pos.users.create_users', 'create_users'])) ||
+        canAny(['pos.users_groups.view', 'pos.users_groups.view_users_group', 'pos.users_groups.create', 'pos.users_groups.create_users_group']) ||
+        canAny(['pos.roles.view_roles', 'view_roles']);
+
+    const showBranchesSection =
+        isScopeAllowed('branches') &&
+        canAny(['pos.branches.view_branches', 'view_branches', 'pos.branches.create_branches', 'create_branches', 'request_branches']);
+
+    const showTerminalsSection =
+        isScopeAllowed('terminals') &&
+        canAny(['pos.terminals.view_terminals', 'view_terminals', 'pos.terminals.create_terminals', 'create_terminals', 'assign_terminals']);
 
     const handleLogout = useCallback(async () => {
         try {
@@ -309,6 +343,172 @@ const Sidebar = ({ isLoading = false, error, onRetry }) => {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Merchant Management */}
+                            {(showUserMgmtSection || showBranchesSection || showTerminalsSection) && (
+                            <div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isMerchantMgmtActive ? 'hover show' : ''}`}>
+                                <span className={`menu-link ${isMerchantMgmtActive ? 'active' : ''}`}>
+                                    <span className="menu-icon">
+                                        <i className="ki-duotone ki-abstract-28 fs-2">
+                                            <span className="path1"></span>
+                                            <span className="path2"></span>
+                                        </i>
+                                    </span>
+                                    <span className="menu-title">{t('merchant.sidebar.merchantManagement')}</span>
+                                    <span className="menu-arrow"></span>
+                                </span>
+
+                                <div className={`menu-sub menu-sub-accordion ${isMerchantMgmtActive ? 'show' : ''}`}>
+                                    {showUserMgmtSection && (
+                                    <div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isUserMgmtActive ? 'hover show' : ''}`}>
+                                        <span className={`menu-link ${isUserMgmtActive ? 'active' : ''}`}>
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('merchant.sidebar.userManagement')}</span>
+                                            <span className="menu-arrow"></span>
+                                        </span>
+
+                                        <div className={`menu-sub menu-sub-accordion ${isUserMgmtActive ? 'show' : ''}`}>
+                                            {isScopeAllowed('users') && canAny(['pos.users.view_users', 'view_users']) && (
+                                                <div className="menu-item">
+                                                    <Link className={`menu-link ${isActiveExact('/merchant/users') ? 'active' : ''}`} to={p('/merchant/users')}>
+                                                        <span className="menu-bullet">
+                                                            <span className="bullet bullet-dot"></span>
+                                                        </span>
+                                                        <span className="menu-title">{t('merchant.sidebar.allUsers')}</span>
+                                                    </Link>
+                                                </div>
+                                            )}
+                                            {isScopeAllowed('users') && canAny(['pos.users.create_users', 'create_users']) && (
+                                                <div className="menu-item">
+                                                    <Link className={`menu-link ${isActive('/merchant/users/create') ? 'active' : ''}`} to={p('/merchant/users/create')}>
+                                                        <span className="menu-bullet">
+                                                            <span className="bullet bullet-dot"></span>
+                                                        </span>
+                                                        <span className="menu-title">{t('merchant.sidebar.addUser')}</span>
+                                                    </Link>
+                                                </div>
+                                            )}
+
+                                            {canAny(['pos.users_groups.view', 'pos.users_groups.view_users_group', 'pos.users_groups.create', 'pos.users_groups.create_users_group']) && (
+                                                <div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isActive('/merchant/user-groups') ? 'hover show' : ''}`}>
+                                                    <span className={`menu-link ${isActive('/merchant/user-groups') ? 'active' : ''}`}>
+                                                        <span className="menu-bullet">
+                                                            <span className="bullet bullet-dot"></span>
+                                                        </span>
+                                                        <span className="menu-title">{t('merchant.sidebar.userGroups')}</span>
+                                                        <span className="menu-arrow"></span>
+                                                    </span>
+                                                    <div className={`menu-sub menu-sub-accordion ${isActive('/merchant/user-groups') ? 'show' : ''}`}>
+                                                        {canAny(['pos.users_groups.view', 'pos.users_groups.view_users_group']) && (
+                                                            <div className="menu-item">
+                                                                <Link className={`menu-link ${isActiveExact('/merchant/user-groups') ? 'active' : ''}`} to={p('/merchant/user-groups')}>
+                                                                    <span className="menu-bullet">
+                                                                        <span className="bullet bullet-dot"></span>
+                                                                    </span>
+                                                                    <span className="menu-title">{t('merchant.sidebar.allUserGroups')}</span>
+                                                                </Link>
+                                                            </div>
+                                                        )}
+                                                        {canAny(['pos.users_groups.create', 'pos.users_groups.create_users_group']) && (
+                                                            <div className="menu-item">
+                                                                <Link className={`menu-link ${isActive('/merchant/user-groups/create') ? 'active' : ''}`} to={p('/merchant/user-groups/create')}>
+                                                                    <span className="menu-bullet">
+                                                                        <span className="bullet bullet-dot"></span>
+                                                                    </span>
+                                                                    <span className="menu-title">{t('merchant.sidebar.addUserGroup')}</span>
+                                                                </Link>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {canAny(['pos.roles.view_roles', 'view_roles']) && (
+                                                <div className="menu-item">
+                                                    <Link className={`menu-link ${isActive('/merchant/roles') ? 'active' : ''}`} to={p('/merchant/roles')}>
+                                                        <span className="menu-bullet">
+                                                            <span className="bullet bullet-dot"></span>
+                                                        </span>
+                                                        <span className="menu-title">{t('merchant.sidebar.roleManagement')}</span>
+                                                    </Link>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    )}
+
+                                    {showTerminalsSection && (
+                                    <div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isTerminalsActive ? 'hover show' : ''}`}>
+                                        <span className={`menu-link ${isTerminalsActive ? 'active' : ''}`}>
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('merchant.sidebar.myTerminals')}</span>
+                                            <span className="menu-arrow"></span>
+                                        </span>
+                                        <div className={`menu-sub menu-sub-accordion ${isTerminalsActive ? 'show' : ''}`}>
+                                            {canAny(['pos.terminals.view_terminals', 'view_terminals']) && (
+                                                <div className="menu-item">
+                                                    <Link className={`menu-link ${isActiveExact('/merchant/terminals') ? 'active' : ''}`} to={p('/merchant/terminals')}>
+                                                        <span className="menu-bullet">
+                                                            <span className="bullet bullet-dot"></span>
+                                                        </span>
+                                                        <span className="menu-title">{t('merchant.sidebar.allTerminals')}</span>
+                                                    </Link>
+                                                </div>
+                                            )}
+                                            {canAny(['pos.terminals.create_terminals', 'pos.terminals.assign_terminals', 'pos.terminals.edit_terminals', 'create_terminals', 'assign_terminals']) && (
+                                                <div className="menu-item">
+                                                    <Link className={`menu-link ${isActive('/merchant/terminals/create') ? 'active' : ''}`} to={p('/merchant/terminals/create')}>
+                                                        <span className="menu-bullet">
+                                                            <span className="bullet bullet-dot"></span>
+                                                        </span>
+                                                        <span className="menu-title">{t('merchant.sidebar.addTerminal')}</span>
+                                                    </Link>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    )}
+
+                                    {showBranchesSection && (
+                                    <div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isBranchesActive ? 'hover show' : ''}`}>
+                                        <span className={`menu-link ${isBranchesActive ? 'active' : ''}`}>
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('merchant.sidebar.myBranches')}</span>
+                                            <span className="menu-arrow"></span>
+                                        </span>
+                                        <div className={`menu-sub menu-sub-accordion ${isBranchesActive ? 'show' : ''}`}>
+                                            {canAny(['pos.branches.view_branches', 'view_branches']) && (
+                                                <div className="menu-item">
+                                                    <Link className={`menu-link ${isActiveExact('/merchant/branches') ? 'active' : ''}`} to={p('/merchant/branches')}>
+                                                        <span className="menu-bullet">
+                                                            <span className="bullet bullet-dot"></span>
+                                                        </span>
+                                                        <span className="menu-title">{t('merchant.sidebar.allBranches')}</span>
+                                                    </Link>
+                                                </div>
+                                            )}
+                                            {canAny(['pos.branches.create_branches', 'create_branches', 'request_branches', 'pos.branches.edit_branches', 'pos.branches.delete_branches']) && (
+                                                <div className="menu-item">
+                                                    <Link className={`menu-link ${isActive('/merchant/branches/create') ? 'active' : ''}`} to={p('/merchant/branches/create')}>
+                                                        <span className="menu-bullet">
+                                                            <span className="bullet bullet-dot"></span>
+                                                        </span>
+                                                        <span className="menu-title">{t('merchant.sidebar.addNewBranch')}</span>
+                                                    </Link>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    )}
+                                </div>
+                            </div>
+                            )}
                             
                             {/* Profile */}
                             <div className="menu-item">

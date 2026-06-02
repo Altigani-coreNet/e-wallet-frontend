@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getBranchesForSelect } from '../../../services/userGroupsService';
 import UserSelector from '../../common/UserSelector';
 import ErrorAlert from '../../common/ErrorAlert';
 import LoadingSpinner from '../../common/LoadingSpinner';
 
 const UserGroupForm = ({ mode = 'create', initialData = {}, onSubmit, loading, error }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         name: '',
         branch_id: '',
@@ -52,7 +54,6 @@ const UserGroupForm = ({ mode = 'create', initialData = {}, onSubmit, loading, e
             [name]: value
         }));
         
-        // Clear validation error for this field
         if (validationErrors[name]) {
             setValidationErrors(prev => ({
                 ...prev,
@@ -78,13 +79,12 @@ const UserGroupForm = ({ mode = 'create', initialData = {}, onSubmit, loading, e
     const handleSubmit = (e) => {
         e.preventDefault();
         
-        // Validation
         const errors = {};
         if (!formData.name || formData.name.trim() === '') {
-            errors.name = 'Group name is required';
+            errors.name = t('merchant.userGroupsUI.form.nameRequired');
         }
         if (!formData.user_ids || formData.user_ids.length === 0) {
-            errors.user_ids = 'Please select at least one user';
+            errors.user_ids = t('merchant.userGroupsUI.form.usersRequired');
         }
         
         if (Object.keys(errors).length > 0) {
@@ -99,7 +99,11 @@ const UserGroupForm = ({ mode = 'create', initialData = {}, onSubmit, loading, e
         <div className="card">
             <div className="card-header border-0 pt-6">
                 <div className="card-title">
-                    <h2>{mode === 'create' ? 'Create User Group' : 'Edit User Group'}</h2>
+                    <h2>
+                        {mode === 'create'
+                            ? t('merchant.userGroupsUI.form.addTitle')
+                            : t('merchant.userGroupsUI.form.editTitle')}
+                    </h2>
                 </div>
             </div>
 
@@ -107,14 +111,13 @@ const UserGroupForm = ({ mode = 'create', initialData = {}, onSubmit, loading, e
                 <div className="card-body">
                     {error && <ErrorAlert error={error} />}
 
-                    {/* Group Name */}
                     <div className="mb-6">
-                        <label className="form-label required">Group Name</label>
+                        <label className="form-label required">{t('merchant.userGroupsUI.form.groupName')}</label>
                         <input
                             type="text"
                             name="name"
                             className={`form-control ${validationErrors.name ? 'is-invalid' : ''}`}
-                            placeholder="Enter group name"
+                            placeholder={t('merchant.userGroupsUI.form.groupNamePh')}
                             value={formData.name}
                             onChange={handleChange}
                             required
@@ -125,9 +128,8 @@ const UserGroupForm = ({ mode = 'create', initialData = {}, onSubmit, loading, e
                         )}
                     </div>
 
-                    {/* Branch Selection */}
                     <div className="mb-6">
-                        <label className="form-label">Branch (Optional)</label>
+                        <label className="form-label">{t('merchant.userGroupsUI.form.branchOptional')}</label>
                         {loadingBranches ? (
                             <LoadingSpinner />
                         ) : (
@@ -138,7 +140,7 @@ const UserGroupForm = ({ mode = 'create', initialData = {}, onSubmit, loading, e
                                 onChange={handleChange}
                                 disabled={loading}
                             >
-                                <option value="">Select Branch (Optional)</option>
+                                <option value="">{t('merchant.userGroupsUI.form.selectBranchOptional')}</option>
                                 {branches.map(branch => (
                                     <option key={branch.id} value={branch.id}>
                                         {branch.name || branch.text}
@@ -146,26 +148,24 @@ const UserGroupForm = ({ mode = 'create', initialData = {}, onSubmit, loading, e
                                 ))}
                             </select>
                         )}
-                        <div className="form-text">Optionally assign this group to a specific branch</div>
+                        <div className="form-text">{t('merchant.userGroupsUI.form.branchHint')}</div>
                     </div>
 
-                    {/* Description */}
                     <div className="mb-6">
-                        <label className="form-label">Description</label>
+                        <label className="form-label">{t('merchant.userGroupsUI.form.description')}</label>
                         <textarea
                             name="description"
                             className="form-control"
                             rows="3"
-                            placeholder="Enter description (optional)"
+                            placeholder={t('merchant.userGroupsUI.form.descriptionPh')}
                             value={formData.description}
                             onChange={handleChange}
                             disabled={loading}
                         />
                     </div>
 
-                    {/* User Selection */}
                     <div className="mb-6">
-                        <label className="form-label required">Select Users</label>
+                        <label className="form-label required">{t('merchant.userGroupsUI.form.selectUsers')}</label>
                         {validationErrors.user_ids && (
                             <div className="text-danger mb-2">{validationErrors.user_ids}</div>
                         )}
@@ -183,7 +183,7 @@ const UserGroupForm = ({ mode = 'create', initialData = {}, onSubmit, loading, e
                         className="btn btn-secondary"
                         disabled={loading}
                     >
-                        Cancel
+                        {t('merchant.userGroupsUI.form.cancel')}
                     </a>
                     <button
                         type="submit"
@@ -193,7 +193,9 @@ const UserGroupForm = ({ mode = 'create', initialData = {}, onSubmit, loading, e
                         {loading ? (
                             <>
                                 <span className="spinner-border spinner-border-sm me-2" role="status"></span>
-                                {mode === 'create' ? 'Creating...' : 'Updating...'}
+                                {mode === 'create'
+                                    ? t('merchant.userGroupsUI.form.creating')
+                                    : t('merchant.userGroupsUI.form.updating')}
                             </>
                         ) : (
                             <>
@@ -201,7 +203,9 @@ const UserGroupForm = ({ mode = 'create', initialData = {}, onSubmit, loading, e
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                {mode === 'create' ? 'Create User Group' : 'Update User Group'}
+                                {mode === 'create'
+                                    ? t('merchant.userGroupsUI.form.createGroup')
+                                    : t('merchant.userGroupsUI.form.updateGroup')}
                             </>
                         )}
                     </button>
@@ -212,4 +216,3 @@ const UserGroupForm = ({ mode = 'create', initialData = {}, onSubmit, loading, e
 };
 
 export default UserGroupForm;
-

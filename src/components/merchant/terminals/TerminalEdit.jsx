@@ -65,20 +65,20 @@ const TerminalEdit = () => {
                 queryClient.invalidateQueries({ queryKey: ['terminals'] });
                 
                 await Swal.fire({
-                    title: 'Success!',
-                    text: 'Terminal updated successfully.',
+                    title: t('merchant.common.success'),
+                    text: t('merchant.terminalForm.updateSuccess'),
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
                 });
                 navigate(`/merchant/terminals/${id}`);
             } else {
-                setError(response.error || 'Failed to update terminal');
-                Swal.fire('Error!', response.error || 'Failed to update terminal.', 'error');
+                setError(response.error || t('merchant.terminalForm.updateFailed'));
+                Swal.fire(t('merchant.common.error'), response.error || t('merchant.terminalForm.updateFailed'), 'error');
             }
         } catch (err) {
-            setError('An unexpected error occurred');
-            Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+            setError(t('merchant.terminalForm.unexpectedError'));
+            Swal.fire(t('merchant.common.error'), t('merchant.terminalForm.unexpectedError'), 'error');
         } finally {
             setUpdating(false);
         }
@@ -91,10 +91,10 @@ const TerminalEdit = () => {
     if (fetchError || !terminal) {
         return (
             <div className="alert alert-danger">
-                <strong>Error:</strong> {fetchError?.message || 'Terminal not found'}
+                <strong>{t('merchant.branchView.errorPrefix')}</strong> {fetchError?.message || t('merchant.terminalView.notFound')}
                 <div className="mt-3">
                     <button className="btn btn-primary" onClick={() => navigate('/merchant/terminals')}>
-                        Back to Terminals
+                        {t('merchant.common.backToTerminals')}
                     </button>
                 </div>
             </div>

@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const UserGroupStatistics = ({ statistics = {} }) => {
+    const { t } = useTranslation();
     const stats = {
         total: statistics.total || 0,
         active: statistics.active || 0,
@@ -10,7 +12,6 @@ const UserGroupStatistics = ({ statistics = {} }) => {
 
     return (
         <div className="row g-5 g-xl-8 mb-5">
-            {/* Total User Groups */}
             <div className="col-xl-3">
                 <div className="card card-xl-stretch mb-xl-8">
                     <div className="card-body">
@@ -25,14 +26,13 @@ const UserGroupStatistics = ({ statistics = {} }) => {
                             </div>
                             <div className="flex-grow-1">
                                 <div className="fs-4 text-gray-600 fw-bold">{stats.total}</div>
-                                <div className="fs-7 text-gray-500">Total Groups</div>
+                                <div className="fs-7 text-gray-500">{t('merchant.userGroupsUI.statistics.totalGroups')}</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Active User Groups */}
             <div className="col-xl-3">
                 <div className="card card-xl-stretch mb-xl-8">
                     <div className="card-body">
@@ -47,14 +47,13 @@ const UserGroupStatistics = ({ statistics = {} }) => {
                             </div>
                             <div className="flex-grow-1">
                                 <div className="fs-4 text-gray-600 fw-bold">{stats.active}</div>
-                                <div className="fs-7 text-gray-500">Active Groups</div>
+                                <div className="fs-7 text-gray-500">{t('merchant.userGroupsUI.statistics.activeGroups')}</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Inactive User Groups */}
             <div className="col-xl-3">
                 <div className="card card-xl-stretch mb-xl-8">
                     <div className="card-body">
@@ -70,14 +69,13 @@ const UserGroupStatistics = ({ statistics = {} }) => {
                             </div>
                             <div className="flex-grow-1">
                                 <div className="fs-4 text-gray-600 fw-bold">{stats.inactive}</div>
-                                <div className="fs-7 text-gray-500">Inactive Groups</div>
+                                <div className="fs-7 text-gray-500">{t('merchant.userGroupsUI.statistics.inactiveGroups')}</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Total Users Assigned */}
             <div className="col-xl-3">
                 <div className="card card-xl-stretch mb-xl-8">
                     <div className="card-body">
@@ -92,7 +90,7 @@ const UserGroupStatistics = ({ statistics = {} }) => {
                             </div>
                             <div className="flex-grow-1">
                                 <div className="fs-4 text-gray-600 fw-bold">{stats.total_users}</div>
-                                <div className="fs-7 text-gray-500">Total Users Assigned</div>
+                                <div className="fs-7 text-gray-500">{t('merchant.userGroupsUI.statistics.totalUsersAssigned')}</div>
                             </div>
                         </div>
                     </div>
@@ -103,4 +101,3 @@ const UserGroupStatistics = ({ statistics = {} }) => {
 };
 
 export default UserGroupStatistics;
-

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import BranchTableRow from './BranchTableRow';
 import Pagination from '../../common/Pagination';
 
@@ -11,7 +12,7 @@ const BranchesTable = ({
     onPageChange,
     onPerPageChange 
 }) => {
-    // Ensure branches is always an array
+    const { t } = useTranslation();
     const safeBranches = Array.isArray(branches) ? branches : [];
     const safeSelectedIds = Array.isArray(selectedIds) ? selectedIds : [];
 
@@ -50,12 +51,12 @@ const BranchesTable = ({
                                     />
                                 </div>
                             </th>
-                            <th className="text-dark">ID</th>
-                            <th className="min-w-125px text-dark">Name</th>
-                            <th className="min-w-125px text-dark">Address</th>
-                            <th className="text-dark">Status</th>
-                            <th className="text-dark">Created At</th>
-                            <th className="text-end text-dark">Actions</th>
+                            <th className="text-dark">{t('merchant.branchesIndex.id')}</th>
+                            <th className="min-w-125px text-dark">{t('merchant.branchesIndex.name')}</th>
+                            <th className="min-w-125px text-dark">{t('merchant.branchesIndex.address')}</th>
+                            <th className="text-dark">{t('merchant.branchesIndex.status')}</th>
+                            <th className="text-dark">{t('merchant.branchesIndex.createdAt')}</th>
+                            <th className="text-end text-dark">{t('merchant.branchesIndex.actions')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -67,8 +68,8 @@ const BranchesTable = ({
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        <span className="text-gray-600 fs-5">No branches found</span>
-                                        <span className="text-gray-400 fs-7 mt-2">Try adjusting your filters or create a new branch</span>
+                                        <span className="text-gray-600 fs-5">{t('merchant.branchesIndex.noBranchesFound')}</span>
+                                        <span className="text-gray-400 fs-7 mt-2">{t('merchant.branchesIndex.emptyHint')}</span>
                                     </div>
                                 </td>
                             </tr>
@@ -102,5 +103,3 @@ const BranchesTable = ({
 };
 
 export default BranchesTable;
-
-
