@@ -10,6 +10,7 @@ import {
 import Swal from 'sweetalert2';
 
 const WebhookForm = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const isEditMode = !!id;

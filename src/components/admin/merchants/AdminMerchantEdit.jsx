@@ -17,6 +17,7 @@ const debounce = (func, delay) => {
 };
 
 const AdminMerchantEdit = () => {
+    const { t, i18n } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
