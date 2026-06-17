@@ -373,8 +373,12 @@ const AdminMerchantEdit = () => {
             const token = getToken();
             const submitData = {
                 ...formData,
-                scopes: selectedScopes,
             };
+
+            if (availableScopes.length > 0) {
+                submitData.scopes = selectedScopes;
+            }
+
             const response = await axios.put(
                 `${ADMIN_ENDPOINTS.MERCHANTS}/${id}`,
                 submitData,
