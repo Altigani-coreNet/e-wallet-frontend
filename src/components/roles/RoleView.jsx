@@ -12,8 +12,10 @@ const RoleView = () => {
     const [searchParams] = useSearchParams();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     
-    // Detect route context (merchant or sales)
-    const basePath = location.pathname.startsWith('/merchant') ? '/merchant' : '/sales';
+    // Detect route context (merchant or sales), including localized routes like /en/merchant
+    const pathSegments = location.pathname.split('/').filter(Boolean);
+    const routeContext = pathSegments.includes('merchant') ? 'merchant' : 'sales';
+    const basePath = `/${routeContext}`;
     const rolesPath = `${basePath}/roles`;
     const typeParam = searchParams.get('type');
     
@@ -70,6 +72,7 @@ const RoleView = () => {
             setBreadcrumbs(breadcrumbs);
             
             const editUrl = `${rolesPath}/${id}/edit${typeParam ? `?type=${typeParam}` : ''}`;
+            const backUrl = typeParam ? `${rolesPath}?type=${typeParam}` : rolesPath;
             setActions(
                 <div className="d-flex gap-2">
                     <Link to={editUrl} className="btn btn-sm btn-primary">
@@ -79,7 +82,7 @@ const RoleView = () => {
                         </i>
                         <span className="d-none d-md-inline ms-1">Edit</span>
                     </Link>
-                    <Link to={rolesPath} className="btn btn-sm btn-light">
+                    <Link to={backUrl} className="btn btn-sm btn-light">
                         <i className="ki-duotone ki-arrow-left fs-3">
                             <span className="path1"></span>
                             <span className="path2"></span>
@@ -165,7 +168,7 @@ const RoleView = () => {
                                 <span className="path2"></span>
                             </i>
                             <p className="text-muted fs-4">Role not found</p>
-                            <Link to={rolesPath} className="btn btn-primary">
+                            <Link to={typeParam ? `${rolesPath}?type=${typeParam}` : rolesPath} className="btn btn-primary">
                                 Back to Roles
                             </Link>
                         </div>

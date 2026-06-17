@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { createUser } from '../../services/usersService';
 import UserForm from './UserForm';
@@ -9,12 +9,11 @@ import { toast } from 'react-toastify';
 
 const UserCreate = () => {
     const { t, i18n } = useTranslation();
-    const location = useLocation();
     const navigate = useNavigate();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     
-    // Detect route context (merchant or sales)
-    const basePath = location.pathname.startsWith('/merchant') ? '/merchant' : '/sales';
+    // Keep users module under merchant routes only
+    const basePath = '/merchant';
     const usersPath = `${basePath}/users`;
     
     const [loading, setLoading] = useState(false);

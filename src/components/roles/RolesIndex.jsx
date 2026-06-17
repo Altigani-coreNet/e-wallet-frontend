@@ -13,8 +13,10 @@ const RolesIndex = () => {
     const [searchParams] = useSearchParams();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     
-    // Detect route context (merchant or sales)
-    const basePath = location.pathname.startsWith('/merchant') ? '/merchant' : '/sales';
+    // Detect route context (merchant or sales), including localized routes like /en/merchant
+    const pathSegments = location.pathname.split('/').filter(Boolean);
+    const routeContext = pathSegments.includes('merchant') ? 'merchant' : 'sales';
+    const basePath = `/${routeContext}`;
     
     const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);

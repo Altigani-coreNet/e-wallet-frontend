@@ -6,6 +6,7 @@ import PurchaseForm from './PurchaseForm';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
+import { normalizePurchaseStatus } from '../../../utils/purchaseStatus';
 
 const PurchaseEdit = () => {
     const { id } = useParams();
@@ -27,7 +28,7 @@ const PurchaseEdit = () => {
         payment_method: 'Cash',
         note: '',
         staff_note: '',
-        status: 'received'
+        status: 0
     });
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,7 +94,7 @@ const PurchaseEdit = () => {
                     account_id: purchase.account_id || '',
                     note: purchase.note || '',
                     staff_note: purchase.staff_note || '',
-                    status: purchase.status || 'received'
+                    status: normalizePurchaseStatus(purchase.status)
                 });
             } else {
                 setError(response.error || 'Failed to fetch purchase');
@@ -163,7 +164,7 @@ const PurchaseEdit = () => {
                 paid_amount: parseFloat(data.paid_amount || 0),
                 note: data.note,
                 staff_note: data.staff_note,
-                status: data.status || 'received',
+                status: normalizePurchaseStatus(data.status),
                 products: formattedProducts
             };
 

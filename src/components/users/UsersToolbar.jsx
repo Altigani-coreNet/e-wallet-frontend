@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCan } from '../../utils/permissions';
 
-const UsersToolbar = ({ onRefresh, loading, basePath = '/sales', onToggleFilters, onImport, onExport }) => {
+const UsersToolbar = ({ onRefresh, loading, basePath = '/merchant', onToggleFilters, onImport, onExport }) => {
     const { t } = useTranslation();
 
     useEffect(() => {

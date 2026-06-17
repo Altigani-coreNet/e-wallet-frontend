@@ -6,6 +6,7 @@ import { createSupplier, suppliersKeys } from '../../../services/suppliersServic
 import SupplierForm from './SupplierForm';
 import PlanUpgradeModal from '../../users/PlanUpgradeModal';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import { getModuleBasePath } from '../../../i18n/localePaths';
 
 const SupplierCreate = () => {
     const navigate = useNavigate();
@@ -13,7 +14,7 @@ const SupplierCreate = () => {
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const queryClient = useQueryClient();
     
-    const basePath = location.pathname.startsWith('/sales') ? '/sales' : '/merchant';
+    const basePath = getModuleBasePath(location.pathname);
     
     const [formData, setFormData] = useState({
         name: '',

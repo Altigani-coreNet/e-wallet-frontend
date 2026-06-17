@@ -1,38 +1,75 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import Select from 'react-select';
 import { useTranslation } from 'react-i18next';
 import { getBranchesForSelect } from '../../../services/branchesService';
-import ErrorAlert from '../../../components/common/ErrorAlert';
+import ErrorAlert from '../../common/ErrorAlert';
+
+const formatFormError = (err) => {
+    if (!err) return null;
+    if (typeof err === 'string') return err;
+    if (err.message && typeof err.message === 'string') return err.message;
+    if (typeof err === 'object') {
+        const messages = Object.values(err).flatMap((value) =>
+            Array.isArray(value) ? value : [value]
+        );
+        return messages.filter(Boolean).join(' ');
+    }
+    return null;
+};
 
 const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, error }) => {
     const { t } = useTranslation();
-    const [formData, setFormData] = useState({
-        name: '',
-        terminal_id: '',
-        branch_id: '',
-        model: '',
-        manufacturer: '',
-        serial_no: '',
-        sdk_id: '',
-        sdk_version: '',
-        android_os: '',
-        add_type: 'static',
-        is_active: 'active',
-    });
     const [branches, setBranches] = useState([]);
-    const [loadingBranches, setLoadingBranches] = useState(true);
-    const [branchSearchTerm, setBranchSearchTerm] = useState('');
-    const [showBranchDropdown, setShowBranchDropdown] = useState(false);
+    const [loadingBranches, setLoadingBranches] = useState(false);
+    const [selectedBranch, setSelectedBranch] = useState(null);
+    const [errors, setErrors] = useState({});
+
+    const [formData, setFormData] = useState({
+        name: initialData.name || '',
+        terminal_id: initialData.terminal_id || '',
+        branch_id: initialData.branch_id || '',
+        brand: initialData.brand || '',
+        model: initialData.model || '',
+        manufacturer: initialData.manufacturer || '',
+        serial_no: initialData.serial_no || '',
+        sdk_id: initialData.sdk_id || '',
+        sdk_version: initialData.sdk_version || '',
+        android_os: initialData.android_os || '',
+        add_type: initialData.add_type || 'static',
+        is_active: initialData.is_active !== undefined
+            ? (initialData.is_active === true || initialData.is_active === 'active' || initialData.is_active === 1 || initialData.is_active === '1')
+            : true,
+        terminal_status: initialData.terminal_status || 'offline',
+        device_id: initialData.device_id || '',
+    });
 
     useEffect(() => {
+        const fetchBranches = async () => {
+            setLoadingBranches(true);
+            try {
+                const response = await getBranchesForSelect();
+                if (response.success) {
+                    setBranches(response.data || []);
+                }
+            } catch (err) {
+                console.error('Failed to fetch branches:', err);
+            } finally {
+                setLoadingBranches(false);
+            }
+        };
+
         fetchBranches();
     }, []);
 
     useEffect(() => {
-        if (mode === 'edit' && initialData) {
+        if (mode === 'edit' && initialData?.id) {
+            const branchId = initialData.branch_id ?? initialData.branch?.id ?? '';
+
             setFormData({
                 name: initialData.name || '',
                 terminal_id: initialData.terminal_id || '',
-                branch_id: initialData.branch_id || '',
+                branch_id: branchId,
+                brand: initialData.brand || '',
                 model: initialData.model || '',
                 manufacturer: initialData.manufacturer || '',
                 serial_no: initialData.serial_no || '',
@@ -40,404 +77,330 @@ const TerminalForm = ({ mode = 'create', initialData = {}, onSubmit, loading, er
                 sdk_version: initialData.sdk_version || '',
                 android_os: initialData.android_os || '',
                 add_type: initialData.add_type || 'static',
-                is_active: initialData.is_active ? 'active' : 'inactive',
+                is_active: initialData.is_active === true || initialData.is_active === 'active' || initialData.is_active === 1 || initialData.is_active === '1',
+                terminal_status: initialData.terminal_status || 'offline',
+                device_id: initialData.device_id || '',
             });
         }
     }, [mode, initialData]);
 
-    // Close dropdown when clicking outside
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            const container = document.getElementById('branch-select-container');
-            if (container && !container.contains(event.target)) {
-                setShowBranchDropdown(false);
+        if (mode === 'edit' && initialData.branch_id && branches.length > 0) {
+            const branch = branches.find((b) => String(b.id) === String(initialData.branch_id));
+            if (branch) {
+                setSelectedBranch({
+                    value: branch.id,
+                    label: branch.name,
+                    data: branch,
+                });
             }
-        };
-
-        if (showBranchDropdown) {
-            document.addEventListener('mousedown', handleClickOutside);
-            return () => document.removeEventListener('mousedown', handleClickOutside);
         }
-    }, [showBranchDropdown]);
+    }, [mode, initialData.branch_id, branches]);
 
-    const fetchBranches = async () => {
-        try {
-            console.log('Fetching branches...');
-            const response = await getBranchesForSelect();
-            console.log('Branches response:', response);
-            if (response.success) {
-                const branchesData = response.data || [];
-                console.log(`Loaded ${branchesData.length} branches`);
-                setBranches(branchesData);
-            } else {
-                console.error('Failed to fetch branches:', response.error);
-            }
-        } catch (error) {
-            console.error('Error fetching branches:', error);
-        } finally {
-            setLoadingBranches(false);
+    const branchOptions = useMemo(
+        () => branches.map((branch) => ({
+            value: branch.id,
+            label: branch.name,
+            data: branch,
+        })),
+        [branches]
+    );
+
+    const handleChange = (field, value) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+        if (errors[field]) {
+            setErrors((prev) => ({ ...prev, [field]: '' }));
         }
     };
 
-    // Filtered branches based on search term
-    const filteredBranches = useMemo(() => {
-        if (!branchSearchTerm.trim()) return branches;
-        const searchLower = branchSearchTerm.toLowerCase();
-        return branches.filter(branch => 
-            branch.name.toLowerCase().includes(searchLower)
-        );
-    }, [branches, branchSearchTerm]);
+    const handleBranchChange = (selectedOption) => {
+        setSelectedBranch(selectedOption);
+        handleChange('branch_id', selectedOption ? selectedOption.value : '');
+    };
 
-    // Get selected branch name for display
-    const selectedBranchName = useMemo(() => {
-        if (!formData.branch_id && formData.branch_id !== 0) return '';
-        // Try to match by id (as number or string)
-        const branch = branches.find(b => {
-            const branchId = Number(b.id);
-            const formBranchId = Number(formData.branch_id);
-            return branchId === formBranchId || String(b.id) === String(formData.branch_id);
-        });
-        return branch ? branch.name : '';
-    }, [formData.branch_id, branches]);
+    const validateForm = () => {
+        const newErrors = {};
 
-    // When branches load and we have a branch_id, ensure the selected branch name is displayed
-    useEffect(() => {
-        if (mode === 'edit' && formData.branch_id && branches.length > 0 && selectedBranchName) {
-            // Clear any search term to show the selected branch name
-            setBranchSearchTerm('');
+        if (!formData.name.trim()) {
+            newErrors.name = t('merchant.terminalForm.terminalNameRequired', { defaultValue: 'Terminal name is required' });
         }
-    }, [mode, formData.branch_id, branches.length, selectedBranchName]);
+        if (mode === 'create' && !formData.terminal_id.trim()) {
+            newErrors.terminal_id = t('merchant.terminalForm.terminalIdRequired', { defaultValue: 'Terminal ID is required' });
+        }
+        if (!formData.model.trim()) {
+            newErrors.model = t('merchant.terminalForm.modelRequired', { defaultValue: 'Model is required' });
+        }
+        if (!formData.brand.trim()) {
+            newErrors.brand = t('merchant.terminalForm.brandRequired', { defaultValue: 'Brand is required' });
+        }
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
-
-    const handleBranchSelect = (branchId) => {
-        // Ensure branch_id is properly set (handle both string and number)
-        const branchIdValue = branchId != null ? (Number(branchId) || branchId) : '';
-        
-        console.log('Branch selected - branchId:', branchId, 'branchIdValue:', branchIdValue);
-        
-        setFormData(prev => {
-            const updated = {
-                ...prev,
-                branch_id: branchIdValue
-            };
-            console.log('Form data updated - branch_id:', updated.branch_id, 'Full formData:', updated);
-            return updated;
-        });
-        
-        setShowBranchDropdown(false);
-        setBranchSearchTerm('');
-    };
-
-    const handleClearBranch = () => {
-        setFormData(prev => ({
-            ...prev,
-            branch_id: ''
-        }));
-        setBranchSearchTerm('');
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Form submitted with data:', formData);
+        if (!validateForm()) {
+            return;
+        }
         onSubmit(formData);
     };
 
     return (
-        <div className="card">
-            <div className="card-header">
-                <h3 className="card-title">
-                    {mode === 'create'
-                        ? t('merchant.terminalForm.createTitle')
-                        : t('merchant.terminalForm.editTitle')}
-                </h3>
+        <form onSubmit={handleSubmit}>
+            {formatFormError(error) && (
+                <div className="mb-5">
+                    <ErrorAlert message={formatFormError(error)} />
+                </div>
+            )}
+
+            <div className="card mb-5">
+                <div className="card-header">
+                    <h3 className="card-title">{t('merchant.terminalForm.basicInfo', { defaultValue: 'Basic Information' })}</h3>
+                </div>
+                <div className="card-body">
+                    <div className="row g-5">
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold required">{t('merchant.terminalForm.terminalName')}</label>
+                            <input
+                                type="text"
+                                className={`form-control ${errors.name ? 'is-invalid' : ''}`}
+                                value={formData.name}
+                                onChange={(e) => handleChange('name', e.target.value)}
+                                placeholder={t('merchant.terminalForm.terminalNamePh')}
+                                disabled={loading}
+                                required
+                            />
+                            {errors.name && <div className="invalid-feedback">{errors.name}</div>}
+                        </div>
+
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold required">{t('merchant.terminalForm.terminalId')}</label>
+                            <input
+                                type="text"
+                                className={`form-control ${errors.terminal_id ? 'is-invalid' : ''}`}
+                                value={formData.terminal_id}
+                                onChange={(e) => handleChange('terminal_id', e.target.value)}
+                                placeholder={t('merchant.terminalForm.terminalIdPh')}
+                                disabled={loading || mode === 'edit'}
+                            />
+                            {errors.terminal_id && <div className="invalid-feedback">{errors.terminal_id}</div>}
+                        </div>
+
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold">{t('merchant.terminalForm.branch')}</label>
+                            <Select
+                                value={selectedBranch}
+                                onChange={handleBranchChange}
+                                options={branchOptions}
+                                isSearchable
+                                isClearable
+                                isLoading={loadingBranches}
+                                isDisabled={loadingBranches || loading}
+                                placeholder={
+                                    loadingBranches
+                                        ? t('merchant.terminalForm.loadingBranches')
+                                        : t('merchant.terminalForm.searchBranchPh')
+                                }
+                                noOptionsMessage={() => t('merchant.terminalForm.noBranchesAvailable')}
+                                styles={{
+                                    control: (base, state) => ({
+                                        ...base,
+                                        minHeight: '44px',
+                                        borderColor: state.isFocused ? '#009ef7' : '#e4e6ef',
+                                    }),
+                                    menu: (base) => ({ ...base, zIndex: 9999 }),
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <div className="card mb-5">
+                <div className="card-header">
+                    <h3 className="card-title">{t('merchant.terminalForm.hardwareInfo', { defaultValue: 'Hardware Information' })}</h3>
+                </div>
                 <div className="card-body">
-                    {error && <ErrorAlert error={error} />}
-
-                    <div className="row">
-                        {/* Terminal Name */}
-                        <div className="col-md-6 mb-6">
-                            <label className="form-label required">{t('merchant.terminalForm.terminalName')}</label>
+                    <div className="row g-5">
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold required">{t('merchant.terminalForm.brand', { defaultValue: 'Brand' })}</label>
                             <input
                                 type="text"
-                                name="name"
-                                className="form-control"
-                                placeholder={t('merchant.terminalForm.terminalNamePh')}
-                                value={formData.name}
-                                onChange={handleChange}
-                                required
+                                className={`form-control ${errors.brand ? 'is-invalid' : ''}`}
+                                value={formData.brand}
+                                onChange={(e) => handleChange('brand', e.target.value)}
                                 disabled={loading}
                             />
-                            <div className="form-text">{t('merchant.terminalForm.terminalNameHint')}</div>
+                            {errors.brand && <div className="invalid-feedback">{errors.brand}</div>}
                         </div>
 
-                        <div className="col-md-6 mb-6">
-                            <label className="form-label">{t('merchant.terminalForm.terminalId')}</label>
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold required">{t('merchant.terminalForm.model')}</label>
                             <input
                                 type="text"
-                                name="terminal_id"
-                                className="form-control"
-                                placeholder={t('merchant.terminalForm.terminalIdPh')}
-                                value={formData.terminal_id}
-                                onChange={handleChange}
-                                disabled={loading}
-                            />
-                            <div className="form-text">{t('merchant.terminalForm.terminalIdHint')}</div>
-                        </div>
-
-                        <div className="col-md-6 mb-6">
-                            <label className="form-label">{t('merchant.terminalForm.branch')}</label>
-                            <div className="position-relative" id="branch-select-container">
-                                <div className="input-group">
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        placeholder={
-                                            loadingBranches 
-                                                ? t('merchant.terminalForm.loadingBranches')
-                                                : branches.length > 0 
-                                                    ? t('merchant.terminalForm.searchBranchPh')
-                                                    : t('merchant.terminalForm.noBranchesAvailable')
-                                        }
-                                        value={branchSearchTerm || selectedBranchName}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
-                                            setBranchSearchTerm(value);
-                                            setShowBranchDropdown(true);
-                                            // If user clears the input completely, also clear branch_id
-                                            if (!value && selectedBranchName) {
-                                                setFormData(prev => ({
-                                                    ...prev,
-                                                    branch_id: ''
-                                                }));
-                                            }
-                                        }}
-                                        onFocus={() => {
-                                            // Show dropdown and allow searching
-                                            setShowBranchDropdown(true);
-                                        }}
-                                        disabled={loading || loadingBranches}
-                                        readOnly={false}
-                                    />
-                                    {selectedBranchName && !branchSearchTerm && (
-                                        <button
-                                            type="button"
-                                            className="btn btn-icon btn-light"
-                                            onClick={handleClearBranch}
-                                            disabled={loading || loadingBranches}
-                                            title={t('merchant.terminalForm.clearSelection')}
-                                        >
-                                            <i className="ki-duotone ki-cross fs-2">
-                                                <span className="path1"></span>
-                                                <span className="path2"></span>
-                                            </i>
-                                        </button>
-                                    )}
-                                </div>
-                                
-                                {/* Dropdown */}
-                                {showBranchDropdown && !loadingBranches && branches.length > 0 && (
-                                    <div 
-                                        className="dropdown-menu show w-100 position-absolute"
-                                        style={{ zIndex: 9999, maxHeight: '300px', overflowY: 'auto', marginTop: '2px' }}
-                                    >
-                                        {filteredBranches.length > 0 ? (
-                                            filteredBranches.map((branch) => {
-                                                const isSelected = Number(formData.branch_id) === Number(branch.id) || 
-                                                                   String(formData.branch_id) === String(branch.id);
-                                                return (
-                                                    <button
-                                                        key={branch.id}
-                                                        type="button"
-                                                        className={`dropdown-item ${isSelected ? 'active' : ''}`}
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            handleBranchSelect(branch.id);
-                                                        }}
-                                                    >
-                                                        {branch.name}
-                                                    </button>
-                                                );
-                                            })
-                                        ) : (
-                                            <div className="dropdown-item-text text-muted">
-                                                {t('merchant.terminalForm.noBranchesMatch', { term: branchSearchTerm })}
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                            <div className="form-text">
-                                {loadingBranches ? (
-                                    <span className="text-muted">
-                                        <span className="spinner-border spinner-border-sm me-1"></span>
-                                        {t('merchant.terminalForm.loadingBranches')}
-                                    </span>
-                                ) : branches.length > 0 ? (
-                                    t('merchant.terminalForm.branchSearchHint', { count: branches.length })
-                                ) : (
-                                    <span className="text-warning">{t('merchant.terminalForm.noBranchesWarning')}</span>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Status */}
-                        <div className="col-md-6 mb-6">
-                            <label className="form-label required">{t('merchant.terminalForm.status')}</label>
-                            <select
-                                name="is_active"
-                                className="form-select"
-                                value={formData.is_active}
-                                onChange={handleChange}
-                                disabled={loading}
-                            >
-                                <option value="active">{t('merchant.terminalForm.active')}</option>
-                                <option value="inactive">{t('merchant.terminalForm.inactive')}</option>
-                            </select>
-                            <div className="form-text">{t('merchant.terminalForm.statusHint')}</div>
-                        </div>
-
-                        <div className="col-md-6 mb-6">
-                            <label className="form-label">{t('merchant.terminalForm.model')}</label>
-                            <input
-                                type="text"
-                                name="model"
-                                className="form-control"
-                                placeholder={t('merchant.terminalForm.modelPh')}
+                                className={`form-control ${errors.model ? 'is-invalid' : ''}`}
                                 value={formData.model}
-                                onChange={handleChange}
+                                onChange={(e) => handleChange('model', e.target.value)}
                                 disabled={loading}
                             />
+                            {errors.model && <div className="invalid-feedback">{errors.model}</div>}
                         </div>
 
-                        {/* Manufacturer */}
-                        <div className="col-md-6 mb-6">
-                            <label className="form-label">{t('merchant.terminalForm.manufacturer')}</label>
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold">{t('merchant.terminalForm.manufacturer')}</label>
                             <input
                                 type="text"
-                                name="manufacturer"
                                 className="form-control"
-                                placeholder={t('merchant.terminalForm.manufacturerPh')}
                                 value={formData.manufacturer}
-                                onChange={handleChange}
+                                onChange={(e) => handleChange('manufacturer', e.target.value)}
                                 disabled={loading}
                             />
                         </div>
 
-                        {/* Serial Number */}
-                        <div className="col-md-6 mb-6">
-                            <label className="form-label">{t('merchant.terminalForm.serialNumber')}</label>
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold">{t('merchant.terminalForm.serialNumber')}</label>
                             <input
                                 type="text"
-                                name="serial_no"
                                 className="form-control"
-                                placeholder={t('merchant.terminalForm.serialNumberPh')}
                                 value={formData.serial_no}
-                                onChange={handleChange}
+                                onChange={(e) => handleChange('serial_no', e.target.value)}
                                 disabled={loading}
                             />
                         </div>
 
-                        {/* SDK ID */}
-                        <div className="col-md-6 mb-6">
-                            <label className="form-label">{t('merchant.terminalForm.sdkId')}</label>
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold">{t('merchant.terminalForm.deviceId', { defaultValue: 'Device ID' })}</label>
                             <input
                                 type="text"
-                                name="sdk_id"
                                 className="form-control"
-                                placeholder={t('merchant.terminalForm.sdkIdPh')}
+                                value={formData.device_id}
+                                onChange={(e) => handleChange('device_id', e.target.value)}
+                                disabled={loading}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="card mb-5">
+                <div className="card-header">
+                    <h3 className="card-title">{t('merchant.terminalForm.sdkInfo', { defaultValue: 'SDK Information' })}</h3>
+                </div>
+                <div className="card-body">
+                    <div className="row g-5">
+                        <div className="col-md-4">
+                            <label className="form-label fw-bold">{t('merchant.terminalForm.sdkId')}</label>
+                            <input
+                                type="text"
+                                className="form-control"
                                 value={formData.sdk_id}
-                                onChange={handleChange}
+                                onChange={(e) => handleChange('sdk_id', e.target.value)}
                                 disabled={loading}
                             />
                         </div>
-
-                        {/* SDK Version */}
-                        <div className="col-md-6 mb-6">
-                            <label className="form-label">{t('merchant.terminalForm.sdkVersion')}</label>
+                        <div className="col-md-4">
+                            <label className="form-label fw-bold">{t('merchant.terminalForm.sdkVersion')}</label>
                             <input
                                 type="text"
-                                name="sdk_version"
                                 className="form-control"
-                                placeholder={t('merchant.terminalForm.sdkVersionPh')}
                                 value={formData.sdk_version}
-                                onChange={handleChange}
+                                onChange={(e) => handleChange('sdk_version', e.target.value)}
                                 disabled={loading}
                             />
                         </div>
-
-                        {/* Android OS */}
-                        <div className="col-md-6 mb-6">
-                            <label className="form-label">{t('merchant.terminalForm.androidOs')}</label>
+                        <div className="col-md-4">
+                            <label className="form-label fw-bold">{t('merchant.terminalForm.androidOs')}</label>
                             <input
                                 type="text"
-                                name="android_os"
                                 className="form-control"
-                                placeholder={t('merchant.terminalForm.androidOsPh')}
                                 value={formData.android_os}
-                                onChange={handleChange}
+                                onChange={(e) => handleChange('android_os', e.target.value)}
                                 disabled={loading}
                             />
                         </div>
+                    </div>
+                </div>
+            </div>
 
-                        {/* Add Type */}
-                        <div className="col-md-6 mb-6">
-                            <label className="form-label">{t('merchant.terminalForm.addType')}</label>
+            <div className="card mb-5">
+                <div className="card-header">
+                    <h3 className="card-title">{t('merchant.terminalForm.statusSettings', { defaultValue: 'Status Settings' })}</h3>
+                </div>
+                <div className="card-body">
+                    <div className="row g-5">
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold">{t('merchant.terminalForm.addType')}</label>
                             <select
-                                name="add_type"
                                 className="form-select"
                                 value={formData.add_type}
-                                onChange={handleChange}
+                                onChange={(e) => handleChange('add_type', e.target.value)}
                                 disabled={loading}
                             >
                                 <option value="static">{t('merchant.terminalForm.addTypeStatic')}</option>
                                 <option value="auto">{t('merchant.terminalForm.addTypeAuto')}</option>
                             </select>
-                            <div className="form-text">{t('merchant.terminalForm.addTypeHint')}</div>
+                        </div>
+
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold">{t('merchant.terminalForm.terminalStatus', { defaultValue: 'Terminal Status' })}</label>
+                            <select
+                                className="form-select"
+                                value={formData.terminal_status}
+                                onChange={(e) => handleChange('terminal_status', e.target.value)}
+                                disabled={loading}
+                            >
+                                <option value="offline">{t('merchant.common.offline', { defaultValue: 'Offline' })}</option>
+                                <option value="online">{t('merchant.common.online', { defaultValue: 'Online' })}</option>
+                                <option value="testing">{t('merchant.common.testing', { defaultValue: 'Testing' })}</option>
+                                <option value="maintenance">{t('merchant.common.maintenance', { defaultValue: 'Maintenance' })}</option>
+                            </select>
+                        </div>
+
+                        <div className="col-md-6">
+                            <label className="form-label fw-bold">{t('merchant.terminalForm.status')}</label>
+                            <select
+                                className="form-select"
+                                value={formData.is_active ? '1' : '0'}
+                                onChange={(e) => handleChange('is_active', e.target.value === '1')}
+                                disabled={loading}
+                            >
+                                <option value="1">{t('merchant.terminalForm.active')}</option>
+                                <option value="0">{t('merchant.terminalForm.inactive')}</option>
+                            </select>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div className="card-footer d-flex justify-content-end py-6 px-9">
-                    <button 
-                        type="button" 
-                        className="btn btn-light me-3"
-                        onClick={() => window.history.back()}
-                        disabled={loading}
-                    >
-                        {t('merchant.terminalForm.cancel')}
-                    </button>
-                    <button 
-                        type="submit" 
-                        className="btn btn-primary"
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <>
-                                <span className="spinner-border spinner-border-sm me-2"></span>
-                                {t('merchant.terminalForm.saving')}
-                            </>
-                        ) : (
-                            mode === 'create'
-                                ? t('merchant.terminalForm.createTerminal')
-                                : t('merchant.terminalForm.updateTerminal')
-                        )}
-                    </button>
+            <div className="card">
+                <div className="card-body">
+                    <div className="d-flex justify-content-end gap-3">
+                        <button
+                            type="button"
+                            className="btn btn-light"
+                            onClick={() => window.history.back()}
+                            disabled={loading}
+                        >
+                            {t('merchant.terminalForm.cancel')}
+                        </button>
+                        <button type="submit" className="btn btn-primary" disabled={loading}>
+                            {loading ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-2"></span>
+                                    {t('merchant.terminalForm.saving')}
+                                </>
+                            ) : (
+                                mode === 'create'
+                                    ? t('merchant.terminalForm.createTerminal')
+                                    : t('merchant.terminalForm.updateTerminal')
+                            )}
+                        </button>
+                    </div>
                 </div>
-            </form>
-        </div>
+            </div>
+        </form>
     );
 };
 
 export default TerminalForm;
-

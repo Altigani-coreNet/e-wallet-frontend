@@ -4,8 +4,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTerminalDetails, deleteTerminal } from '../../../services/terminalsService';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToolbar } from '../../../contexts/ToolbarContext';
-import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import Swal from 'sweetalert2';
+
+const MERCHANT_TERMINALS_PATH = '/merchant/terminals';
 
 const TerminalView = () => {
     const { t, i18n } = useTranslation();
@@ -14,13 +15,23 @@ const TerminalView = () => {
     const queryClient = useQueryClient();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
 
-    const { 
-        data: terminalData, 
-        isLoading: loading, 
-        error: fetchError 
+    const {
+        data: terminalData,
+        isLoading: loading,
+        error: fetchError,
     } = useTerminalDetails(id);
 
-    const terminal = terminalData?.data || terminalData;
+    const terminal = (() => {
+        if (!terminalData) return null;
+        const payload = terminalData.data ?? terminalData;
+        if (payload && typeof payload === 'object' && payload.id) {
+            return payload;
+        }
+        if (payload?.data && typeof payload.data === 'object') {
+            return payload.data;
+        }
+        return payload;
+    })();
 
     const handleDelete = useCallback(async () => {
         const result = await Swal.fire({
@@ -31,68 +42,79 @@ const TerminalView = () => {
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
             confirmButtonText: t('merchant.common.yesDelete'),
-            cancelButtonText: t('merchant.common.cancel')
+            cancelButtonText: t('merchant.common.cancel'),
         });
 
-        if (result.isConfirmed) {
-            try {
-                const response = await deleteTerminal(id);
-                if (response.success) {
-                    queryClient.invalidateQueries({ queryKey: ['terminals'] });
-                    
-                    await Swal.fire({
-                        title: t('merchant.common.deleted'),
-                        text: t('merchant.terminals.deletedOne'),
-                        icon: 'success',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                    navigate('/merchant/terminals');
-                } else {
-                    Swal.fire(t('merchant.common.error'), response.error || t('merchant.terminals.deleteOneFailed'), 'error');
-                }
-            } catch (error) {
-                Swal.fire(t('merchant.common.error'), t('merchant.paymentLinks.unexpectedError'), 'error');
-            }
+        if (!result.isConfirmed) return;
+
+        const response = await deleteTerminal(id);
+        if (response.success) {
+            queryClient.invalidateQueries({ queryKey: ['terminals'] });
+            await Swal.fire({
+                title: t('merchant.common.deleted'),
+                text: t('merchant.terminals.deletedOne'),
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+            });
+            navigate(MERCHANT_TERMINALS_PATH);
+        } else {
+            Swal.fire(t('merchant.common.error'), response.error || t('merchant.terminals.deleteOneFailed'), 'error');
         }
     }, [id, terminal?.name, navigate, queryClient, t]);
 
+    const getStatusBadge = (status) => {
+        const isActive = status === 'active' || status === 1 || status === '1' || status === true;
+        const statusText = isActive ? t('merchant.common.active') : t('merchant.common.inactive');
+        const statusClass = isActive ? 'badge-success' : 'badge-warning';
+        return <span className={`badge ${statusClass}`}>{statusText}</span>;
+    };
+
+    const getTerminalStatusBadge = (terminalStatus) => {
+        const statusMap = {
+            online: { text: t('merchant.common.online', { defaultValue: 'Online' }), class: 'badge-success' },
+            offline: { text: t('merchant.common.offline', { defaultValue: 'Offline' }), class: 'badge-danger' },
+            testing: { text: t('merchant.common.testing', { defaultValue: 'Testing' }), class: 'badge-warning' },
+            maintenance: { text: t('merchant.common.maintenance', { defaultValue: 'Maintenance' }), class: 'badge-info' },
+        };
+        const status = statusMap[terminalStatus] || {
+            text: t('merchant.common.unknown', { defaultValue: 'Unknown' }),
+            class: 'badge-secondary',
+        };
+        return <span className={`badge ${status.class}`}>{status.text}</span>;
+    };
+
+    const getAddTypeBadge = (addType) => {
+        const isAuto = addType === 'auto';
+        const text = isAuto ? t('merchant.terminalForm.addTypeAuto') : t('merchant.terminalForm.addTypeStatic');
+        const badgeClass = isAuto ? 'badge-success' : 'badge-warning';
+        return <span className={`badge ${badgeClass}`}>{text}</span>;
+    };
+
     useEffect(() => {
-        setTitle(t('merchant.breadcrumbs.terminalDetails'));
-        
+        setTitle(terminal ? terminal.name : t('merchant.breadcrumbs.terminalDetails'));
+
         setBreadcrumbs([
             { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
-            { label: t('merchant.breadcrumbs.terminals'), path: '/merchant/terminals' },
-            { label: terminal?.name || t('merchant.breadcrumbs.terminalDetails'), path: `/merchant/terminals/${id}`, active: true }
+            { label: t('merchant.breadcrumbs.terminals'), path: MERCHANT_TERMINALS_PATH },
+            {
+                label: terminal?.name || t('merchant.breadcrumbs.terminalDetails'),
+                path: `${MERCHANT_TERMINALS_PATH}/${id}`,
+                active: true,
+            },
         ]);
-        
+
         setActions(
-            <>
-                <button
-                    className="btn btn-sm btn-light btn-active-light-primary me-2"
-                    onClick={() => navigate('/merchant/terminals')}
-                >
-                    <i className="ki-duotone ki-arrow-left fs-5">
-                        <span className="path1"></span>
-                        <span className="path2"></span>
-                    </i>
-                    {t('merchant.common.backToList')}
-                </button>
-                <Link
-                    to={`/merchant/terminals/${id}/edit`}
-                    className="btn btn-sm btn-primary me-2"
-                >
-                    <i className="ki-duotone ki-pencil fs-3">
+            <div className="d-flex gap-2">
+                <Link to={`${MERCHANT_TERMINALS_PATH}/${id}/edit`} className="btn btn-sm btn-primary">
+                    <i className="ki-duotone ki-pencil fs-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
                     {t('merchant.common.edit')}
                 </Link>
-                <button
-                    className="btn btn-sm btn-danger"
-                    onClick={handleDelete}
-                >
-                    <i className="ki-duotone ki-trash fs-3">
+                <button type="button" className="btn btn-sm btn-danger" onClick={handleDelete}>
+                    <i className="ki-duotone ki-trash fs-2">
                         <span className="path1"></span>
                         <span className="path2"></span>
                         <span className="path3"></span>
@@ -101,146 +123,188 @@ const TerminalView = () => {
                     </i>
                     {t('merchant.terminals.delete')}
                 </button>
-            </>
+                <Link to={MERCHANT_TERMINALS_PATH} className="btn btn-sm btn-light-danger">
+                    <i className="ki-duotone ki-arrow-left fs-2">
+                        <span className="path1"></span>
+                        <span className="path2"></span>
+                    </i>
+                    {t('merchant.common.backToList')}
+                </Link>
+            </div>
         );
 
         return () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [setTitle, setBreadcrumbs, setActions, navigate, id, terminal?.name, handleDelete, t, i18n.language]);
+    }, [id, terminal, setTitle, setBreadcrumbs, setActions, handleDelete, t, i18n.language]);
 
     if (loading) {
-        return <LoadingSpinner />;
+        return (
+            <div className="card">
+                <div className="card-body text-center py-10">
+                    <span className="spinner-border text-primary"></span>
+                    <p className="text-muted mt-3">{t('merchant.common.loading')}</p>
+                </div>
+            </div>
+        );
     }
 
     if (fetchError || !terminal) {
         return (
-            <div className="alert alert-danger">
-                <strong>Error:</strong> {fetchError?.message || 'Terminal not found'}
-                <div className="mt-3">
-                    <button className="btn btn-primary" onClick={() => navigate('/merchant/terminals')}>
-                        Back to Terminals
-                    </button>
+            <div className="card">
+                <div className="card-body text-center py-10">
+                    <p className="text-danger fs-4">{t('merchant.terminalView.notFound', { defaultValue: 'Terminal not found' })}</p>
+                    <Link to={MERCHANT_TERMINALS_PATH} className="btn btn-primary mt-3">
+                        {t('merchant.common.backToTerminals')}
+                    </Link>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="card">
-            <div className="card-header">
-                <h3 className="card-title">Terminal Information</h3>
-            </div>
-            <div className="card-body">
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">Name</label>
-                    <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800 fs-6">{terminal.name}</span>
-                    </div>
+        <>
+            <div className="card mb-5 mb-xl-10">
+                <div className="card-header">
+                    <h3 className="card-title">{t('merchant.terminalForm.basicInfo', { defaultValue: 'Basic Information' })}</h3>
                 </div>
-
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">Terminal ID</label>
-                    <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800 fs-6">{terminal.terminal_id || 'N/A'}</span>
+                <div className="card-body p-9">
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.terminalName')}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">{terminal.name || t('merchant.common.na')}</span>
+                        </div>
                     </div>
-                </div>
-
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">Branch</label>
-                    <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800 fs-6">{terminal.branch?.name || 'N/A'}</span>
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.terminalId')}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">{terminal.terminal_id || t('merchant.common.na')}</span>
+                        </div>
                     </div>
-                </div>
-
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">Model</label>
-                    <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800 fs-6">{terminal.model || 'N/A'}</span>
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.deviceId', { defaultValue: 'Device ID' })}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">{terminal.device_id || t('merchant.common.na')}</span>
+                        </div>
                     </div>
-                </div>
-
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">Manufacturer</label>
-                    <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800 fs-6">{terminal.manufacturer || 'N/A'}</span>
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.status')}</label>
+                        <div className="col-lg-8">{getStatusBadge(terminal.is_active)}</div>
                     </div>
-                </div>
-
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">Serial Number</label>
-                    <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800 fs-6">{terminal.serial_no || 'N/A'}</span>
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.terminalStatus', { defaultValue: 'Terminal Status' })}</label>
+                        <div className="col-lg-8">{getTerminalStatusBadge(terminal.terminal_status)}</div>
                     </div>
-                </div>
-
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">SDK ID</label>
-                    <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800 fs-6">{terminal.sdk_id || 'N/A'}</span>
-                    </div>
-                </div>
-
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">SDK Version</label>
-                    <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800 fs-6">{terminal.sdk_version || 'N/A'}</span>
-                    </div>
-                </div>
-
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">Android OS</label>
-                    <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800 fs-6">{terminal.android_os || 'N/A'}</span>
-                    </div>
-                </div>
-
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">Add Type</label>
-                    <div className="col-lg-8">
-                        <span className="badge badge-light-primary">{terminal.add_type || 'N/A'}</span>
-                    </div>
-                </div>
-
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">Status</label>
-                    <div className="col-lg-8">
-                        {terminal.is_active ? (
-                            <span className="badge badge-light-success">Active</span>
-                        ) : (
-                            <span className="badge badge-light-danger">Inactive</span>
-                        )}
-                    </div>
-                </div>
-
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">Created At</label>
-                    <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800 fs-6">
-                            {terminal.created_at ? new Date(terminal.created_at).toLocaleString() : 'N/A'}
-                        </span>
-                    </div>
-                </div>
-
-                <div className="row mb-7">
-                    <label className="col-lg-4 fw-bold text-muted">Updated At</label>
-                    <div className="col-lg-8">
-                        <span className="fw-semibold text-gray-800 fs-6">
-                            {terminal.updated_at ? new Date(terminal.updated_at).toLocaleString() : 'N/A'}
-                        </span>
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.addType')}</label>
+                        <div className="col-lg-8">{getAddTypeBadge(terminal.add_type)}</div>
                     </div>
                 </div>
             </div>
-            <div className="card-footer d-flex justify-content-end">
-                <button 
-                    onClick={() => navigate('/merchant/terminals')} 
-                    className="btn btn-light"
-                >
-                    Back to List
-                </button>
+
+            <div className="card mb-5 mb-xl-10">
+                <div className="card-header">
+                    <h3 className="card-title">{t('merchant.terminalForm.hardwareInfo', { defaultValue: 'Hardware Information' })}</h3>
+                </div>
+                <div className="card-body p-9">
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.brand', { defaultValue: 'Brand' })}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">{terminal.brand || t('merchant.common.na')}</span>
+                        </div>
+                    </div>
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.model')}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">{terminal.model || t('merchant.common.na')}</span>
+                        </div>
+                    </div>
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.manufacturer')}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">{terminal.manufacturer || t('merchant.common.na')}</span>
+                        </div>
+                    </div>
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.serialNumber')}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">{terminal.serial_no || t('merchant.common.na')}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+
+            <div className="card mb-5 mb-xl-10">
+                <div className="card-header">
+                    <h3 className="card-title">{t('merchant.terminalForm.sdkInfo', { defaultValue: 'SDK Information' })}</h3>
+                </div>
+                <div className="card-body p-9">
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.sdkId')}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">{terminal.sdk_id || t('merchant.common.na')}</span>
+                        </div>
+                    </div>
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.sdkVersion')}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">{terminal.sdk_version || t('merchant.common.na')}</span>
+                        </div>
+                    </div>
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.androidOs')}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">{terminal.android_os || t('merchant.common.na')}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="card mb-5 mb-xl-10">
+                <div className="card-header">
+                    <h3 className="card-title">{t('merchant.terminalForm.assignmentInfo', { defaultValue: 'Assignment' })}</h3>
+                </div>
+                <div className="card-body p-9">
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.branch')}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">
+                                {terminal.branch?.name || terminal.branch_name || t('merchant.common.na')}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="card mb-5 mb-xl-10">
+                <div className="card-header">
+                    <h3 className="card-title">{t('merchant.terminalForm.timestamps', { defaultValue: 'Timestamps' })}</h3>
+                </div>
+                <div className="card-body p-9">
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.createdAt', { defaultValue: 'Created At' })}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">
+                                {terminal.created_at
+                                    ? new Date(terminal.created_at).toLocaleString(i18n.language)
+                                    : t('merchant.common.na')}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="row mb-7">
+                        <label className="col-lg-4 fw-bold text-muted">{t('merchant.terminalForm.updatedAt', { defaultValue: 'Updated At' })}</label>
+                        <div className="col-lg-8">
+                            <span className="fw-bolder fs-6 text-gray-800">
+                                {terminal.updated_at
+                                    ? new Date(terminal.updated_at).toLocaleString(i18n.language)
+                                    : t('merchant.common.na')}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
     );
 };
 

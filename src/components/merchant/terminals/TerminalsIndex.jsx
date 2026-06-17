@@ -1,133 +1,97 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import TerminalsTable from './TerminalsTable';
+import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 import TerminalsFilters from './TerminalsFilters';
+import TerminalTableRow from './TerminalTableRow';
 import ImportTerminalsModal from './ImportTerminalsModal';
-import { useTerminals, bulkDeleteTerminals, exportTerminals } from '../../../services/terminalsService';
-import { getBranchesByIds } from '../../../services/branchesService';
+import { useTerminals, bulkDeleteTerminals, exportTerminals, deleteTerminal } from '../../../services/terminalsService';
 import useAuthStore from '../../../stores/authStore';
 import { useToolbar } from '../../../contexts/ToolbarContext';
-import Swal from 'sweetalert2';
-import { toast } from 'react-toastify';
 import { useCan, canExport } from '../../../utils/permissions';
+
+const MERCHANT_TERMINALS_PATH = '/merchant/terminals';
 
 const TerminalsIndex = ({ merchantId: propMerchantId }) => {
     const { t, i18n } = useTranslation();
-    const navigate = useNavigate();
     const { user, merchant } = useAuthStore();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const queryClient = useQueryClient();
-    const canCreate = useCan('terminals.create');
-    const canDelete = useCan('terminals.delete');
-    
-    // Get merchantId from props, store, or localStorage
-    const merchantId = propMerchantId || 
-                       merchant?.id ||
-                       user?.merchant_id;
-    
-    const [perPage, setPerPage] = useState(25);
-    const [currentPage, setCurrentPage] = useState(1);
-    
-    // Filter states
+    const canCreate = useCan('pos.terminals.create_terminals');
+    const canDelete = useCan('pos.terminals.delete_terminals');
+
+    const merchantId = propMerchantId || merchant?.id || user?.merchant_id;
+
+    const [pagination, setPagination] = useState({
+        current_page: 1,
+        per_page: 15,
+    });
+
     const [filters, setFilters] = useState({
         search: '',
         status: '',
+        terminal_status: '',
         date_from: '',
         date_to: '',
     });
-    
+    const [searchInput, setSearchInput] = useState('');
+
     const [showFilters, setShowFilters] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
     const [exportLoading, setExportLoading] = useState(false);
-    const [branches, setBranches] = useState({});  // Map of branch_id -> branch object
 
-    // Use React Query hooks
-    const { 
-        data: terminalsData, 
-        isLoading: terminalsLoading,
-        refetch: refetchTerminals
-    } = useTerminals(merchantId, currentPage, perPage, filters);
+    const {
+        data: terminalsData,
+        isLoading,
+        refetch,
+    } = useTerminals(merchantId, pagination.current_page, pagination.per_page, filters);
 
-    // Extracted data - handle both direct data and wrapped responses
-    const terminals = Array.isArray(terminalsData?.data) 
-        ? terminalsData.data 
-        : Array.isArray(terminalsData) 
-            ? terminalsData 
-            : terminalsData?.data?.data || [];
-    const totalRows = terminalsData?.total || terminalsData?.data?.total || terminalsData?.pagination?.total || 0;
-    const lastPage = terminalsData?.last_page || terminalsData?.data?.last_page || terminalsData?.pagination?.last_page || 1;
-    const pagination = {
-        current_page: currentPage,
-        per_page: perPage,
-        total: totalRows,
-        last_page: lastPage
+    useEffect(() => {
+        queryClient.removeQueries({ queryKey: ['terminals'] });
+        refetch();
+    }, [queryClient, refetch]);
+
+    const terminals = terminalsData?.data?.data || terminalsData?.data || [];
+    const paginationData = {
+        current_page: terminalsData?.data?.current_page || terminalsData?.pagination?.current_page || pagination.current_page,
+        per_page: terminalsData?.data?.per_page || terminalsData?.pagination?.per_page || pagination.per_page,
+        total: terminalsData?.data?.total || terminalsData?.pagination?.total || 0,
+        last_page: terminalsData?.data?.last_page || terminalsData?.pagination?.last_page || 1,
     };
 
-    // Fetch branches when terminals data changes
-    useEffect(() => {
-        const fetchBranchesForTerminals = async () => {
-            if (terminals.length > 0) {
-                const branchIds = terminals
-                    .map(terminal => terminal.branch_id)
-                    .filter(id => id != null);
-                
-                if (branchIds.length > 0) {
-                    try {
-                        const branchesResponse = await getBranchesByIds(branchIds);
-                        
-                        if (branchesResponse.success && branchesResponse.data) {
-                            // Create a map of branch_id -> branch object for quick lookup
-                            const branchesMap = {};
-                            branchesResponse.data.forEach(branch => {
-                                branchesMap[branch.id] = branch;
-                            });
-                            setBranches(branchesMap);
-                        } else {
-                            setBranches({});
-                        }
-                    } catch (error) {
-                        console.error('Error fetching branches:', error);
-                        setBranches({});
-                    }
-                } else {
-                    setBranches({});
-                }
-            } else {
-                setBranches({});
+    const branchesMap = useMemo(() => {
+        const map = {};
+        terminals.forEach((terminal) => {
+            if (terminal.branch_id && terminal.branch?.name) {
+                map[terminal.branch_id] = terminal.branch.name;
+            } else if (terminal.branch_id && terminal.branch_name) {
+                map[terminal.branch_id] = terminal.branch_name;
             }
-        };
+        });
+        return map;
+    }, [terminals]);
 
-        if (!terminalsLoading) {
-            fetchBranchesForTerminals();
-        }
-    }, [terminals, terminalsLoading]);
-
-    // Handle refresh
     const handleRefresh = useCallback(async () => {
         queryClient.invalidateQueries({ queryKey: ['terminals'] });
-        await refetchTerminals();
+        await refetch();
         toast.success(t('merchant.transactions.refreshSuccess'));
-    }, [queryClient, refetchTerminals, t]);
+    }, [queryClient, refetch, t]);
 
-    // Handle export
     const handleExport = useCallback(async () => {
         setExportLoading(true);
         try {
             const blob = await exportTerminals({ merchantId, filters });
-            
-            // Create download link
             const url = window.URL.createObjectURL(new Blob([blob]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `terminals_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.setAttribute('download', `terminals_export_${new Date().toISOString().slice(0, 10)}.csv`);
             document.body.appendChild(link);
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            
             toast.success(t('merchant.transactions.exportSuccess'));
         } catch (error) {
             console.error('Export error:', error);
@@ -137,7 +101,6 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
         }
     }, [merchantId, filters, t]);
 
-    // Handle bulk delete
     const handleBulkDelete = useCallback(async () => {
         if (selectedIds.length === 0) return;
 
@@ -149,82 +112,123 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
             confirmButtonText: t('merchant.common.yesDeleteThem'),
-            cancelButtonText: t('merchant.common.cancel')
+            cancelButtonText: t('merchant.common.cancel'),
         });
 
         if (!result.isConfirmed) return;
 
-        try {
-            const response = await bulkDeleteTerminals(selectedIds);
-            if (response.success) {
-                Swal.fire({
-                    title: t('merchant.common.deleted'),
-                    text: t('merchant.terminals.deletedSuccess'),
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-                setSelectedIds([]);
-                queryClient.invalidateQueries({ queryKey: ['terminals'] });
-                await refetchTerminals();
-            } else {
-                Swal.fire({
-                    title: t('merchant.common.error'),
-                    text: response.error || t('merchant.terminals.deleteFailed'),
-                    icon: 'error',
-                    confirmButtonText: t('merchant.common.ok')
-                });
-            }
-        } catch (error) {
-            console.error('Error deleting terminals:', error);
-            Swal.fire({
-                title: t('merchant.common.error'),
-                text: t('merchant.terminals.deleteError'),
-                icon: 'error',
-                confirmButtonText: t('merchant.common.ok')
-            });
+        const response = await bulkDeleteTerminals(selectedIds);
+        if (response.success) {
+            Swal.fire(t('merchant.common.deleted'), t('merchant.terminals.deletedSuccess'), 'success');
+            setSelectedIds([]);
+            await refetch();
+        } else {
+            Swal.fire(t('merchant.common.error'), response.error || t('merchant.terminals.deleteFailed'), 'error');
         }
-    }, [selectedIds, queryClient, refetchTerminals, t]);
+    }, [selectedIds, refetch, t]);
 
-    // Set toolbar title, breadcrumbs and actions
+    const handleDelete = useCallback(async (terminalId) => {
+        const response = await deleteTerminal(terminalId);
+        if (response.success) {
+            toast.success(response.message || t('merchant.terminals.deletedOne'));
+            await refetch();
+        } else {
+            toast.error(response.error || t('merchant.terminals.deleteOneFailed'));
+        }
+    }, [refetch, t]);
+
+    const handleSelect = (terminalId, checked) => {
+        if (checked) {
+            setSelectedIds((prev) => [...prev, terminalId]);
+        } else {
+            setSelectedIds((prev) => prev.filter((id) => id !== terminalId));
+        }
+    };
+
+    const handleSelectAll = (checked) => {
+        if (checked) {
+            setSelectedIds(terminals.map((terminal) => terminal.id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleFilterChange = (newFilters) => {
+        setFilters(newFilters);
+    };
+
+    const clearFilters = () => {
+        setSearchInput('');
+        setFilters({
+            search: '',
+            status: '',
+            terminal_status: '',
+            date_from: '',
+            date_to: '',
+        });
+        setPagination((prev) => ({ ...prev, current_page: 1 }));
+    };
+
+    const handleApplyFilters = () => {
+        setPagination((prev) => ({ ...prev, current_page: 1 }));
+        refetch();
+    };
+
+    const handleImportSuccess = () => {
+        setShowImportModal(false);
+        refetch();
+    };
+
+    const handlePageChange = (newPage) => {
+        setPagination((prev) => ({ ...prev, current_page: newPage }));
+    };
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchInput !== filters.search) {
+                setFilters((prev) => ({ ...prev, search: searchInput }));
+                setPagination((prev) => ({ ...prev, current_page: 1 }));
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchInput, filters.search]);
+
     useEffect(() => {
         setTitle(t('merchant.breadcrumbs.terminals'));
-        
+
         setBreadcrumbs([
             { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
-            { label: t('merchant.breadcrumbs.terminals'), path: '/merchant/terminals' },
-            { label: t('merchant.breadcrumbs.terminalsList'), path: '/merchant/terminals', active: true }
+            { label: t('merchant.breadcrumbs.terminals'), path: MERCHANT_TERMINALS_PATH, active: true },
         ]);
-        
+
         setActions(
-            <>
+            <div className="d-flex align-items-center gap-2 gap-lg-3">
                 <button
                     className="btn btn-sm btn-flex btn-secondary fw-bold"
                     onClick={() => setShowFilters(!showFilters)}
-                    aria-label={t('merchant.common.toggleFilters')}
+                    aria-label={showFilters ? t('merchant.common.hideFilters', { defaultValue: 'Hide Filters' }) : t('merchant.common.toggleFilters')}
                 >
                     <i className="ki-duotone ki-filter fs-6 text-muted me-0 me-lg-1">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
                     <span className="d-none d-lg-inline ms-lg-1">
-                        {t('merchant.common.filter')}
+                        {showFilters ? t('merchant.common.hideFilters', { defaultValue: 'Hide Filters' }) : t('merchant.common.filter')}
                     </span>
                 </button>
 
                 <button
                     className="btn btn-sm btn-flex btn-light fw-bold"
                     onClick={handleRefresh}
-                    disabled={terminalsLoading}
+                    disabled={isLoading}
                     aria-label={t('merchant.common.refresh')}
                 >
                     <i className="ki-duotone ki-arrows-circle fs-6 text-muted me-0 me-lg-1">
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    <span className="d-none d-lg-inline ms-lg-1">
-                        {t('merchant.common.refresh')}
-                    </span>
+                    <span className="d-none d-lg-inline ms-lg-1">{t('merchant.common.refresh')}</span>
                 </button>
 
                 {selectedIds.length > 0 && canDelete && (
@@ -246,93 +250,69 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
                     </button>
                 )}
 
+                <button
+                    className="btn btn-sm fw-bold btn-success"
+                    onClick={() => setShowImportModal(true)}
+                    aria-label={t('merchant.terminals.import')}
+                >
+                    <i className="ki-duotone ki-file-up fs-3 me-0 me-lg-2">
+                        <span className="path1"></span>
+                        <span className="path2"></span>
+                    </i>
+                    <span className="d-none d-lg-inline">{t('merchant.terminals.import')}</span>
+                </button>
+
                 {canExport('terminals') && (
                     <button
                         className="btn btn-sm fw-bold btn-success"
                         onClick={handleExport}
-                        disabled={terminalsLoading || exportLoading}
+                        disabled={exportLoading}
+                        aria-label={t('merchant.transactions.export')}
                     >
-                        <i className="ki-duotone ki-file-down fs-3">
+                        <i className="ki-duotone ki-download fs-3 me-0 me-lg-2">
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        {t('merchant.transactions.export')}
+                        <span className="d-none d-lg-inline">{t('merchant.transactions.export')}</span>
                     </button>
                 )}
 
-                <button
-                    className="btn btn-sm fw-bold btn-info"
-                    onClick={() => setShowImportModal(true)}
-                >
-                    <i className="ki-duotone ki-file-up fs-3">
-                        <span className="path1"></span>
-                        <span className="path2"></span>
-                    </i>
-                    {t('merchant.terminals.import')}
-                </button>
-
                 {canCreate && (
                     <Link
-                        to="/merchant/terminals/create"
+                        to={`${MERCHANT_TERMINALS_PATH}/create`}
                         className="btn btn-sm fw-bold btn-primary"
+                        aria-label={t('merchant.terminals.addTerminal')}
                     >
-                        <i className="ki-duotone ki-plus fs-3">
+                        <i className="ki-duotone ki-plus fs-3 me-0 me-lg-2">
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        {t('merchant.terminals.addTerminal')}
+                        <span className="d-none d-lg-inline">{t('merchant.terminals.addTerminal')}</span>
                     </Link>
                 )}
-            </>
+            </div>
         );
 
         return () => {
             setActions(null);
             setBreadcrumbs([]);
         };
-    }, [showFilters, terminalsLoading, exportLoading, selectedIds.length, handleRefresh, handleExport, handleBulkDelete, setTitle, setBreadcrumbs, setActions, t, i18n.language, canCreate, canDelete]);
-
-    // Handle page change
-    const handlePageChange = (page) => {
-        if (page >= 1 && page <= lastPage) {
-            setCurrentPage(page);
-        }
-    };
-
-    // Handle rows per page change
-    const handlePerRowsChange = (e) => {
-        setPerPage(parseInt(e.target.value));
-        setCurrentPage(1);
-    };
-
-    // Handle filter change
-    const handleFilterChange = (newFilters) => {
-        setFilters(prev => ({ ...prev, ...newFilters }));
-        setCurrentPage(1); // Reset to first page on filter change
-    };
-
-    // Clear all filters
-    const clearFilters = () => {
-        setFilters({
-            search: '',
-            status: '',
-            date_from: '',
-            date_to: '',
-        });
-        setCurrentPage(1);
-    };
-
-    // Handle apply filters
-    const handleApplyFilters = () => {
-        setCurrentPage(1);
-    };
-
-    // Handle import success
-    const handleImportSuccess = () => {
-        setShowImportModal(false);
-        queryClient.invalidateQueries({ queryKey: ['terminals'] });
-        refetchTerminals();
-    };
+    }, [
+        showFilters,
+        selectedIds.length,
+        exportLoading,
+        isLoading,
+        canCreate,
+        canDelete,
+        handleRefresh,
+        handleExport,
+        handleBulkDelete,
+        setTitle,
+        setBreadcrumbs,
+        setActions,
+        t,
+        i18n.language,
+    ]);
 
     return (
         <>
@@ -343,92 +323,205 @@ const TerminalsIndex = ({ merchantId: propMerchantId }) => {
                     animation: skeleton-loading 1.5s ease-in-out infinite;
                     border-radius: 4px;
                 }
-                
                 @keyframes skeleton-loading {
-                    0% {
-                        background-position: 200% 0;
-                    }
-                    100% {
-                        background-position: -200% 0;
-                    }
-                }
-                
-                .skeleton-text {
-                    display: inline-block;
-                }
-                
-                .skeleton-badge {
-                    display: inline-block;
-                }
-                
-                .skeleton-button {
-                    display: inline-block;
+                    0% { background-position: 200% 0; }
+                    100% { background-position: -200% 0; }
                 }
             `}</style>
 
-            {/* Filters */}
-            {showFilters && (
-                <TerminalsFilters
-                    filters={filters}
-                    setFilters={setFilters}
-                    onClear={clearFilters}
-                    onClose={() => setShowFilters(false)}
-                />
-            )}
+            <TerminalsFilters
+                isVisible={showFilters}
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                onClearFilters={clearFilters}
+                onApply={handleApplyFilters}
+            />
 
-            {/* Table */}
             <div className="card">
+                <div className="card-header border-0 pt-6">
+                    <div className="card-title">
+                        <div className="d-flex align-items-center position-relative me-5" style={{ minWidth: '350px' }}>
+                            <i className="ki-duotone ki-magnifier fs-2 position-absolute ms-4" style={{ zIndex: 1 }}>
+                                <span className="path1"></span>
+                                <span className="path2"></span>
+                            </i>
+                            <input
+                                type="text"
+                                className="form-control form-control-solid ps-13"
+                                placeholder={t('merchant.terminalsIndex.searchPlaceholder')}
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
+                                style={{ paddingLeft: '3rem', fontSize: '1rem', paddingTop: '0.75rem', paddingBottom: '0.75rem' }}
+                            />
+                            {searchInput && (
+                                <button
+                                    type="button"
+                                    className="btn btn-icon btn-sm btn-active-color-primary position-absolute end-0 me-2"
+                                    onClick={() => {
+                                        setSearchInput('');
+                                        setFilters((prev) => ({ ...prev, search: '' }));
+                                    }}
+                                    style={{ zIndex: 1 }}
+                                >
+                                    <i className="ki-duotone ki-cross fs-2">
+                                        <span className="path1"></span>
+                                        <span className="path2"></span>
+                                    </i>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 <div className="card-body pt-0">
-                    {terminalsLoading ? (
-                        // Skeleton Loading
+                    {isLoading ? (
                         <div className="table-responsive">
                             <table className="table align-middle table-row-dashed fs-6 gy-5">
                                 <thead>
                                     <tr className="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
                                         <th className="w-10px pe-2"></th>
-                                        <th className="min-w-125px">{t('merchant.terminalsIndex.colName')}</th>
-                                        <th className="min-w-125px">{t('merchant.terminalsIndex.colTerminalId')}</th>
-                                        <th className="min-w-100px">{t('merchant.terminalsIndex.colModel')}</th>
-                                        <th className="min-w-100px">{t('merchant.terminalsIndex.colManufacturer')}</th>
-                                        <th className="min-w-100px">{t('merchant.terminalsIndex.colStatus')}</th>
-                                        <th className="text-end min-w-100px">{t('merchant.terminalsIndex.colActions')}</th>
+                                        <th className="text-dark">#</th>
+                                        <th className="min-w-200px text-dark">{t('merchant.terminalsIndex.colTerminalInfo', { defaultValue: 'Terminal Info' })}</th>
+                                        <th className="min-w-125px text-dark">{t('merchant.terminalsIndex.colBranch')}</th>
+                                        <th className="min-w-100px text-dark">{t('merchant.terminalsIndex.colManufacturer')}</th>
+                                        <th className="min-w-100px text-dark">{t('merchant.terminalsIndex.colBrand', { defaultValue: 'Brand' })}</th>
+                                        <th className="min-w-100px text-dark">{t('merchant.terminalsIndex.colSdk', { defaultValue: 'SDK' })}</th>
+                                        <th className="text-dark">{t('merchant.terminalsIndex.colAddType', { defaultValue: 'Add Type' })}</th>
+                                        <th className="text-dark">{t('merchant.terminalsIndex.colStatus')}</th>
+                                        <th className="text-dark">{t('merchant.terminalsIndex.colTerminalStatus', { defaultValue: 'Terminal Status' })}</th>
+                                        <th className="text-dark">{t('merchant.terminalsIndex.colCreatedAt', { defaultValue: 'Created At' })}</th>
+                                        <th className="text-end text-dark">{t('merchant.terminalsIndex.colActions')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {[...Array(perPage)].map((_, index) => (
+                                    {[...Array(8)].map((_, index) => (
                                         <tr key={`skeleton-${index}`}>
-                                            <td>
-                                                <div className="skeleton" style={{width: '20px', height: '20px', margin: '0 auto'}}></div>
-                                            </td>
-                                            <td><div className="skeleton skeleton-text" style={{width: '150px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton skeleton-text" style={{width: '120px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton skeleton-text" style={{width: '100px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton skeleton-text" style={{width: '100px', height: '16px'}}></div></td>
-                                            <td><div className="skeleton skeleton-badge" style={{width: '80px', height: '24px', borderRadius: '6px'}}></div></td>
-                                            <td className="text-end"><div className="skeleton skeleton-button" style={{width: '70px', height: '32px', borderRadius: '6px', marginLeft: 'auto'}}></div></td>
+                                            <td><div className="skeleton" style={{ width: '20px', height: '20px' }}></div></td>
+                                            <td><div className="skeleton" style={{ width: '30px', height: '16px' }}></div></td>
+                                            <td><div className="skeleton" style={{ width: '150px', height: '16px' }}></div></td>
+                                            <td><div className="skeleton" style={{ width: '100px', height: '16px' }}></div></td>
+                                            <td><div className="skeleton" style={{ width: '100px', height: '16px' }}></div></td>
+                                            <td><div className="skeleton" style={{ width: '80px', height: '16px' }}></div></td>
+                                            <td><div className="skeleton" style={{ width: '80px', height: '16px' }}></div></td>
+                                            <td><div className="skeleton" style={{ width: '60px', height: '24px' }}></div></td>
+                                            <td><div className="skeleton" style={{ width: '60px', height: '24px' }}></div></td>
+                                            <td><div className="skeleton" style={{ width: '70px', height: '24px' }}></div></td>
+                                            <td><div className="skeleton" style={{ width: '90px', height: '16px' }}></div></td>
+                                            <td className="text-end"><div className="skeleton" style={{ width: '70px', height: '32px', marginLeft: 'auto' }}></div></td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
+                    ) : terminals.length === 0 ? (
+                        <div className="text-center py-10">
+                            <i className="ki-duotone ki-information-5 fs-5x text-muted mb-5">
+                                <span className="path1"></span>
+                                <span className="path2"></span>
+                                <span className="path3"></span>
+                            </i>
+                            <p className="text-muted fs-4">{t('merchant.terminalsIndex.noTerminalsFound')}</p>
+                            {canCreate && (
+                                <Link to={`${MERCHANT_TERMINALS_PATH}/create`} className="btn btn-primary mt-3">
+                                    {t('merchant.terminals.addTerminal')}
+                                </Link>
+                            )}
+                        </div>
                     ) : (
-                        <TerminalsTable
-                            terminals={terminals}
-                            branches={branches}
-                            selectedIds={selectedIds}
-                            setSelectedIds={setSelectedIds}
-                            pagination={pagination}
-                            onPageChange={handlePageChange}
-                            onPerPageChange={handlePerRowsChange}
-                            onRefresh={handleRefresh}
-                            loading={terminalsLoading}
-                            error={null}
-                        />
+                        <>
+                            <div className="table-responsive">
+                                <table className="table align-middle table-row-dashed fs-6 gy-5">
+                                    <thead>
+                                        <tr className="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                            <th className="w-10px pe-2">
+                                                <div className="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                                    <input
+                                                        className="form-check-input"
+                                                        type="checkbox"
+                                                        checked={selectedIds.length === terminals.length && terminals.length > 0}
+                                                        onChange={(e) => handleSelectAll(e.target.checked)}
+                                                    />
+                                                </div>
+                                            </th>
+                                            <th className="text-dark">#</th>
+                                            <th className="min-w-200px text-dark">{t('merchant.terminalsIndex.colTerminalInfo', { defaultValue: 'Terminal Info' })}</th>
+                                            <th className="min-w-125px text-dark">{t('merchant.terminalsIndex.colBranch')}</th>
+                                            <th className="min-w-100px text-dark">{t('merchant.terminalsIndex.colManufacturer')}</th>
+                                            <th className="min-w-100px text-dark">{t('merchant.terminalsIndex.colBrand', { defaultValue: 'Brand' })}</th>
+                                            <th className="min-w-100px text-dark">{t('merchant.terminalsIndex.colSdk', { defaultValue: 'SDK' })}</th>
+                                            <th className="text-dark">{t('merchant.terminalsIndex.colAddType', { defaultValue: 'Add Type' })}</th>
+                                            <th className="text-dark">{t('merchant.terminalsIndex.colStatus')}</th>
+                                            <th className="text-dark">{t('merchant.terminalsIndex.colTerminalStatus', { defaultValue: 'Terminal Status' })}</th>
+                                            <th className="text-dark">{t('merchant.terminalsIndex.colCreatedAt', { defaultValue: 'Created At' })}</th>
+                                            <th className="text-end text-dark">{t('merchant.terminalsIndex.colActions')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-gray-600 fw-semibold">
+                                        {terminals.map((terminal, index) => (
+                                            <TerminalTableRow
+                                                key={terminal.id}
+                                                terminal={terminal}
+                                                branchesMap={branchesMap}
+                                                rowNumber={(paginationData.current_page - 1) * paginationData.per_page + index + 1}
+                                                isSelected={selectedIds.includes(terminal.id)}
+                                                onSelect={handleSelect}
+                                                onDelete={handleDelete}
+                                            />
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div className="d-flex flex-stack flex-wrap pt-10">
+                                <div className="fs-6 fw-semibold text-gray-700">
+                                    {t('merchant.common.showingEntries', {
+                                        defaultValue: 'Showing {{from}} to {{to}} of {{total}} entries',
+                                        from: ((paginationData.current_page - 1) * paginationData.per_page) + 1,
+                                        to: Math.min(paginationData.current_page * paginationData.per_page, paginationData.total),
+                                        total: paginationData.total,
+                                    })}
+                                </div>
+                                <ul className="pagination">
+                                    <li className={`page-item ${paginationData.current_page === 1 ? 'disabled' : ''}`}>
+                                        <button
+                                            type="button"
+                                            className="page-link"
+                                            onClick={() => handlePageChange(paginationData.current_page - 1)}
+                                            disabled={paginationData.current_page === 1}
+                                        >
+                                            {t('merchant.common.previous', { defaultValue: 'Previous' })}
+                                        </button>
+                                    </li>
+                                    {[...Array(Math.min(5, paginationData.last_page))].map((_, idx) => {
+                                        const page = idx + 1;
+                                        return (
+                                            <li
+                                                key={page}
+                                                className={`page-item ${paginationData.current_page === page ? 'active' : ''}`}
+                                            >
+                                                <button type="button" className="page-link" onClick={() => handlePageChange(page)}>
+                                                    {page}
+                                                </button>
+                                            </li>
+                                        );
+                                    })}
+                                    <li className={`page-item ${paginationData.current_page === paginationData.last_page ? 'disabled' : ''}`}>
+                                        <button
+                                            type="button"
+                                            className="page-link"
+                                            onClick={() => handlePageChange(paginationData.current_page + 1)}
+                                            disabled={paginationData.current_page === paginationData.last_page}
+                                        >
+                                            {t('merchant.common.next', { defaultValue: 'Next' })}
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </>
                     )}
                 </div>
             </div>
 
-            {/* Import Modal */}
             {showImportModal && (
                 <ImportTerminalsModal
                     show={showImportModal}

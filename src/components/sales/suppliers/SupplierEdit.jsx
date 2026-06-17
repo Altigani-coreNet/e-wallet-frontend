@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getSupplier, updateSupplier, suppliersKeys } from '../../../services/suppliersService';
 import SupplierForm from './SupplierForm';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import { getModuleBasePath } from '../../../i18n/localePaths';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 
@@ -15,7 +16,7 @@ const SupplierEdit = () => {
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const queryClient = useQueryClient();
     
-    const basePath = location.pathname.startsWith('/sales') ? '/sales' : '/merchant';
+    const basePath = getModuleBasePath(location.pathname);
     
     const [formData, setFormData] = useState({
         name: '',

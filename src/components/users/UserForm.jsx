@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getRoles } from '../../services/rolesService';
 import { getBranchesForSelect } from '../../services/branchesService';
@@ -8,10 +8,8 @@ import ErrorAlert from '../common/ErrorAlert';
 
 const UserForm = ({ user = null, onSubmit, loading, error, mode = 'create' }) => {
     const { t } = useTranslation();
-    const location = useLocation();
-    
-    // Detect route context (merchant or sales)
-    const basePath = location.pathname.startsWith('/merchant') ? '/merchant' : '/sales';
+    // Keep users module under merchant routes only
+    const basePath = '/merchant';
     const usersPath = `${basePath}/users`;
 
     const [formData, setFormData] = useState({

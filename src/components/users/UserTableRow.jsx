@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-const UserTableRow = ({ user, index, onDelete, onStatusChange, basePath = '/sales' }) => {
+const UserTableRow = ({ user, index, onDelete, onStatusChange, basePath = '/merchant' }) => {
     const { t } = useTranslation();
 
     const getInitials = (name) => {

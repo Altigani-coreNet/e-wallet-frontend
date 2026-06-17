@@ -96,11 +96,14 @@ export const SOFTPOS_ENDPOINTS = {
     BRANCH_BULK_DELETE: `${AUTH_SERVICE_BASE}/branches/bulk-delete`,
     BRANCH_BY_IDS: `${AUTH_SERVICE_BASE}/branches/by-ids`,
     
-    // Terminals (using AuthService)
-    TERMINALS: `${AUTH_SERVICE_BASE}/merchant/terminals`,
-    TERMINAL_DETAILS: (id) => `${AUTH_SERVICE_BASE}/merchant/terminals/${id}`,
-    TERMINAL_EXPORT: `${AUTH_SERVICE_BASE}/merchant/terminals/export`,
-    TERMINAL_BULK_DELETE: `${AUTH_SERVICE_BASE}/merchant/terminals/bulk-delete`,
+    // Terminals (SoftPos v1 merchant API)
+    TERMINALS: `${SOFTPOS_API_BASE}/v1/merchant/terminals`,
+    TERMINAL_DETAILS: (id) => `${SOFTPOS_API_BASE}/v1/merchant/terminals/${id}`,
+    TERMINAL_EXPORT: `${SOFTPOS_API_BASE}/v1/merchant/terminals/export`,
+    TERMINAL_BULK_DELETE: `${SOFTPOS_API_BASE}/v1/merchant/terminals/bulk-delete`,
+    TERMINAL_IMPORT: `${SOFTPOS_API_BASE}/v1/merchant/terminals/import`,
+    TERMINAL_IMPORT_PREVIEW: `${SOFTPOS_API_BASE}/v1/merchant/terminals/import-preview`,
+    TERMINAL_EXPORT_TEMPLATE: `${SOFTPOS_API_BASE}/v1/merchant/terminals/export-template`,
     
     // Payment Links
     PAYMENT_LINKS: `${SOFTPOS_API_BASE}/v1/merchant/payment-links`,

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, Link, useLocation } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../contexts/ToolbarContext';
@@ -13,11 +13,10 @@ import UserTransactionsTab from './view/UserTransactionsTab';
 const UserView = () => {
     const { t, i18n } = useTranslation();
     const { id } = useParams();
-    const location = useLocation();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
 
-    const basePath = location.pathname.startsWith('/merchant') ? '/merchant' : '/sales';
+    const basePath = '/merchant';
     const usersPath = `${basePath}/users`;
 
     const [user, setUser] = useState(null);

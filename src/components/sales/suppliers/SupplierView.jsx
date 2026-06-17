@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { getSupplier } from '../../../services/suppliersService';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import { getModuleBasePath } from '../../../i18n/localePaths';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 
@@ -10,7 +11,7 @@ const SupplierView = () => {
     const location = useLocation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     
-    const basePath = location.pathname.startsWith('/sales') ? '/sales' : '/merchant';
+    const basePath = getModuleBasePath(location.pathname);
     
     const [supplier, setSupplier] = useState(null);
     const [purchases, setPurchases] = useState([]);

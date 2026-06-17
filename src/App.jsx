@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useParams } from 'react-router-dom';
 import LocaleSyncOutlet from './i18n/LocaleSyncOutlet';
 import RootLangRedirect from './i18n/RootLangRedirect';
 import NoLocaleFallback from './i18n/NoLocaleFallback';
@@ -228,6 +228,24 @@ function PlaceholderPage({ titleKey }) {
     );
 }
 
+function SalesUsersRedirect({ mode = 'index' }) {
+    const { id } = useParams();
+
+    if (mode === 'create') {
+        return <LocalizedNavigate to="/merchant/users/create" />;
+    }
+
+    if (mode === 'edit' && id) {
+        return <LocalizedNavigate to={`/merchant/users/${id}/edit`} />;
+    }
+
+    if (mode === 'view' && id) {
+        return <LocalizedNavigate to={`/merchant/users/${id}`} />;
+    }
+
+    return <LocalizedNavigate to="/merchant/users" />;
+}
+
 function App() {
     const { i18n } = useTranslation();
     const { initialize, isAuthenticated } = useAuthStore();
@@ -241,8 +259,8 @@ function App() {
     useEffect(() => {
         const handleUnauthorized = (event) => {
             // Get redirect path from event detail or determine from current path
-            const redirectPath = event.detail?.redirectPath || 
-                (window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login');
+            const redirectPath = event.detail?.redirectPath ||
+                (pathnameIsUnderAdmin(window.location.pathname) ? resolveAdminLoginUrl(window.location.pathname) : '/login');
             
             console.log('🔒 Unauthorized access detected, clearing auth and redirecting to:', redirectPath);
             
@@ -607,11 +625,11 @@ function App() {
                         <Route path="warehouse/:id" element={<WarehouseView />} />
                         <Route path="warehouse/:id/edit" element={<WarehouseEdit />} />
                         
-                        {/* Users & Roles */}
-                        <Route path="users" element={<UsersIndex />} />
-                        <Route path="users/create" element={<UserCreate />} />
-                        <Route path="users/:id/edit" element={<UserEdit />} />
-                        <Route path="users/:id" element={<UserView />} />
+                        {/* Users routes moved to merchant scope; keep redirects for old sales URLs */}
+                        <Route path="users" element={<SalesUsersRedirect mode="index" />} />
+                        <Route path="users/create" element={<SalesUsersRedirect mode="create" />} />
+                        <Route path="users/:id/edit" element={<SalesUsersRedirect mode="edit" />} />
+                        <Route path="users/:id" element={<SalesUsersRedirect mode="view" />} />
                         {/* Roles Routes - COMMENTED OUT (Not needed) */}
                         {/* <Route path="roles" element={<RolesIndex />} />
                         <Route path="roles/create" element={<RoleCreate />} />

@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { createPurchase } from '../../../services/purchasesService';
 import PurchaseForm from './PurchaseForm';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import { normalizePurchaseStatus } from '../../../utils/purchaseStatus';
 
 const PurchaseCreate = () => {
     const navigate = useNavigate();
@@ -25,7 +26,7 @@ const PurchaseCreate = () => {
         account_id: '',
         note: '',
         staff_note: '',
-        status: 'received'
+        status: 0
     });
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -105,7 +106,7 @@ const PurchaseCreate = () => {
                 paid_amount: parseFloat(data.paid_amount || 0),
                 note: data.note,
                 staff_note: data.staff_note,
-                status: data.status || 'received',
+                status: normalizePurchaseStatus(data.status),
                 products: formattedProducts
             };
 

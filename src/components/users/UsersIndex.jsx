@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { getUsers, deleteUser, changeUserStatus, exportUsers } from '../../services/usersService';
@@ -17,13 +16,12 @@ import { toast } from 'react-toastify';
 
 const UsersIndex = () => {
     const { t, i18n } = useTranslation();
-    const location = useLocation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const dateFromRef = useRef(null);
     const dateToRef = useRef(null);
     
-    // Detect route context (merchant or sales)
-    const basePath = location.pathname.startsWith('/merchant') ? '/merchant' : '/sales';
+    // Keep users module under merchant routes only
+    const basePath = '/merchant';
     const dashboardPath = `${basePath}/dashboard`;
     const isMerchant = basePath === '/merchant';
     

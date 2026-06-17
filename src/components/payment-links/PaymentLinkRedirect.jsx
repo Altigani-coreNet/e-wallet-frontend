@@ -72,6 +72,25 @@ const unwrapIntentEnvelope = (body) => {
 const fmt = (currencyCode, val) =>
     `${currencyCode} ${Number(val || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+/** Cypress E2E: use Stripe test PaymentMethod ids (e.g. pm_card_visa) without typing into Elements iframes. */
+const isCypressRuntime = () =>
+    typeof window !== 'undefined' && Boolean(window.Cypress);
+
+const getCypressTestPaymentMethodId = () => {
+    if (!isCypressRuntime()) return null;
+    try {
+        const fromEnv = window.Cypress?.env?.('STRIPE_TEST_PAYMENT_METHOD');
+        if (fromEnv && String(fromEnv).trim()) return String(fromEnv).trim();
+        const fromStorage =
+            window.localStorage.getItem('STRIPE_TEST_PAYMENT_METHOD')
+            || window.sessionStorage.getItem('STRIPE_TEST_PAYMENT_METHOD');
+        if (fromStorage && String(fromStorage).trim()) return String(fromStorage).trim();
+    } catch {
+        /* ignore storage access errors */
+    }
+    return null;
+};
+
 /**
  * Stripe Payment Link / Checkout: allowed method type strings from the API (`payment_method_types`),
  * same enum Stripe uses (card, ideal, klarna, …).
@@ -220,9 +239,54 @@ const CardPaymentFormInner = ({
     const stripe = useStripe();
     const elements = useElements();
 
+    const handleConfirmIntentResponse = async (confirmRes) => {
+        if (!confirmRes.success) {
+            const msg = typeof confirmRes.error === 'string' ? confirmRes.error : (confirmRes.details?.message || t('paymentCheckout.errors.requestFailed'));
+            onPaidError(msg);
+            return;
+        }
+        const body = unwrapIntentEnvelope(confirmRes.data);
+        if (!body || body.success === false) {
+            const msg = body?.message || t('paymentCheckout.errors.paymentFailed');
+            onPaidError(typeof msg === 'string' ? msg : t('paymentCheckout.errors.paymentFailed'));
+            return;
+        }
+
+        if (body.requires_action && body.redirect_url) {
+            window.location.href = body.redirect_url;
+            return;
+        }
+
+        if (body.requires_action && body.client_secret) {
+            if (!stripe) {
+                onPaidError(t('paymentCheckout.errors.authenticationFailed'));
+                return;
+            }
+            const { error: confirmErr, paymentIntent } = await stripe.confirmCardPayment(body.client_secret);
+            if (confirmErr) {
+                onPaidError(confirmErr.message || t('paymentCheckout.errors.authenticationFailed'));
+                return;
+            }
+            if (paymentIntent?.status === 'succeeded') {
+                onPaidSuccess({ payment_intent_id: paymentIntent.id });
+                return;
+            }
+            onPaidError(t('paymentCheckout.errors.paymentNotCompleted'));
+            return;
+        }
+
+        if (body.status === 'succeeded') {
+            onPaidSuccess(body);
+            return;
+        }
+
+        onPaidError(t('paymentCheckout.errors.paymentNotCompleted'));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!stripe || !elements) {
+        const cypressPmId = getCypressTestPaymentMethodId();
+        if (!cypressPmId && (!stripe || !elements)) {
             return;
         }
         if (!cardName.trim()) {
@@ -243,10 +307,12 @@ const CardPaymentFormInner = ({
             return;
         }
 
-        const cardNumberEl = elements.getElement(CardNumberElement);
-        if (!cardNumberEl) {
-            onPaidError(t('paymentCheckout.errors.cardFormNotReady'));
-            return;
+        if (!cypressPmId) {
+            const cardNumberEl = elements?.getElement(CardNumberElement);
+            if (!cardNumberEl) {
+                onPaidError(t('paymentCheckout.errors.cardFormNotReady'));
+                return;
+            }
         }
 
         setSubmitting(true);
@@ -272,57 +338,26 @@ const CardPaymentFormInner = ({
                 return;
             }
 
-            const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
-                type: 'card',
-                card: cardNumberEl,
-                billing_details: { name: cardName.trim() },
-            });
-            if (pmError || !paymentMethod) {
-                onPaidError(pmError?.message || t('paymentCheckout.errors.invalidCardDetails'));
-                return;
+            let paymentMethodId = cypressPmId;
+            if (!paymentMethodId) {
+                const cardNumberEl = elements.getElement(CardNumberElement);
+                const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
+                    type: 'card',
+                    card: cardNumberEl,
+                    billing_details: { name: cardName.trim() },
+                });
+                if (pmError || !paymentMethod) {
+                    onPaidError(pmError?.message || t('paymentCheckout.errors.invalidCardDetails'));
+                    return;
+                }
+                paymentMethodId = paymentMethod.id;
             }
 
             const confirmRes = await apiPost(`${SOFTPOS_API_BASE}/payment-links/uuid/${uuid}/confirm-intent`, {
                 payment_intent_id: paymentIntentId,
-                payment_method_id: paymentMethod.id,
+                payment_method_id: paymentMethodId,
             });
-            if (!confirmRes.success) {
-                const msg = typeof confirmRes.error === 'string' ? confirmRes.error : (confirmRes.details?.message || t('paymentCheckout.errors.requestFailed'));
-                onPaidError(msg);
-                return;
-            }
-            const body = unwrapIntentEnvelope(confirmRes.data);
-            if (!body || body.success === false) {
-                const msg = body?.message || t('paymentCheckout.errors.paymentFailed');
-                onPaidError(typeof msg === 'string' ? msg : t('paymentCheckout.errors.paymentFailed'));
-                return;
-            }
-
-            if (body.requires_action && body.redirect_url) {
-                window.location.href = body.redirect_url;
-                return;
-            }
-
-            if (body.requires_action && body.client_secret) {
-                const { error: confirmErr, paymentIntent } = await stripe.confirmCardPayment(body.client_secret);
-                if (confirmErr) {
-                    onPaidError(confirmErr.message || t('paymentCheckout.errors.authenticationFailed'));
-                    return;
-                }
-                if (paymentIntent?.status === 'succeeded') {
-                    onPaidSuccess({ payment_intent_id: paymentIntent.id });
-                    return;
-                }
-                onPaidError(t('paymentCheckout.errors.paymentNotCompleted'));
-                return;
-            }
-
-            if (body.status === 'succeeded') {
-                onPaidSuccess(body);
-                return;
-            }
-
-            onPaidError(t('paymentCheckout.errors.paymentNotCompleted'));
+            await handleConfirmIntentResponse(confirmRes);
         } catch (err) {
             onPaidError(err?.message || t('paymentCheckout.errors.genericRequestFailed'));
         } finally {
@@ -403,7 +438,11 @@ const CardPaymentFormInner = ({
                 </div>
             </div>
 
-            <button type="submit" className="pl-pay-btn" disabled={submitting || !stripe}>
+            <button
+                type="submit"
+                className="pl-pay-btn"
+                disabled={submitting || (!stripe && !getCypressTestPaymentMethodId())}
+            >
                 <IconLock size={17} />
                 {submitting ? t('paymentCheckout.form.processing') : t('paymentCheckout.form.payAmount', { amount: displayAmount })}
             </button>
@@ -445,14 +484,16 @@ const CardPaymentForm = (props) => {
         return () => { cancelled = true; };
     }, []);
 
-    if (stripeLoadState === 'loading') {
+    const cypressPmId = getCypressTestPaymentMethodId();
+
+    if (stripeLoadState === 'loading' && !cypressPmId) {
         return (
             <div className="pl-card-info-section d-flex justify-content-center py-4">
                 <span className="spinner-border spinner-border-sm text-primary" role="status" />
             </div>
         );
     }
-    if (!stripe) {
+    if (!stripe && !cypressPmId) {
         return (
             <div className="pl-card-info-section">
                 <p style={{ color: '#b45309', fontSize: 14, margin: 0 }}>

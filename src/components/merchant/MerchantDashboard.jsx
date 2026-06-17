@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
@@ -7,7 +7,7 @@ import DashboardFilters from './DashboardFilters';
 import DashboardStatistics from './DashboardStatistics';
 import DashboardCharts from './DashboardCharts';
 import DashboardLatestTransactions from './DashboardLatestTransactions';
-import { SOFTPOS_API_BASE, SOFTPOS_ENDPOINTS, APP_CONFIG } from '../../utils/constants';
+import { SOFTPOS_ENDPOINTS } from '../../utils/constants';
 import { getToken } from '../../utils/api';
 import useAuthStore from '../../stores/authStore';
 import { useToolbar } from '../../contexts/ToolbarContext';
@@ -48,10 +48,6 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
     const [filtersCollapsed, setFiltersCollapsed] = useState(
         localStorage.getItem('merchantDashboardFiltersCollapsed') === 'true'
     );
-    const [terminalDetails, setTerminalDetails] = useState({});
-    const terminalFetchQueue = useRef(new Set());
-    const [terminalDetailsLoading, setTerminalDetailsLoading] = useState(false);
-    
     // React Query hooks with 10-minute cache
     const statisticsQuery = useDashboardStatistics(filters, {
         enabled: !profileLoading && isMerchantApproved,
@@ -282,147 +278,7 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
         };
     }, [activeFilterCount, filtersCollapsed, toggleFilters, handlePrintDashboard, handleExportExcel, handleRefresh, statisticsLoading, chartsLoading, latestTransactionsLoading, setTitle, setBreadcrumbs, setActions, t, i18n.language]);
 
-    const latestTransactions = latestTransactionsData?.latestTransactions || latestTransactionsData || [];
-
-    useEffect(() => {
-        if (!latestTransactions.length) {
-            return;
-        }
-
-        const candidateIds = latestTransactions
-            .map((transaction) =>
-                transaction.terminal_id ||
-                transaction.terminalId ||
-                transaction.terminal?.id ||
-                transaction.terminal_uuid
-            )
-            .filter(Boolean);
-
-        if (!candidateIds.length) {
-            return;
-        }
-
-        const uniqueIds = Array.from(new Set(candidateIds));
-        const missingIds = uniqueIds.filter(
-            (id) =>
-                !(id in terminalDetails) &&
-                !terminalFetchQueue.current.has(id)
-        );
-
-        if (!missingIds.length) {
-            return;
-        }
-
-        let isActive = true;
-
-        missingIds.forEach((id) => terminalFetchQueue.current.add(id));
-        setTerminalDetailsLoading(true);
-
-        const fetchDetails = async () => {
-            try {
-                const results = await Promise.all(
-                    missingIds.map(async (id) => {
-                        try {
-                            const response = await axios.get(SOFTPOS_ENDPOINTS.TERMINAL_DETAILS(id), {
-                                headers: {
-                                    'Accept': 'application/json',
-                                },
-                            });
-                            const payload = response.data?.data || response.data;
-                            return [id, payload || null];
-                        } catch (err) {
-                            console.error('Terminal lookup error:', {
-                                terminalId: id,
-                                status: err.response?.status,
-                                message: err.response?.data?.message || err.message,
-                            });
-                            return [id, null];
-                        }
-                    })
-                );
-
-                if (!isActive) {
-                    return;
-                }
-
-                setTerminalDetails((prev) => {
-                    const next = { ...prev };
-                    results.forEach(([id, data]) => {
-                        if (!(id in next)) {
-                            next[id] = data;
-                        }
-                    });
-                    return next;
-                });
-            } finally {
-                if (isActive) {
-                    setTerminalDetailsLoading(false);
-                }
-                missingIds.forEach((id) => terminalFetchQueue.current.delete(id));
-            }
-        };
-
-        fetchDetails();
-
-        return () => {
-            isActive = false;
-        };
-    }, [latestTransactions, terminalDetails]);
-
-    const transactionsWithTerminalDetails = useMemo(() => {
-        if (!latestTransactions.length) {
-            return latestTransactions;
-        }
-
-        return latestTransactions.map((transaction) => {
-            const terminalId =
-                transaction.terminal_id ||
-                transaction.terminalId ||
-                transaction.terminal?.id ||
-                transaction.terminal_uuid;
-
-            if (!terminalId) {
-                return transaction;
-            }
-
-            const details = terminalDetails[terminalId];
-
-            if (!details) {
-                return transaction;
-            }
-
-            return {
-                ...transaction,
-                terminal: {
-                    ...(transaction.terminal || {}),
-                    ...details,
-                },
-            };
-        });
-    }, [latestTransactions, terminalDetails]);
-
-    const terminalsStillLoading = useMemo(() => {
-        if (!latestTransactions.length) {
-            return false;
-        }
-
-        return latestTransactions.some((transaction) => {
-            const terminalId =
-                transaction.terminal_id ||
-                transaction.terminalId ||
-                transaction.terminal?.id ||
-                transaction.terminal_uuid;
-
-            if (!terminalId) {
-                return false;
-            }
-
-            return (
-                terminalDetails[terminalId] === undefined ||
-                terminalFetchQueue.current.has(terminalId)
-            );
-        });
-    }, [latestTransactions, terminalDetails]);
+    const latestTransactions = Array.isArray(latestTransactionsData) ? latestTransactionsData : [];
 
     // Handle filter changes
     const handleFilterChange = (newFilters) => {
@@ -526,10 +382,10 @@ const MerchantDashboard = ({ merchantId: propMerchantId }) => {
             <div className="row gy-5 g-xl-10">
                 <div className="col-xl-12">
                     <DashboardLatestTransactions 
-                        transactions={transactionsWithTerminalDetails}
+                        transactions={latestTransactions}
                         limit={filters.limit}
                         onLimitChange={(newLimit) => handleFilterChange({ limit: newLimit })}
-                        loading={latestTransactionsLoading || terminalDetailsLoading || terminalsStillLoading}
+                        loading={latestTransactionsLoading}
                     />
                 </div>
             </div>

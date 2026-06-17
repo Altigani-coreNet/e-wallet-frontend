@@ -1,74 +1,33 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const TerminalsFilters = ({ filters, setFilters, onClear, onClose }) => {
+const TerminalsFilters = ({ isVisible, filters, onFilterChange, onClearFilters, onApply }) => {
     const { t } = useTranslation();
     const dateFromRef = useRef(null);
     const dateToRef = useRef(null);
 
+    if (!isVisible) {
+        return null;
+    }
+
     const handleChange = (field, value) => {
-        setFilters(prev => ({ ...prev, [field]: value }));
+        onFilterChange({ ...filters, [field]: value });
     };
 
     const handleDateInputClick = (ref) => {
-        if (ref && ref.current) {
-            if (ref.current.showPicker && typeof ref.current.showPicker === 'function') {
-                ref.current.showPicker().catch(() => {
-                    ref.current.focus();
-                });
-            } else {
-                ref.current.focus();
-                setTimeout(() => {
-                    ref.current.click();
-                }, 10);
-            }
+        if (ref?.current?.showPicker) {
+            ref.current.showPicker().catch(() => ref.current.focus());
+        } else {
+            ref?.current?.focus();
         }
     };
 
     return (
-        <div className="card card-flush mb-5">
-            <div className="card-header">
-                <h3 className="card-title">{t('merchant.terminalsIndex.filters')}</h3>
-                <div className="card-toolbar">
-                    <button 
-                        type="button" 
-                        className="btn btn-sm btn-light-primary me-2"
-                        onClick={onClear}
-                    >
-                        <i className="ki-duotone ki-refresh fs-2">
-                            <span className="path1"></span>
-                            <span className="path2"></span>
-                        </i>
-                        {t('merchant.terminalsIndex.clearFilters')}
-                    </button>
-                    <button 
-                        type="button" 
-                        className="btn btn-sm btn-icon btn-active-light-primary"
-                        onClick={onClose}
-                        aria-label={t('merchant.importBranches.close')}
-                    >
-                        <i className="ki-duotone ki-cross fs-1">
-                            <span className="path1"></span>
-                            <span className="path2"></span>
-                        </i>
-                    </button>
-                </div>
-            </div>
-            <div className="card-body">
+        <div className="card mb-5 mb-xl-8">
+            <div className="card-body py-6">
                 <div className="row g-5">
-                    <div className="col-md-6">
-                        <label className="form-label">{t('merchant.terminalsIndex.search')}</label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            placeholder={t('merchant.terminalsIndex.searchPlaceholder')}
-                            value={filters.search || ''}
-                            onChange={(e) => handleChange('search', e.target.value)}
-                        />
-                    </div>
-
-                    <div className="col-md-6">
-                        <label className="form-label">{t('merchant.terminalsIndex.status')}</label>
+                    <div className="col-md-4">
+                        <label className="form-label fw-bold">{t('merchant.terminalsIndex.status')}</label>
                         <select
                             className="form-select"
                             value={filters.status || ''}
@@ -80,8 +39,23 @@ const TerminalsFilters = ({ filters, setFilters, onClear, onClose }) => {
                         </select>
                     </div>
 
-                    <div className="col-md-6">
-                        <label className="form-label">{t('merchant.terminalsIndex.dateFrom')}</label>
+                    <div className="col-md-4">
+                        <label className="form-label fw-bold">{t('merchant.terminalsIndex.terminalStatus', { defaultValue: 'Terminal Status' })}</label>
+                        <select
+                            className="form-select"
+                            value={filters.terminal_status || ''}
+                            onChange={(e) => handleChange('terminal_status', e.target.value)}
+                        >
+                            <option value="">{t('merchant.terminalsIndex.allStatuses')}</option>
+                            <option value="online">{t('merchant.common.online', { defaultValue: 'Online' })}</option>
+                            <option value="offline">{t('merchant.common.offline', { defaultValue: 'Offline' })}</option>
+                            <option value="testing">{t('merchant.common.testing', { defaultValue: 'Testing' })}</option>
+                            <option value="maintenance">{t('merchant.common.maintenance', { defaultValue: 'Maintenance' })}</option>
+                        </select>
+                    </div>
+
+                    <div className="col-md-4">
+                        <label className="form-label fw-bold">{t('merchant.terminalsIndex.dateFrom')}</label>
                         <input
                             ref={dateFromRef}
                             type="date"
@@ -92,8 +66,8 @@ const TerminalsFilters = ({ filters, setFilters, onClear, onClose }) => {
                         />
                     </div>
 
-                    <div className="col-md-6">
-                        <label className="form-label">{t('merchant.terminalsIndex.dateTo')}</label>
+                    <div className="col-md-4">
+                        <label className="form-label fw-bold">{t('merchant.terminalsIndex.dateTo')}</label>
                         <input
                             ref={dateToRef}
                             type="date"
@@ -103,6 +77,15 @@ const TerminalsFilters = ({ filters, setFilters, onClear, onClose }) => {
                             onClick={() => handleDateInputClick(dateToRef)}
                         />
                     </div>
+                </div>
+
+                <div className="d-flex justify-content-end gap-2 mt-6">
+                    <button type="button" className="btn btn-light" onClick={onClearFilters}>
+                        {t('merchant.terminalsIndex.clearFilters')}
+                    </button>
+                    <button type="button" className="btn btn-primary" onClick={onApply}>
+                        {t('merchant.common.applyFilters', { defaultValue: 'Apply Filters' })}
+                    </button>
                 </div>
             </div>
         </div>

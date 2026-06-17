@@ -17,6 +17,7 @@ import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 import PlanUpgradeModal from '../../users/PlanUpgradeModal';
 import Swal from 'sweetalert2';
+import { getModuleBasePath } from '../../../i18n/localePaths';
 
 const SuppliersIndex = () => {
     const location = useLocation();
@@ -24,7 +25,7 @@ const SuppliersIndex = () => {
     const queryClient = useQueryClient();
     
     // Dynamically determine base path from current location
-    const basePath = location.pathname.startsWith('/sales') ? '/sales' : '/merchant';
+    const basePath = getModuleBasePath(location.pathname);
     
     const [selectedIds, setSelectedIds] = useState([]);
     const [showFilters, setShowFilters] = useState(false);

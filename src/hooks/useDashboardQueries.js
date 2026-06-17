@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { SOFTPOS_ENDPOINTS } from '../utils/constants';
 import { getToken } from '../utils/api';
+import { fetchMerchantDashboardLatestTransactions } from '../services/merchantDashboardService';
 
 // Build params helper
 const buildParams = (filters) => {
@@ -58,31 +59,6 @@ const fetchCharts = async (filters) => {
     throw new Error(response.data.message || 'Failed to load charts');
 };
 
-// Fetch latest transactions
-const fetchLatestTransactions = async (filters) => {
-    const token = getToken();
-    if (!token) {
-        throw new Error('Authentication token not found');
-    }
-    
-    const params = buildParams(filters);
-    params.limit = filters.limit || 10;
-    
-    const response = await axios.get(SOFTPOS_ENDPOINTS.DASHBOARD_LATEST_TRANSACTIONS, {
-        params,
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        }
-    });
-    
-    if (response.data.success) {
-        return response.data.data;
-    }
-    throw new Error(response.data.message || 'Failed to load transactions');
-};
-
 // Custom hook for statistics
 export const useDashboardStatistics = (filters, options = {}) => {
     return useQuery({
@@ -111,7 +87,7 @@ export const useDashboardCharts = (filters, options = {}) => {
 export const useDashboardLatestTransactions = (filters, options = {}) => {
     return useQuery({
         queryKey: ['dashboard', 'latest-transactions', filters.datetime_from, filters.datetime_to, filters.transaction_status, filters.limit],
-        queryFn: () => fetchLatestTransactions(filters),
+        queryFn: () => fetchMerchantDashboardLatestTransactions(filters),
         staleTime: 10 * 60 * 1000, // 10 minutes
         gcTime: 10 * 60 * 1000, // 10 minutes
         retry: 1,

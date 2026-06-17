@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import UserTableRow from './UserTableRow';
 import Pagination from '../common/Pagination';
 
-const UsersTable = ({ users = [], sortConfig, onSort, onDelete, onStatusChange, pagination, onPageChange, basePath = '/sales' }) => {
+const UsersTable = ({ users = [], sortConfig, onSort, onDelete, onStatusChange, pagination, onPageChange, basePath = '/merchant' }) => {
     const { t } = useTranslation();
     const usersArray = Array.isArray(users) ? users : [];
 

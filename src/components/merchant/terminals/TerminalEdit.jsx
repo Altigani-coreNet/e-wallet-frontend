@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useTerminalDetails, updateTerminal } from '../../../services/terminalsService';
 import { useQueryClient } from '@tanstack/react-query';
 import TerminalForm from './TerminalForm';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import Swal from 'sweetalert2';
+
+const MERCHANT_TERMINALS_PATH = '/merchant/terminals';
 
 const TerminalEdit = () => {
     const { t, i18n } = useTranslation();
@@ -23,28 +25,35 @@ const TerminalEdit = () => {
         error: fetchError 
     } = useTerminalDetails(id);
 
-    const terminal = terminalData?.data || terminalData;
+    const terminal = (() => {
+        if (!terminalData) return null;
+        const payload = terminalData.data ?? terminalData;
+        if (payload && typeof payload === 'object' && payload.id) {
+            return payload;
+        }
+        if (payload?.data && typeof payload.data === 'object') {
+            return payload.data;
+        }
+        return payload;
+    })();
 
     useEffect(() => {
         setTitle(t('merchant.breadcrumbs.editTerminal'));
         
         setBreadcrumbs([
             { label: t('merchant.breadcrumbs.dashboard'), path: '/merchant/dashboard' },
-            { label: t('merchant.breadcrumbs.terminals'), path: '/merchant/terminals' },
-            { label: terminal?.name || t('merchant.breadcrumbs.editTerminal'), path: `/merchant/terminals/${id}/edit`, active: true }
+            { label: t('merchant.breadcrumbs.terminals'), path: MERCHANT_TERMINALS_PATH },
+            { label: terminal?.name || t('merchant.breadcrumbs.editTerminal'), path: `${MERCHANT_TERMINALS_PATH}/${id}/edit`, active: true }
         ]);
         
         setActions(
-            <button
-                className="btn btn-sm btn-light btn-active-light-primary"
-                onClick={() => navigate(`/merchant/terminals/${id}`)}
-            >
-                <i className="ki-duotone ki-arrow-left fs-5">
+            <Link to={`${MERCHANT_TERMINALS_PATH}/${id}`} className="btn btn-sm btn-light-danger">
+                <i className="ki-duotone ki-arrow-left fs-2">
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
                 {t('merchant.common.backToView')}
-            </button>
+            </Link>
         );
 
         return () => {
@@ -71,7 +80,7 @@ const TerminalEdit = () => {
                     timer: 2000,
                     showConfirmButton: false
                 });
-                navigate(`/merchant/terminals/${id}`);
+                navigate(`${MERCHANT_TERMINALS_PATH}/${id}`);
             } else {
                 setError(response.error || t('merchant.terminalForm.updateFailed'));
                 Swal.fire(t('merchant.common.error'), response.error || t('merchant.terminalForm.updateFailed'), 'error');
@@ -93,7 +102,7 @@ const TerminalEdit = () => {
             <div className="alert alert-danger">
                 <strong>{t('merchant.branchView.errorPrefix')}</strong> {fetchError?.message || t('merchant.terminalView.notFound')}
                 <div className="mt-3">
-                    <button className="btn btn-primary" onClick={() => navigate('/merchant/terminals')}>
+                    <button className="btn btn-primary" onClick={() => navigate(MERCHANT_TERMINALS_PATH)}>
                         {t('merchant.common.backToTerminals')}
                     </button>
                 </div>

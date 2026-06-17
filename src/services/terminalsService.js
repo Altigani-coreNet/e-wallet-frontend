@@ -80,16 +80,13 @@ export const getTerminal = async (terminalId) => {
  * Fetch terminal details (for React Query hooks)
  */
 export const fetchTerminalDetails = async (terminalId) => {
-    const token = getApiToken();
-    
-    const response = await axios.get(SOFTPOS_ENDPOINTS.TERMINAL_DETAILS(terminalId), {
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/json'
-        }
-    });
-    
-    return response.data;
+    const result = await getTerminal(terminalId);
+
+    if (!result.success) {
+        throw new Error(result.error || 'Failed to fetch terminal');
+    }
+
+    return result;
 };
 
 /**
@@ -104,7 +101,8 @@ export const createTerminal = async (terminalData) => {
             ...terminalData,
             is_active: terminalData.is_active === 'active' || terminalData.is_active === true || terminalData.is_active === 1 || terminalData.is_active === '1'
                 ? 'active'
-                : 'inactive'
+                : 'inactive',
+            terminal_status: terminalData.terminal_status || 'offline',
         };
         
         const response = await axios.post(SOFTPOS_ENDPOINTS.TERMINALS, dataToSend, {
@@ -187,7 +185,8 @@ export const updateTerminal = async (terminalId, terminalData) => {
             ...terminalData,
             is_active: terminalData.is_active === 'active' || terminalData.is_active === true || terminalData.is_active === 1 || terminalData.is_active === '1'
                 ? 'active'
-                : 'inactive'
+                : 'inactive',
+            terminal_status: terminalData.terminal_status || 'offline',
         };
         
         const response = await axios.put(SOFTPOS_ENDPOINTS.TERMINAL_DETAILS(terminalId), dataToSend, {
@@ -200,9 +199,11 @@ export const updateTerminal = async (terminalId, terminalData) => {
         return response.data;
     } catch (error) {
         console.error('Error in updateTerminal:', error);
+        const responseData = error.response?.data;
         return {
             success: false,
-            error: error.response?.data?.message || error.message || 'Failed to update terminal'
+            error: responseData?.errors || responseData?.message || error.message || 'Failed to update terminal',
+            details: responseData?.errors,
         };
     }
 };
@@ -234,7 +235,7 @@ export const importTerminals = async (file) => {
     const formData = new FormData();
     formData.append('import_file', file);
     
-    const response = await axios.post(`${AUTH_SERVICE_BASE}/merchant/terminals/import`, formData, {
+    const response = await axios.post(SOFTPOS_ENDPOINTS.TERMINAL_IMPORT, formData, {
         headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
@@ -254,7 +255,7 @@ export const previewImport = async (file) => {
         const formData = new FormData();
         formData.append('import_file', file);
         
-        const response = await axios.post(`${AUTH_SERVICE_BASE}/merchant/terminals/import-preview`, formData, {
+        const response = await axios.post(SOFTPOS_ENDPOINTS.TERMINAL_IMPORT_PREVIEW, formData, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'multipart/form-data'
@@ -278,7 +279,7 @@ export const exportTemplate = async () => {
     const token = getApiToken();
     
     try {
-        const response = await axios.get(`${AUTH_SERVICE_BASE}/merchant/terminals/export-template`, {
+        const response = await axios.get(SOFTPOS_ENDPOINTS.TERMINAL_EXPORT_TEMPLATE, {
             responseType: 'blob',
             headers: {
                 'Authorization': `Bearer ${token}`

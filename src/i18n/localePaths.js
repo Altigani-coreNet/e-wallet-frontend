@@ -23,6 +23,16 @@ export function stripLocalePrefix(pathname) {
     return pathname.replace(/^\/(en|ar)(?=\/|$)/, '') || '/';
 }
 
+/**
+ * Merchant vs sales module base for shared screens.
+ * @param {string} pathname
+ * @returns {'/sales'|'/merchant'}
+ */
+export function getModuleBasePath(pathname) {
+    const path = stripLocalePrefix(pathname);
+    return path.startsWith('/sales') ? '/sales' : '/merchant';
+}
+
 /** Swap `/en/...` ↔ `/ar/...` */
 export function replaceLocaleInPathname(pathname, newLocale) {
     if (!LOCALE_CODES.includes(newLocale)) return pathname;
