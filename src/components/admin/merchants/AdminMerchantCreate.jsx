@@ -364,7 +364,7 @@ const AdminMerchantCreate = () => {
             toast.error(t('admin.merchantsUI.fillRequiredFields'));
             return;
         }
-
+ 
         try {
             setSaving(true);
             const token = getToken();
