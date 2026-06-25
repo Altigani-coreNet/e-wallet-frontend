@@ -13,6 +13,7 @@
     "cy:open": "cypress open",
     "cy:run": "cypress run",
     "cy:run:e2e": "cypress run --e2e",
+    "cy:run:wallet": "cypress run --e2e --spec cypress/e2e/customers/customer-wallet-workflow.cy.js",
     "cy:run:component": "cypress run --component"
   },
   "dependencies": {

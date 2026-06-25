@@ -21,6 +21,7 @@ describe('Admin customer lifecycle (real backend)', () => {
     beforeEach(() => {
         phone = `+2499${Date.now().toString().slice(-8)}`;
         cy.on('window:confirm', () => true);
+        cy.intercept('GET', '**/v2/admin/customers*').as('customersList');
     });
 
     it('onboards, lists in admin dashboard, changes password, soft-deletes, blocks re-login, allows re-register', () => {
@@ -33,7 +34,8 @@ describe('Admin customer lifecycle (real backend)', () => {
         cy.apiCustomerLogin({ phone, password: initialPassword }).its('status').should('eq', 200);
 
         cy.loginAdmin();
-        cy.contains('Customers Management', { timeout: 15000 }).should('be.visible');
+        cy.wait('@customersList', { timeout: 60000 });
+        cy.get('input[placeholder="Search customers..."]', { timeout: 15000 }).should('be.visible');
         cy.contains(phone, { timeout: 15000 }).should('be.visible');
 
         cy.apiChangePassword({ phone, newPassword: updatedPassword }).its('status').should('eq', 200);

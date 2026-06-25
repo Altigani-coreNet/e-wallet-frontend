@@ -31,6 +31,7 @@ import MerchantRegister from './components/auth/merchant/MerchantRegister';
 import PartnerRegister from './components/auth/parnters/PartnerRegister';
 import ForgotPassword from './components/auth/merchant/ForgotPassword';
 import ResetPasswordFromEmail from './components/auth/merchant/ResetPasswordFromEmail';
+import CustomerSetPassword from './components/auth/customer/CustomerSetPassword';
 
 // Layout Components
 import MainLayout from './components/layout/MainLayout';
@@ -325,6 +326,8 @@ function App() {
             <Route path="/partner/register" element={<PartnerRegister />} />
                           {/* Public: reset link from email — must stay OUTSIDE ProtectedRoute + before splat */}
             <Route path="/reset-password/:token" element={<ResetPasswordFromEmail />} />
+            {/* Public: admin-created customers set their own password via invite link */}
+            <Route path="/customer/set-password/:token" element={<CustomerSetPassword />} />
 
 
             {/* Public Invoice Routes - No Authentication Required */}

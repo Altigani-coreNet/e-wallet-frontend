@@ -254,6 +254,137 @@ Cypress.Commands.add('apiCustomerLogin', ({ phone, password, failOnStatusCode = 
 });
 
 /**
+ * GET /api/v1/customer/profile for the authenticated customer.
+ */
+Cypress.Commands.add('apiCustomerProfile', (token) => {
+    const apiUrl = getApiUrl();
+
+    return cy.request({
+        method: 'GET',
+        url: `${apiUrl}/api/v1/customer/profile`,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode: true,
+    });
+});
+
+function unwrapApiList(response) {
+    const body = response.body;
+    if (Array.isArray(body)) {
+        return body;
+    }
+    if (Array.isArray(body?.data)) {
+        return body.data;
+    }
+
+    return [];
+}
+
+/**
+ * Lookup the first city from GET /api/cities/select (real cities API).
+ * Optionally filter by country_id when provided.
+ */
+Cypress.Commands.add('apiLookupCity', (options = {}) => {
+    const apiUrl = getApiUrl();
+    const qs = { lang: 'en' };
+
+    if (options.countryId) {
+        qs.country_id = options.countryId;
+    }
+
+    return cy
+        .request({
+            method: 'GET',
+            url: `${apiUrl}/api/cities/select`,
+            qs,
+            failOnStatusCode: true,
+        })
+        .then((citiesResponse) => {
+            const cities = unwrapApiList(citiesResponse);
+            expect(cities.length, 'cities from /api/cities/select').to.be.greaterThan(0);
+
+            const city = cities[0];
+            expect(city.id, 'city id').to.exist;
+            expect(city.country_id, 'city country_id').to.exist;
+
+            return city;
+        });
+});
+
+/**
+ * Resolve country `code` (used as country_code in profile complete) from country UUID.
+ */
+Cypress.Commands.add('apiResolveCountryCode', (countryId) => {
+    const apiUrl = getApiUrl();
+
+    return cy
+        .request({
+            method: 'GET',
+            url: `${apiUrl}/api/countries/select`,
+            qs: { lang: 'en' },
+            failOnStatusCode: true,
+        })
+        .then((countriesResponse) => {
+            const countries = unwrapApiList(countriesResponse);
+            const country = countries.find((item) => item.id === countryId);
+            expect(country, `country for id ${countryId}`).to.exist;
+            expect(country.code, 'country code').to.exist;
+
+            return country.code;
+        });
+});
+
+/**
+ * PATCH /api/v1/customer/profile/complete — fill customer profile after registration.
+ */
+Cypress.Commands.add('apiCompleteCustomerProfile', ({ token, firstName, email, cityId, countryCode = '249' }) => {
+    const apiUrl = getApiUrl();
+
+    return cy.request({
+        method: 'PATCH',
+        url: `${apiUrl}/api/v1/customer/profile/complete`,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        body: {
+            firstName,
+            email,
+            birthDate: '1990-05-15',
+            gender: 'male',
+            cityId,
+            country_code: countryCode,
+        },
+        failOnStatusCode: true,
+    });
+});
+
+/**
+ * Lookup city from cities API, resolve matching country code, then complete profile.
+ */
+Cypress.Commands.add('apiCompleteCustomerProfileWithCityLookup', ({ token, firstName, email, countryId }) => {
+    return cy.apiLookupCity({ countryId }).then((city) => {
+        return cy.apiResolveCountryCode(city.country_id).then((countryCode) => {
+            return cy
+                .apiCompleteCustomerProfile({
+                    token,
+                    firstName,
+                    email,
+                    cityId: city.id,
+                    countryCode,
+                })
+                .then((completeResponse) => ({
+                    completeResponse,
+                    city,
+                    countryCode,
+                }));
+        });
+    });
+});
+
+/**
  * Change customer password via forgot + reset OTP flow (mock code 111111).
  */
 Cypress.Commands.add('apiChangePassword', ({ phone, newPassword }) => {
@@ -320,15 +451,107 @@ Cypress.Commands.add('loginAdmin', (overrides = {}) => {
             const token = payload.token || payload.access_token;
 
             Cypress.env('adminToken', token);
-            cy.wrap(payload).as('adminLoginPayload');
 
-            return payload;
-        })
-        .then((payload) => {
             cy.visit('/en/admin/customers', {
                 onBeforeLoad(win) {
                     applyAdminAuthToWindow(win, payload);
                 },
             });
+
+            return cy.wrap(payload).as('adminLoginPayload');
         });
+});
+
+/**
+ * Seed deterministic wallet E2E customers via Laravel (WalletE2eSeeder).
+ */
+Cypress.Commands.add('seedWalletE2eFixtures', () => {
+    return cy.task('seedWalletE2e');
+});
+
+/**
+ * GET /api/v1/customer/wallet/dashboard
+ */
+Cypress.Commands.add('apiWalletDashboard', (token) => {
+    const apiUrl = getApiUrl();
+
+    return cy.request({
+        method: 'GET',
+        url: `${apiUrl}/api/v1/customer/wallet/dashboard`,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode: true,
+    });
+});
+
+/**
+ * POST /api/v1/customer/wallet/transfer/by-wallet-id
+ */
+Cypress.Commands.add('apiWalletTransferByWalletId', ({
+    token,
+    recipientWalletId,
+    amount,
+    description,
+    idempotencyKey,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+    };
+
+    if (idempotencyKey) {
+        headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    return cy.request({
+        method: 'POST',
+        url: `${apiUrl}/api/v1/customer/wallet/transfer/by-wallet-id`,
+        headers,
+        body: {
+            recipient_wallet_id: recipientWalletId,
+            amount,
+            description,
+        },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * POST /api/v1/customer/wallet/transfer/by-phone
+ */
+Cypress.Commands.add('apiWalletTransferByPhone', ({
+    token,
+    recipientPhone,
+    amount,
+    description,
+    idempotencyKey,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+    };
+
+    if (idempotencyKey) {
+        headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    return cy.request({
+        method: 'POST',
+        url: `${apiUrl}/api/v1/customer/wallet/transfer/by-phone`,
+        headers,
+        body: {
+            recipient_phone: recipientPhone,
+            amount,
+            description,
+        },
+        failOnStatusCode,
+    });
 });

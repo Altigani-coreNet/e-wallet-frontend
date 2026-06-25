@@ -23,7 +23,7 @@ export const AUTH_ENDPOINTS = {
     LOGOUT: `${AUTH_SERVICE_BASE}/logout`,
     FORCE_LOGOUT: `${AUTH_SERVICE_BASE}/force-logout`,
     
-    // Profile
+    // Profile 
     PROFILE: `${AUTH_SERVICE_BASE}/profile`,
     PROFILE_ME: `${AUTH_SERVICE_BASE}/profile/me`,
     PROFILE_COMPLETION: `${AUTH_SERVICE_BASE}/profile/completion`,
@@ -55,6 +55,10 @@ export const AUTH_ENDPOINTS = {
     PASSWORD_RESET: `${AUTH_SERVICE_BASE}/password/reset`,
     PASSWORD_VALIDATE_RESET_TOKEN: `${AUTH_SERVICE_BASE}/password/reset-token/validate`,
     PASSWORD_RESET_WITH_TOKEN: `${AUTH_SERVICE_BASE}/password/reset-token`,
+
+    // Customer set-password invite (admin-created customers)
+    CUSTOMER_SET_PASSWORD_VALIDATE: `${AUTH_SERVICE_BASE}/v1/customer/set-password/validate`,
+    CUSTOMER_SET_PASSWORD: `${AUTH_SERVICE_BASE}/v1/customer/set-password`,
     
     // Lookup Data
     COUNTRIES: `${AUTH_SERVICE_BASE}/countries`,
@@ -537,19 +541,19 @@ export const ADMIN_ENDPOINTS = {
     PLAN_CHANGE_STATUS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/plans/${id}/change-status`,
     PLAN_REPORT: `${AUTH_SERVICE_BASE}/v2/admin/plans/report`,
     
-    // Customers (Pos)
-    CUSTOMERS: `${POS_API_BASE}/v2/admin/customers`,
-    CUSTOMER_DETAILS: (uuid) => `${POS_API_BASE}/v2/admin/customers/${uuid}`,
-    CUSTOMER_STATISTICS: `${POS_API_BASE}/v2/admin/customers/statistics`,
-    CUSTOMER_EXPORT: `${POS_API_BASE}/v2/admin/customers/export`,
-    CUSTOMER_EXPORT_TEMPLATE: `${POS_API_BASE}/v2/admin/customers/export-template`,
-    CUSTOMER_IMPORT_PREVIEW: `${POS_API_BASE}/v2/admin/customers/import-preview`,
-    CUSTOMER_IMPORT: `${POS_API_BASE}/v2/admin/customers/import`,
-    CUSTOMER_BULK_DELETE: `${POS_API_BASE}/v2/admin/customers/bulk-delete`,
-    CUSTOMER_TOGGLE_STATUS: (uuid) => `${POS_API_BASE}/v2/admin/customers/${uuid}/toggle-status`,
-    CUSTOMER_UPDATE_STATUS: (uuid) => `${POS_API_BASE}/v2/admin/customers/${uuid}/status`,
-    CUSTOMER_WALLET: (uuid) => `${POS_API_BASE}/v2/admin/customers/${uuid}/wallet`,
-    CUSTOMER_TRANSACTIONS: (uuid) => `${POS_API_BASE}/v2/admin/customers/${uuid}/transactions`,
+    // Customers (SoftPos admin)
+    CUSTOMERS: `${AUTH_SERVICE_BASE}/v2/admin/customers`,
+    CUSTOMER_DETAILS: (uuid) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${uuid}`,
+    CUSTOMER_STATISTICS: `${AUTH_SERVICE_BASE}/v2/admin/customers/statistics`,
+    CUSTOMER_EXPORT: `${AUTH_SERVICE_BASE}/v2/admin/customers/export`,
+    CUSTOMER_EXPORT_TEMPLATE: `${AUTH_SERVICE_BASE}/v2/admin/customers/export-template`,
+    CUSTOMER_IMPORT_PREVIEW: `${AUTH_SERVICE_BASE}/v2/admin/customers/import-preview`,
+    CUSTOMER_IMPORT: `${AUTH_SERVICE_BASE}/v2/admin/customers/import`,
+    CUSTOMER_BULK_DELETE: `${AUTH_SERVICE_BASE}/v2/admin/customers/bulk-delete`,
+    CUSTOMER_TOGGLE_STATUS: (uuid) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${uuid}/toggle-status`,
+    CUSTOMER_UPDATE_STATUS: (uuid) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${uuid}/status`,
+    CUSTOMER_WALLET: (uuid) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${uuid}/wallet`,
+    CUSTOMER_TRANSACTIONS: (uuid) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${uuid}/transactions`,
     
     // Products Management (Pos)
     // Tags

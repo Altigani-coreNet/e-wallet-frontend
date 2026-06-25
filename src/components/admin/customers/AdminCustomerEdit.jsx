@@ -79,7 +79,9 @@ const AdminCustomerEdit = () => {
 
         try {
             const token = getToken();
-            const response = await axios.put(
+            // PHP does not parse multipart bodies on PUT; spoof POST + _method=PUT (Laravel).
+            formData.append('_method', 'PUT');
+            const response = await axios.post(
                 ADMIN_ENDPOINTS.CUSTOMER_DETAILS(uuid),
                 formData,
                 {
