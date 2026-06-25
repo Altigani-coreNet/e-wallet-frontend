@@ -20,53 +20,6 @@ export default defineConfig({
     commonjsOptions: {
       include: [/html2pdf\.js/, /node_modules/],
     },
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) {
-            if (id.includes('/src/routes/AdminRoutes')) {
-              return 'admin-routes';
-            }
-            if (id.includes('/src/components/sales/')) {
-              return 'sales';
-            }
-            return undefined;
-          }
-          // Keep React core in a single shared chunk so it always loads/initializes
-          // before any chunk that uses it (charts, admin-routes, etc.). Otherwise
-          // Rollup can split/order React across chunks, causing runtime crashes like
-          // "Cannot set properties of undefined (setting 'Activity')".
-          if (
-            /node_modules\/react\//.test(id) ||
-            /node_modules\/react-dom\//.test(id) ||
-            /node_modules\/react\/jsx-runtime/.test(id) ||
-            /node_modules\/react\/jsx-dev-runtime/.test(id) ||
-            /node_modules\/scheduler\//.test(id)
-          ) {
-            return 'react-vendor';
-          }
-          if (id.includes('apexcharts') || id.includes('react-apexcharts')) {
-            return 'charts';
-          }
-          if (id.includes('@tiptap')) {
-            return 'editor';
-          }
-          if (id.includes('firebase')) {
-            return 'firebase';
-          }
-          if (id.includes('@stripe')) {
-            return 'stripe';
-          }
-          if (id.includes('html2pdf')) {
-            return 'pdf';
-          }
-          if (id.includes('framer-motion')) {
-            return 'motion';
-          }
-          return undefined;
-        },
-      },
-    },
   },
   test: {
     environment: 'jsdom',
