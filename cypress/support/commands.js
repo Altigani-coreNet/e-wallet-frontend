@@ -366,13 +366,112 @@ Cypress.Commands.add('apiResolveCountryCode', (countryId) => {
 });
 
 /**
- * PATCH /api/v1/customer/profile/complete — fill customer profile after registration.
+ * POST multipart/form-data to customer profile endpoints (XHR — reliable file upload).
+ */
+function apiCustomerProfileMultipartPost({ path, token, fields, pictureFixture = 'corenet.png' }) {
+    const apiUrl = getApiUrl();
+
+    return cy.fixture(pictureFixture, 'binary').then((fileBinary) => {
+        const blob = Cypress.Blob.binaryStringToBlob(fileBinary, 'image/png');
+        const formData = new FormData();
+
+        Object.entries(fields).forEach(([key, value]) => {
+            formData.append(key, String(value));
+        });
+        formData.append('picture', blob, pictureFixture.split('/').pop());
+
+        return cy.wrap(
+            new Cypress.Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', `${apiUrl}${path}`);
+                xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                xhr.setRequestHeader('Accept', 'application/json');
+                xhr.onload = () => {
+                    let body = xhr.responseText;
+                    try {
+                        body = JSON.parse(xhr.responseText);
+                    } catch {
+                        // keep raw text
+                    }
+                    resolve({
+                        status: xhr.status,
+                        body,
+                    });
+                };
+                xhr.onerror = () => reject(new Error(`Multipart POST failed: ${xhr.statusText || 'network error'}`));
+                xhr.send(formData);
+            }),
+            { timeout: 30000 }
+        ).then((response) => {
+            expect(response.status, `multipart ${path} status`).to.be.oneOf([200, 201]);
+            expect(response.body?.success, `multipart ${path} success flag`).to.eq(true);
+            return response;
+        });
+    });
+}
+
+/**
+ * POST /api/v1/customer/profile/complete — multipart/form-data with picture upload.
+ */
+Cypress.Commands.add('apiCompleteCustomerProfileMultipart', ({
+    token,
+    firstName,
+    email,
+    cityId,
+    countryCode = '249',
+    birthDate = '1990-05-15',
+    gender = 'male',
+    pictureFixture = 'corenet.png',
+}) =>
+    apiCustomerProfileMultipartPost({
+        path: '/api/v1/customer/profile/complete',
+        token,
+        pictureFixture,
+        fields: {
+            firstName,
+            email,
+            birthDate,
+            gender,
+            cityId,
+            country_code: countryCode,
+        },
+    })
+);
+
+/**
+ * POST /api/v1/customer/profile/update — multipart/form-data with picture upload.
+ */
+Cypress.Commands.add('apiUpdateCustomerProfileMultipart', ({
+    token,
+    firstName,
+    cityId,
+    countryCode = '249',
+    birthDate = '1992-03-20',
+    gender = 'female',
+    pictureFixture = 'corenet.png',
+}) =>
+    apiCustomerProfileMultipartPost({
+        path: '/api/v1/customer/profile/update',
+        token,
+        pictureFixture,
+        fields: {
+            firstName,
+            birthDate,
+            gender,
+            cityId,
+            country_code: countryCode,
+        },
+    })
+);
+
+/**
+ * POST /api/v1/customer/profile/complete — fill customer profile after registration.
  */
 Cypress.Commands.add('apiCompleteCustomerProfile', ({ token, firstName, email, cityId, countryCode = '249' }) => {
     const apiUrl = getApiUrl();
 
     return cy.request({
-        method: 'PATCH',
+        method: 'POST',
         url: `${apiUrl}/api/v1/customer/profile/complete`,
         headers: {
             Authorization: `Bearer ${token}`,
@@ -394,7 +493,7 @@ Cypress.Commands.add('apiCompleteCustomerProfile', ({ token, firstName, email, c
  * Lookup country + city from APIs, then complete profile.
  * 1. GET /api/countries/select?search=Sudan
  * 2. GET /api/cities/select?country_id=...
- * 3. PATCH /api/v1/customer/profile/complete
+ * 3. POST /api/v1/customer/profile/complete
  */
 Cypress.Commands.add('apiCompleteCustomerProfileWithCityLookup', ({ token, firstName, email, countrySearch = 'Sudan' }) => {
     return cy.apiLookupCountry({ search: countrySearch }).then((country) => {
