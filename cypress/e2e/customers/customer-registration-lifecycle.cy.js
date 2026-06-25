@@ -4,7 +4,7 @@
  * Flow:
  * 1. Register customer via public API (pending, empty name/email)
  * 2. API login + profile — confirm missing name/email
- * 3. Lookup city from GET /api/cities/select, then complete profile via API
+ * 3. Lookup country (Sudan), then city from GET /api/cities/select, then complete profile
  * 4. API login + profile — confirm completed data
  * 5. Admin dashboard — verify data visible, then update name/email
  * 6. API login + profile — confirm admin update reflected
@@ -40,6 +40,7 @@ describe('Customer registration lifecycle (real backend)', () => {
         cy.on('window:confirm', () => true);
 
         cy.intercept('GET', '**/v2/admin/customers*').as('customersList');
+        cy.intercept('GET', '**/countries/select*').as('countriesLookup');
         cy.intercept('GET', '**/cities/select*').as('citiesLookup');
         cy.intercept('GET', '**/v2/admin/customers/*').as('customerDetails');
         cy.intercept('POST', '**/v2/admin/customers/*', (req) => {
@@ -51,6 +52,7 @@ describe('Customer registration lifecycle (real backend)', () => {
             }
             req.continue();
         });
+        cy.intercept('DELETE', '**/v2/admin/customers/**').as('deleteCustomer');
     });
 
     it('registers, completes profile via API, admin updates, delete blocks login', () => {
@@ -77,20 +79,22 @@ describe('Customer registration lifecycle (real backend)', () => {
         cy.apiCustomerLogin({ phone, password }).then((loginResponse) => {
             const authToken = loginResponse.body.data.token;
 
-            cy.apiLookupCity().then((city) => {
-                cy.apiResolveCountryCode(city.country_id).then((countryCode) => {
+            // 1) Country for +249 phone → 2) First city in that country → 3) Complete profile
+            cy.apiLookupCountry({ search: 'Sudan' }).then((country) => {
+                cy.apiLookupCity({ countryId: country.id }).then((city) => {
                     cy.apiCompleteCustomerProfile({
                         token: authToken,
                         firstName: profileName,
                         email: profileEmail,
                         cityId: city.id,
-                        countryCode,
+                        countryCode: country.code,
                     }).then((completeResponse) => {
                         expect(completeResponse.status).to.be.oneOf([200, 201]);
                         expect(completeResponse.body.data.profile_completed).to.eq(true);
                         expect(completeResponse.body.data.customer.name).to.eq(profileName);
                         expect(completeResponse.body.data.customer.email).to.eq(profileEmail);
                         expect(completeResponse.body.data.customer.cityId).to.eq(city.id);
+                        expect(completeResponse.body.data.customer.countryId).to.eq(country.id);
                     });
                 });
             });
@@ -149,8 +153,12 @@ describe('Customer registration lifecycle (real backend)', () => {
             cy.contains('button', 'Actions').click();
         });
         cy.contains('a', 'Delete').click();
-
-        cy.contains('Customer deleted successfully', { timeout: 15000 }).should('be.visible');
+        cy.confirmSwal();
+        cy.wait('@deleteCustomer', { timeout: 30000 }).then(({ response }) => {
+            expect(response.statusCode).to.be.oneOf([200, 204]);
+            expect(response.body?.success).to.eq(true);
+        });
+        cy.wait('@customersList', { timeout: 60000 });
         cy.contains(phone).should('not.exist');
 
         cy.apiCustomerLogin({ phone, password, failOnStatusCode: false }).its('status').should('eq', 401);

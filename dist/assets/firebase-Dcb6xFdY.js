@@ -1,4 +1,4 @@
-import{_ as it}from"./admin-routes-CZTN7bED.js";var kt={};/**
+import{_ as it}from"./admin-routes-1_zbAS0Y.js";var kt={};/**
  * @license
  * Copyright 2017 Google LLC
  *

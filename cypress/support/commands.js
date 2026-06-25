@@ -129,8 +129,9 @@ Cypress.Commands.add('visitCustomersIndex', (locale = 'en', module = 'merchant')
 });
 
 Cypress.Commands.add('confirmSwal', () => {
-    cy.get('.swal2-popup').should('be.visible');
-    cy.get('.swal2-confirm').click();
+    cy.get('.swal2-popup', { timeout: 10000 }).should('be.visible');
+    cy.get('.swal2-confirm').should('be.visible').click();
+    cy.get('.swal2-popup').should('not.exist');
 });
 
 Cypress.Commands.add('cancelSwal', () => {
@@ -283,16 +284,41 @@ function unwrapApiList(response) {
 }
 
 /**
+ * Lookup a country from GET /api/countries/select (search defaults to Sudan for +249 phones).
+ */
+Cypress.Commands.add('apiLookupCountry', (options = {}) => {
+    const apiUrl = getApiUrl();
+    const search = options.search || 'Sudan';
+
+    return cy
+        .request({
+            method: 'GET',
+            url: `${apiUrl}/api/countries/select`,
+            qs: { lang: 'en', search },
+            failOnStatusCode: true,
+        })
+        .then((countriesResponse) => {
+            const countries = unwrapApiList(countriesResponse);
+            expect(countries.length, `countries matching "${search}" from /api/countries/select`).to.be.greaterThan(0);
+
+            const country = countries[0];
+            expect(country.id, 'country id').to.exist;
+            expect(country.code, 'country code').to.exist;
+
+            return country;
+        });
+});
+
+/**
  * Lookup the first city from GET /api/cities/select (real cities API).
- * Optionally filter by country_id when provided.
+ * Pass countryId so the city belongs to the same country used in profile complete.
  */
 Cypress.Commands.add('apiLookupCity', (options = {}) => {
     const apiUrl = getApiUrl();
     const qs = { lang: 'en' };
 
-    if (options.countryId) {
-        qs.country_id = options.countryId;
-    }
+    expect(options.countryId, 'countryId is required for city lookup').to.exist;
+    qs.country_id = options.countryId;
 
     return cy
         .request({
@@ -303,18 +329,22 @@ Cypress.Commands.add('apiLookupCity', (options = {}) => {
         })
         .then((citiesResponse) => {
             const cities = unwrapApiList(citiesResponse);
-            expect(cities.length, 'cities from /api/cities/select').to.be.greaterThan(0);
+            expect(
+                cities.length,
+                `cities for country ${options.countryId} from /api/cities/select`
+            ).to.be.greaterThan(0);
 
             const city = cities[0];
             expect(city.id, 'city id').to.exist;
-            expect(city.country_id, 'city country_id').to.exist;
+            expect(city.country_id, 'city country_id').to.eq(options.countryId);
 
             return city;
         });
 });
 
 /**
- * Resolve country `code` (used as country_code in profile complete) from country UUID.
+ * Resolve country `code` from country UUID via GET /api/countries (full list).
+ * Note: /api/countries/select is limited to 20 rows and must not be used for id lookup.
  */
 Cypress.Commands.add('apiResolveCountryCode', (countryId) => {
     const apiUrl = getApiUrl();
@@ -322,14 +352,13 @@ Cypress.Commands.add('apiResolveCountryCode', (countryId) => {
     return cy
         .request({
             method: 'GET',
-            url: `${apiUrl}/api/countries/select`,
-            qs: { lang: 'en' },
+            url: `${apiUrl}/api/countries`,
             failOnStatusCode: true,
         })
         .then((countriesResponse) => {
             const countries = unwrapApiList(countriesResponse);
             const country = countries.find((item) => item.id === countryId);
-            expect(country, `country for id ${countryId}`).to.exist;
+            expect(country, `country for id ${countryId} from /api/countries`).to.exist;
             expect(country.code, 'country code').to.exist;
 
             return country.code;
@@ -362,23 +391,26 @@ Cypress.Commands.add('apiCompleteCustomerProfile', ({ token, firstName, email, c
 });
 
 /**
- * Lookup city from cities API, resolve matching country code, then complete profile.
+ * Lookup country + city from APIs, then complete profile.
+ * 1. GET /api/countries/select?search=Sudan
+ * 2. GET /api/cities/select?country_id=...
+ * 3. PATCH /api/v1/customer/profile/complete
  */
-Cypress.Commands.add('apiCompleteCustomerProfileWithCityLookup', ({ token, firstName, email, countryId }) => {
-    return cy.apiLookupCity({ countryId }).then((city) => {
-        return cy.apiResolveCountryCode(city.country_id).then((countryCode) => {
+Cypress.Commands.add('apiCompleteCustomerProfileWithCityLookup', ({ token, firstName, email, countrySearch = 'Sudan' }) => {
+    return cy.apiLookupCountry({ search: countrySearch }).then((country) => {
+        return cy.apiLookupCity({ countryId: country.id }).then((city) => {
             return cy
                 .apiCompleteCustomerProfile({
                     token,
                     firstName,
                     email,
                     cityId: city.id,
-                    countryCode,
+                    countryCode: country.code,
                 })
                 .then((completeResponse) => ({
                     completeResponse,
+                    country,
                     city,
-                    countryCode,
                 }));
         });
     });

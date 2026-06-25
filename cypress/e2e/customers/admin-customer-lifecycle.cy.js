@@ -22,6 +22,7 @@ describe('Admin customer lifecycle (real backend)', () => {
         phone = `+2499${Date.now().toString().slice(-8)}`;
         cy.on('window:confirm', () => true);
         cy.intercept('GET', '**/v2/admin/customers*').as('customersList');
+        cy.intercept('DELETE', '**/v2/admin/customers/**').as('deleteCustomer');
     });
 
     it('onboards, lists in admin dashboard, changes password, soft-deletes, blocks re-login, allows re-register', () => {
@@ -46,8 +47,12 @@ describe('Admin customer lifecycle (real backend)', () => {
             cy.contains('button', 'Actions').click();
         });
         cy.contains('a', 'Delete').click();
-
-        cy.contains('Customer deleted successfully', { timeout: 15000 }).should('be.visible');
+        cy.confirmSwal();
+        cy.wait('@deleteCustomer', { timeout: 30000 }).then(({ response }) => {
+            expect(response.statusCode).to.be.oneOf([200, 204]);
+            expect(response.body?.success).to.eq(true);
+        });
+        cy.wait('@customersList', { timeout: 60000 });
         cy.contains(phone).should('not.exist');
 
         cy.apiCustomerLogin({ phone, password: updatedPassword, failOnStatusCode: false }).its('status').should('eq', 401);
