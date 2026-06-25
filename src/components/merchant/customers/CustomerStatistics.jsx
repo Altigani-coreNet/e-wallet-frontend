@@ -1,7 +1,9 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import useAuthStore from '../../../stores/authStore';
 
 const CustomerStatistics = ({ statistics }) => {
+    const { t } = useTranslation();
     const { formatCurrency } = useAuthStore();
     const {
         total = 0,
@@ -29,7 +31,7 @@ const CustomerStatistics = ({ statistics }) => {
                                 </div>
                             </div>
                             <div className="flex-grow-1">
-                                <span className="text-gray-400 fw-semibold d-block fs-7">Total Customers</span>
+                                <span className="text-gray-400 fw-semibold d-block fs-7">{t('customers.totalCustomers')}</span>
                                 <span className="text-gray-800 fw-bold fs-2">{total.toLocaleString()}</span>
                             </div>
                         </div>
@@ -51,7 +53,7 @@ const CustomerStatistics = ({ statistics }) => {
                                 </div>
                             </div>
                             <div className="flex-grow-1">
-                                <span className="text-gray-400 fw-semibold d-block fs-7">Active Customers</span>
+                                <span className="text-gray-400 fw-semibold d-block fs-7">{t('customers.activeCustomers')}</span>
                                 <span className="text-gray-800 fw-bold fs-2">{active.toLocaleString()}</span>
                             </div>
                         </div>
@@ -73,7 +75,7 @@ const CustomerStatistics = ({ statistics }) => {
                                 </div>
                             </div>
                             <div className="flex-grow-1">
-                                <span className="text-gray-400 fw-semibold d-block fs-7">Total Deposit</span>
+                                <span className="text-gray-400 fw-semibold d-block fs-7">{t('customers.totalDeposit')}</span>
                                 <span className="text-gray-800 fw-bold fs-2">
                                     {formatCurrency(typeof total_deposit === 'number' ? total_deposit : parseFloat(total_deposit || 0))}
                                 </span>
@@ -97,7 +99,7 @@ const CustomerStatistics = ({ statistics }) => {
                                 </div>
                             </div>
                             <div className="flex-grow-1">
-                                <span className="text-gray-400 fw-semibold d-block fs-7">Total Expense</span>
+                                <span className="text-gray-400 fw-semibold d-block fs-7">{t('customers.totalExpense')}</span>
                                 <span className="text-gray-800 fw-bold fs-2">
                                     {formatCurrency(typeof total_expense === 'number' ? total_expense : parseFloat(total_expense || 0))}
                                 </span>

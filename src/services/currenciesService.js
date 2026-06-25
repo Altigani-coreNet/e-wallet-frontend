@@ -79,7 +79,7 @@ export const useCurrencies = () => {
         queryKey: ['currencies'],
         queryFn: fetchCurrencies,
         staleTime: CACHE_CONFIG.CURRENCIES_STALE_TIME,
-        cacheTime: CACHE_CONFIG.CURRENCIES_STALE_TIME,
+        gcTime: CACHE_CONFIG.CURRENCIES_STALE_TIME,
         onError: (error) => {
             console.error('Error fetching currencies:', error);
             toast.error('Failed to load currencies');
@@ -95,7 +95,7 @@ export const useCurrenciesSelect = () => {
         queryKey: ['currencies-select'],
         queryFn: fetchCurrenciesSelect,
         staleTime: CACHE_CONFIG.CURRENCIES_STALE_TIME,
-        cacheTime: CACHE_CONFIG.CURRENCIES_STALE_TIME,
+        gcTime: CACHE_CONFIG.CURRENCIES_STALE_TIME,
         onError: (error) => {
             console.error('Error fetching currencies:', error);
             toast.error('Failed to load currencies');
@@ -112,7 +112,7 @@ export const useCurrencyDetails = (currencyId) => {
         queryFn: () => fetchCurrencyDetails(currencyId),
         enabled: !!currencyId,
         staleTime: CACHE_CONFIG.CURRENCIES_STALE_TIME,
-        cacheTime: CACHE_CONFIG.CURRENCIES_STALE_TIME,
+        gcTime: CACHE_CONFIG.CURRENCIES_STALE_TIME,
         onError: (error) => {
             console.error('Error fetching currency details:', error);
             toast.error('Failed to load currency details');

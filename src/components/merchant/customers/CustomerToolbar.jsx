@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const CustomerToolbar = ({ 
     onRefresh, 
@@ -11,9 +12,10 @@ const CustomerToolbar = ({
     onBulkDelete,
     basePath = '/merchant'
 }) => {
+    const { t } = useTranslation();
+
     return (
         <>
-            {/* Filter Button */}
             <button
                 className="btn btn-sm btn-flex btn-secondary fw-bold me-2"
                 onClick={onToggleFilters}
@@ -22,11 +24,10 @@ const CustomerToolbar = ({
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                <span className="d-none d-md-inline ms-1">Filter</span>
+                <span className="d-none d-md-inline ms-1">{t('customers.filter')}</span>
             </button>
 
-            {/* Bulk Delete Button (shown when items selected) */}
-            {selectedCount > 0 && (
+            {selectedCount > 0 && onBulkDelete && (
                 <button
                     className="btn btn-sm fw-bold btn-danger me-2"
                     onClick={onBulkDelete}
@@ -38,24 +39,24 @@ const CustomerToolbar = ({
                         <span className="path4"></span>
                         <span className="path5"></span>
                     </i>
-                    <span className="d-none d-md-inline ms-1">Delete Selected ({selectedCount})</span>
+                    <span className="d-none d-md-inline ms-1">{t('common.deleteSelected', { count: selectedCount })}</span>
                 </button>
             )}
 
-            {/* Export Button */}
-            <button
-                className="btn btn-sm fw-bold btn-success me-2"
-                onClick={onExport}
-                disabled={loading}
-            >
-                <i className="ki-duotone ki-exit-up fs-3">
-                    <span className="path1"></span>
-                    <span className="path2"></span>
-                </i>
-                <span className="d-none d-md-inline ms-1">Export</span>
-            </button>
+            {onExport && (
+                <button
+                    className="btn btn-sm fw-bold btn-success me-2"
+                    onClick={onExport}
+                    disabled={loading}
+                >
+                    <i className="ki-duotone ki-exit-up fs-3">
+                        <span className="path1"></span>
+                        <span className="path2"></span>
+                    </i>
+                    <span className="d-none d-md-inline ms-1">{t('common.export')}</span>
+                </button>
+            )}
 
-            {/* Import Button */}
             <button
                 className="btn btn-sm fw-bold btn-info me-2"
                 onClick={onImport}
@@ -65,15 +66,14 @@ const CustomerToolbar = ({
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                <span className="d-none d-md-inline ms-1">Import</span>
+                <span className="d-none d-md-inline ms-1">{t('common.import')}</span>
             </button>
 
-            {/* Refresh Button - Icon only on all screens */}
             <button
                 className="btn btn-sm btn-icon btn-light me-2"
                 onClick={onRefresh}
                 disabled={loading}
-                title="Refresh"
+                title={t('common.refresh')}
             >
                 <i className={`ki-duotone ki-arrows-circle fs-3 ${loading ? 'spinner' : ''}`}>
                     <span className="path1"></span>
@@ -81,7 +81,6 @@ const CustomerToolbar = ({
                 </i>
             </button>
 
-            {/* Add Customer Button */}
             <Link
                 to={`${basePath}/customers/create`}
                 className="btn btn-sm fw-bold btn-primary"
@@ -90,11 +89,10 @@ const CustomerToolbar = ({
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                <span className="d-none d-md-inline ms-1">Add Customer</span>
+                <span className="d-none d-md-inline ms-1">{t('customers.addCustomer')}</span>
             </Link>
         </>
     );
 };
 
 export default CustomerToolbar;
-

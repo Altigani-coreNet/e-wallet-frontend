@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getCustomerGroups } from '../../../services/customersService';
 
 const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
+    const { t } = useTranslation();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -80,17 +82,17 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
                 <div className="row g-5">
                     {/* Basic Information */}
                     <div className="col-12">
-                        <h3 className="mb-5">Basic Information</h3>
+                        <h3 className="mb-5">{t('customers.basicInformation')}</h3>
                     </div>
 
                     {/* Name - Required */}
                     <div className="col-md-6">
-                        <label className="form-label required fw-bold fs-6">Customer Name</label>
+                        <label className="form-label required fw-bold fs-6">{t('customers.customerName')}</label>
                         <input
                             type="text"
                             name="name"
                             className={`form-control form-control-solid ${errors.name ? 'is-invalid' : ''}`}
-                            placeholder="Enter customer name"
+                            placeholder={t('customers.enterCustomerName')}
                             value={formData.name}
                             onChange={handleChange}
                             required
@@ -102,12 +104,12 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
 
                     {/* Email - Required */}
                     <div className="col-md-6">
-                        <label className="form-label required fw-bold fs-6">Email</label>
+                        <label className="form-label required fw-bold fs-6">{t('common.email')}</label>
                         <input
                             type="email"
                             name="email"
                             className={`form-control form-control-solid ${errors.email ? 'is-invalid' : ''}`}
-                            placeholder="Enter email address"
+                            placeholder={t('customers.enterEmailAddress')}
                             value={formData.email}
                             onChange={handleChange}
                             required
@@ -119,12 +121,12 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
 
                     {/* Phone */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold fs-6">Phone Number</label>
+                        <label className="form-label fw-bold fs-6">{t('customers.phoneNumber')}</label>
                         <input
                             type="text"
                             name="phone"
                             className={`form-control form-control-solid ${errors.phone ? 'is-invalid' : ''}`}
-                            placeholder="Enter phone number"
+                            placeholder={t('customers.enterPhoneNumber')}
                             value={formData.phone}
                             onChange={handleChange}
                         />
@@ -135,12 +137,12 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
 
                     {/* Company Name */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold fs-6">Company Name</label>
+                        <label className="form-label fw-bold fs-6">{t('customers.companyName')}</label>
                         <input
                             type="text"
                             name="company_name"
                             className={`form-control form-control-solid ${errors.company_name ? 'is-invalid' : ''}`}
-                            placeholder="Enter company name"
+                            placeholder={t('customers.enterCompanyName')}
                             value={formData.company_name}
                             onChange={handleChange}
                         />
@@ -151,7 +153,7 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
 
                     {/* Customer Group */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold fs-6">Customer Group</label>
+                        <label className="form-label fw-bold fs-6">{t('customers.customerGroup')}</label>
                         <select
                             name="customer_group_id"
                             className={`form-select form-select-solid ${errors.customer_group_id ? 'is-invalid' : ''}`}
@@ -159,7 +161,7 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
                             onChange={handleChange}
                             disabled={loadingGroups}
                         >
-                            <option value="">Select Customer Group (Optional)</option>
+                            <option value="">{t('customers.selectCustomerGroupOptional')}</option>
                             {customerGroups.map((group) => (
                                 <option key={group.id} value={group.id}>
                                     {group.name}
@@ -173,12 +175,12 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
 
                     {/* Tax Number */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold fs-6">Tax Number</label>
+                        <label className="form-label fw-bold fs-6">{t('customers.taxNumber')}</label>
                         <input
                             type="text"
                             name="tax_no"
                             className={`form-control form-control-solid ${errors.tax_no ? 'is-invalid' : ''}`}
-                            placeholder="Enter tax number"
+                            placeholder={t('customers.enterTaxNumber')}
                             value={formData.tax_no}
                             onChange={handleChange}
                         />
@@ -189,17 +191,17 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
 
                     {/* Address Information */}
                     <div className="col-12">
-                        <h3 className="mb-5 mt-5">Address Information</h3>
+                        <h3 className="mb-5 mt-5">{t('customers.addressInformation')}</h3>
                     </div>
 
                     {/* Address */}
                     <div className="col-12">
-                        <label className="form-label fw-bold fs-6">Street Address</label>
+                        <label className="form-label fw-bold fs-6">{t('customers.streetAddress')}</label>
                         <input
                             type="text"
                             name="address"
                             className={`form-control form-control-solid ${errors.address ? 'is-invalid' : ''}`}
-                            placeholder="Enter street address"
+                            placeholder={t('customers.enterStreetAddress')}
                             value={formData.address}
                             onChange={handleChange}
                         />
@@ -210,12 +212,12 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
 
                     {/* City */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold fs-6">City</label>
+                        <label className="form-label fw-bold fs-6">{t('common.city')}</label>
                         <input
                             type="text"
                             name="city"
                             className={`form-control form-control-solid ${errors.city ? 'is-invalid' : ''}`}
-                            placeholder="Enter city"
+                            placeholder={t('customers.enterCity')}
                             value={formData.city}
                             onChange={handleChange}
                         />
@@ -226,12 +228,12 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
 
                     {/* State */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold fs-6">State/Province</label>
+                        <label className="form-label fw-bold fs-6">{t('customers.stateProvince')}</label>
                         <input
                             type="text"
                             name="state"
                             className={`form-control form-control-solid ${errors.state ? 'is-invalid' : ''}`}
-                            placeholder="Enter state or province"
+                            placeholder={t('customers.enterStateProvince')}
                             value={formData.state}
                             onChange={handleChange}
                         />
@@ -242,12 +244,12 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
 
                     {/* Postal Code */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold fs-6">Postal Code</label>
+                        <label className="form-label fw-bold fs-6">{t('common.postalCode')}</label>
                         <input
                             type="text"
                             name="postal_code"
                             className={`form-control form-control-solid ${errors.postal_code ? 'is-invalid' : ''}`}
-                            placeholder="Enter postal code"
+                            placeholder={t('customers.enterPostalCode')}
                             value={formData.postal_code}
                             onChange={handleChange}
                         />
@@ -258,12 +260,12 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
 
                     {/* Country */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold fs-6">Country</label>
+                        <label className="form-label fw-bold fs-6">{t('common.country')}</label>
                         <input
                             type="text"
                             name="country"
                             className={`form-control form-control-solid ${errors.country ? 'is-invalid' : ''}`}
-                            placeholder="Enter country"
+                            placeholder={t('customers.enterCountry')}
                             value={formData.country}
                             onChange={handleChange}
                         />
@@ -274,12 +276,12 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
 
                     {/* Financial Information */}
                     <div className="col-12">
-                        <h3 className="mb-5 mt-5">Financial Information</h3>
+                        <h3 className="mb-5 mt-5">{t('customers.financialInformation')}</h3>
                     </div>
 
                     {/* Deposit */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold fs-6">Deposit Amount</label>
+                        <label className="form-label fw-bold fs-6">{t('customers.depositAmount')}</label>
                         <input
                             type="number"
                             step="0.01"
@@ -296,7 +298,7 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
 
                     {/* Expense */}
                     <div className="col-md-6">
-                        <label className="form-label fw-bold fs-6">Expense Amount</label>
+                        <label className="form-label fw-bold fs-6">{t('customers.expenseAmount')}</label>
                         <input
                             type="number"
                             step="0.01"
@@ -322,7 +324,7 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
                     {loading ? (
                         <>
                             <span className="spinner-border spinner-border-sm align-middle me-2"></span>
-                            Saving...
+                            {t('customers.saving')}
                         </>
                     ) : (
                         <>
@@ -330,7 +332,7 @@ const CustomerForm = ({ customer, onSubmit, loading, errors = {} }) => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Save Customer
+                            {t('customers.saveCustomer')}
                         </>
                     )}
                 </button>

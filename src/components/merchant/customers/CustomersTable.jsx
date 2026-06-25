@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import CustomerTableRow from './CustomerTableRow';
 
 const CustomersTable = ({
@@ -14,6 +15,8 @@ const CustomersTable = ({
     getSortIcon,
     isFetching
 }) => {
+    const { t } = useTranslation();
+
     const handleSelectAll = (e) => {
         if (e.target.checked) {
             const allIds = customers.map(customer => customer.id);
@@ -33,13 +36,11 @@ const CustomersTable = ({
 
     const isAllSelected = customers.length > 0 && selectedIds.length === customers.length;
 
-    // Generate page numbers
     const generatePageNumbers = () => {
         const pages = [];
         const maxPages = pagination.last_page || pagination.lastPage || 1;
         const currentPage = pagination.current_page || pagination.currentPage || 1;
         
-        // Show max 7 pages
         let startPage = Math.max(1, currentPage - 3);
         let endPage = Math.min(maxPages, currentPage + 3);
 
@@ -57,6 +58,11 @@ const CustomersTable = ({
         
         return pages;
     };
+
+    const currentPage = pagination.current_page || pagination.currentPage || 1;
+    const perPage = pagination.per_page || pagination.perPage || 15;
+    const rangeStart = (currentPage - 1) * perPage + 1;
+    const rangeEnd = Math.min(currentPage * perPage, pagination.total);
 
     return (
         <>
@@ -80,7 +86,7 @@ const CustomersTable = ({
                                 onClick={() => onSort('name')}
                             >
                                 <span className="d-flex align-items-center">
-                                    Customer {getSortIcon('name')}
+                                    {t('customers.customer')} {getSortIcon('name')}
                                 </span>
                             </th>
                             <th 
@@ -89,7 +95,7 @@ const CustomersTable = ({
                                 onClick={() => onSort('email')}
                             >
                                 <span className="d-flex align-items-center">
-                                    Email {getSortIcon('email')}
+                                    {t('common.email')} {getSortIcon('email')}
                                 </span>
                             </th>
                             <th 
@@ -98,13 +104,13 @@ const CustomersTable = ({
                                 onClick={() => onSort('phone')}
                             >
                                 <span className="d-flex align-items-center">
-                                    Phone {getSortIcon('phone')}
+                                    {t('common.phone')} {getSortIcon('phone')}
                                 </span>
                             </th>
-                            <th className="min-w-150px">Company</th>
-                            <th className="min-w-100px">Group</th>
-                            <th className="min-w-100px">Created Date</th>
-                            <th className="min-w-100px text-end">Actions</th>
+                            <th className="min-w-150px">{t('customers.company')}</th>
+                            <th className="min-w-100px">{t('customers.group')}</th>
+                            <th className="min-w-100px">{t('customers.createdDate')}</th>
+                            <th className="min-w-100px text-end">{t('common.actions')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -116,7 +122,7 @@ const CustomersTable = ({
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        <span className="text-muted fs-5">No customers found</span>
+                                        <span className="text-muted fs-5">{t('customers.noCustomersFound')}</span>
                                     </div>
                                 </td>
                             </tr>
@@ -136,25 +142,23 @@ const CustomersTable = ({
                 </table>
             </div>
 
-            {/* Pagination */}
             {customers.length > 0 && pagination && (
                 <div className="d-flex flex-stack flex-wrap pt-10">
                     <div className="fs-6 fw-semibold text-gray-700">
-                        Showing {((pagination.current_page || pagination.currentPage) - 1) * (pagination.per_page || pagination.perPage) + 1} to{' '}
-                        {Math.min(
-                            (pagination.current_page || pagination.currentPage) * (pagination.per_page || pagination.perPage),
-                            pagination.total
-                        )}{' '}
-                        of {pagination.total} entries
+                        {t('common.showingFromToOfEntries', {
+                            start: rangeStart,
+                            end: rangeEnd,
+                            total: pagination.total
+                        })}
                     </div>
 
                     <ul className="pagination">
-                        {/* Previous Button */}
-                        <li className={`page-item ${(pagination.current_page || pagination.currentPage) === 1 || isFetching ? 'disabled' : ''}`}>
+                        <li className={`page-item ${currentPage === 1 || isFetching ? 'disabled' : ''}`}>
                             <button
                                 className="page-link"
-                                onClick={() => onPageChange(Math.max((pagination.current_page || pagination.currentPage) - 1, 1))}
-                                disabled={(pagination.current_page || pagination.currentPage) === 1 || isFetching}
+                                onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
+                                disabled={currentPage === 1 || isFetching}
+                                aria-label={t('common.previous')}
                             >
                                 <i className="ki-duotone ki-arrow-left fs-5">
                                     <span className="path1"></span>
@@ -163,11 +167,10 @@ const CustomersTable = ({
                             </button>
                         </li>
 
-                        {/* Page Numbers */}
                         {generatePageNumbers().map((page) => (
                             <li
                                 key={page}
-                                className={`page-item ${(pagination.current_page || pagination.currentPage) === page ? 'active' : ''} ${isFetching ? 'disabled' : ''}`}
+                                className={`page-item ${currentPage === page ? 'active' : ''} ${isFetching ? 'disabled' : ''}`}
                             >
                                 <button
                                     className="page-link"
@@ -179,12 +182,12 @@ const CustomersTable = ({
                             </li>
                         ))}
 
-                        {/* Next Button */}
-                        <li className={`page-item ${(pagination.current_page || pagination.currentPage) === (pagination.last_page || pagination.lastPage) || isFetching ? 'disabled' : ''}`}>
+                        <li className={`page-item ${currentPage === (pagination.last_page || pagination.lastPage) || isFetching ? 'disabled' : ''}`}>
                             <button
                                 className="page-link"
-                                onClick={() => onPageChange(Math.min((pagination.current_page || pagination.currentPage) + 1, (pagination.last_page || pagination.lastPage)))}
-                                disabled={(pagination.current_page || pagination.currentPage) === (pagination.last_page || pagination.lastPage) || isFetching}
+                                onClick={() => onPageChange(Math.min(currentPage + 1, (pagination.last_page || pagination.lastPage)))}
+                                disabled={currentPage === (pagination.last_page || pagination.lastPage) || isFetching}
+                                aria-label={t('common.next')}
                             >
                                 <i className="ki-duotone ki-arrow-right fs-5">
                                     <span className="path1"></span>
@@ -200,4 +203,3 @@ const CustomersTable = ({
 };
 
 export default CustomersTable;
-

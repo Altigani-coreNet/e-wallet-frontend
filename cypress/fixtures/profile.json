@@ -1,0 +1,29 @@
+{
+  "status": true,
+  "success": true,
+  "data": {
+    "user": {
+      "id": 1,
+      "name": "Test Merchant",
+      "email": "merchant@test.com",
+      "permissions": [
+        "view_customers",
+        "create_customers",
+        "customers",
+        "customers.delete",
+        "pos.customers.view_customers",
+        "pos.customers.create_customers",
+        "pos.customers.delete_customers"
+      ],
+      "roles": ["merchant"],
+      "onboarding_completed": true,
+      "merchant_id": 1
+    },
+    "merchant": {
+      "id": 1,
+      "name": "Test Store",
+      "currency": "USD"
+    },
+    "onboarding_completed": true
+  }
+}

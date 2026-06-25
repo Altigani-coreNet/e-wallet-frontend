@@ -317,7 +317,7 @@ export const useAdminTerminalGroups = (page, perPage, filters) => {
         queryKey: ['admin-terminal-groups', page, perPage, filters],
         queryFn: () => fetchAdminTerminalGroups({ page, perPage, filters }),
         staleTime: 0,
-        cacheTime: 0,
+        gcTime: 0,
         keepPreviousData: false,
         refetchOnMount: 'always',
         refetchOnWindowFocus: true,
@@ -334,7 +334,7 @@ export const useAdminTerminalGroup = (terminalGroupId) => {
         queryFn: () => getAdminTerminalGroup(terminalGroupId),
         enabled: !!terminalGroupId,
         staleTime: 30 * 1000,
-        cacheTime: 5 * 60 * 1000
+        gcTime: 5 * 60 * 1000
     });
 };
 
@@ -346,7 +346,7 @@ export const useAdminTerminalGroupStatistics = () => {
         queryKey: ['admin-terminal-group-statistics'],
         queryFn: () => getAdminTerminalGroupStatistics(),
         staleTime: 60 * 1000,
-        cacheTime: 5 * 60 * 1000
+        gcTime: 5 * 60 * 1000
     });
 };
 

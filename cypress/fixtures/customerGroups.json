@@ -1,0 +1,8 @@
+{
+  "data": {
+    "customerGroups": [
+      { "id": 1, "name": "VIP" },
+      { "id": 2, "name": "Regular" }
+    ]
+  }
+}

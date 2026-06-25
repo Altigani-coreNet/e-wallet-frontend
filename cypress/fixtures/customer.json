@@ -1,0 +1,22 @@
+{
+  "data": {
+    "customers": {
+      "id": 1,
+      "name": "John Doe",
+      "email": "john@example.com",
+      "phone": "+1234567890",
+      "company_name": "Acme Inc",
+      "address": "123 Main St",
+      "city": "New York",
+      "state": "NY",
+      "postal_code": "10001",
+      "country": "USA",
+      "tax_number": "TAX-001",
+      "deposit": 500,
+      "expense": 100,
+      "customer_group": { "id": 1, "name": "VIP" },
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-03-01T08:00:00Z"
+    }
+  }
+}

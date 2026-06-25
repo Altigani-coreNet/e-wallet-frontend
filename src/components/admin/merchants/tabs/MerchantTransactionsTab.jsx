@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
+import { get } from '../../../../utils/api';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS } from '../../../../utils/constants';
-import { getToken } from '../../../../utils/api';
 import PaginationControls from '../../../common/PaginationControls';
 
 const DEFAULT_PAGINATION = {
@@ -40,20 +39,13 @@ const MerchantTransactionsTab = ({ merchantId }) => {
                 setLoading(true);
                 setError(null);
 
-                const token = getToken();
                 const params = {
                     page: pagination.current_page,
                     per_page: pagination.per_page,
                     merchant_id: merchantId,
                 };
 
-                const response = await axios.get(ADMIN_ENDPOINTS.TRANSACTIONS, {
-                    params,
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        Accept: 'application/json',
-                    },
-                });
+                const response = await get(ADMIN_ENDPOINTS.TRANSACTIONS, { params });
 
                 if (!isMounted) {
                     return;

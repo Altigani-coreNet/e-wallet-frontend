@@ -18,7 +18,7 @@ const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
             staleTime: 5 * 60 * 1000, // 5 minutes
-            cacheTime: 10 * 60 * 1000, // 10 minutes
+            gcTime: 10 * 60 * 1000, // 10 minutes
             refetchOnWindowFocus: false,
             retry: 1,
         },
@@ -50,9 +50,65 @@ import PaymentCancel from './pages/PaymentCancel';
 import TestLogoLoader from './pages/TestLogoLoader';
 import MerchantPublicProfile from './components/payment-links/MerchantPublicProfile';
 
+function PageLoader() {
+    return (
+        <div
+            className="d-flex align-items-center justify-content-center"
+            style={{ minHeight: '40vh' }}
+            aria-busy="true"
+            aria-live="polite"
+        >
+            <span className="spinner-border text-primary" role="status" />
+        </div>
+    );
+}
+
+function withRouteSuspense(LazyComponent) {
+    return function RouteSuspenseWrapper(props) {
+        return (
+            <Suspense fallback={<PageLoader />}>
+                <LazyComponent {...props} />
+            </Suspense>
+        );
+    };
+}
+
 /** Stripe lives only in these chunks — not in the main app bundle */
 const PaymentLinkRedirect = lazy(() => import('./components/payment-links/PaymentLinkRedirect'));
 const PaymentLinkRedirectV2 = lazy(() => import('./components/payment-links/PaymentLinkRedirectV2'));
+const AdminRoutesLazy = lazy(() => import('./routes/AdminRoutesLazy'));
+const SalesDashboard = withRouteSuspense(lazy(() => import('./components/sales/SalesDashboard')));
+const PosIndex = withRouteSuspense(lazy(() => import('./components/sales/pos/PosIndex')));
+const Products = withRouteSuspense(lazy(() => import('./components/sales/products/Products')));
+const ProductCreate = withRouteSuspense(lazy(() => import('./components/sales/products/ProductCreate')));
+const ProductEdit = withRouteSuspense(lazy(() => import('./components/sales/products/ProductEdit')));
+const ProductShow = withRouteSuspense(lazy(() => import('./components/sales/products/ProductShow')));
+const ProductImport = withRouteSuspense(lazy(() => import('./components/sales/products/ProductImport')));
+const SalesReport = withRouteSuspense(lazy(() => import('./components/sales/reports/SalesReport')));
+const PurchaseReport = withRouteSuspense(lazy(() => import('./components/sales/reports/PurchaseReport')));
+const ProductsReport = withRouteSuspense(lazy(() => import('./components/sales/reports/ProductsReport')));
+const SalesIndex = withRouteSuspense(lazy(() => import('./components/sales/sales-report/SalesIndex')));
+const DraftsIndex = withRouteSuspense(lazy(() => import('./components/sales/sales-report/DraftsIndex')));
+const ReturnsIndex = withRouteSuspense(lazy(() => import('./components/sales/sales-report/ReturnsIndex')));
+const SaleView = withRouteSuspense(lazy(() => import('./components/sales/sales-report/SaleView')));
+const ReturnSalePage = withRouteSuspense(lazy(() => import('./components/sales/sales-report/ReturnSalePage')));
+const Tags = withRouteSuspense(lazy(() => import('./components/sales/inventory/Tags')));
+const Taxes = withRouteSuspense(lazy(() => import('./components/sales/inventory/Taxes')));
+const Categories = withRouteSuspense(lazy(() => import('./components/sales/inventory/Categories')));
+const Brands = withRouteSuspense(lazy(() => import('./components/sales/inventory/Brands')));
+const Units = withRouteSuspense(lazy(() => import('./components/sales/inventory/Units')));
+const Warehouse = withRouteSuspense(lazy(() => import('./components/sales/inventory/Warehouse')));
+const WarehouseCreate = withRouteSuspense(lazy(() => import('./components/sales/inventory/WarehouseCreate')));
+const WarehouseEdit = withRouteSuspense(lazy(() => import('./components/sales/inventory/WarehouseEdit')));
+const WarehouseView = withRouteSuspense(lazy(() => import('./components/sales/inventory/WarehouseView')));
+const PurchasesIndex = withRouteSuspense(lazy(() => import('./components/sales/purchases/PurchasesIndex')));
+const PurchaseCreate = withRouteSuspense(lazy(() => import('./components/sales/purchases/PurchaseCreate')));
+const PurchaseEdit = withRouteSuspense(lazy(() => import('./components/sales/purchases/PurchaseEdit')));
+const PurchaseView = withRouteSuspense(lazy(() => import('./components/sales/purchases/PurchaseView')));
+const SuppliersIndex = withRouteSuspense(lazy(() => import('./components/sales/suppliers/SuppliersIndex')));
+const SupplierCreate = withRouteSuspense(lazy(() => import('./components/sales/suppliers/SupplierCreate')));
+const SupplierEdit = withRouteSuspense(lazy(() => import('./components/sales/suppliers/SupplierEdit')));
+const SupplierView = withRouteSuspense(lazy(() => import('./components/sales/suppliers/SupplierView')));
 
 function PaymentCheckoutRouteFallback() {
     return (
@@ -69,11 +125,7 @@ function PaymentCheckoutRouteFallback() {
 
 // Dashboard Components
 import MerchantDashboard from './components/merchant/MerchantDashboard';
-import SalesDashboard from './components/sales/SalesDashboard';
 import InvoicePrint from './components/sales/InvoicePrint';
-
-// POS Components
-import PosIndex from './components/sales/pos/PosIndex';
 
 // Transaction Components
 import MerchantTransactions from './components/merchant/transactions/MerchantTransactions';
@@ -156,51 +208,20 @@ import CustomerCreate from './components/merchant/customers/CustomerCreate';
 import CustomerEdit from './components/merchant/customers/CustomerEdit';
 import CustomerView from './components/merchant/customers/CustomerView';
 
-// Supplier Components
-import SuppliersIndex from './components/sales/suppliers/SuppliersIndex';
-import SupplierCreate from './components/sales/suppliers/SupplierCreate';
-import SupplierEdit from './components/sales/suppliers/SupplierEdit';
-import SupplierView from './components/sales/suppliers/SupplierView';
+// Supplier Components — lazy-loaded above
 
-// Purchase Components
-import PurchasesIndex from './components/sales/purchases/PurchasesIndex';
-import PurchaseCreate from './components/sales/purchases/PurchaseCreate';
-import PurchaseEdit from './components/sales/purchases/PurchaseEdit';
-import PurchaseView from './components/sales/purchases/PurchaseView';
+// Purchase Components — lazy-loaded above
 
 // Profile Components
 import Profile from './components/profile/Profile';
 
-// Sales Reports Components
-import PurchaseReport from './components/sales/reports/PurchaseReport';
-import SalesReport from './components/sales/reports/SalesReport';
-import ProductsReport from './components/sales/reports/ProductsReport';
+// Sales Reports Components — lazy-loaded above
 
-// Sales Report (Sales/Drafts/Returns) Components
-import SalesIndex from './components/sales/sales-report/SalesIndex';
-import DraftsIndex from './components/sales/sales-report/DraftsIndex';
-import ReturnsIndex from './components/sales/sales-report/ReturnsIndex';
-import SaleView from './components/sales/sales-report/SaleView';
-import ReturnSalePage from './components/sales/sales-report/ReturnSalePage';
+// Sales Report (Sales/Drafts/Returns) Components — lazy-loaded above
 
-// Sales Inventory Components
-import Tags from './components/sales/inventory/Tags';
-import Taxes from './components/sales/inventory/Taxes';
-import Categories from './components/sales/inventory/Categories';
-import Brands from './components/sales/inventory/Brands';
-import Units from './components/sales/inventory/Units';
-import Warehouse from './components/sales/inventory/Warehouse';
-import WarehouseCreate from './components/sales/inventory/WarehouseCreate';
-import WarehouseEdit from './components/sales/inventory/WarehouseEdit';
-import WarehouseView from './components/sales/inventory/WarehouseView';
+// Sales Inventory Components — lazy-loaded above
+
 import CouponsIndex from './components/merchant/coupons/CouponsIndex';
-
-// Sales Products Components
-import Products from './components/sales/products/Products';
-import ProductCreate from './components/sales/products/ProductCreate';
-import ProductEdit from './components/sales/products/ProductEdit';
-import ProductShow from './components/sales/products/ProductShow';
-import ProductImport from './components/sales/products/ProductImport';
 
 // Auth Store
 import useAuthStore from './stores/authStore';
@@ -212,7 +233,6 @@ import AdminLogin from './components/admin/auth/AdminLogin';
 import AdminInvoicePrint from './components/admin/invoices/AdminInvoicePrint';
 import PosInvoicePrint from './components/pos/PosInvoicePrint';
 import PosLinkInvoicePrint from './components/pos/PosLinkInvoicePrint';
-import { AdminLayoutOutlet, ADMIN_NESTED_ROUTES } from './routes/AdminRoutes';
 import { pathnameIsUnderAdmin, resolveAdminLoginUrl } from './i18n/localePaths';
 
 // Placeholder component for not implemented pages
@@ -262,9 +282,7 @@ function App() {
             const redirectPath = event.detail?.redirectPath ||
                 (pathnameIsUnderAdmin(window.location.pathname) ? resolveAdminLoginUrl(window.location.pathname) : '/login');
             
-            console.log('🔒 Unauthorized access detected, clearing auth and redirecting to:', redirectPath);
-            
-            // CRITICAL: Clear auth store to prevent redirect loop
+            // Clear auth store to prevent redirect loop
             useAuthStore.setState({
                 user: null,
                 merchant: null,
@@ -318,9 +336,11 @@ function App() {
             <Route path="/link-invoice/:uuid" element={<PosLinkInvoicePrint />} />
 
             {/* Admin Protected Routes */}
-                <Route path="/admin" element={<AdminLayoutOutlet />}>
-                    {ADMIN_NESTED_ROUTES}
-                </Route>
+                <Route path="/admin/*" element={
+                    <Suspense fallback={<PageLoader />}>
+                        <AdminRoutesLazy />
+                    </Suspense>
+                } />
 
             <Route path="/" element={<RootLangRedirect />} />
             <Route path="/:lang" element={<LocaleSyncOutlet />}>
@@ -361,9 +381,11 @@ function App() {
                         } />
 
                         <Route path="admin/login" element={<AdminLogin />} />
-                        <Route path="admin" element={<AdminLayoutOutlet />}>
-                            {ADMIN_NESTED_ROUTES}
-                        </Route>
+                        <Route path="admin/*" element={
+                            <Suspense fallback={<PageLoader />}>
+                                <AdminRoutesLazy />
+                            </Suspense>
+                        } />
 
                         {/* Protected Routes */}
                         <Route element={

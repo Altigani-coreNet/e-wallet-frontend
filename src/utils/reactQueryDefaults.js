@@ -5,18 +5,18 @@ const THIRTY_MINUTES = 30 * ONE_MINUTE;
 
 export const LIST_QUERY_DEFAULTS = Object.freeze({
     staleTime: ONE_MINUTE,
-    cacheTime: FIVE_MINUTES,
+    gcTime: FIVE_MINUTES,
     keepPreviousData: true,
 });
 
 export const DETAIL_QUERY_DEFAULTS = Object.freeze({
     staleTime: FIVE_MINUTES,
-    cacheTime: THIRTY_MINUTES,
+    gcTime: THIRTY_MINUTES,
 });
 
 export const REPORT_QUERY_DEFAULTS = Object.freeze({
     staleTime: ONE_MINUTE,
-    cacheTime: TEN_MINUTES,
+    gcTime: TEN_MINUTES,
     keepPreviousData: true,
 });
 

@@ -6,6 +6,7 @@ import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 import AdminCustomerForm from './AdminCustomerForm';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import AdminCustomerModel from '../../../models/AdminCustomerModel';
 
 const AdminCustomerCreate = () => {
     const navigate = useNavigate();
@@ -46,13 +47,19 @@ const AdminCustomerCreate = () => {
             const response = await axios.post(
                 ADMIN_ENDPOINTS.CUSTOMERS,
                 formData,
-                { headers: { 'Authorization': `Bearer ${token}` } }
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data',
+                    },
+                }
             );
             
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
                 toast.success('Customer created successfully');
-                navigate('/admin/customers');
+                const createdCustomer = AdminCustomerModel.fromApi(response.data?.data);
+                navigate(createdCustomer?.uuid ? `/admin/customers/${createdCustomer.uuid}` : '/admin/customers');
             } else {
                 if (response.data.errors) {
                     setErrors(response.data.errors);
@@ -73,17 +80,12 @@ const AdminCustomerCreate = () => {
     return (
         <div className="post d-flex flex-column-fluid" id="kt_post">
             <div id="kt_content_container" className="container-xxl">
-                <div className="card" style={{ overflow: 'hidden' }}>
-                    <div className="card-header">
-                        <h3 className="card-title">Customer Information</h3>
-                    </div>
-                    <AdminCustomerForm
-                        customer={null}
-                        onSubmit={handleSubmit}
-                        loading={loading}
-                        errors={errors}
-                    />
-                </div>
+                <AdminCustomerForm
+                    customer={null}
+                    onSubmit={handleSubmit}
+                    loading={loading}
+                    errors={errors}
+                />
             </div>
         </div>
     );

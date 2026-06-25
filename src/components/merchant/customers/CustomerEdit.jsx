@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
-import { getCustomer, updateCustomer } from '../../../services/customersService';
+import { useQueryClient } from '@tanstack/react-query';
+import { getCustomer, updateCustomer, customersKeys } from '../../../services/customersService';
 import CustomerForm from './CustomerForm';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
+import { getModuleBasePath } from '../../../i18n/localePaths';
 
 const CustomerEdit = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
+    const queryClient = useQueryClient();
     
-    // Dynamically determine base path from current location
-    const basePath = location.pathname.startsWith('/sales') ? '/sales' : '/merchant';
+    const basePath = getModuleBasePath(location.pathname);
     
     const [customer, setCustomer] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -34,30 +38,30 @@ const CustomerEdit = () => {
                 if (response.success) {
                     setCustomer(response.data);
                 } else {
-                    setError(response.error || 'Failed to fetch customer details');
+                    setError(response.error || t('customers.failedToFetchCustomerDetails'));
                 }
             } catch (err) {
                 console.error('Error fetching customer:', err);
-                setError('An unexpected error occurred');
+                setError(t('common.unexpectedErrorOccurred'));
             } finally {
                 setLoading(false);
             }
         };
 
         fetchCustomerData();
-    }, [id]);
+    }, [id, t]);
 
     // Set toolbar
     useEffect(() => {
         if (customer) {
             const breadcrumbs = [
-                { label: 'Dashboard', path: `${basePath}/dashboard` },
-                { label: 'Customers', path: `${basePath}/customers` },
+                { label: t('common.dashboard'), path: `${basePath}/dashboard` },
+                { label: t('customers.customers'), path: `${basePath}/customers` },
                 { label: customer.name, path: `${basePath}/customers/${id}` },
-                { label: 'Edit', path: `${basePath}/customers/${id}/edit`, active: true }
+                { label: t('common.edit'), path: `${basePath}/customers/${id}/edit`, active: true }
             ];
             
-            setTitle(`Edit Customer: ${customer.name}`);
+            setTitle(t('customers.editCustomerNamed', { name: customer.name }));
             setBreadcrumbs(breadcrumbs);
             setActions(
                 <button
@@ -69,17 +73,17 @@ const CustomerEdit = () => {
                         <span className="path1"></span>
                         <span className="path2"></span>
                     </i>
-                    Back to Customer
+                    {t('customers.backToCustomer')}
                 </button>
             );
         }
         
         return () => {
-            setTitle('Dashboard');
+            setTitle(t('common.dashboard'));
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [customer, id, basePath, navigate]);
+    }, [customer, id, basePath, navigate, t, i18n.language]);
 
     const handleSubmit = async (formData) => {
         setSubmitting(true);
@@ -89,17 +93,24 @@ const CustomerEdit = () => {
             const response = await updateCustomer(id, formData);
             
             if (response.success) {
-                toast.success(response.message || 'Customer updated successfully');
+                // Invalidate all customer queries to refresh the data
+                // This marks queries as stale and triggers refetch when accessed
+                await queryClient.invalidateQueries({ 
+                    queryKey: customersKeys.all,
+                    refetchType: 'active' // Refetch active queries immediately
+                });
+                
+                toast.success(response.message || t('customers.customerUpdatedSuccessfully'));
                 navigate(`${basePath}/customers/${id}`);
             } else {
                 if (response.errors) {
                     setErrors(response.errors);
                 }
-                toast.error(response.error || 'Failed to update customer');
+                toast.error(response.error || t('customers.failedToUpdateCustomer'));
             }
         } catch (err) {
             console.error('Error updating customer:', err);
-            toast.error('An unexpected error occurred');
+            toast.error(t('common.unexpectedErrorOccurred'));
         } finally {
             setSubmitting(false);
         }
@@ -129,7 +140,7 @@ const CustomerEdit = () => {
         return (
             <div className="post d-flex flex-column-fluid" id="kt_post">
                 <div id="kt_content_container" className="container-fluid">
-                    <div className="alert alert-warning">Customer not found</div>
+                    <div className="alert alert-warning">{t('customers.customerNotFound')}</div>
                 </div>
             </div>
         );
@@ -140,7 +151,7 @@ const CustomerEdit = () => {
             <div id="kt_content_container" className="container-fluid">
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title">Edit Customer Information</h3>
+                        <h3 className="card-title">{t('customers.editCustomerInformation')}</h3>
                     </div>
                     <CustomerForm
                         customer={customer}

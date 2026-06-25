@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import { 
@@ -8,13 +9,14 @@ import {
 } from '../../../services/customersService';
 
 const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
+    const { t } = useTranslation();
+    const entityName = t('customers.entityName');
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewData, setPreviewData] = useState(null);
     const [errors, setErrors] = useState([]);
     const [loading, setLoading] = useState(false);
     const [importing, setImporting] = useState(false);
 
-    // Handle file selection
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -23,11 +25,9 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
         setErrors([]);
         setPreviewData(null);
 
-        // Auto-preview
         await handlePreview(file);
     };
 
-    // Handle preview
     const handlePreview = async (file) => {
         setLoading(true);
         setErrors([]);
@@ -41,20 +41,19 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
                 
                 if (data.errors && data.errors.length > 0) {
                     setErrors(data.errors);
-                    toast.warning(`Found ${data.errors.length} validation error(s)`);
+                    toast.warning(t('customers.foundValidationErrors', { count: data.errors.length }));
                 }
             } else {
-                toast.error(response.error || 'Failed to preview file');
+                toast.error(response.error || t('common.failedToPreviewFile'));
             }
         } catch (error) {
             console.error('Preview error:', error);
-            toast.error('Failed to preview file');
+            toast.error(t('common.failedToPreviewFile'));
         } finally {
             setLoading(false);
         }
     };
 
-    // Handle download template
     const handleDownloadTemplate = async () => {
         try {
             const blob = await exportCustomersTemplate();
@@ -68,29 +67,28 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
             window.URL.revokeObjectURL(downloadUrl);
             document.body.removeChild(a);
             
-            toast.success('Template downloaded successfully');
+            toast.success(t('common.templateDownloadedSuccessfully'));
         } catch (error) {
             console.error('Download error:', error);
-            toast.error('Failed to download template');
+            toast.error(t('common.failedToDownloadTemplate'));
         }
     };
 
-    // Handle import confirmation
     const handleImport = async () => {
         if (!selectedFile) {
-            toast.error('Please select a file');
+            toast.error(t('common.pleaseSelectAFile'));
             return;
         }
 
         const result = await Swal.fire({
-            title: 'Confirm Import',
-            text: 'Are you sure you want to import these customers?',
+            title: t('customers.confirmImport'),
+            text: t('customers.confirmImportCustomers'),
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, import!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('common.yesImport'),
+            cancelButtonText: t('common.cancel')
         });
 
         if (result.isConfirmed) {
@@ -105,29 +103,29 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
                     const skippedCount = data.skipped_count || 0;
                     const importErrors = data.errors || [];
 
-                    let message = `Import completed!\n\nImported: ${importedCount}\nSkipped: ${skippedCount}`;
+                    let message = `${t('common.importCompleted')}\n\n${t('common.imported')}: ${importedCount}\n${t('common.skipped')}: ${skippedCount}`;
                     
                     if (importErrors.length > 0) {
-                        message += '\n\nErrors:\n' + importErrors.slice(0, 5).join('\n');
+                        message += `\n\n${t('common.errors')}:\n` + importErrors.slice(0, 5).join('\n');
                         if (importErrors.length > 5) {
-                            message += `\n...and ${importErrors.length - 5} more errors`;
+                            message += `\n${t('common.moreErrors', { count: importErrors.length - 5 })}`;
                         }
                     }
 
                     await Swal.fire({
-                        title: 'Import Complete',
+                        title: t('common.importComplete'),
                         text: message,
                         icon: importedCount > 0 ? 'success' : 'warning',
-                        confirmButtonText: 'OK'
+                        confirmButtonText: t('common.ok')
                     });
 
                     onSuccess();
                 } else {
-                    Swal.fire('Error!', response.error || 'Failed to import customers', 'error');
+                    Swal.fire(t('common.error'), response.error || t('customers.failedToImportCustomers'), 'error');
                 }
             } catch (error) {
                 console.error('Import error:', error);
-                Swal.fire('Error!', 'An unexpected error occurred', 'error');
+                Swal.fire(t('common.error'), t('common.unexpectedErrorOccurred'), 'error');
             } finally {
                 setImporting(false);
             }
@@ -142,7 +140,7 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
                 <div className="modal-dialog modal-dialog-centered modal-xl" role="document">
                     <div className="modal-content">
                         <div className="modal-header">
-                            <h5 className="modal-title">Import Customers</h5>
+                            <h5 className="modal-title">{t('customers.importCustomersTitle')}</h5>
                             <button
                                 type="button"
                                 className="btn-close"
@@ -152,7 +150,6 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
                         </div>
                         
                         <div className="modal-body">
-                            {/* Instructions */}
                             <div className="alert alert-info d-flex align-items-center">
                                 <i className="ki-duotone ki-information fs-2x text-info me-4">
                                     <span className="path1"></span>
@@ -160,17 +157,16 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
                                     <span className="path3"></span>
                                 </i>
                                 <div>
-                                    <h5 className="mb-1">Import Instructions</h5>
+                                    <h5 className="mb-1">{t('common.importInstructions')}</h5>
                                     <ol className="mb-0 ps-3">
-                                        <li>Download the sample template below</li>
-                                        <li>Fill in your customer data</li>
-                                        <li>Upload the file to preview</li>
-                                        <li>Click "Confirm Import" to import</li>
+                                        <li>{t('common.downloadSampleTemplate')}</li>
+                                        <li>{t('common.fillEntityData', { entityName })}</li>
+                                        <li>{t('common.uploadFileToPreview')}</li>
+                                        <li>{t('common.clickConfirmImport')}</li>
                                     </ol>
                                 </div>
                             </div>
 
-                            {/* Download Template Button */}
                             <div className="mb-5">
                                 <button
                                     type="button"
@@ -181,13 +177,12 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
                                         <span className="path1"></span>
                                         <span className="path2"></span>
                                     </i>
-                                    Download Sample Template
+                                    {t('common.downloadSampleTemplate')}
                                 </button>
                             </div>
 
-                            {/* File Upload */}
                             <div className="mb-5">
-                                <label className="form-label fw-bold">Select File (CSV or Excel)</label>
+                                <label className="form-label fw-bold">{t('common.selectFileCsvExcel')}</label>
                                 <input
                                     type="file"
                                     className="form-control"
@@ -197,7 +192,6 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
                                 />
                             </div>
 
-                            {/* Error List */}
                             {errors.length > 0 && (
                                 <div className="alert alert-warning">
                                     <h5 className="mb-3">
@@ -206,42 +200,40 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
                                             <span className="path2"></span>
                                             <span className="path3"></span>
                                         </i>
-                                        Validation Errors ({errors.length})
+                                        {t('common.validationErrors', { count: errors.length })}
                                     </h5>
                                     <ul className="mb-0">
                                         {errors.slice(0, 5).map((error, index) => (
                                             <li key={index}>{error}</li>
                                         ))}
                                         {errors.length > 5 && (
-                                            <li>...and {errors.length - 5} more errors</li>
+                                            <li>{t('common.moreErrors', { count: errors.length - 5 })}</li>
                                         )}
                                     </ul>
                                 </div>
                             )}
 
-                            {/* Loading */}
                             {loading && (
                                 <div className="text-center py-5">
                                     <div className="spinner-border text-primary" role="status">
-                                        <span className="visually-hidden">Loading...</span>
+                                        <span className="visually-hidden">{t('common.loading')}</span>
                                     </div>
-                                    <p className="mt-3 text-muted">Previewing file...</p>
+                                    <p className="mt-3 text-muted">{t('common.previewingFile')}...</p>
                                 </div>
                             )}
 
-                            {/* Preview Table */}
                             {!loading && previewData && previewData.data && (
                                 <div className="table-responsive">
-                                    <h5 className="mb-3">Preview ({previewData.data.length} rows)</h5>
+                                    <h5 className="mb-3">{t('common.preview')} ({previewData.data.length} {t('common.rows')})</h5>
                                     <table className="table table-row-bordered table-row-gray-300 align-middle gs-0 gy-3">
                                         <thead>
                                             <tr className="fw-bold text-muted bg-light">
-                                                <th className="min-w-30px">Status</th>
-                                                <th className="min-w-150px">Name</th>
-                                                <th className="min-w-150px">Email</th>
-                                                <th className="min-w-120px">Phone</th>
-                                                <th className="min-w-150px">Company</th>
-                                                <th className="min-w-200px">Errors</th>
+                                                <th className="min-w-30px">{t('common.status')}</th>
+                                                <th className="min-w-150px">{t('common.name')}</th>
+                                                <th className="min-w-150px">{t('common.email')}</th>
+                                                <th className="min-w-120px">{t('common.phone')}</th>
+                                                <th className="min-w-150px">{t('customers.company')}</th>
+                                                <th className="min-w-200px">{t('common.errors')}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -281,7 +273,7 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
                                     </table>
                                     {previewData.data.length > 50 && (
                                         <p className="text-muted text-center">
-                                            Showing first 50 rows of {previewData.data.length}
+                                            {t('common.showingFirstRows', { count: 50, total: previewData.data.length })}
                                         </p>
                                     )}
                                 </div>
@@ -295,7 +287,7 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
                                 onClick={onClose}
                                 disabled={importing}
                             >
-                                Cancel
+                                {t('common.cancel')}
                             </button>
                             <button
                                 type="button"
@@ -306,7 +298,7 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
                                 {importing ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2"></span>
-                                        Importing...
+                                        {t('common.importing')}
                                     </>
                                 ) : (
                                     <>
@@ -314,7 +306,7 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Confirm Import
+                                        {t('common.clickConfirmImport')}
                                     </>
                                 )}
                             </button>
@@ -328,4 +320,3 @@ const ImportCustomersModal = ({ show, onClose, onSuccess }) => {
 };
 
 export default ImportCustomersModal;
-

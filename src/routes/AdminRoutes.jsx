@@ -394,12 +394,12 @@ export const ADMIN_NESTED_ROUTES = (
                     <AdminCustomerCreate />
                 </PermissionRoute>
             } />
-            <Route path="customers/:id" element={
+            <Route path="customers/:uuid" element={
                 <PermissionRoute required="sales.customers.view_customers">
                     <AdminCustomerView />
                 </PermissionRoute>
             } />
-            <Route path="customers/:id/edit" element={
+            <Route path="customers/:uuid/edit" element={
                 <PermissionRoute required="sales.customers.edit_customers">
                     <AdminCustomerEdit />
                 </PermissionRoute>

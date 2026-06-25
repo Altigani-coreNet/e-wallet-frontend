@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import { get } from '../../../utils/api';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
-import { getToken } from '../../../utils/api';
 import { useCan } from '../../../utils/permissions';
 
 /** Defaults when no dynamic branding store is wired (see optional useSettingsStore). */
@@ -43,10 +42,7 @@ const AdminSidebar = () => {
 
     const fetchPendingCounts = useCallback(async () => {
         try {
-            const token = getToken();
-            const response = await axios.get(ADMIN_ENDPOINTS.CHANGE_REQUEST_STATISTICS, {
-                headers: token ? { Authorization: `Bearer ${token}` } : {},
-            });
+            const response = await get(ADMIN_ENDPOINTS.CHANGE_REQUEST_STATISTICS);
             const success = response.data?.status ?? response.data?.success ?? false;
             if (success) {
                 const pending = response.data?.data?.pending ?? {};
@@ -78,12 +74,6 @@ const AdminSidebar = () => {
     const canCreateRole = useCan('pos.roles.create_roles');
     const canViewCustomers = useCan(['sales.customers.view_customers', 'view_customers']);
     const canCreateCustomer = useCan(['sales.customers.create_customers', 'create_customers']);
-
-    // Terminal Management
-    const canViewTerminals = useCan('pos.terminals.view_terminals');
-    const canCreateTerminal = useCan('pos.terminals.create_terminals');
-    const canViewTerminalGroups = useCan('pos.terminal_groups.view_terminal_assignments');
-    const canCreateTerminalGroup = useCan('pos.terminal_groups.assign_terminals');
 
     // const canViewDashboard = useCan('pos.dashboard.view_dashboard');
     const canViewTransactions = useCan('pos.transactions.view_transactions');
@@ -287,14 +277,59 @@ const AdminSidebar = () => {
                                 </div>
                             )}
 
+                            {canViewCustomers && (
+                            <div data-kt-menu-trigger="click" className={`menu-item menu-accordion ${isActive('/admin/customers') ? 'hover show' : ''}`}>
+                                <span className={`menu-link ${isActive('/admin/customers') ? 'active' : ''}`}>
+                                    <span className="menu-icon">
+                                        <i className="ki-duotone ki-people fs-2">
+                                            <span className="path1"></span>
+                                            <span className="path2"></span>
+                                            <span className="path3"></span>
+                                            <span className="path4"></span>
+                                            <span className="path5"></span>
+                                        </i>
+                                    </span>
+                                    <span className="menu-title">{t('admin.sidebar.customers')}</span>
+                                    <span className="menu-arrow"></span>
+                                </span>
+                                <div className={`menu-sub menu-sub-accordion ${isActive('/admin/customers') ? 'show' : ''}`}>
+                                    <div className="menu-item">
+                                        <NavLink
+                                            className={({ isActive: routeActive }) => `menu-link ${routeActive ? 'active' : ''}`}
+                                            to="/admin/customers"
+                                            end
+                                        >
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('admin.sidebar.customerList')}</span>
+                                        </NavLink>
+                                    </div>
+                                    {canCreateCustomer && (
+                                    <div className="menu-item">
+                                        <NavLink
+                                            className={`menu-link ${location.pathname === '/admin/customers/create' ? 'active' : ''}`}
+                                            to="/admin/customers/create"
+                                        >
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('admin.sidebar.addCustomer')}</span>
+                                        </NavLink>
+                                    </div>
+                                    )}
+                                </div>
+                            </div>
+                            )}
+
 <div className="menu-item pt-1">
                                 <div className="menu-content">
                                     <span className="menu-heading fw-bold text-uppercase fs-7">{t('admin.sidebar.merchantPartnerHeading')}</span>
                                 </div>
                             </div>
  {/* Merchant Management */}
- {(canViewMerchants || canViewBranches || canViewUsers || canViewUserGroups || canViewRoles || canViewCustomers) && (<div data-kt-menu-trigger="click" className={`menu-item menu-accordion ${isActive('/admin/merchants') || isActive('/admin/branches') || isActive('/admin/users') || isActive('/admin/customers') ? 'hover show' : ''}`}>
-                                <span className={`menu-link ${isActive('/admin/merchants') || isActive('/admin/branches') || isActive('/admin/users') || isActive('/admin/customers') ? 'active' : ''}`}>
+ {(canViewMerchants || canViewBranches || canViewUsers || canViewUserGroups || canViewRoles) && (<div data-kt-menu-trigger="click" className={`menu-item menu-accordion ${isActive('/admin/merchants') || isActive('/admin/branches') || isActive('/admin/users') ? 'hover show' : ''}`}>
+                                <span className={`menu-link ${isActive('/admin/merchants') || isActive('/admin/branches') || isActive('/admin/users') ? 'active' : ''}`}>
                                     <span className="menu-icon">
                                         <i className="ki-duotone ki-abstract-28 fs-2">
                                             <span className="path1"></span>
@@ -306,7 +341,7 @@ const AdminSidebar = () => {
                                 </span>
 
 
-                                <div className={`menu-sub menu-sub-accordion ${isActive('/admin/merchants') || isActive('/admin/branches') || isActive('/admin/users') || isActive('/admin/customers') ? 'show' : ''}`}>
+                                <div className={`menu-sub menu-sub-accordion ${isActive('/admin/merchants') || isActive('/admin/branches') || isActive('/admin/users') ? 'show' : ''}`}>
                                     
                                     
                                     {/* Merchants Sub-menu */}
@@ -455,82 +490,6 @@ const AdminSidebar = () => {
                                         </div>
                                     </div>)}
 
-                                   
-                                </div>
-                            </div>)}
-
-                            
-                            {/* Terminal Management */}
-                            {(canViewTerminals || canViewTerminalGroups) && (<div data-kt-menu-trigger="click" className={`menu-item menu-accordion ${isActive('/admin/terminals') || isActive('/admin/terminal-groups') ? 'hover show' : ''}`}>
-                                <span className={`menu-link ${isActive('/admin/terminals') || isActive('/admin/terminal-groups') ? 'active' : ''}`}>
-                                    <span className="menu-icon">
-                                        <i className="ki-duotone ki-phone fs-2">
-                                            <span className="path1"></span>
-                                            <span className="path2"></span>
-                                        </i>
-                                    </span>
-                                    <span className="menu-title">{t('admin.sidebar.terminalManagement')}</span>
-                                    <span className="menu-arrow"></span>
-                                </span>
-
-                                <div className={`menu-sub menu-sub-accordion ${isActive('/admin/terminals') || isActive('/admin/terminal-groups') ? 'show' : ''}`}>
-                                    {/* Terminals Sub-menu */}
-                                    {canViewTerminals && (<div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isActive('/admin/terminals') && !isActive('/admin/terminal-groups') ? 'hover show' : ''}`}>
-                                        <span className={`menu-link ${isActive('/admin/terminals') && !isActive('/admin/terminal-groups') ? 'active' : ''}`}>
-                                            <span className="menu-bullet">
-                                                <span className="bullet bullet-dot"></span>
-                                            </span>
-                                            <span className="menu-title">{t('admin.sidebar.terminals')}</span>
-                                            <span className="menu-arrow"></span>
-                                        </span>
-                                        <div className={`menu-sub menu-sub-accordion ${isActive('/admin/terminals') && !isActive('/admin/terminal-groups') ? 'show' : ''}`}>
-                                            <div className="menu-item">
-                                                <NavLink className={`menu-link ${location.pathname === '/admin/terminals' ? 'active' : ''}`} to="/admin/terminals">
-                                                    <span className="menu-bullet">
-                                                        <span className="bullet bullet-dot"></span>
-                                                    </span>
-                                                    <span className="menu-title">{t('admin.sidebar.terminalList')}</span>
-                                                </NavLink>
-                                            </div>
-                                            {canCreateTerminal && (<div className="menu-item">
-                                                <NavLink className={`menu-link ${location.pathname === '/admin/terminals/create' ? 'active' : ''}`} to="/admin/terminals/create">
-                                                    <span className="menu-bullet">
-                                                        <span className="bullet bullet-dot"></span>
-                                                    </span>
-                                                    <span className="menu-title">{t('admin.sidebar.addTerminal')}</span>
-                                                </NavLink>
-                                            </div>)}
-                                        </div>
-                                    </div>)}
-
-                                    {/* Terminal Groups Sub-menu */}
-                                    {canViewTerminalGroups && (<div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isActive('/admin/terminal-groups') ? 'hover show' : ''}`}>
-                                        <span className={`menu-link ${isActive('/admin/terminal-groups') ? 'active' : ''}`}>
-                                            <span className="menu-bullet">
-                                                <span className="bullet bullet-dot"></span>
-                                            </span>
-                                            <span className="menu-title">{t('admin.sidebar.terminalGroups')}</span>
-                                            <span className="menu-arrow"></span>
-                                        </span>
-                                        <div className={`menu-sub menu-sub-accordion ${isActive('/admin/terminal-groups') ? 'show' : ''}`}>
-                                            <div className="menu-item">
-                                                <NavLink className={`menu-link ${location.pathname === '/admin/terminal-groups' ? 'active' : ''}`} to="/admin/terminal-groups">
-                                                    <span className="menu-bullet">
-                                                        <span className="bullet bullet-dot"></span>
-                                                    </span>
-                                                    <span className="menu-title">{t('admin.sidebar.terminalGroupList')}</span>
-                                                </NavLink>
-                                            </div>
-                                            {canCreateTerminalGroup && (<div className="menu-item">
-                                                <NavLink className={`menu-link ${location.pathname === '/admin/terminal-groups/create' ? 'active' : ''}`} to="/admin/terminal-groups/create">
-                                                    <span className="menu-bullet">
-                                                        <span className="bullet bullet-dot"></span>
-                                                    </span>
-                                                    <span className="menu-title">{t('admin.sidebar.addTerminalGroup')}</span>
-                                                </NavLink>
-                                            </div>)}
-                                        </div>
-                                    </div>)}
                                 </div>
                             </div>)}
 

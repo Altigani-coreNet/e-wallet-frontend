@@ -70,6 +70,14 @@ const Sidebar = ({ isLoading = false, error, onRetry }) => {
         isScopeAllowed('terminals') &&
         canAny(['pos.terminals.view_terminals', 'view_terminals', 'pos.terminals.create_terminals', 'create_terminals', 'assign_terminals']);
 
+    const showCustomersSection =
+        isScopeAllowed('customers') &&
+        canAny(['sales.customers.view_customers', 'view_customers', 'sales.customers.create_customers', 'create_customers']);
+
+    const isCustomersActive = isActive('/merchant/customers');
+
+    const shouldShowPermissionsLoader = profileLoading || !profileLoaded;
+
     const handleLogout = useCallback(async () => {
         try {
             await logout();
@@ -80,22 +88,23 @@ const Sidebar = ({ isLoading = false, error, onRetry }) => {
         }
     }, [logout, navigate]);
 
-    // Reinitialize Metronic menu after render
+    // Reinitialize Metronic menu when sidebar structure or locale changes (not every navigation)
     useEffect(() => {
-        if (isLoading) {
+        if (isLoading || shouldShowPermissionsLoader) {
             return;
         }
 
-        if (window.KTMenu) {
-            window.KTMenu.createInstances();
-        }
-        if (window.KTScroll) {
-            window.KTScroll.createInstances();
-        }
-    }, [location, isLoading, i18n.language]);
+        const frameId = requestAnimationFrame(() => {
+            if (window.KTMenu) {
+                window.KTMenu.createInstances();
+            }
+            if (window.KTScroll) {
+                window.KTScroll.createInstances();
+            }
+        });
 
-    // Loader when permissions are not fetched yet or empty while loading profile  
-    const shouldShowPermissionsLoader = profileLoading || !profileLoaded;
+        return () => cancelAnimationFrame(frameId);
+    }, [isLoading, shouldShowPermissionsLoader, i18n.language, isMerchantApproved, showUserMgmtSection, showBranchesSection, showTerminalsSection, showCustomersSection]);
 
     return (
         <div id="kt_app_sidebar" className="app-sidebar flex-column" data-kt-drawer="true" data-kt-drawer-name="app-sidebar" data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true" data-kt-drawer-width="{default:'200px', '300px': '250px'}" data-kt-drawer-direction={drawerDirection}>
@@ -295,6 +304,47 @@ const Sidebar = ({ isLoading = false, error, onRetry }) => {
                                 </div>
                             </div>
                             
+                            {/* Customers */}
+                            {showCustomersSection && (
+                            <div data-kt-menu-trigger="click" className={`menu-item menu-accordion mb-1 ${isCustomersActive ? 'hover show' : ''}`}>
+                                <span className={`menu-link ${isCustomersActive ? 'active' : ''}`}>
+                                    <span className="menu-icon">
+                                        <i className="ki-duotone ki-people fs-2">
+                                            <span className="path1"></span>
+                                            <span className="path2"></span>
+                                            <span className="path3"></span>
+                                            <span className="path4"></span>
+                                            <span className="path5"></span>
+                                        </i>
+                                    </span>
+                                    <span className="menu-title">{t('merchant.sidebar.customers')}</span>
+                                    <span className="menu-arrow"></span>
+                                </span>
+                                <div className={`menu-sub menu-sub-accordion ${isCustomersActive ? 'show' : ''}`}>
+                                    {canAny(['sales.customers.view_customers', 'view_customers']) && (
+                                    <div className="menu-item">
+                                        <Link className={`menu-link ${isActiveExact('/merchant/customers') ? 'active' : ''}`} to={p('/merchant/customers')}>
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('merchant.sidebar.allCustomers')}</span>
+                                        </Link>
+                                    </div>
+                                    )}
+                                    {canAny(['sales.customers.create_customers', 'create_customers']) && (
+                                    <div className="menu-item">
+                                        <Link className={`menu-link ${isActive('/merchant/customers/create') ? 'active' : ''}`} to={p('/merchant/customers/create')}>
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('merchant.sidebar.addCustomer')}</span>
+                                        </Link>
+                                    </div>
+                                    )}
+                                </div>
+                            </div>
+                            )}
+
                             {/* Payment Links */}
                             <div className="menu-item">
                                 <Link className={`menu-link ${isActive('/merchant/payment-links') ? 'active' : ''}`} to={p('/merchant/payment-links')}>

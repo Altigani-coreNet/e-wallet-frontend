@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
 import { toast } from 'react-toastify';
-import { ADMIN_ENDPOINTS } from '../../../utils/constants';
-import { getToken } from '../../../utils/api';
 import AdminCustomerForm from './AdminCustomerForm';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import { fetchAdminCustomer } from '../../../services/adminCustomersService';
+import axios from 'axios';
+import { ADMIN_ENDPOINTS } from '../../../utils/constants';
+import { getToken } from '../../../utils/api';
 
 const AdminCustomerEdit = () => {
-    const { id } = useParams();
+    const { uuid } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
     
@@ -23,14 +24,11 @@ const AdminCustomerEdit = () => {
             setFetchLoading(true);
 
             try {
-                const token = getToken();
-                const response = await axios.get(ADMIN_ENDPOINTS.CUSTOMER_DETAILS(id), {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                const isSuccess = response.data.success || response.data.status;
-                if (isSuccess) {
-                    setCustomer(response.data.data);
+                const response = await fetchAdminCustomer(uuid);
+                const isSuccess = response?.success || response?.status;
+
+                if (isSuccess && response.data) {
+                    setCustomer(response.data);
                 } else {
                     toast.error('Failed to fetch customer details');
                     navigate('/admin/customers');
@@ -45,7 +43,7 @@ const AdminCustomerEdit = () => {
         };
 
         fetchCustomerData();
-    }, [id, navigate]);
+    }, [uuid, navigate]);
 
     // Set toolbar
     useEffect(() => {
@@ -82,15 +80,20 @@ const AdminCustomerEdit = () => {
         try {
             const token = getToken();
             const response = await axios.put(
-                ADMIN_ENDPOINTS.CUSTOMER_DETAILS(id),
+                ADMIN_ENDPOINTS.CUSTOMER_DETAILS(uuid),
                 formData,
-                { headers: { 'Authorization': `Bearer ${token}` } }
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'multipart/form-data',
+                    },
+                }
             );
             
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
                 toast.success('Customer updated successfully');
-                navigate('/admin/customers');
+                navigate(`/admin/customers/${uuid}`);
             } else {
                 if (response.data.errors) {
                     setErrors(response.data.errors);
@@ -126,17 +129,12 @@ const AdminCustomerEdit = () => {
     return (
         <div className="post d-flex flex-column-fluid" id="kt_post">
             <div id="kt_content_container" className="container-xxl">
-                <div className="card">
-                    <div className="card-header">
-                        <h3 className="card-title">Edit Customer Information</h3>
-                    </div>
-                    <AdminCustomerForm
-                        customer={customer}
-                        onSubmit={handleSubmit}
-                        loading={loading}
-                        errors={errors}
-                    />
-                </div>
+                <AdminCustomerForm
+                    customer={customer}
+                    onSubmit={handleSubmit}
+                    loading={loading}
+                    errors={errors}
+                />
             </div>
         </div>
     );

@@ -1,30 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
-import { createCustomer } from '../../../services/customersService';
+import { useQueryClient } from '@tanstack/react-query';
+import { createCustomer, customersKeys } from '../../../services/customersService';
 import CustomerForm from './CustomerForm';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import { getModuleBasePath } from '../../../i18n/localePaths';
 
 const CustomerCreate = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
+    const queryClient = useQueryClient();
     
-    // Dynamically determine base path from current location
-    const basePath = location.pathname.startsWith('/sales') ? '/sales' : '/merchant';
+    const basePath = getModuleBasePath(location.pathname);
     
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
 
-    // Set toolbar
     useEffect(() => {
         const breadcrumbs = [
-            { label: 'Dashboard', path: `${basePath}/dashboard` },
-            { label: 'Customers', path: `${basePath}/customers` },
-            { label: 'Create Customer', path: `${basePath}/customers/create`, active: true }
+            { label: t('common.dashboard'), path: `${basePath}/dashboard` },
+            { label: t('customers.customers'), path: `${basePath}/customers` },
+            { label: t('customers.createCustomer'), path: `${basePath}/customers/create`, active: true }
         ];
         
-        setTitle('Create New Customer');
+        setTitle(t('customers.createNewCustomer'));
         setBreadcrumbs(breadcrumbs);
         setActions(
             <button
@@ -36,16 +39,16 @@ const CustomerCreate = () => {
                     <span className="path1"></span>
                     <span className="path2"></span>
                 </i>
-                Back to Customers
+                {t('customers.backToCustomers')}
             </button>
         );
         
         return () => {
-            setTitle('Dashboard');
+            setTitle(t('common.dashboard'));
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [basePath, navigate]);
+    }, [basePath, navigate, t, i18n.language]);
 
     const handleSubmit = async (formData) => {
         setLoading(true);
@@ -55,17 +58,22 @@ const CustomerCreate = () => {
             const response = await createCustomer(formData);
             
             if (response.success) {
-                toast.success(response.message || 'Customer created successfully');
+                await queryClient.invalidateQueries({ 
+                    queryKey: customersKeys.all,
+                    refetchType: 'active'
+                });
+                
+                toast.success(response.message || t('customers.customerCreatedSuccessfully'));
                 navigate(`${basePath}/customers`);
             } else {
                 if (response.errors) {
                     setErrors(response.errors);
                 }
-                toast.error(response.error || 'Failed to create customer');
+                toast.error(response.error || t('customers.failedToCreateCustomer'));
             }
         } catch (err) {
             console.error('Error creating customer:', err);
-            toast.error('An unexpected error occurred');
+            toast.error(t('common.unexpectedErrorOccurred'));
         } finally {
             setLoading(false);
         }
@@ -76,7 +84,7 @@ const CustomerCreate = () => {
             <div id="kt_content_container" className="container-fluid">
                 <div className="card">
                     <div className="card-header">
-                        <h3 className="card-title">Customer Information</h3>
+                        <h3 className="card-title">{t('customers.customerInformation')}</h3>
                     </div>
                     <CustomerForm
                         customer={null}
@@ -91,4 +99,3 @@ const CustomerCreate = () => {
 };
 
 export default CustomerCreate;
-

@@ -1,181 +1,160 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
-import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
-import { getToken } from '../../../utils/api';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import { useCan } from '../../../utils/permissions';
+import useAuthStore from '../../../stores/authStore';
+import LoadingSpinner from '../../common/LoadingSpinner';
+import ErrorAlert from '../../common/ErrorAlert';
+import {
+    fetchAdminCustomer,
+    deleteAdminCustomer,
+} from '../../../services/adminCustomersService';
+import {
+    getCustomerCityName,
+    getCustomerCountryName,
+    getCustomerStatusBadgeClass,
+    getCustomerStatusLabelKey,
+} from '../../../utils/customerUtils';
 
 const AdminCustomerView = () => {
-    const { id } = useParams();
+    const { formatCurrency } = useAuthStore();
+    const { uuid } = useParams();
+    const customerUuid = uuid;
     const navigate = useNavigate();
-    const { setTitle, setActions } = useToolbar();
-    
+    const { t, i18n } = useTranslation();
+    const { setTitle, setBreadcrumbs, setActions } = useToolbar();
+    const canEdit = useCan(['sales.customers.edit_customers', 'edit_customers']);
+
     const [customer, setCustomer] = useState(null);
-    const [merchant, setMerchant] = useState(null);
-    const [country, setCountry] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
 
-    // Fetch customer details
+    const locale = i18n.language?.startsWith('ar') ? 'ar-SA' : 'en-US';
+
+    const loadCustomer = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetchAdminCustomer(customerUuid);
+            const isSuccess = response?.success || response?.status;
+            if (isSuccess) {
+                setCustomer(response.data);
+            } else {
+                setError(t('customers.failedToFetchCustomerDetails'));
+            }
+        } catch (err) {
+            console.error('Error fetching customer:', err);
+            setError(t('common.unexpectedErrorOccurred'));
+        } finally {
+            setLoading(false);
+        }
+    }, [customerUuid, t]);
+
     useEffect(() => {
-        const fetchCustomerData = async () => {
-            setLoading(true);
-            setError(null);
+        loadCustomer();
+    }, [loadCustomer]);
 
-            try {
-                const token = getToken();
-                const response = await axios.get(ADMIN_ENDPOINTS.CUSTOMER_DETAILS(id), {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                const isSuccess = response.data.success || response.data.status;
-                if (isSuccess) {
-                    const customerData = response.data.data;
-                    setCustomer(customerData);
-                    
-                    // Fetch merchant if exists
-                    if (customerData.merchant_id) {
-                        fetchMerchant(customerData.merchant_id);
-                    }
-                    
-                    // Fetch country if exists
-                    if (customerData.country_id) {
-                        fetchCountry(customerData.country_id);
-                    }
-                } else {
-                    setError('Failed to fetch customer details');
-                }
-            } catch (err) {
-                console.error('Error fetching customer:', err);
-                setError('An unexpected error occurred');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchCustomerData();
-    }, [id]);
-
-    const fetchMerchant = async (merchantId) => {
-        try {
-            const token = getToken();
-            const response = await axios.get(ADMIN_ENDPOINTS.MERCHANT_DETAILS(merchantId), {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (response.data.success || response.data.status) {
-                setMerchant(response.data.data);
-            }
-        } catch (error) {
-            console.error('Failed to fetch merchant:', error);
-        }
-    };
-
-    const fetchCountry = async (countryId) => {
-        try {
-            const token = getToken();
-            const response = await axios.get(AUTH_ENDPOINTS.COUNTRIES_SELECT, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (response.data.status) {
-                const foundCountry = response.data.data.find(c => c.id === countryId);
-                if (foundCountry) {
-                    setCountry(foundCountry);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to fetch country:', error);
-        }
-    };
-
-    // Handle delete
     const handleDelete = async () => {
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete customer "${customer?.name}". This action cannot be undone!`,
+            title: t('common.areYouSure'),
+            text: t('customers.confirmDeleteCustomer', { name: customer?.name }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('common.yesDeleteIt'),
+            cancelButtonText: t('common.cancel'),
         });
 
-        if (result.isConfirmed) {
-            try {
-                const token = getToken();
-                const response = await axios.delete(
-                    ADMIN_ENDPOINTS.CUSTOMER_DETAILS(id),
-                    { headers: { 'Authorization': `Bearer ${token}` } }
-                );
-                
-                const isSuccess = response.data.success || response.data.status;
-                if (isSuccess) {
-                    toast.success('Customer deleted successfully');
-                    navigate('/admin/customers');
-                } else {
-                    toast.error('Failed to delete customer');
-                }
-            } catch (err) {
-                console.error('Error deleting customer:', err);
-                toast.error('An unexpected error occurred');
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await deleteAdminCustomer(customerUuid);
+            if (response.success) {
+                toast.success(t('customers.customerDeletedSuccessfully'));
+                navigate('/admin/customers');
+            } else {
+                toast.error(response.error || t('customers.failedToDeleteCustomer'));
             }
+        } catch (err) {
+            console.error('Error deleting customer:', err);
+            toast.error(t('common.unexpectedErrorOccurred'));
         }
     };
 
-    // Set toolbar
     useEffect(() => {
         if (customer) {
-            setTitle(`Customer: ${customer.name}`);
-            setActions(
-                <>
-                    <Link
-                        to={`/admin/customers/${id}/edit`}
-                        className="btn btn-sm fw-bold btn-primary me-2"
-                    >
+            setTitle(t('customers.customerNamed', { name: customer.name }));
+            setBreadcrumbs([
+                { label: t('admin.sidebar.dashboard'), path: '/admin/dashboard' },
+                { label: t('customers.customers'), path: '/admin/customers' },
+                { label: customer.name, path: `/admin/customers/${customerUuid}`, active: true },
+            ]);
+        }
+
+        setActions(
+            <>
+                {canEdit && (
+                    <Link to={`/admin/customers/${customerUuid}/edit`} className="btn btn-sm fw-bold btn-primary me-2">
                         <i className="ki-duotone ki-pencil fs-3">
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Edit Customer
+                        {t('customers.editCustomerBtn')}
                     </Link>
-                    <button
-                        className="btn btn-sm fw-bold btn-danger"
-                        onClick={handleDelete}
-                    >
-                        <i className="ki-duotone ki-trash fs-3">
-                            <span className="path1"></span>
-                            <span className="path2"></span>
-                            <span className="path3"></span>
-                            <span className="path4"></span>
-                            <span className="path5"></span>
-                        </i>
-                        Delete
-                    </button>
-                </>
-            );
-        }
-        
+                )}
+                <button className="btn btn-sm fw-bold btn-danger" onClick={handleDelete} disabled={!customer}>
+                    <i className="ki-duotone ki-trash fs-3">
+                        <span className="path1"></span>
+                        <span className="path2"></span>
+                        <span className="path3"></span>
+                        <span className="path4"></span>
+                        <span className="path5"></span>
+                    </i>
+                    {t('common.delete')}
+                </button>
+            </>
+        );
+
         return () => {
-            setTitle('Dashboard');
+            setTitle(t('admin.sidebar.dashboard'));
+            setBreadcrumbs([]);
             setActions(null);
         };
-    }, [customer, id, setTitle, setActions]);
+    }, [customer, customerUuid, canEdit, setTitle, setBreadcrumbs, setActions, t]);
+
+    const formatDate = (dateString) => {
+        if (!dateString) return t('customers.na');
+        return new Date(dateString).toLocaleDateString(locale, {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    };
+
+    const getCountryName = (country) => {
+        if (!country) return t('customers.na');
+        return getCustomerCountryName({ country, country_name: country.name }) || t('customers.na');
+    };
+
+    const formatAddress = (c) => {
+        const parts = [c.address, getCustomerCityName(c), c.countryName || getCustomerCountryName(c)].filter(
+            (part) => part && part !== t('customers.na')
+        );
+        return parts.length ? parts.join(', ') : t('customers.noAddressProvided');
+    };
 
     if (loading) {
         return (
             <div className="post d-flex flex-column-fluid" id="kt_post">
-                <div id="kt_content_container" className="container-xxl">
-                    <div className="card">
-                        <div className="card-body text-center py-20">
-                            <span className="spinner-border text-primary"></span>
-                            <p className="text-gray-600 mt-4">Loading customer...</p>
-                        </div>
-                    </div>
+                <div id="kt_content_container" className="container-fluid">
+                    <LoadingSpinner />
                 </div>
             </div>
         );
@@ -184,13 +163,8 @@ const AdminCustomerView = () => {
     if (error) {
         return (
             <div className="post d-flex flex-column-fluid" id="kt_post">
-                <div id="kt_content_container" className="container-xxl">
-                    <div className="alert alert-danger">
-                        {error}
-                        <button onClick={() => navigate('/admin/customers')} className="btn btn-sm btn-light ms-3">
-                            Back to Customers
-                        </button>
-                    </div>
+                <div id="kt_content_container" className="container-fluid">
+                    <ErrorAlert error={error} onClose={() => navigate('/admin/customers')} />
                 </div>
             </div>
         );
@@ -199,276 +173,523 @@ const AdminCustomerView = () => {
     if (!customer) {
         return (
             <div className="post d-flex flex-column-fluid" id="kt_post">
-                <div id="kt_content_container" className="container-xxl">
-                    <div className="alert alert-warning">Customer not found</div>
+                <div id="kt_content_container" className="container-fluid">
+                    <div className="alert alert-warning">{t('customers.customerNotFound')}</div>
                 </div>
             </div>
         );
     }
 
-    // Format date
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
+    const customerStatus = customer.status || 'pending';
+    const profileImage = customer.profile_image_url || customer.profile_image;
+    const statusDescription = {
+        pending: t('customers.accountPendingDescription'),
+        active: t('customers.accountActiveDescription'),
+        suspended: t('customers.accountSuspendedDescription'),
+        inactive: t('customers.accountInactiveDescription'),
+    }[customerStatus] || t('customers.accountInactiveDescription');
+    const statusLabel = t(getCustomerStatusLabelKey(customerStatus));
+    const statusBadgeClass = getCustomerStatusBadgeClass(customerStatus);
+    const walletBalance = Number(customer.balance || 0);
 
     return (
         <div className="post d-flex flex-column-fluid" id="kt_post">
-            <div id="kt_content_container" className="container-xxl">
-                
+            <div id="kt_content_container" className="container-fluid">
                 <div className="d-flex flex-column flex-xl-row">
                     {/* Sidebar */}
                     <div className="flex-column flex-lg-row-auto w-100 w-xl-350px mb-10">
                         <div className="card mb-5 mb-xl-8">
                             <div className="card-body pt-15">
-                                {/* Summary */}
                                 <div className="d-flex flex-center flex-column mb-5">
-                                    {/* Avatar */}
-                                    <div className="symbol symbol-150px symbol-circle mb-7">
-                                        <div className="symbol-label fs-2x fw-bold bg-light-primary text-primary">
-                                            {customer.name?.charAt(0).toUpperCase() || 'C'}
-                                        </div>
+                                    <div className="symbol symbol-150px symbol-circle mb-7 overflow-hidden">
+                                        {profileImage ? (
+                                            <img
+                                                src={profileImage}
+                                                alt={customer.name}
+                                                className="symbol-label object-fit-cover"
+                                            />
+                                        ) : (
+                                            <div className="symbol-label fs-2x fw-bold bg-light-primary text-primary">
+                                                {customer.name?.charAt(0).toUpperCase() || 'C'}
+                                            </div>
+                                        )}
                                     </div>
-                                    {/* Name */}
-                                    <span className="fs-3 text-gray-800 fw-bold mb-1">
-                                        {customer.name}
-                                    </span>
-                                    {/* Email */}
-                                    <a href={`mailto:${customer.email}`} className="fs-5 fw-semibold text-muted text-hover-primary mb-6">
+                                    <span className="fs-3 text-gray-800 fw-bold mb-1">{customer.name}</span>
+                                    <a
+                                        href={`mailto:${customer.email}`}
+                                        className="fs-5 fw-semibold text-muted text-hover-primary mb-6"
+                                    >
                                         {customer.email}
                                     </a>
-                                    {/* Status Badge */}
-                                    <span className={`badge badge-light-${customer.status === 'active' ? 'success' : 'danger'}`}>
-                                        {customer.status || 'active'}
-                                    </span>
                                 </div>
-                                
-                                {/* Details toggle */}
+
                                 <div className="d-flex flex-stack fs-4 py-3">
-                                    <div className="fw-bold">Details</div>
+                                    <div className="fw-bold">{t('customers.details')}</div>
+                                    <div className={`badge ${statusBadgeClass} d-inline`}>
+                                        {statusLabel}
+                                    </div>
                                 </div>
                                 <div className="separator separator-dashed my-3"></div>
-                                
-                                {/* Details content */}
+
                                 <div className="pb-5 fs-6">
-                                    {/* Customer ID */}
-                                    <div className="fw-bold mt-5">Customer ID</div>
-                                    <div className="text-gray-600">#{customer.id}</div>
-                                    
-                                    {/* Merchant - Admin specific */}
-                                    <div className="fw-bold mt-5">Merchant</div>
-                                    <div className="text-gray-600">
-                                        {merchant ? (
-                                            <Link to={`/admin/merchants/${merchant.id}`} className="text-gray-600 text-hover-primary">
-                                                {merchant.business_name || merchant.name}
-                                            </Link>
-                                        ) : (customer.merchant_id || 'Not assigned')}
-                                    </div>
-                                    
-                                    {/* Email */}
-                                    <div className="fw-bold mt-5">Email</div>
+                                    <div className="fw-bold mt-5">{t('customers.customerUuidLabel')}</div>
+                                    <div className="text-gray-600 text-break">{customer.uuid}</div>
+
+                                    <div className="fw-bold mt-5">{t('common.email')}</div>
                                     <div className="text-gray-600">
                                         <a href={`mailto:${customer.email}`} className="text-gray-600 text-hover-primary">
                                             {customer.email}
                                         </a>
                                     </div>
-                                    
-                                    {/* Phone */}
-                                    <div className="fw-bold mt-5">Phone</div>
+
+                                    <div className="fw-bold mt-5">{t('common.phone')}</div>
                                     <div className="text-gray-600">
-                                        {customer.phone || customer.phone_number ? (
-                                            <a href={`tel:${customer.phone || customer.phone_number}`} className="text-gray-600 text-hover-primary">
-                                                {customer.phone || customer.phone_number}
+                                        {customer.phone ? (
+                                            <a href={`tel:${customer.phone}`} className="text-gray-600 text-hover-primary">
+                                                {customer.phone}
                                             </a>
-                                        ) : 'No phone provided'}
+                                        ) : (
+                                            t('customers.noPhoneProvided')
+                                        )}
                                     </div>
-                                    
-                                    {/* Address */}
-                                    <div className="fw-bold mt-5">Address</div>
-                                    <div className="text-gray-600">
-                                        {customer.address || customer.city || customer.state || customer.postal_code || customer.zip ? (
-                                            <>
-                                                {customer.address && <>{customer.address}<br /></>}
-                                                {(customer.city || customer.state || customer.postal_code || customer.zip) && (
-                                                    <>{[customer.city, customer.state, customer.postal_code || customer.zip].filter(Boolean).join(', ')}</>
-                                                )}
-                                            </>
-                                        ) : 'No address provided'}
-                                    </div>
-                                    
-                                    {/* Country - Admin specific */}
-                                    <div className="fw-bold mt-5">Country</div>
-                                    <div className="text-gray-600">
-                                        {country?.text || country?.name || customer.country || 'Not specified'}
-                                    </div>
-                                    
-                                    {/* Company */}
-                                    {customer.company_name && (
-                                        <>
-                                            <div className="fw-bold mt-5">Company</div>
-                                            <div className="text-gray-600">{customer.company_name}</div>
-                                        </>
-                                    )}
-                                    
-                                    {/* Tax Number */}
-                                    {customer.tax_no && (
-                                        <>
-                                            <div className="fw-bold mt-5">Tax Number</div>
-                                            <div className="text-gray-600">{customer.tax_no}</div>
-                                        </>
-                                    )}
-                                    
-                                    {/* Created */}
-                                    <div className="fw-bold mt-5">Created</div>
+
+                                    <div className="fw-bold mt-5">{t('common.address')}</div>
+                                    <div className="text-gray-600">{formatAddress(customer)}</div>
+
+                                    <div className="fw-bold mt-5">{t('common.country')}</div>
+                                    <div className="text-gray-600">{customer.countryName || getCustomerCountryName(customer) || t('customers.na')}</div>
+
+                                    <div className="fw-bold mt-5">{t('customers.walletBalance')}</div>
+                                    <div className="text-gray-600">{formatCurrency(walletBalance)}</div>
+
+                                    <div className="fw-bold mt-5">{t('common.created')}</div>
                                     <div className="text-gray-600">{formatDate(customer.created_at)}</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Main Content */}
                     <div className="flex-lg-row-fluid ms-lg-15">
-                        {/* Tab navigation */}
-                        <ul className="nav nav-custom nav-tabs nav-line-tabs nav-line-tabs-2x border-0 fs-4 fw-semibold mb-8">
-                            <li className="nav-item">
+                        <ul
+                            className="nav nav-custom nav-tabs nav-line-tabs nav-line-tabs-2x border-0 fs-4 fw-semibold mb-8"
+                            role="tablist"
+                        >
+                            <li className="nav-item" role="presentation">
                                 <a
                                     className={`nav-link text-active-primary pb-4 ${activeTab === 'overview' ? 'active' : ''}`}
                                     onClick={() => setActiveTab('overview')}
+                                    role="tab"
                                     style={{ cursor: 'pointer' }}
                                 >
-                                    Overview
+                                    {t('customers.overview')}
                                 </a>
                             </li>
-                            <li className="nav-item">
+                            <li className="nav-item" role="presentation">
                                 <a
-                                    className={`nav-link text-active-primary pb-4 ${activeTab === 'financial' ? 'active' : ''}`}
-                                    onClick={() => setActiveTab('financial')}
+                                    className={`nav-link text-active-primary pb-4 ${activeTab === 'general' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('general')}
+                                    role="tab"
                                     style={{ cursor: 'pointer' }}
                                 >
-                                    Financial
+                                    {t('customers.generalSettings')}
+                                </a>
+                            </li>
+                            <li className="nav-item" role="presentation">
+                                <a
+                                    className={`nav-link text-active-primary pb-4 ${activeTab === 'advanced' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('advanced')}
+                                    role="tab"
+                                    style={{ cursor: 'pointer' }}
+                                >
+                                    {t('customers.advancedSettings')}
                                 </a>
                             </li>
                         </ul>
-                        
-                        {/* Tab content */}
+
                         <div className="tab-content">
-                            {/* Overview Tab */}
                             {activeTab === 'overview' && (
                                 <div className="tab-pane fade show active">
-                                    <div className="card card-flush mb-6 mb-xl-9">
-                                        <div className="card-header mt-6">
-                                            <div className="card-title flex-column">
-                                                <h2 className="mb-1">Customer Information</h2>
+                                    <div className="row row-cols-1 row-cols-md-2 mb-6 mb-xl-9">
+                                        <div className="col">
+                                            <div className="card pt-4 h-md-100 mb-6 mb-md-0">
+                                                <div className="card-header border-0">
+                                                    <div className="card-title">
+                                                        <h2 className="fw-bold">{t('customers.accountStatus')}</h2>
+                                                    </div>
+                                                </div>
+                                                <div className="card-body pt-0">
+                                                    <div className="fw-bold fs-2">
+                                                        <div className="d-flex">
+                                                            <i
+                                                                className={`ki-duotone ki-${customerStatus === 'active' ? 'check-circle text-success' : 'information-2 text-warning'} fs-2x`}
+                                                            >
+                                                                <span className="path1"></span>
+                                                                <span className="path2"></span>
+                                                            </i>
+                                                            <div className="ms-2">
+                                                                {statusLabel}
+                                                                <span className="text-muted fs-4 fw-semibold d-block">
+                                                                    {t('customers.customerAccount')}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="fs-7 fw-normal text-muted mt-3">
+                                                            {statusDescription}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div className="card-body p-9 pt-4">
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">Full Name</label>
-                                                <div className="col-lg-8">
-                                                    <span className="fw-bold fs-6 text-gray-800">{customer.name}</span>
+
+                                        <div className="col">
+                                            <div className="card bg-info hoverable h-md-100">
+                                                <div className="card-body">
+                                                    <i className="ki-duotone ki-wallet text-white fs-3x ms-n1">
+                                                        <span className="path1"></span>
+                                                        <span className="path2"></span>
+                                                        <span className="path3"></span>
+                                                        <span className="path4"></span>
+                                                    </i>
+                                                    <div className="text-white fw-bold fs-2 mt-5">
+                                                        {formatCurrency(walletBalance)}
+                                                    </div>
+                                                    <div className="fw-semibold text-white">{t('customers.walletBalance')}</div>
                                                 </div>
                                             </div>
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">Email</label>
-                                                <div className="col-lg-8 fv-row">
-                                                    <span className="fw-semibold fs-6 text-gray-800">{customer.email}</span>
-                                                </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="card pt-4 mb-6 mb-xl-9">
+                                        <div className="card-header border-0">
+                                            <div className="card-title">
+                                                <h2>{t('customers.customerInformation')}</h2>
                                             </div>
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">Phone</label>
-                                                <div className="col-lg-8 d-flex align-items-center">
-                                                    <span className="fw-bold fs-6 text-gray-800">{customer.phone || customer.phone_number || 'N/A'}</span>
+                                            {canEdit && (
+                                                <div className="card-toolbar">
+                                                    <Link
+                                                        to={`/admin/customers/${customerUuid}/edit`}
+                                                        className="btn btn-sm btn-light-primary"
+                                                    >
+                                                        <i className="ki-duotone ki-pencil fs-3">
+                                                            <span className="path1"></span>
+                                                            <span className="path2"></span>
+                                                        </i>
+                                                        {t('customers.editCustomerBtn')}
+                                                    </Link>
                                                 </div>
+                                            )}
+                                        </div>
+                                        <div className="card-body pt-0 pb-5">
+                                            <div className="table-responsive">
+                                                <table className="table align-middle table-row-dashed gy-5">
+                                                    <tbody className="fs-6 fw-semibold text-gray-600">
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">
+                                                                {t('customers.customerUuidLabel')}
+                                                            </td>
+                                                            <td className="text-gray-800 text-break">{customer.uuid}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.name')}</td>
+                                                            <td className="text-gray-800">{customer.name}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.email')}</td>
+                                                            <td className="text-gray-800">
+                                                                <a
+                                                                    href={`mailto:${customer.email}`}
+                                                                    className="text-gray-900 text-hover-primary"
+                                                                >
+                                                                    {customer.email}
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.phone')}</td>
+                                                            <td className="text-gray-800">
+                                                                {customer.phone || t('customers.noPhoneProvided')}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.address')}</td>
+                                                            <td className="text-gray-800">{formatAddress(customer)}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.status')}</td>
+                                                            <td className="text-gray-800">
+                                                                <span className={`badge ${statusBadgeClass}`}>
+                                                                    {statusLabel}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">
+                                                                {t('customers.walletBalance')}
+                                                            </td>
+                                                            <td className="text-gray-800">{formatCurrency(walletBalance)}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.created')}</td>
+                                                            <td className="text-gray-800">{formatDate(customer.created_at)}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">
+                                                                {t('customers.lastUpdated')}
+                                                            </td>
+                                                            <td className="text-gray-800">{formatDate(customer.updated_at)}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
                                             </div>
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">Company</label>
-                                                <div className="col-lg-8">
-                                                    <span className="fw-bold fs-6 text-gray-800">{customer.company_name || 'N/A'}</span>
-                                                </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="card pt-4 mb-6 mb-xl-9">
+                                        <div className="card-header border-0">
+                                            <div className="card-title">
+                                                <h2>{t('customers.transactionHistory')}</h2>
                                             </div>
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">Tax Number</label>
-                                                <div className="col-lg-8">
-                                                    <span className="fw-bold fs-6 text-gray-800">{customer.tax_no || 'N/A'}</span>
-                                                </div>
+                                        </div>
+                                        <div className="card-body pt-0 pb-5">
+                                            <div className="table-responsive">
+                                                <table className="table align-middle table-row-dashed gy-5">
+                                                    <thead className="border-bottom border-gray-200 fs-7 fw-bold">
+                                                        <tr className="text-start text-muted text-uppercase gs-0">
+                                                            <th className="min-w-100px">{t('common.id')}</th>
+                                                            <th>{t('common.status')}</th>
+                                                            <th>{t('customers.transactionAmount')}</th>
+                                                            <th className="min-w-100px">{t('common.date')}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="fs-6 fw-semibold text-gray-600">
+                                                        <tr>
+                                                            <td colSpan={4} className="text-center text-muted py-10">
+                                                                {t('customers.noTransactionHistory')}
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
                                             </div>
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">Address</label>
-                                                <div className="col-lg-8">
-                                                    <span className="fw-bold fs-6 text-gray-800">{customer.address || 'N/A'}</span>
-                                                </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="card pt-4 mb-6 mb-xl-9">
+                                        <div className="card-header border-0">
+                                            <div className="card-title">
+                                                <h2 className="fw-bold mb-0">{t('customers.quickActions')}</h2>
                                             </div>
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">City</label>
-                                                <div className="col-lg-8">
-                                                    <span className="fw-bold fs-6 text-gray-800">{customer.city || 'N/A'}</span>
-                                                </div>
-                                            </div>
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">State/Province</label>
-                                                <div className="col-lg-8">
-                                                    <span className="fw-bold fs-6 text-gray-800">{customer.state || 'N/A'}</span>
-                                                </div>
-                                            </div>
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">Postal Code</label>
-                                                <div className="col-lg-8">
-                                                    <span className="fw-bold fs-6 text-gray-800">{customer.postal_code || customer.zip || 'N/A'}</span>
-                                                </div>
-                                            </div>
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">Country</label>
-                                                <div className="col-lg-8">
-                                                    <span className="fw-bold fs-6 text-gray-800">
-                                                        {country?.text || country?.name || customer.country || 'N/A'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">Status</label>
-                                                <div className="col-lg-8">
-                                                    <span className={`badge badge-light-${customer.status === 'active' ? 'success' : 'danger'}`}>
-                                                        {customer.status || 'active'}
-                                                    </span>
-                                                </div>
+                                        </div>
+                                        <div className="card-body pt-0">
+                                            <div className="d-flex flex-wrap gap-3">
+                                                {canEdit && (
+                                                    <Link to={`/admin/customers/${customerUuid}/edit`} className="btn btn-light-primary">
+                                                        <i className="ki-duotone ki-pencil fs-3">
+                                                            <span className="path1"></span>
+                                                            <span className="path2"></span>
+                                                        </i>
+                                                        {t('customers.editCustomerBtn')}
+                                                    </Link>
+                                                )}
+                                                {canEdit && customerStatus !== 'deleted' && (
+                                                    <Link
+                                                        to={`/admin/customers/${customerUuid}/edit`}
+                                                        className="btn btn-light-warning"
+                                                    >
+                                                        <i className="ki-duotone ki-setting-2 fs-3">
+                                                            <span className="path1"></span>
+                                                            <span className="path2"></span>
+                                                        </i>
+                                                        {t('customers.changeStatus')}
+                                                    </Link>
+                                                )}
+                                                <button onClick={handleDelete} className="btn btn-light-danger">
+                                                    <i className="ki-duotone ki-trash fs-3">
+                                                        <span className="path1"></span>
+                                                        <span className="path2"></span>
+                                                        <span className="path3"></span>
+                                                        <span className="path4"></span>
+                                                        <span className="path5"></span>
+                                                    </i>
+                                                    {t('customers.deleteCustomer')}
+                                                </button>
+                                                <Link to="/admin/customers" className="btn btn-light-secondary">
+                                                    <i className="ki-duotone ki-arrow-left fs-3">
+                                                        <span className="path1"></span>
+                                                        <span className="path2"></span>
+                                                    </i>
+                                                    {t('customers.backToCustomers')}
+                                                </Link>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             )}
-                            
-                            {/* Financial Tab */}
-                            {activeTab === 'financial' && (
+
+                            {activeTab === 'general' && (
                                 <div className="tab-pane fade show active">
-                                    <div className="card card-flush mb-6 mb-xl-9">
-                                        <div className="card-header mt-6">
-                                            <div className="card-title flex-column">
-                                                <h2 className="mb-1">Financial Information</h2>
+                                    <div className="card pt-4 mb-6 mb-xl-9">
+                                        <div className="card-header border-0">
+                                            <div className="card-title">
+                                                <h2>{t('customers.profileInformation')}</h2>
+                                            </div>
+                                            {canEdit && (
+                                                <div className="card-toolbar">
+                                                    <Link
+                                                        to={`/admin/customers/${customerUuid}/edit`}
+                                                        className="btn btn-sm btn-light-primary"
+                                                    >
+                                                        <i className="ki-duotone ki-pencil fs-3">
+                                                            <span className="path1"></span>
+                                                            <span className="path2"></span>
+                                                        </i>
+                                                        {t('customers.editCustomerBtn')}
+                                                    </Link>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="card-body pt-0 pb-5">
+                                            <div className="table-responsive">
+                                                <table className="table align-middle table-row-dashed gy-5">
+                                                    <tbody className="fs-6 fw-semibold text-gray-600">
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">
+                                                                {t('customers.fullName')}
+                                                            </td>
+                                                            <td className="text-gray-800">{customer.name}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">
+                                                                {t('customers.emailAddress')}
+                                                            </td>
+                                                            <td className="text-gray-800">{customer.email}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">
+                                                                {t('customers.phoneNumber')}
+                                                            </td>
+                                                            <td className="text-gray-800">
+                                                                {customer.phone || t('customers.na')}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.country')}</td>
+                                                            <td className="text-gray-800">{customer.countryName || getCustomerCountryName(customer) || t('customers.na')}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.city')}</td>
+                                                            <td className="text-gray-800">{customer.cityName || getCustomerCityName(customer) || t('customers.na')}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">
+                                                                {t('customers.streetAddress')}
+                                                            </td>
+                                                            <td className="text-gray-800">{customer.address || t('customers.na')}</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         </div>
-                                        <div className="card-body p-9 pt-4">
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">Deposit</label>
-                                                <div className="col-lg-8">
-                                                    <span className="fw-bold fs-6 text-gray-800">
-                                                        ${customer.deposit || '0.00'}
-                                                    </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'advanced' && (
+                                <div className="tab-pane fade show active">
+                                    <div className="card pt-4 mb-6 mb-xl-9">
+                                        <div className="card-header border-0">
+                                            <div className="card-title">
+                                                <h2>{t('customers.securityDetails')}</h2>
+                                            </div>
+                                        </div>
+                                        <div className="card-body pt-0 pb-5">
+                                            <div className="table-responsive">
+                                                <table className="table align-middle table-row-dashed gy-5">
+                                                    <tbody className="fs-6 fw-semibold text-gray-600">
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.phone')}</td>
+                                                            <td className="text-gray-800">
+                                                                {customer.phone || t('customers.noPhoneProvided')}
+                                                            </td>
+                                                            <td className="text-end">
+                                                                {canEdit && (
+                                                                    <Link
+                                                                        to={`/admin/customers/${customerUuid}/edit`}
+                                                                        className="btn btn-icon btn-active-light-primary w-30px h-30px ms-auto"
+                                                                    >
+                                                                        <i className="ki-duotone ki-pencil fs-3">
+                                                                            <span className="path1"></span>
+                                                                            <span className="path2"></span>
+                                                                        </i>
+                                                                    </Link>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.status')}</td>
+                                                            <td className="text-gray-800">
+                                                                <span className={`badge ${statusBadgeClass}`}>
+                                                                    {statusLabel}
+                                                                </span>
+                                                            </td>
+                                                            <td className="text-end">
+                                                                {canEdit && customerStatus !== 'deleted' && (
+                                                                    <Link
+                                                                        to={`/admin/customers/${customerUuid}/edit`}
+                                                                        className="btn btn-icon btn-active-light-primary w-30px h-30px ms-auto"
+                                                                    >
+                                                                        <i className="ki-duotone ki-pencil fs-3">
+                                                                            <span className="path1"></span>
+                                                                            <span className="path2"></span>
+                                                                        </i>
+                                                                    </Link>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.walletBalance')}</td>
+                                                            <td className="text-gray-800">{formatCurrency(walletBalance)}</td>
+                                                            <td></td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.created')}</td>
+                                                            <td className="text-gray-800">{formatDate(customer.created_at)}</td>
+                                                            <td></td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="card pt-4 mb-6 mb-xl-9">
+                                        <div className="card-header border-0">
+                                            <div className="card-title flex-column">
+                                                <h2 className="mb-1">{t('customers.accountStatus')}</h2>
+                                                <div className="fs-6 fw-semibold text-muted">
+                                                    {statusDescription}
                                                 </div>
                                             </div>
-                                            <div className="row mb-7">
-                                                <label className="col-lg-4 fw-semibold text-muted">Expense</label>
-                                                <div className="col-lg-8">
-                                                    <span className="fw-bold fs-6 text-gray-800">
-                                                        ${customer.expense || '0.00'}
-                                                    </span>
+                                            {canEdit && customerStatus !== 'deleted' && (
+                                                <div className="card-toolbar">
+                                                    <Link
+                                                        to={`/admin/customers/${customerUuid}/edit`}
+                                                        className="btn btn-sm btn-light-primary"
+                                                    >
+                                                        {t('customers.changeStatus')}
+                                                    </Link>
                                                 </div>
+                                            )}
+                                        </div>
+                                        <div className="card-body pb-5">
+                                            <div className="d-flex flex-stack">
+                                                <div className="d-flex flex-column">
+                                                    <span>{t('customers.customerAccount')}</span>
+                                                    <span className="text-muted fs-6">{statusLabel}</span>
+                                                </div>
+                                                <span className={`badge ${statusBadgeClass} fs-7`}>
+                                                    {statusLabel}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>

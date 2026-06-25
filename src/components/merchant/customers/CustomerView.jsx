@@ -1,29 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { getCustomer, deleteCustomer } from '../../../services/customersService';
 import { useToolbar } from '../../../contexts/ToolbarContext';
+import { getModuleBasePath } from '../../../i18n/localePaths';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 import Swal from 'sweetalert2';
 import useAuthStore from '../../../stores/authStore';
+import { formatDate } from '../../../utils/dateUtils';
 
 const CustomerView = () => {
+    const { formatCurrency } = useAuthStore();
     const { id } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
-    const { formatCurrency } = useAuthStore();
     
-    // Dynamically determine base path from current location
-    const basePath = location.pathname.startsWith('/sales') ? '/sales' : '/merchant';
+    const basePath = getModuleBasePath(location.pathname);
     
     const [customer, setCustomer] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview');
 
-    // Fetch customer details
+    const locale = i18n.language?.startsWith('ar') ? 'ar-SA' : 'en-US';
+
+    const formatCustomerDate = (dateString) => {
+        if (!dateString) return t('customers.na');
+        return formatDate(dateString, locale);
+    };
+
     useEffect(() => {
         const fetchCustomerData = async () => {
             setLoading(true);
@@ -35,30 +44,29 @@ const CustomerView = () => {
                 if (response.success) {
                     setCustomer(response.data);
                 } else {
-                    setError(response.error || 'Failed to fetch customer details');
+                    setError(response.error || t('customers.failedToFetchCustomerDetails'));
                 }
             } catch (err) {
                 console.error('Error fetching customer:', err);
-                setError('An unexpected error occurred');
+                setError(t('common.unexpectedErrorOccurred'));
             } finally {
                 setLoading(false);
             }
         };
 
         fetchCustomerData();
-    }, [id]);
+    }, [id, t]);
 
-    // Handle delete
     const handleDelete = async () => {
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete customer "${customer?.name}". This action cannot be undone!`,
+            title: t('common.areYouSure'),
+            text: t('customers.confirmDeleteCustomer', { name: customer?.name }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('common.yesDeleteIt'),
+            cancelButtonText: t('common.cancel')
         });
 
         if (result.isConfirmed) {
@@ -66,28 +74,27 @@ const CustomerView = () => {
                 const response = await deleteCustomer(id);
                 
                 if (response.success) {
-                    toast.success('Customer deleted successfully');
+                    toast.success(t('customers.customerDeletedSuccessfully'));
                     navigate(`${basePath}/customers`);
                 } else {
-                    toast.error(response.error || 'Failed to delete customer');
+                    toast.error(response.error || t('customers.failedToDeleteCustomer'));
                 }
             } catch (err) {
                 console.error('Error deleting customer:', err);
-                toast.error('An unexpected error occurred');
+                toast.error(t('common.unexpectedErrorOccurred'));
             }
         }
     };
 
-    // Set toolbar
     useEffect(() => {
         if (customer) {
             const breadcrumbs = [
-                { label: 'Dashboard', path: `${basePath}/dashboard` },
-                { label: 'Customers', path: `${basePath}/customers` },
+                { label: t('common.dashboard'), path: `${basePath}/dashboard` },
+                { label: t('customers.customers'), path: `${basePath}/customers` },
                 { label: customer.name, path: `${basePath}/customers/${id}`, active: true }
             ];
             
-            setTitle(`Customer: ${customer.name}`);
+            setTitle(t('customers.customerNamed', { name: customer.name }));
             setBreadcrumbs(breadcrumbs);
             setActions(
                 <>
@@ -99,7 +106,7 @@ const CustomerView = () => {
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Edit Customer
+                        {t('customers.editCustomerBtn')}
                     </Link>
                     <button
                         className="btn btn-sm fw-bold btn-danger"
@@ -112,18 +119,18 @@ const CustomerView = () => {
                             <span className="path4"></span>
                             <span className="path5"></span>
                         </i>
-                        Delete
+                        {t('customers.delete')}
                     </button>
                 </>
             );
         }
         
         return () => {
-            setTitle('Dashboard');
+            setTitle(t('common.dashboard'));
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [customer, id, basePath]);
+    }, [customer, id, basePath, t, i18n.language]);
 
     if (loading) {
         return (
@@ -149,24 +156,11 @@ const CustomerView = () => {
         return (
             <div className="post d-flex flex-column-fluid" id="kt_post">
                 <div id="kt_content_container" className="container-fluid">
-                    <div className="alert alert-warning">Customer not found</div>
+                    <div className="alert alert-warning">{t('customers.customerNotFound')}</div>
                 </div>
             </div>
         );
     }
-
-    // Format date
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
 
     return (
         <div className="post d-flex flex-column-fluid" id="kt_post">
@@ -197,19 +191,19 @@ const CustomerView = () => {
                                 
                                 {/* Details toggle */}
                                 <div className="d-flex flex-stack fs-4 py-3">
-                                    <div className="fw-bold">Details</div>
-                                    <div className="badge badge-light-info d-inline">Active Customer</div>
+                                    <div className="fw-bold">{t('customers.details')}</div>
+                                    <div className="badge badge-light-info d-inline">{t('customers.activeCustomer')}</div>
                                 </div>
                                 <div className="separator separator-dashed my-3"></div>
                                 
                                 {/* Details content */}
                                 <div className="pb-5 fs-6">
                                     {/* Customer ID */}
-                                    <div className="fw-bold mt-5">Customer ID</div>
+                                    <div className="fw-bold mt-5">{t('customers.customerIdLabel')}</div>
                                     <div className="text-gray-600">#{customer.id}</div>
                                     
                                     {/* Email */}
-                                    <div className="fw-bold mt-5">Email</div>
+                                    <div className="fw-bold mt-5">{t('common.email')}</div>
                                     <div className="text-gray-600">
                                         <a href={`mailto:${customer.email}`} className="text-gray-600 text-hover-primary">
                                             {customer.email}
@@ -217,17 +211,17 @@ const CustomerView = () => {
                                     </div>
                                     
                                     {/* Phone */}
-                                    <div className="fw-bold mt-5">Phone</div>
+                                    <div className="fw-bold mt-5">{t('common.phone')}</div>
                                     <div className="text-gray-600">
                                         {customer.phone || customer.phone_number ? (
                                             <a href={`tel:${customer.phone || customer.phone_number}`} className="text-gray-600 text-hover-primary">
                                                 {customer.phone || customer.phone_number}
                                             </a>
-                                        ) : 'No phone provided'}
+                                        ) : t('customers.noPhoneProvided')}
                                     </div>
                                     
                                     {/* Address */}
-                                    <div className="fw-bold mt-5">Address</div>
+                                    <div className="fw-bold mt-5">{t('common.address')}</div>
                                     <div className="text-gray-600">
                                         {customer.address || customer.city || customer.state || customer.postal_code || customer.zip ? (
                                             <>
@@ -236,22 +230,22 @@ const CustomerView = () => {
                                                     <>{[customer.city, customer.state, customer.postal_code || customer.zip].filter(Boolean).join(', ')}</>
                                                 )}
                                             </>
-                                        ) : 'No address provided'}
+                                        ) : t('customers.noAddressProvided')}
                                     </div>
                                     
                                     {/* Customer Group */}
-                                    <div className="fw-bold mt-5">Customer Group</div>
+                                    <div className="fw-bold mt-5">{t('customers.customerGroup')}</div>
                                     <div className="text-gray-600">
-                                        {customer.customer_group?.name || 'No group assigned'}
+                                        {customer.customer_group?.name || t('customers.noGroupAssigned')}
                                     </div>
                                     
                                     {/* Created */}
-                                    <div className="fw-bold mt-5">Created</div>
-                                    <div className="text-gray-600">{formatDate(customer.created_at)}</div>
+                                    <div className="fw-bold mt-5">{t('common.created')}</div>
+                                    <div className="text-gray-600">{formatCustomerDate(customer.created_at)}</div>
                                     
                                     {/* Last Updated */}
-                                    <div className="fw-bold mt-5">Last Updated</div>
-                                    <div className="text-gray-600">{formatDate(customer.updated_at)}</div>
+                                    <div className="fw-bold mt-5">{t('customers.lastUpdated')}</div>
+                                    <div className="text-gray-600">{formatCustomerDate(customer.updated_at)}</div>
                                 </div>
                             </div>
                         </div>
@@ -268,7 +262,7 @@ const CustomerView = () => {
                                     role="tab"
                                     style={{cursor: 'pointer'}}
                                 >
-                                    Overview
+                                    {t('customers.overview')}
                                 </a>
                             </li>
                             <li className="nav-item" role="presentation">
@@ -278,7 +272,7 @@ const CustomerView = () => {
                                     role="tab"
                                     style={{cursor: 'pointer'}}
                                 >
-                                    General Settings
+                                    {t('customers.generalSettings')}
                                 </a>
                             </li>
                             <li className="nav-item" role="presentation">
@@ -288,7 +282,7 @@ const CustomerView = () => {
                                     role="tab"
                                     style={{cursor: 'pointer'}}
                                 >
-                                    Advanced Settings
+                                    {t('customers.advancedSettings')}
                                 </a>
                             </li>
                         </ul>
@@ -304,7 +298,7 @@ const CustomerView = () => {
                                             <div className="card pt-4 h-md-100 mb-6 mb-md-0">
                                                 <div className="card-header border-0">
                                                     <div className="card-title">
-                                                        <h2 className="fw-bold">Account Status</h2>
+                                                        <h2 className="fw-bold">{t('customers.accountStatus')}</h2>
                                                     </div>
                                                 </div>
                                                 <div className="card-body pt-0">
@@ -315,12 +309,12 @@ const CustomerView = () => {
                                                                 <span className="path2"></span>
                                                             </i>
                                                             <div className="ms-2">
-                                                                Active
-                                                                <span className="text-muted fs-4 fw-semibold d-block">Customer Account</span>
+                                                                {t('customers.active')}
+                                                                <span className="text-muted fs-4 fw-semibold d-block">{t('customers.customerAccount')}</span>
                                                             </div>
                                                         </div>
                                                         <div className="fs-7 fw-normal text-muted mt-3">
-                                                            Customer account is active and operational.
+                                                            {t('customers.accountActiveDescription')}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -339,7 +333,7 @@ const CustomerView = () => {
                                                     <div className="text-white fw-bold fs-2 mt-5">
                                                         {formatCurrency(customer.deposit || 0)}
                                                     </div>
-                                                    <div className="fw-semibold text-white">Deposit Balance</div>
+                                                    <div className="fw-semibold text-white">{t('customers.depositBalance')}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -349,7 +343,7 @@ const CustomerView = () => {
                                     <div className="card pt-4 mb-6 mb-xl-9">
                                         <div className="card-header border-0">
                                             <div className="card-title">
-                                                <h2>Customer Information</h2>
+                                                <h2>{t('customers.customerInformation')}</h2>
                                             </div>
                                             <div className="card-toolbar">
                                                 <Link to={`${basePath}/customers/${id}/edit`} className="btn btn-sm btn-light-primary">
@@ -357,7 +351,7 @@ const CustomerView = () => {
                                                         <span className="path1"></span>
                                                         <span className="path2"></span>
                                                     </i>
-                                                    Edit Customer
+                                                    {t('customers.editCustomerBtn')}
                                                 </Link>
                                             </div>
                                         </div>
@@ -366,15 +360,15 @@ const CustomerView = () => {
                                                 <table className="table align-middle table-row-dashed gy-5">
                                                     <tbody className="fs-6 fw-semibold text-gray-600">
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Customer ID</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.customerIdLabel')}</td>
                                                             <td className="text-gray-800">#{customer.id}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Name</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.name')}</td>
                                                             <td className="text-gray-800">{customer.name}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Email</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.email')}</td>
                                                             <td className="text-gray-800">
                                                                 <a href={`mailto:${customer.email}`} className="text-gray-900 text-hover-primary">
                                                                     {customer.email}
@@ -382,21 +376,21 @@ const CustomerView = () => {
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Phone</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.phone')}</td>
                                                             <td className="text-gray-800">
                                                                 {customer.phone || customer.phone_number ? (
                                                                     <a href={`tel:${customer.phone || customer.phone_number}`} className="text-gray-900 text-hover-primary">
                                                                         {customer.phone || customer.phone_number}
                                                                     </a>
-                                                                ) : 'No phone provided'}
+                                                                ) : t('customers.noPhoneProvided')}
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Company Name</td>
-                                                            <td className="text-gray-800">{customer.company_name || 'N/A'}</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.companyName')}</td>
+                                                            <td className="text-gray-800">{customer.company_name || t('customers.na')}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Address</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.address')}</td>
                                                             <td className="text-gray-800">
                                                                 {customer.address || customer.city || customer.state || customer.postal_code || customer.zip ? (
                                                                     <>
@@ -405,16 +399,16 @@ const CustomerView = () => {
                                                                             <>{[customer.city, customer.state, customer.postal_code || customer.zip].filter(Boolean).join(', ')}</>
                                                                         )}
                                                                     </>
-                                                                ) : 'No address provided'}
+                                                                ) : t('customers.noAddressProvided')}
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Created</td>
-                                                            <td className="text-gray-800">{formatDate(customer.created_at)}</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.created')}</td>
+                                                            <td className="text-gray-800">{formatCustomerDate(customer.created_at)}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Last Updated</td>
-                                                            <td className="text-gray-800">{formatDate(customer.updated_at)}</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.lastUpdated')}</td>
+                                                            <td className="text-gray-800">{formatCustomerDate(customer.updated_at)}</td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
@@ -426,7 +420,7 @@ const CustomerView = () => {
                                     <div className="card pt-4 mb-6 mb-xl-9">
                                         <div className="card-header border-0">
                                             <div className="card-title">
-                                                <h2 className="fw-bold mb-0">Quick Actions</h2>
+                                                <h2 className="fw-bold mb-0">{t('customers.quickActions')}</h2>
                                             </div>
                                         </div>
                                         <div className="card-body pt-0">
@@ -436,7 +430,7 @@ const CustomerView = () => {
                                                         <span className="path1"></span>
                                                         <span className="path2"></span>
                                                     </i>
-                                                    Edit Customer
+                                                    {t('customers.editCustomerBtn')}
                                                 </Link>
                                                 <button onClick={handleDelete} className="btn btn-light-danger">
                                                     <i className="ki-duotone ki-trash fs-3">
@@ -446,14 +440,14 @@ const CustomerView = () => {
                                                         <span className="path4"></span>
                                                         <span className="path5"></span>
                                                     </i>
-                                                    Delete Customer
+                                                    {t('customers.deleteCustomer')}
                                                 </button>
                                                 <Link to={`${basePath}/customers`} className="btn btn-light-secondary">
                                                     <i className="ki-duotone ki-arrow-left fs-3">
                                                         <span className="path1"></span>
                                                         <span className="path2"></span>
                                                     </i>
-                                                    Back to Customers
+                                                    {t('customers.backToCustomers')}
                                                 </Link>
                                             </div>
                                         </div>
@@ -467,7 +461,7 @@ const CustomerView = () => {
                                     <div className="card pt-4 mb-6 mb-xl-9">
                                         <div className="card-header border-0">
                                             <div className="card-title">
-                                                <h2>Profile Information</h2>
+                                                <h2>{t('customers.profileInformation')}</h2>
                                             </div>
                                         </div>
                                         <div className="card-body pt-0 pb-5">
@@ -475,40 +469,40 @@ const CustomerView = () => {
                                                 <table className="table align-middle table-row-dashed gy-5">
                                                     <tbody className="fs-6 fw-semibold text-gray-600">
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Full Name</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.fullName')}</td>
                                                             <td className="text-gray-800">{customer.name}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Company Name</td>
-                                                            <td className="text-gray-800">{customer.company_name || 'N/A'}</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.companyName')}</td>
+                                                            <td className="text-gray-800">{customer.company_name || t('customers.na')}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Email Address</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.emailAddress')}</td>
                                                             <td className="text-gray-800">{customer.email}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Phone Number</td>
-                                                            <td className="text-gray-800">{customer.phone || customer.phone_number || 'N/A'}</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.phoneNumber')}</td>
+                                                            <td className="text-gray-800">{customer.phone || customer.phone_number || t('customers.na')}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Country</td>
-                                                            <td className="text-gray-800">{customer.country || 'N/A'}</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.country')}</td>
+                                                            <td className="text-gray-800">{customer.country || t('customers.na')}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">City</td>
-                                                            <td className="text-gray-800">{customer.city || 'N/A'}</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.city')}</td>
+                                                            <td className="text-gray-800">{customer.city || t('customers.na')}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">State</td>
-                                                            <td className="text-gray-800">{customer.state || 'N/A'}</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('common.state')}</td>
+                                                            <td className="text-gray-800">{customer.state || t('customers.na')}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Postal Code</td>
-                                                            <td className="text-gray-800">{customer.postal_code || customer.zip || 'N/A'}</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.postalCode')}</td>
+                                                            <td className="text-gray-800">{customer.postal_code || customer.zip || t('customers.na')}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Tax Number</td>
-                                                            <td className="text-gray-800">{customer.tax_no || 'N/A'}</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.taxNumberShort')}</td>
+                                                            <td className="text-gray-800">{customer.tax_no || t('customers.na')}</td>
                                                         </tr>
                                                     </tbody>
                                                 </table>
@@ -524,7 +518,7 @@ const CustomerView = () => {
                                     <div className="card pt-4 mb-6 mb-xl-9">
                                         <div className="card-header border-0">
                                             <div className="card-title">
-                                                <h2>Financial Information</h2>
+                                                <h2>{t('customers.financialInformation')}</h2>
                                             </div>
                                         </div>
                                         <div className="card-body pt-0 pb-5">
@@ -532,7 +526,7 @@ const CustomerView = () => {
                                                 <table className="table align-middle table-row-dashed gy-5">
                                                     <tbody className="fs-6 fw-semibold text-gray-600">
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Deposit Amount</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.depositAmount')}</td>
                                                             <td className="text-gray-800">
                                                                 <span className="badge badge-light-success fs-7">
                                                                     {formatCurrency(customer.deposit || 0)}
@@ -540,7 +534,7 @@ const CustomerView = () => {
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Expense Amount</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.expenseAmount')}</td>
                                                             <td className="text-gray-800">
                                                                 <span className="badge badge-light-warning fs-7">
                                                                     {formatCurrency(customer.expense || 0)}
@@ -548,14 +542,14 @@ const CustomerView = () => {
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td className="text-muted min-w-125px w-125px">Customer Group</td>
+                                                            <td className="text-muted min-w-125px w-125px">{t('customers.customerGroup')}</td>
                                                             <td className="text-gray-800">
                                                                 {customer.customer_group?.name ? (
                                                                     <span className="badge badge-light-info fs-7">
                                                                         {customer.customer_group.name}
                                                                     </span>
                                                                 ) : (
-                                                                    <span className="text-muted">No group assigned</span>
+                                                                    <span className="text-muted">{t('customers.noGroupAssigned')}</span>
                                                                 )}
                                                             </td>
                                                         </tr>

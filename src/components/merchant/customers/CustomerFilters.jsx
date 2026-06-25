@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getCustomerGroups } from '../../../services/customersService';
 
 const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
+    const { t } = useTranslation();
     const [customerGroups, setCustomerGroups] = useState([]);
     const [loadingGroups, setLoadingGroups] = useState(false);
 
-    // Fetch customer groups on mount
     useEffect(() => {
         const fetchCustomerGroups = async () => {
             setLoadingGroups(true);
@@ -33,22 +34,20 @@ const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
         <div className="card mb-5">
             <div className="card-body">
                 <div className="row g-3">
-                    {/* Search */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold fs-6">Search</label>
+                        <label className="form-label fw-bold fs-6">{t('customers.search')}</label>
                         <input
                             type="text"
                             name="search"
                             className="form-control form-control-solid"
-                            placeholder="Search by name, email, phone..."
+                            placeholder={t('customers.searchByNameEmailPhone')}
                             value={filters.search || ''}
                             onChange={handleInputChange}
                         />
                     </div>
 
-                    {/* Customer Group */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold fs-6">Customer Group</label>
+                        <label className="form-label fw-bold fs-6">{t('customers.customerGroup')}</label>
                         <select
                             name="customer_group_id"
                             className="form-select form-select-solid"
@@ -56,7 +55,7 @@ const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
                             onChange={handleInputChange}
                             disabled={loadingGroups}
                         >
-                            <option value="">All Groups</option>
+                            <option value="">{t('customers.allGroups')}</option>
                             {customerGroups.map((group) => (
                                 <option key={group.id} value={group.id}>
                                     {group.name}
@@ -65,22 +64,20 @@ const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
                         </select>
                     </div>
 
-                    {/* Country */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold fs-6">Country</label>
+                        <label className="form-label fw-bold fs-6">{t('common.country')}</label>
                         <input
                             type="text"
                             name="country"
                             className="form-control form-control-solid"
-                            placeholder="Filter by country..."
+                            placeholder={t('customers.filterByCountry')}
                             value={filters.country || ''}
                             onChange={handleInputChange}
                         />
                     </div>
 
-                    {/* Date From */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold fs-6">Date From</label>
+                        <label className="form-label fw-bold fs-6">{t('customers.dateFrom')}</label>
                         <input
                             type="date"
                             name="date_from"
@@ -90,9 +87,8 @@ const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
                         />
                     </div>
 
-                    {/* Date To */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold fs-6">Date To</label>
+                        <label className="form-label fw-bold fs-6">{t('customers.dateTo')}</label>
                         <input
                             type="date"
                             name="date_to"
@@ -102,7 +98,6 @@ const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
                         />
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="col-md-4 d-flex align-items-end">
                         <button
                             type="button"
@@ -113,7 +108,7 @@ const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
                                 <span className="path1"></span>
                                 <span className="path2"></span>
                             </i>
-                            Clear
+                            {t('customers.clear')}
                         </button>
                     </div>
                 </div>
@@ -123,4 +118,3 @@ const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
 };
 
 export default CustomerFilters;
-

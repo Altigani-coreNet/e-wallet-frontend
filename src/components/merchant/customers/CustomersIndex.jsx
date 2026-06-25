@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { useQueryClient } from '@tanstack/react-query';
 import { 
@@ -18,14 +19,15 @@ import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 import Swal from 'sweetalert2';
 import { useCan, canExport } from '../../../utils/permissions';
+import { getModuleBasePath } from '../../../i18n/localePaths';
 
 const CustomersIndex = () => {
     const location = useLocation();
+    const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const queryClient = useQueryClient();
     
-    // Dynamically determine base path from current location
-    const basePath = location.pathname.startsWith('/sales') ? '/sales' : '/merchant';
+    const basePath = getModuleBasePath(location.pathname);
     
     const [selectedIds, setSelectedIds] = useState([]);
     const [showFilters, setShowFilters] = useState(false);
@@ -38,7 +40,6 @@ const CustomersIndex = () => {
         date_to: '',
     });
     
-    // Pagination state
     const [pagination, setPagination] = useState({
         current_page: 1,
         per_page: 15,
@@ -46,16 +47,13 @@ const CustomersIndex = () => {
         last_page: 1
     });
     
-    // Sorting state
     const [sortConfig, setSortConfig] = useState({
         column: 'id',
         direction: 'desc'
     });
 
-    // Debounced filters
     const [debouncedFilters, setDebouncedFilters] = useState(filters);
     
-    // Debounce filters
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedFilters(filters);
@@ -64,7 +62,6 @@ const CustomersIndex = () => {
         return () => clearTimeout(timer);
     }, [filters]);
 
-    // Build query params for React Query
     const queryParams = useMemo(() => ({
         page: pagination.current_page,
         per_page: pagination.per_page,
@@ -73,7 +70,6 @@ const CustomersIndex = () => {
         ...debouncedFilters
     }), [pagination.current_page, pagination.per_page, debouncedFilters, sortConfig.column, sortConfig.direction]);
 
-    // Use React Query to fetch customers
     const { 
         data: customersResponse, 
         isLoading, 
@@ -83,7 +79,6 @@ const CustomersIndex = () => {
     } = useCustomers(queryParams, {
         keepPreviousData: true,
         onSuccess: (response) => {
-            // Update pagination from response
             if (response.data?.pagination) {
                 setPagination(prev => ({
                     ...prev,
@@ -100,11 +95,10 @@ const CustomersIndex = () => {
         },
         onError: (err) => {
             console.error('Error fetching customers:', err);
-            toast.error('Failed to load customers');
+            toast.error(t('customers.failedToLoadCustomers'));
         }
     });
 
-    // Extract customers from response
     const customers = useMemo(() => {
         const customersData = customersResponse?.data?.customers || [];
         return Array.isArray(customersData) ? customersData : [];
@@ -112,7 +106,6 @@ const CustomersIndex = () => {
 
     const canDelete = useCan('customers.delete');
 
-    // Handle sort
     const handleSort = (column) => {
         const newDirection = 
             sortConfig.column === column && sortConfig.direction === 'asc' 
@@ -123,12 +116,10 @@ const CustomersIndex = () => {
         setPagination(prev => ({ ...prev, current_page: 1 }));
     };
 
-    // Handle per page change
     const handlePerPageChange = (newPerPage) => {
         setPagination(prev => ({ ...prev, per_page: newPerPage, current_page: 1 }));
     };
 
-    // Get sort icon for table headers
     const getSortIcon = (column) => {
         if (sortConfig.column !== column) {
             return (
@@ -152,47 +143,43 @@ const CustomersIndex = () => {
         );
     };
 
-    // Handle page change
     const handlePageChange = (page) => {
         setPagination(prev => ({ ...prev, current_page: page }));
     };
 
-    // Handle delete
     const handleDelete = async (id) => {
         try {
             const response = await deleteCustomer(id);
             
             if (response.success) {
-                toast.success('Customer deleted successfully');
+                toast.success(t('customers.customerDeletedSuccessfully'));
                 queryClient.invalidateQueries({ queryKey: customersKeys.list(queryParams) });
                 refetch();
-                // Remove from selected if it was selected
                 setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
             } else {
-                toast.error(response.error || 'Failed to delete customer');
+                toast.error(response.error || t('customers.failedToDeleteCustomer'));
             }
         } catch (err) {
             console.error('Error deleting customer:', err);
-            toast.error('An unexpected error occurred');
+            toast.error(t('common.unexpectedErrorOccurred'));
         }
     };
 
-    // Handle bulk delete
     const handleBulkDelete = useCallback(async () => {
         if (selectedIds.length === 0) {
-            toast.warning('Please select at least one customer');
+            toast.warning(t('customers.pleaseSelectAtLeastOneCustomer'));
             return;
         }
 
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: `You are about to delete ${selectedIds.length} customer(s). This action cannot be undone!`,
+            title: t('common.areYouSure'),
+            text: t('customers.confirmDeleteBulkCustomers', { count: selectedIds.length }),
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete them!',
-            cancelButtonText: 'Cancel'
+            confirmButtonText: t('common.yesDeleteThem'),
+            cancelButtonText: t('common.cancel')
         });
 
         if (result.isConfirmed) {
@@ -201,8 +188,8 @@ const CustomersIndex = () => {
                 
                 if (response.success) {
                     await Swal.fire({
-                        title: 'Deleted!',
-                        text: 'Customers have been deleted successfully.',
+                        title: t('common.deleted'),
+                        text: t('customers.customersDeletedSuccessfully'),
                         icon: 'success',
                         timer: 2000,
                         showConfirmButton: false
@@ -211,20 +198,18 @@ const CustomersIndex = () => {
                     queryClient.invalidateQueries({ queryKey: customersKeys.list(queryParams) });
                     refetch();
                 } else {
-                    Swal.fire('Error!', response.error || 'Failed to delete customers.', 'error');
+                    Swal.fire(t('common.error'), response.error || t('customers.failedToDeleteCustomers'), 'error');
                 }
             } catch (error) {
-                Swal.fire('Error!', 'An unexpected error occurred.', 'error');
+                Swal.fire(t('common.error'), t('common.unexpectedErrorOccurred'), 'error');
             }
         }
-    }, [selectedIds, queryParams, queryClient, refetch]);
+    }, [selectedIds, queryParams, queryClient, refetch, t]);
 
-    // Handle export
     const handleExport = useCallback(async () => {
         try {
             const blob = await exportCustomers(filters);
             
-            // Create download link
             const downloadUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = downloadUrl;
@@ -234,19 +219,17 @@ const CustomersIndex = () => {
             window.URL.revokeObjectURL(downloadUrl);
             document.body.removeChild(a);
             
-            toast.success('Customers exported successfully');
+            toast.success(t('customers.customersExportedSuccessfully'));
         } catch (error) {
             console.error('Export error:', error);
-            toast.error('Failed to export customers');
+            toast.error(t('customers.failedToExportCustomers'));
         }
-    }, [filters]);
+    }, [filters, t]);
 
-    // Handle filter change
     const handleFilterChange = (newFilters) => {
         setFilters(prev => ({ ...prev, ...newFilters }));
     };
 
-    // Handle clear filters
     const handleClearFilters = () => {
         setFilters({
             search: '',
@@ -257,21 +240,22 @@ const CustomersIndex = () => {
         });
     };
 
-    // Handle import success
-    const handleImportSuccess = () => {
+    const handleImportSuccess = async () => {
         setShowImportModal(false);
-        queryClient.invalidateQueries({ queryKey: customersKeys.list(queryParams) });
+        await queryClient.invalidateQueries({ 
+            queryKey: customersKeys.all,
+            refetchType: 'active'
+        });
         refetch();
     };
 
-    // Set toolbar
     useEffect(() => {
         const breadcrumbs = [
-            { label: 'Dashboard', path: `${basePath}/dashboard` },
-            { label: 'Customers', path: `${basePath}/customers`, active: true }
+            { label: t('common.dashboard'), path: `${basePath}/dashboard` },
+            { label: t('customers.customers'), path: `${basePath}/customers`, active: true }
         ];
         
-        setTitle('Customer Management');
+        setTitle(t('customers.customerManagement'));
         setBreadcrumbs(breadcrumbs);
         setActions(
             <CustomerToolbar 
@@ -287,16 +271,15 @@ const CustomersIndex = () => {
         );
         
         return () => {
-            setTitle('Dashboard');
+            setTitle(t('common.dashboard'));
             setBreadcrumbs([]);
             setActions(null);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [basePath, isFetching, showFilters, selectedIds.length, handleExport, handleBulkDelete]);
+    }, [basePath, isFetching, showFilters, selectedIds.length, handleExport, handleBulkDelete, t, i18n.language]);
 
     return (
         <>
-            {/* Filters */}
             {showFilters && (
                 <CustomerFilters
                     filters={filters}
@@ -305,11 +288,9 @@ const CustomersIndex = () => {
                 />
             )}
 
-            {/* Main Card */}
             <div className="card">
                     <div className="card-header border-0 pt-6">
                         <div className="card-title d-flex justify-content-between align-items-center w-100">
-                            {/* Search */}
                             <div className="d-flex align-items-center position-relative">
                                 <i className="ki-duotone ki-magnifier fs-3 position-absolute ms-5">
                                     <span className="path1"></span>
@@ -318,14 +299,13 @@ const CustomersIndex = () => {
                                 <input
                                     type="text"
                                     className="form-control form-control-solid w-250px ps-13"
-                                    placeholder="Search customers..."
+                                    placeholder={t('customers.searchCustomers')}
                                     value={filters.search}
                                     onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
                                 />
                             </div>
-                            {/* Per Page Selector */}
                             <div className="d-flex align-items-center gap-2">
-                                <label className="form-label mb-0 text-nowrap">Per Page:</label>
+                                <label className="form-label mb-0 text-nowrap">{t('common.perPage')}</label>
                                 <select 
                                     className="form-select form-select-sm" 
                                     style={{width: '80px'}}
@@ -342,7 +322,6 @@ const CustomersIndex = () => {
                     </div>
 
                     <div className="card-body pt-0">
-                        {/* Loading Bar - Shows on top of existing data when fetching */}
                         {isFetching && !isLoading && (
                             <div className="mb-4" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                                 <div className="progress" style={{ height: '3px' }}>
@@ -351,7 +330,7 @@ const CustomersIndex = () => {
                             </div>
                         )}
                         
-                        {queryError && <ErrorAlert error={queryError?.response?.data?.message || queryError?.message || 'Failed to fetch customers'} onClose={() => queryClient.invalidateQueries({ queryKey: customersKeys.list(queryParams) })} />}
+                        {queryError && <ErrorAlert error={queryError?.response?.data?.message || queryError?.message || t('customers.failedToFetchCustomers')} onClose={() => queryClient.invalidateQueries({ queryKey: customersKeys.list(queryParams) })} />}
 
                         {isLoading && customers.length === 0 ? (
                             <LoadingSpinner />
@@ -373,7 +352,6 @@ const CustomersIndex = () => {
                     </div>
                 </div>
 
-            {/* Import Modal */}
             {showImportModal && (
                 <ImportCustomersModal
                     show={showImportModal}
@@ -386,4 +364,3 @@ const CustomersIndex = () => {
 };
 
 export default CustomersIndex;
-

@@ -31,6 +31,7 @@ const MerchantCountryFilterFields = ({
     autoLoadOptions = true,
     onMerchantOpen,
     onCountryOpen,
+    hideMerchant = false,
 }) => {
     const [hasRequested, setHasRequested] = React.useState(autoLoadOptions);
 
@@ -177,6 +178,7 @@ const MerchantCountryFilterFields = ({
 
     return (
         <>
+            {!hideMerchant && (
             <div className={merchantWrapperClassName}>
                 <SearchableDropdown
                     label={merchantLabel}
@@ -194,6 +196,7 @@ const MerchantCountryFilterFields = ({
                     showClear={!requireMerchant}
                 />
             </div>
+            )}
             <div className={countryWrapperClassName}>
                 <SearchableDropdown
                     label={countryLabel}

@@ -1,156 +1,117 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useCan } from '../../../utils/permissions';
+import { getCustomerUuid, getCustomerCityName, getCustomerCountryName, getCustomerStatusBadgeClass, getCustomerStatusLabelKey } from '../../../utils/customerUtils';
 
 const CustomerTableRow = ({
     customer,
     rowNumber,
     isSelected,
     onSelect,
-    onToggleStatus,
     onDelete,
-    merchantInfo,
-    merchantLoading,
-    countryLoading
 }) => {
-    const canEditCustomer = useCan('sales.customers.edit_customers');
-    const canDeleteCustomer = useCan('sales.customers.delete_customers');
+    const { t } = useTranslation();
+    const canEditCustomer = useCan(['sales.customers.edit_customers', 'edit_customers']);
+    const canDeleteCustomer = useCan(['sales.customers.delete_customers', 'delete_customers']);
     const [showActions, setShowActions] = useState(false);
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
     const buttonRef = useRef(null);
+
+    const customerUuid = getCustomerUuid(customer);
+    const customerStatus = customer.status || 'pending';
+
+    const profileImage = customer.profile_image_url || customer.profile_image;
+    const cityName = getCustomerCityName(customer);
 
     useEffect(() => {
         if (showActions && buttonRef.current) {
             const rect = buttonRef.current.getBoundingClientRect();
             setDropdownPosition({
                 top: rect.bottom + window.scrollY,
-                right: window.innerWidth - rect.right + window.scrollX
+                right: window.innerWidth - rect.right + window.scrollX,
             });
         }
     }, [showActions]);
 
-    const getStatusBadgeClass = (status) => {
-        return status === 'active' ? 'badge-light-success' : 'badge-light-danger';
-    };
-
     return (
         <tr>
-            {/* Checkbox */}
             <td>
                 <div className="form-check form-check-sm form-check-custom form-check-solid">
                     <input
                         className="form-check-input"
                         type="checkbox"
                         checked={isSelected}
-                        onChange={(e) => onSelect(customer.id, e.target.checked)}
+                        onChange={(e) => onSelect(customerUuid, e.target.checked)}
                     />
                 </div>
             </td>
 
-            {/* ID */}
             <td>
                 <span className="text-gray-800 fw-bold">{rowNumber}</span>
             </td>
 
-            {/* Customer Info */}
             <td>
                 <div className="d-flex align-items-center">
-                    <div className="symbol symbol-50px me-3">
-                        <div className="symbol-label fs-2 fw-semibold text-success bg-light-success">
-                            {customer.name?.charAt(0).toUpperCase()}
-                        </div>
+                    <div className="symbol symbol-50px symbol-circle me-3 overflow-hidden">
+                        {profileImage ? (
+                            <img src={profileImage} alt={customer.name} className="symbol-label object-fit-cover" />
+                        ) : (
+                            <div className="symbol-label fs-2 fw-semibold text-primary bg-light-primary">
+                                {customer.name?.charAt(0).toUpperCase()}
+                            </div>
+                        )}
                     </div>
                     <div className="d-flex flex-column">
-                        <Link to={`/admin/customers/${customer.id}`} className="text-gray-800 text-hover-primary fw-bold">
+                        <Link to={`/admin/customers/${customerUuid}`} className="text-gray-800 text-hover-primary fw-bold">
                             {customer.name}
                         </Link>
-                        <span className="text-muted fw-semibold d-block fs-7">
-                            {customer.email}
-                        </span>
+                        <span className="text-muted fw-semibold d-block fs-7">{customer.email}</span>
                     </div>
                 </div>
             </td>
 
-            {/* Phone */}
             <td>
-                <span className="text-gray-600">
-                    {customer.phone || customer.phone_number || 'N/A'}
-                </span>
+                <span className="text-gray-600">{customer.phone || customer.phone_number || t('customers.na')}</span>
             </td>
 
-            {/* Merchant */}
-            <td>
-                {merchantLoading ? (
-                    <div className="d-flex align-items-center gap-2">
-                        <span className="placeholder placeholder-lg bg-light" style={{ width: '100px', height: '16px', animation: 'pulse 1.5s ease-in-out infinite' }}></span>
-                        <div className="spinner-border spinner-border-sm" style={{ 
-                            width: '1rem', 
-                            height: '1rem', 
-                            borderWidth: '0.2em',
-                            borderColor: '#009ef7 transparent #009ef7 #009ef7',
-                            animation: 'spinner-border 0.75s linear infinite'
-                        }} role="status">
-                            <span className="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                ) : (
-                    <span className="text-gray-600">
-                        {merchantInfo?.merchantName || customer.merchant_id || 'N/A'}
-                    </span>
-                )}
-            </td>
-
-            {/* Address */}
             <td>
                 <span className="text-gray-600">
-                    {customer.address ? (
+                    {customer.address || cityName ? (
                         <>
-                            {customer.address}
-                            {customer.city && <span className="d-block text-muted fs-7">{customer.city}</span>}
+                            {customer.address && <>{customer.address}</>}
+                            {cityName && <span className="d-block text-muted fs-7">{cityName}</span>}
                         </>
                     ) : (
-                        'N/A'
+                        t('customers.na')
                     )}
                 </span>
             </td>
 
-            {/* Country */}
-            <td>
-                {countryLoading ? (
-                    <div className="d-flex align-items-center gap-2">
-                        <span className="placeholder placeholder-lg bg-light" style={{ width: '100px', height: '16px', animation: 'pulse 1.5s ease-in-out infinite' }}></span>
-                        <div className="spinner-border spinner-border-sm" style={{ 
-                            width: '1rem', 
-                            height: '1rem', 
-                            borderWidth: '0.2em',
-                            borderColor: '#009ef7 transparent #009ef7 #009ef7',
-                            animation: 'spinner-border 0.75s linear infinite'
-                        }} role="status">
-                            <span className="visually-hidden">Loading...</span>
-                        </div>
-                    </div>
-                ) : (
-                    <span className="text-gray-600">
-                        {merchantInfo?.countryName || customer.country || 'N/A'}
-                    </span>
-                )}
-            </td>
-
-            {/* Status */}
-            <td>
-                <span className={`badge ${getStatusBadgeClass(customer.status)}`}>
-                    {customer.status || 'active'}
-                </span>
-            </td>
-
-            {/* Created */}
             <td>
                 <span className="text-gray-600">
-                    {customer.created_at ? new Date(customer.created_at).toLocaleDateString() : 'N/A'}
+                    {getCustomerCountryName(customer) || t('customers.na')}
                 </span>
             </td>
 
-            {/* Actions */}
+            <td>
+                <span className="text-gray-800 fw-semibold">
+                    {customer.balance != null ? Number(customer.balance).toFixed(2) : '0.00'}
+                </span>
+            </td>
+
+            <td>
+                <span className={`badge ${getCustomerStatusBadgeClass(customerStatus)}`}>
+                    {t(getCustomerStatusLabelKey(customerStatus))}
+                </span>
+            </td>
+
+            <td>
+                <span className="text-gray-600">
+                    {customer.created_at ? new Date(customer.created_at).toLocaleDateString() : t('customers.na')}
+                </span>
+            </td>
+
             <td className="text-end">
                 <div className="position-relative">
                     <button
@@ -158,7 +119,7 @@ const CustomerTableRow = ({
                         className="btn btn-sm btn-light btn-active-light-primary"
                         onClick={() => setShowActions(!showActions)}
                     >
-                        Actions
+                        {t('common.actions')}
                         <i className="ki-duotone ki-down fs-5 ms-1"></i>
                     </button>
 
@@ -180,7 +141,7 @@ const CustomerTableRow = ({
                             >
                                 <div className="menu-item px-3">
                                     <Link
-                                        to={`/admin/customers/${customer.id}`}
+                                        to={`/admin/customers/${customerUuid}`}
                                         className="menu-link px-3"
                                         onClick={() => setShowActions(false)}
                                     >
@@ -189,14 +150,14 @@ const CustomerTableRow = ({
                                             <span className="path2"></span>
                                             <span className="path3"></span>
                                         </i>
-                                        View Details
+                                        {t('customers.view')}
                                     </Link>
                                 </div>
 
                                 {canEditCustomer && (
                                     <div className="menu-item px-3">
                                         <Link
-                                            to={`/admin/customers/${customer.id}/edit`}
+                                            to={`/admin/customers/${customerUuid}/edit`}
                                             className="menu-link px-3"
                                             onClick={() => setShowActions(false)}
                                         >
@@ -204,33 +165,14 @@ const CustomerTableRow = ({
                                                 <span className="path1"></span>
                                                 <span className="path2"></span>
                                             </i>
-                                            Edit
+                                            {t('common.edit')}
                                         </Link>
                                     </div>
                                 )}
 
-                                <div className="menu-item px-3">
-                                    <a
-                                        href="#"
-                                        className="menu-link px-3"
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            setShowActions(false);
-                                            onToggleStatus(customer.id);
-                                        }}
-                                    >
-                                        <i className={`ki-duotone ${customer.status === 'active' ? 'ki-toggle-off' : 'ki-toggle-on'} fs-4 me-2`}>
-                                            <span className="path1"></span>
-                                            <span className="path2"></span>
-                                        </i>
-                                        {customer.status === 'active' ? 'Deactivate' : 'Activate'}
-                                    </a>
-                                </div>
-
                                 {canDeleteCustomer && (
                                     <>
                                         <div className="separator my-2"></div>
-
                                         <div className="menu-item px-3">
                                             <a
                                                 href="#"
@@ -238,7 +180,7 @@ const CustomerTableRow = ({
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     setShowActions(false);
-                                                    onDelete(customer.id);
+                                                    onDelete(customerUuid);
                                                 }}
                                             >
                                                 <i className="ki-duotone ki-trash fs-4 me-2">
@@ -248,7 +190,7 @@ const CustomerTableRow = ({
                                                     <span className="path4"></span>
                                                     <span className="path5"></span>
                                                 </i>
-                                                Delete
+                                                {t('common.delete')}
                                             </a>
                                         </div>
                                     </>
@@ -263,5 +205,3 @@ const CustomerTableRow = ({
 };
 
 export default CustomerTableRow;
-
-

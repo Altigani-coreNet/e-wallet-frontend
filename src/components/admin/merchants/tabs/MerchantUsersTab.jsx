@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import axios from 'axios';
+import { get } from '../../../../utils/api';
 import { toast } from 'react-toastify';
 import { ADMIN_ENDPOINTS } from '../../../../utils/constants';
-import { getToken } from '../../../../utils/api';
 import PaginationControls from '../../../common/PaginationControls';
 
 const MerchantUsersTab = ({ merchantId }) => {
@@ -23,14 +22,12 @@ const MerchantUsersTab = ({ merchantId }) => {
 
         try {
             setLoading(true);
-            const token = getToken();
-            const response = await axios.get(ADMIN_ENDPOINTS.USERS, {
+            const response = await get(ADMIN_ENDPOINTS.USERS, {
                 params: {
                     page,
                     per_page: pagination.per_page,
                     merchant_id: merchantId
                 },
-                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             const isSuccess = response.data.success || response.data.status;

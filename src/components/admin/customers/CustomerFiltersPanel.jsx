@@ -1,29 +1,24 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import MerchantCountryFilterFields from '../../common/filters/MerchantCountryFilterFields';
 
-const CustomerFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilters, onApply }) => {
+const CustomerFiltersPanel = ({ filters, onFilterChange, onClearFilters }) => {
+    const { t } = useTranslation();
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        onFilterChange({ ...filters, [name]: value });
-    };
-
-    const handleMerchantChange = (value) => {
-        onFilterChange({ ...filters, merchant_id: value || '' });
+        onFilterChange({ [name]: value });
     };
 
     const handleCountryChange = (value) => {
-        onFilterChange({ ...filters, country_id: value || '' });
+        onFilterChange({ country_id: value || '' });
     };
 
-    if (!isVisible) return null;
-
     return (
-        <div className="card bg-white card-xl-stretch mb-5 mb-xl-8">
-            {/* Card header */}
+        <div className="card mb-5">
             <div className="card-header border-0 pt-6">
                 <div className="card-title">
-                    <h3 className="fw-bold m-0">Filters</h3>
+                    <h3 className="fw-bold m-0">{t('customers.filter')}</h3>
                 </div>
                 <div className="card-toolbar">
                     <button
@@ -31,95 +26,73 @@ const CustomerFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilte
                         className="btn btn-sm btn-light-primary"
                         onClick={onClearFilters}
                     >
-                        <i className="ki-duotone ki-refresh fs-2">
+                        <i className="ki-duotone ki-arrows-circle fs-2">
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
-                        Clear Filters
+                        {t('customers.clear')}
                     </button>
                 </div>
             </div>
 
-            {/* Card body */}
             <div className="card-body">
                 <div className="row g-4">
                     <MerchantCountryFilterFields
-                        merchantValue={filters.merchant_id}
+                        hideMerchant
+                        merchantValue=""
                         countryValue={filters.country_id}
-                        onMerchantChange={handleMerchantChange}
+                        onMerchantChange={() => {}}
                         onCountryChange={handleCountryChange}
-                        merchantPlaceholder="All Merchants"
-                        countryPlaceholder="All Countries"
+                        countryPlaceholder={t('admin.customers.allCountries')}
                     />
-
-                    {/* Search */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Search</label>
+                        <label className="form-label fw-bold">{t('customers.search')}</label>
                         <input
                             type="text"
-                            className="form-control"
+                            className="form-control form-control-solid"
                             name="search"
                             value={filters.search || ''}
                             onChange={handleInputChange}
-                            placeholder="Search by name, email, phone..."
-                            onKeyPress={(e) => e.key === 'Enter' && onApply()}
+                            placeholder={t('customers.searchByNameEmailPhone')}
                         />
                     </div>
 
-                    {/* Status Filter */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Status</label>
+                        <label className="form-label fw-bold">{t('common.status')}</label>
                         <select
-                            className="form-select"
+                            className="form-select form-select-solid"
                             name="status"
                             value={filters.status || ''}
                             onChange={handleInputChange}
                         >
-                            <option value="">All Statuses</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="">{t('admin.customers.allStatuses')}</option>
+                            <option value="pending">{t('customers.pending')}</option>
+                            <option value="active">{t('customers.active')}</option>
+                            <option value="suspended">{t('customers.suspended')}</option>
+                            <option value="inactive">{t('customers.inactive')}</option>
                         </select>
                     </div>
 
-                    {/* Date From */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Created Date From</label>
+                        <label className="form-label fw-bold">{t('customers.dateFrom')}</label>
                         <input
                             type="date"
-                            className="form-control"
+                            className="form-control form-control-solid"
                             name="date_from"
                             value={filters.date_from || ''}
                             onChange={handleInputChange}
                         />
                     </div>
 
-                    {/* Date To */}
                     <div className="col-md-4">
-                        <label className="form-label fw-bold">Created Date To</label>
+                        <label className="form-label fw-bold">{t('customers.dateTo')}</label>
                         <input
                             type="date"
-                            className="form-control"
+                            className="form-control form-control-solid"
                             name="date_to"
                             value={filters.date_to || ''}
                             onChange={handleInputChange}
                         />
-                    </div>
-                </div>
-
-                {/* Apply Button */}
-                <div className="row mt-4">
-                    <div className="col-12">
-                        <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={onApply}
-                        >
-                            <i className="ki-duotone ki-filter fs-2">
-                                <span className="path1"></span>
-                                <span className="path2"></span>
-                            </i>
-                            Apply Filters
-                        </button>
                     </div>
                 </div>
             </div>
@@ -128,5 +101,3 @@ const CustomerFiltersPanel = ({ isVisible, filters, onFilterChange, onClearFilte
 };
 
 export default CustomerFiltersPanel;
-
-

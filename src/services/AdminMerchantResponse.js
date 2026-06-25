@@ -1,48 +1,4 @@
-const resolveLocaleText = (value) => {
-    if (value === null || value === undefined) return '';
-
-    if (typeof value === 'string') {
-        const trimmed = value.trim();
-        if (!trimmed) return '';
-
-        if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-            try {
-                const parsed = JSON.parse(trimmed);
-                return resolveLocaleText(parsed);
-            } catch {
-                return trimmed;
-            }
-        }
-
-        return trimmed;
-    }
-
-    if (typeof value === 'object') {
-        if (Array.isArray(value)) {
-            for (const item of value) {
-                const normalized = resolveLocaleText(item);
-                if (normalized) return normalized;
-            }
-            return '';
-        }
-
-        const preferredLocales = ['en', 'ar'];
-        for (const locale of preferredLocales) {
-            if (value[locale]) {
-                return resolveLocaleText(value[locale]);
-            }
-        }
-
-        for (const key of Object.keys(value)) {
-            const normalized = resolveLocaleText(value[key]);
-            if (normalized) return normalized;
-        }
-
-        return '';
-    }
-
-    return String(value);
-};
+import { resolveLocaleText } from '../utils/localeText';
 
 export class AdminMerchantResponse {
     constructor(data = {}) {

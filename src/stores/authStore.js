@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import axios from 'axios';
 import i18n from '../i18n/config';
 import { AUTH_ENDPOINTS } from '../utils/constants';
-import { setToken, removeToken, setUser, setMerchant, getToken, getUser, getMerchant } from '../utils/api';
+import { get, post, setToken, removeToken, setUser, setMerchant, getToken, getUser, getMerchant } from '../utils/api';
 import {
     formatAmountWithSymbol,
     formatRecordCurrency as formatRecordCurrencyAmount,
@@ -70,7 +69,7 @@ const useAuthStore = create(
                 set({ loading: true, error: null });
                 
                 try {
-                    const response = await axios.post(AUTH_ENDPOINTS.LOGIN, credentials);
+                    const response = await post(AUTH_ENDPOINTS.LOGIN, credentials);
                     
                     // Handle AuthService response format: { status: true, data: { user, token, token_type } }
                     if (response.data.status === true || response.data.success === true) {
@@ -156,7 +155,7 @@ const useAuthStore = create(
                 set({ loading: true, error: null });
 
                 try {
-                    const response = await axios.post(AUTH_ENDPOINTS.GOOGLE_OAUTH_EXCHANGE, { code });
+                    const response = await post(AUTH_ENDPOINTS.GOOGLE_OAUTH_EXCHANGE, { code });
 
                     if (response.data.status === true || response.data.success === true) {
                         const { token, access_token, user, merchant, onboarding_completed } = response.data.data;
@@ -236,7 +235,7 @@ const useAuthStore = create(
                 set({ loading: true, error: null });
                 
                 try {
-                    const response = await axios.post(AUTH_ENDPOINTS.REGISTER, userData);
+                    const response = await post(AUTH_ENDPOINTS.REGISTER, userData);
                     
                     // Handle AuthService response format: { status: true, data: { user, token, token_type } }
                     if (response.data.status === true || response.data.success === true) {
@@ -284,12 +283,7 @@ const useAuthStore = create(
                     const token = get().token;
                     if (token) {
                         // Call logout API
-                        await axios.post(AUTH_ENDPOINTS.LOGOUT, {}, {
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Accept': 'application/json',
-                            }
-                        });
+                        await post(AUTH_ENDPOINTS.LOGOUT, {});
                     }
                 } catch (error) {
                     console.error('Logout API error:', error);
@@ -324,12 +318,7 @@ const useAuthStore = create(
                 try {
                     const token = get().token;
                     if (token) {
-                        await axios.post(AUTH_ENDPOINTS.FORCE_LOGOUT, {}, {
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Accept': 'application/json',
-                            }
-                        });
+                        await post(AUTH_ENDPOINTS.FORCE_LOGOUT, {});
                     }
                 } catch (error) {
                     console.error('Force logout API error:', error);
@@ -368,12 +357,7 @@ const useAuthStore = create(
                         throw new Error('No authentication token');
                     }
                     
-                    const response = await axios.get(AUTH_ENDPOINTS.PROFILE_ME, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json',
-                        }
-                    });
+                    const response = await get(AUTH_ENDPOINTS.PROFILE_ME);
                     
                     // Handle AuthService response format
                     if (response.data.status === true || response.data.success === true) {
@@ -468,12 +452,10 @@ const useAuthStore = create(
                         throw new Error('No authentication token');
                     }
                     
-                    const response = await axios.post(AUTH_ENDPOINTS.UPDATE_PROFILE, profileData, {
+                    const response = await post(AUTH_ENDPOINTS.UPDATE_PROFILE, profileData, {
                         headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json',
                             'Content-Type': 'multipart/form-data',
-                        }
+                        },
                     });
                     
                     // Handle AuthService response format
@@ -511,12 +493,7 @@ const useAuthStore = create(
                         throw new Error('No authentication token');
                     }
                     
-                    const response = await axios.post(AUTH_ENDPOINTS.CHANGE_PASSWORD, passwordData, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json',
-                        }
-                    });
+                    const response = await post(AUTH_ENDPOINTS.CHANGE_PASSWORD, passwordData);
                     
                     // Handle AuthService response format
                     if (response.data.status === true || response.data.success === true) {
