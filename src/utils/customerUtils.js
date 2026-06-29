@@ -1,6 +1,6 @@
 export const CUSTOMER_MANAGEABLE_STATUSES = ['pending', 'active', 'suspended', 'inactive'];
 
-export const getCustomerUuid = (customer) => customer?.uuid ?? null;
+export const getCustomerId = (customer) => customer?.id ?? null;
 
 export const getCustomerStatusLabelKey = (status) => {
     switch (status) {

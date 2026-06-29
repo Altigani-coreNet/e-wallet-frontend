@@ -1,6 +1,5 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import MerchantCountryFilterFields from '../../common/filters/MerchantCountryFilterFields';
 
 const CustomerFiltersPanel = ({ filters, onFilterChange, onClearFilters }) => {
     const { t } = useTranslation();
@@ -8,10 +7,6 @@ const CustomerFiltersPanel = ({ filters, onFilterChange, onClearFilters }) => {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         onFilterChange({ [name]: value });
-    };
-
-    const handleCountryChange = (value) => {
-        onFilterChange({ country_id: value || '' });
     };
 
     return (
@@ -37,15 +32,7 @@ const CustomerFiltersPanel = ({ filters, onFilterChange, onClearFilters }) => {
 
             <div className="card-body">
                 <div className="row g-4">
-                    <MerchantCountryFilterFields
-                        hideMerchant
-                        merchantValue=""
-                        countryValue={filters.country_id}
-                        onMerchantChange={() => {}}
-                        onCountryChange={handleCountryChange}
-                        countryPlaceholder={t('admin.customers.allCountries')}
-                    />
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                         <label className="form-label fw-bold">{t('customers.search')}</label>
                         <input
                             type="text"
@@ -57,7 +44,7 @@ const CustomerFiltersPanel = ({ filters, onFilterChange, onClearFilters }) => {
                         />
                     </div>
 
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                         <label className="form-label fw-bold">{t('common.status')}</label>
                         <select
                             className="form-select form-select-solid"
@@ -73,7 +60,7 @@ const CustomerFiltersPanel = ({ filters, onFilterChange, onClearFilters }) => {
                         </select>
                     </div>
 
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                         <label className="form-label fw-bold">{t('customers.dateFrom')}</label>
                         <input
                             type="date"
@@ -84,7 +71,7 @@ const CustomerFiltersPanel = ({ filters, onFilterChange, onClearFilters }) => {
                         />
                     </div>
 
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                         <label className="form-label fw-bold">{t('customers.dateTo')}</label>
                         <input
                             type="date"

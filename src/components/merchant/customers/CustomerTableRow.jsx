@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Swal from 'sweetalert2';
@@ -6,14 +7,47 @@ import { formatDateShort } from '../../../utils/dateUtils';
 
 const CustomerTableRow = ({ customer, isSelected, onSelectChange, onDelete, basePath = '/merchant' }) => {
     const { t, i18n } = useTranslation();
+    const [showActions, setShowActions] = useState(false);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
+    const buttonRef = useRef(null);
 
     const locale = i18n.language?.startsWith('ar') ? 'ar-SA' : 'en-US';
+
+    const updateDropdownPosition = () => {
+        if (!buttonRef.current) return;
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownPosition({
+            top: rect.bottom + 4,
+            right: window.innerWidth - rect.right,
+        });
+    };
+
+    useLayoutEffect(() => {
+        if (showActions) {
+            updateDropdownPosition();
+        }
+    }, [showActions]);
+
+    useEffect(() => {
+        if (!showActions) return undefined;
+
+        const onReposition = () => updateDropdownPosition();
+        window.addEventListener('resize', onReposition);
+        window.addEventListener('scroll', onReposition, true);
+
+        return () => {
+            window.removeEventListener('resize', onReposition);
+            window.removeEventListener('scroll', onReposition, true);
+        };
+    }, [showActions]);
 
     const handleCheckboxChange = (e) => {
         onSelectChange(customer.id, e.target.checked);
     };
 
     const handleDelete = async () => {
+        setShowActions(false);
+
         const result = await Swal.fire({
             title: t('common.areYouSure'),
             text: t('customers.confirmDeleteCustomer', { name: customer.name }),
@@ -38,6 +72,75 @@ const CustomerTableRow = ({ customer, isSelected, onSelectChange, onDelete, base
         if (!dateString) return t('customers.na');
         return formatDateShort(dateString, locale);
     };
+
+    const actionsMenu = showActions ? createPortal(
+        <>
+            <div
+                className="position-fixed top-0 start-0 w-100 h-100"
+                style={{ zIndex: 1055 }}
+                onClick={() => setShowActions(false)}
+            />
+            <div
+                className="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-175px py-4 show"
+                style={{
+                    position: 'fixed',
+                    zIndex: 1060,
+                    top: dropdownPosition.top,
+                    right: dropdownPosition.right,
+                    left: 'auto',
+                    transform: 'none',
+                    animation: 'none',
+                }}
+            >
+                <div className="menu-item px-3">
+                    <Link
+                        to={`${basePath}/customers/${customer.id}`}
+                        className="menu-link px-3"
+                        onClick={() => setShowActions(false)}
+                    >
+                        <i className="ki-duotone ki-eye fs-4 me-2">
+                            <span className="path1"></span>
+                            <span className="path2"></span>
+                            <span className="path3"></span>
+                        </i>
+                        {t('customers.view')}
+                    </Link>
+                </div>
+
+                <div className="menu-item px-3">
+                    <Link
+                        to={`${basePath}/customers/${customer.id}/edit`}
+                        className="menu-link px-3"
+                        onClick={() => setShowActions(false)}
+                    >
+                        <i className="ki-duotone ki-pencil fs-4 me-2">
+                            <span className="path1"></span>
+                            <span className="path2"></span>
+                        </i>
+                        {t('common.edit')}
+                    </Link>
+                </div>
+
+                <div className="menu-item px-3">
+                    <button
+                        type="button"
+                        className="menu-link px-3 w-100 text-start text-danger"
+                        onClick={handleDelete}
+                    >
+                        <i className="ki-duotone ki-trash fs-4 me-2">
+                            <span className="path1"></span>
+                            <span className="path2"></span>
+                            <span className="path3"></span>
+                            <span className="path4"></span>
+                            <span className="path5"></span>
+                        </i>
+                        {t('customers.delete')}
+                    </button>
+                </div>
+            </div>
+        </>,
+        document.body
+    ) : null;
 
     return (
         <tr>
@@ -100,42 +203,18 @@ const CustomerTableRow = ({ customer, isSelected, onSelectChange, onDelete, base
             </td>
 
             <td className="text-end">
-                <div className="d-flex justify-content-end flex-shrink-0">
-                    <Link
-                        to={`${basePath}/customers/${customer.id}`}
-                        className="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1"
-                        title={t('customers.view')}
-                    >
-                        <i className="ki-duotone ki-eye fs-3">
-                            <span className="path1"></span>
-                            <span className="path2"></span>
-                            <span className="path3"></span>
-                        </i>
-                    </Link>
-                    <Link
-                        to={`${basePath}/customers/${customer.id}/edit`}
-                        className="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1"
-                        title={t('common.edit')}
-                    >
-                        <i className="ki-duotone ki-pencil fs-3">
-                            <span className="path1"></span>
-                            <span className="path2"></span>
-                        </i>
-                    </Link>
+                <div className="position-relative">
                     <button
-                        className="btn btn-icon btn-bg-light btn-active-color-danger btn-sm"
-                        onClick={handleDelete}
-                        title={t('customers.delete')}
+                        ref={buttonRef}
+                        type="button"
+                        className="btn btn-sm btn-light btn-active-light-primary"
+                        onClick={() => setShowActions(!showActions)}
                     >
-                        <i className="ki-duotone ki-trash fs-3">
-                            <span className="path1"></span>
-                            <span className="path2"></span>
-                            <span className="path3"></span>
-                            <span className="path4"></span>
-                            <span className="path5"></span>
-                        </i>
+                        {t('common.actions')}
+                        <i className="ki-duotone ki-down fs-5 ms-1"></i>
                     </button>
                 </div>
+                {actionsMenu}
             </td>
         </tr>
     );

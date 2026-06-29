@@ -116,6 +116,34 @@ export const permissionMap = {
     export: ['sales.customers.export_customers'], // will also fallback to view
   },
 
+  accounting: {
+    viewChartOfAccounts: ['accounting.chart_of_accounts.view_chart_of_accounts', 'view_chart_of_accounts'],
+    createChartOfAccounts: ['accounting.chart_of_accounts.create_chart_of_accounts', 'create_chart_of_accounts'],
+    editChartOfAccounts: ['accounting.chart_of_accounts.edit_chart_of_accounts', 'edit_chart_of_accounts'],
+    deleteChartOfAccounts: ['accounting.chart_of_accounts.delete_chart_of_accounts', 'delete_chart_of_accounts'],
+    importChartOfAccounts: ['accounting.chart_of_accounts.import_chart_of_accounts', 'import_chart_of_accounts'],
+    exportChartOfAccounts: ['accounting.chart_of_accounts.export_chart_of_accounts', 'export_chart_of_accounts'],
+    viewLedger: ['accounting.ledger.view_ledger', 'view_ledger'],
+    viewReports: ['accounting.reports.view_accounting_reports', 'view_accounting_reports'],
+  },
+
+  wallets: {
+    view: [
+      'sales.customers.view_customers',
+      'view_customers',
+      'accounting.ledger.view_ledger',
+      'view_ledger',
+      'accounting.chart_of_accounts.view_chart_of_accounts',
+      'view_chart_of_accounts',
+    ],
+    edit: ['sales.customers.edit_customers', 'edit_customers'],
+    delete: ['sales.customers.delete_customers', 'delete_customers'],
+    export: ['sales.customers.export_customers', 'accounting.ledger.view_ledger', 'view_ledger'],
+    cashIn: ['accounting.wallets.cash_in_wallets', 'cash_in_wallets'],
+    cashOut: ['accounting.wallets.cash_out_wallets', 'cash_out_wallets'],
+    openingCapital: ['accounting.manage.manage_opening_capital', 'manage_opening_capital'],
+  },
+
   // Sales - Products (for completeness if reused)
   products: {
     view: 'sales.products.view_products',
@@ -126,6 +154,12 @@ export const permissionMap = {
     export: 'sales.products.export_products',
   },
 };
+
+/** Permissions that grant access to admin wallet management pages. */
+export const WALLET_VIEW_PERMISSIONS = permissionMap.wallets.view;
+
+/** Permissions for wallet suspend/activate/close actions in admin UI. */
+export const WALLET_EDIT_PERMISSIONS = permissionMap.wallets.edit;
 
 /** Sync with admin `PermissionRoute` for user-groups edit — includes legacy typo keys from older roles. */
 export const USER_GROUP_EDIT_PERMISSIONS = [

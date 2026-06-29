@@ -1,0 +1,2 @@
+Name*,Email*,Phone,Address,State,Zip
+E2E Import Customer,{{email}},+249900000001,Test Street,Khartoum,11111

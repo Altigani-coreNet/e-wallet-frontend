@@ -9,7 +9,9 @@ import {
     useAdminCustomers,
     deleteAdminCustomer,
     bulkDeleteAdminCustomers,
-    exportAdminCustomers,
+    downloadAdminCustomersExport,
+    triggerBlobDownload,
+    updateAdminCustomerStatus,
     adminCustomersKeys,
 } from '../../../services/adminCustomersService';
 import CustomerFiltersPanel from './CustomerFiltersPanel';
@@ -25,6 +27,7 @@ const AdminCustomersIndex = () => {
     const queryClient = useQueryClient();
 
     const canCreateCustomer = useCan(['sales.customers.create_customers', 'create_customers']);
+    const canEditCustomer = useCan(['sales.customers.edit_customers', 'edit_customers']);
     const canDelete = useCan(['sales.customers.delete_customers', 'delete_customers']);
 
     const [selectedIds, setSelectedIds] = useState([]);
@@ -33,7 +36,6 @@ const AdminCustomersIndex = () => {
     const [filters, setFilters] = useState({
         search: '',
         status: '',
-        country_id: '',
         date_from: '',
         date_to: '',
     });
@@ -103,6 +105,56 @@ const AdminCustomersIndex = () => {
 
     const handlePageChange = (page) => {
         setPagination((prev) => ({ ...prev, current_page: page }));
+    };
+
+    const handleStatusChange = async (id, status) => {
+        const statusConfig = {
+            active: {
+                title: t('customers.activate'),
+                text: t('customers.confirmActivateCustomer'),
+                confirmButtonColor: '#3085d6',
+            },
+            suspended: {
+                title: t('customers.suspend'),
+                text: t('customers.confirmSuspendCustomer'),
+                confirmButtonColor: '#f1416c',
+            },
+            inactive: {
+                title: t('common.deactivate'),
+                text: t('customers.confirmDeactivateCustomer'),
+                confirmButtonColor: '#f1416c',
+            },
+        };
+
+        const config = statusConfig[status];
+        if (!config) return;
+
+        const result = await Swal.fire({
+            title: config.title,
+            text: config.text,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: config.confirmButtonColor,
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: t('common.yesActionIt', { action: config.title }),
+            cancelButtonText: t('common.cancel'),
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const response = await updateAdminCustomerStatus(id, status);
+            if (response.success) {
+                toast.success(t('customers.customerStatusUpdatedSuccessfully'));
+                queryClient.invalidateQueries({ queryKey: adminCustomersKeys.list(queryParams) });
+                refetch();
+            } else {
+                toast.error(response.error || t('customers.failedToUpdateCustomerStatus'));
+            }
+        } catch (err) {
+            console.error('Error updating customer status:', err);
+            toast.error(t('common.unexpectedErrorOccurred'));
+        }
     };
 
     const handleDelete = async (id) => {
@@ -177,41 +229,8 @@ const AdminCustomersIndex = () => {
 
     const handleExport = useCallback(async () => {
         try {
-            const response = await exportAdminCustomers(debouncedFilters);
-            const isSuccess = response.success || response.status;
-            const exportPayload = response.data;
-
-            if (!isSuccess || !exportPayload?.data?.length) {
-                toast.error(t('customers.failedToExportCustomers'));
-                return;
-            }
-
-            const { data, filename } = exportPayload;
-            const headers = Object.keys(data[0]);
-            let csvContent = `${headers.join(',')}\n`;
-
-            data.forEach((row) => {
-                const values = headers.map((header) => {
-                    const value = row[header];
-                    if (value === null || value === undefined) return '';
-                    const stringValue = String(value);
-                    if (stringValue.includes(',') || stringValue.includes('"')) {
-                        return `"${stringValue.replace(/"/g, '""')}"`;
-                    }
-                    return stringValue;
-                });
-                csvContent += `${values.join(',')}\n`;
-            });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.setAttribute('download', filename || `customers_export_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(link.href);
-
+            const blob = await downloadAdminCustomersExport(debouncedFilters);
+            triggerBlobDownload(blob, `customers_export_${new Date().toISOString().split('T')[0]}.csv`);
             toast.success(t('customers.customersExportedSuccessfully'));
         } catch (error) {
             console.error('Export error:', error);
@@ -227,7 +246,6 @@ const AdminCustomersIndex = () => {
         setFilters({
             search: '',
             status: '',
-            country_id: '',
             date_from: '',
             date_to: '',
         });
@@ -343,6 +361,7 @@ const AdminCustomersIndex = () => {
                             selectedIds={selectedIds}
                             onSelectChange={setSelectedIds}
                             onDelete={handleDelete}
+                            onStatusChange={canEditCustomer ? handleStatusChange : undefined}
                             pagination={pagination}
                             onPageChange={handlePageChange}
                             isFetching={isFetching}

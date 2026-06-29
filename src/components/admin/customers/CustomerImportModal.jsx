@@ -1,11 +1,28 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { ADMIN_ENDPOINTS, AUTH_ENDPOINTS } from '../../../utils/constants';
+import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
+import { downloadAdminCustomersTemplate } from '../../../services/adminCustomersService';
 import CustomerImportPreviewModal from './CustomerImportPreviewModal';
 
+const normalizeMerchants = (payload) => {
+    const raw = payload?.data ?? payload ?? [];
+    if (!Array.isArray(raw)) {
+        return [];
+    }
+
+    return raw.map((merchant) => ({
+        id: String(merchant.id),
+        label: merchant.text || merchant.business_name || merchant.name || `Merchant #${merchant.id}`,
+        business_name: merchant.business_name,
+        name: merchant.name,
+    }));
+};
+
 const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
+    const { t } = useTranslation();
     const [merchants, setMerchants] = useState([]);
     const [selectedMerchant, setSelectedMerchant] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
@@ -25,16 +42,18 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
             setLoadingMerchants(true);
             const token = getToken();
             const response = await axios.get(ADMIN_ENDPOINTS.MERCHANTS_SELECT, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { Authorization: `Bearer ${token}` },
+                params: { include_inactive: 1 },
             });
-            
-            if (response.data.success || response.data.status) {
-                const merchantData = response.data.data || [];
-                setMerchants(merchantData);
+
+            if (response.data?.success || response.data?.status) {
+                setMerchants(normalizeMerchants(response.data));
+            } else {
+                setMerchants([]);
             }
         } catch (error) {
             console.error('Failed to fetch merchants:', error);
-            toast.error('Failed to load merchants');
+            toast.error(t('admin.customerImport.merchantsLoadFailed', 'Failed to load merchants'));
         } finally {
             setLoadingMerchants(false);
         }
@@ -44,21 +63,19 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validate file type
         const allowedTypes = [
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'application/vnd.ms-excel',
-            'text/csv'
+            'text/csv',
         ];
-        
-        if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/)) {
-            toast.error('Please select a valid Excel or CSV file');
+
+        if (!allowedTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/i)) {
+            toast.error(t('admin.customerImport.invalidFileType', 'Please select a valid Excel or CSV file'));
             return;
         }
 
-        // Validate file size (10MB max)
         if (file.size > 10 * 1024 * 1024) {
-            toast.error('File size must be less than 10MB');
+            toast.error(t('admin.customerImport.fileTooLarge', 'File size must be less than 10MB'));
             return;
         }
 
@@ -67,14 +84,14 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 
     const handlePreview = async (e) => {
         e.preventDefault();
-        
+
         if (!selectedMerchant) {
-            toast.error('Please select a merchant');
+            toast.error(t('admin.customerImport.selectMerchant', 'Please select a merchant'));
             return;
         }
 
         if (!selectedFile) {
-            toast.error('Please select a file');
+            toast.error(t('admin.customerImport.selectFile', 'Please select a file'));
             return;
         }
 
@@ -87,25 +104,26 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
             const token = getToken();
             const response = await axios.post(ADMIN_ENDPOINTS.CUSTOMER_IMPORT_PREVIEW, formData, {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data'
-                }
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data',
+                },
             });
 
-            const isSuccess = response.data.success || response.data.status;
+            const isSuccess = response.data?.success || response.data?.status;
             if (isSuccess) {
-                const merchantName = merchants.find(m => m.id === selectedMerchant)?.business_name || 'Unknown';
+                const merchantName = merchants.find((m) => m.id === selectedMerchant)?.label || 'Unknown';
                 setPreviewData({
-                    ...response.data.data,
+                    data: response.data.data || [],
+                    errors: response.data.errors || [],
                     merchant_id: selectedMerchant,
                     merchant_name: merchantName,
-                    file: selectedFile
+                    file: selectedFile,
                 });
                 setShowPreviewModal(true);
-                toast.success('Preview generated successfully');
+                toast.success(t('admin.customerImport.previewSuccess', 'Preview generated successfully'));
             }
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to preview import');
+            toast.error(error.response?.data?.message || t('admin.customerImport.previewFailed', 'Failed to preview import'));
             console.error(error);
         } finally {
             setIsLoading(false);
@@ -114,36 +132,18 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 
     const handleDownloadTemplate = async () => {
         try {
-            const token = getToken();
-            const response = await axios.get(ADMIN_ENDPOINTS.CUSTOMER_EXPORT_TEMPLATE, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            const isSuccess = response.data.success || response.data.status;
-            if (isSuccess && response.data.data) {
-                const { file_content, filename, mime_type } = response.data.data;
-                
-                // Decode base64 content
-                const binaryString = atob(file_content);
-                const bytes = new Uint8Array(binaryString.length);
-                for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                }
-                
-                // Create blob and download
-                const blob = new Blob([bytes], { type: mime_type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.setAttribute('download', filename || 'customers_import_template.xlsx');
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
-                
-                toast.success('Template downloaded successfully with country dropdown!');
-            }
+            const blob = await downloadAdminCustomersTemplate();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.setAttribute('download', 'customers_import_template.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(downloadUrl);
+            toast.success(t('admin.customerImport.templateSuccess', 'Template downloaded successfully'));
         } catch (error) {
-            toast.error('Failed to download template');
+            toast.error(t('admin.customerImport.templateFailed', 'Failed to download template'));
             console.error(error);
         }
     };
@@ -174,16 +174,17 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                     <span className="path1"></span>
                                     <span className="path2"></span>
                                 </i>
-                                Import Customers
+                                {t('customers.importCustomersTitle', 'Import Customers')}
                             </h5>
                             <button type="button" className="btn-close" onClick={handleClose}></button>
                         </div>
-                        
+
                         <form onSubmit={handlePreview}>
                             <div className="modal-body">
-                                {/* Merchant Selection */}
                                 <div className="mb-4">
-                                    <label className="form-label fw-bold required">Select Merchant</label>
+                                    <label className="form-label fw-bold required">
+                                        {t('admin.customerImport.selectMerchantLabel', 'Select Merchant')}
+                                    </label>
                                     <select
                                         className="form-select"
                                         value={selectedMerchant}
@@ -191,19 +192,31 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                         disabled={loadingMerchants}
                                         required
                                     >
-                                        <option value="">Choose a merchant...</option>
+                                        <option value="">
+                                            {loadingMerchants
+                                                ? t('common.loading', 'Loading...')
+                                                : t('admin.customerImport.chooseMerchant', 'Choose a merchant...')}
+                                        </option>
                                         {merchants.map((merchant) => (
                                             <option key={merchant.id} value={merchant.id}>
-                                                {merchant.business_name || merchant.name}
+                                                {merchant.label}
                                             </option>
                                         ))}
                                     </select>
-                                    <div className="form-text">All imported customers will be assigned to this merchant</div>
+                                    <div className="form-text">
+                                        {t('admin.customerImport.merchantHint', 'All imported customers will be assigned to this merchant')}
+                                    </div>
+                                    {!loadingMerchants && merchants.length === 0 && (
+                                        <div className="text-danger fs-7 mt-2">
+                                            {t('admin.customerImport.noMerchants', 'No merchants available. Create or approve a merchant first.')}
+                                        </div>
+                                    )}
                                 </div>
 
-                                {/* File Upload */}
                                 <div className="mb-4">
-                                    <label className="form-label fw-bold required">Select File</label>
+                                    <label className="form-label fw-bold required">
+                                        {t('admin.customerImport.selectFileLabel', 'Select File')}
+                                    </label>
                                     <input
                                         type="file"
                                         className="form-control"
@@ -211,10 +224,11 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                         onChange={handleFileSelect}
                                         required
                                     />
-                                    <div className="form-text">Supported formats: .xlsx, .xls, .csv (Max: 10MB)</div>
+                                    <div className="form-text">
+                                        {t('admin.customerImport.fileHint', 'Supported formats: .xlsx, .xls, .csv (Max: 10MB)')}
+                                    </div>
                                 </div>
 
-                                {/* Info Alert */}
                                 <div className="alert alert-info d-flex align-items-center">
                                     <i className="ki-duotone ki-information-5 fs-2hx text-info me-4">
                                         <span className="path1"></span>
@@ -222,12 +236,16 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                         <span className="path3"></span>
                                     </i>
                                     <div className="d-flex flex-column">
-                                        <h5 className="mb-1">Import Instructions</h5>
-                                        <span>All customers will be assigned to the selected merchant. Duplicate emails will be skipped.</span>
+                                        <h5 className="mb-1">{t('common.importInstructions', 'Import Instructions')}</h5>
+                                        <span>
+                                            {t(
+                                                'admin.customerImport.instructions',
+                                                'Download the template, fill Name* and Email* columns, select a merchant, then preview before importing.'
+                                            )}
+                                        </span>
                                     </div>
                                 </div>
 
-                                {/* Download Template */}
                                 <div>
                                     <button
                                         type="button"
@@ -238,20 +256,24 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                             <span className="path1"></span>
                                             <span className="path2"></span>
                                         </i>
-                                        Download Template
+                                        {t('common.downloadSampleTemplate', 'Download Template')}
                                     </button>
                                 </div>
                             </div>
 
                             <div className="modal-footer">
                                 <button type="button" className="btn btn-secondary" onClick={handleClose}>
-                                    Cancel
+                                    {t('common.cancel', 'Cancel')}
                                 </button>
-                                <button type="submit" className="btn btn-primary" disabled={isLoading}>
+                                <button
+                                    type="submit"
+                                    className="btn btn-primary"
+                                    disabled={isLoading || loadingMerchants || merchants.length === 0}
+                                >
                                     {isLoading ? (
                                         <>
                                             <span className="spinner-border spinner-border-sm me-2"></span>
-                                            Loading Preview...
+                                            {t('admin.customerImport.loadingPreview', 'Loading Preview...')}
                                         </>
                                     ) : (
                                         <>
@@ -260,7 +282,7 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                                                 <span className="path2"></span>
                                                 <span className="path3"></span>
                                             </i>
-                                            Preview Data
+                                            {t('admin.customerImport.previewData', 'Preview Data')}
                                         </>
                                     )}
                                 </button>
@@ -270,7 +292,6 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
                 </div>
             </div>
 
-            {/* Preview Modal */}
             {showPreviewModal && previewData && (
                 <CustomerImportPreviewModal
                     isOpen={showPreviewModal}
@@ -284,5 +305,3 @@ const CustomerImportModal = ({ isOpen, onClose, onImportSuccess }) => {
 };
 
 export default CustomerImportModal;
-
-

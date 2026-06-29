@@ -18,9 +18,13 @@ describe('Customer wallet workflow (real backend)', () => {
     let senderToken;
     let recipientToken;
     let recipientWalletId;
+    let adminToken;
 
     before(() => {
         cy.task('seedWalletE2e');
+        cy.apiAdminLogin().then(({ token }) => {
+            adminToken = token;
+        });
     });
 
     beforeEach(() => {
@@ -52,33 +56,43 @@ describe('Customer wallet workflow (real backend)', () => {
     it('transfers money by wallet id and updates balances', () => {
         const amount = 25;
 
-        cy.apiWalletDashboard(senderToken).then((before) => {
-            const senderBalanceBefore = before.body.data.wallet.balance;
+        cy.captureAccountingSnapshot({ adminToken, label: 'before transfer by wallet id' }).then((before) => {
+            cy.apiWalletDashboard(senderToken).then((dashBefore) => {
+                const senderBalanceBefore = dashBefore.body.data.wallet.balance;
 
-            cy.apiWalletDashboard(recipientToken).then((recipientDashboard) => {
-                recipientWalletId = recipientDashboard.body.data.wallet.wallet_id;
+                cy.apiWalletDashboard(recipientToken).then((recipientDashboard) => {
+                    recipientWalletId = recipientDashboard.body.data.wallet.wallet_id;
 
-                cy.apiWalletTransferByWalletId({
-                    token: senderToken,
-                    recipientWalletId,
-                    amount,
-                    description: 'Cypress transfer by wallet id',
-                }).then((transferResponse) => {
-                    expect(transferResponse.status).to.eq(200);
-                    expect(transferResponse.body.success).to.eq(true);
-                    expect(transferResponse.body.data.amount).to.eq(amount);
-                    expect(transferResponse.body.data.sender_wallet.balance).to.eq(
-                        senderBalanceBefore - amount
-                    );
-                    expect(transferResponse.body.data.recipient.wallet_id).to.eq(recipientWalletId);
-                    expect(transferResponse.body.data.transaction.type).to.eq('transfer');
-                    expect(transferResponse.body.data.transaction.direction).to.eq('debit');
-                });
+                    cy.apiWalletTransferByWalletId({
+                        token: senderToken,
+                        recipientWalletId,
+                        amount,
+                        description: 'Cypress transfer by wallet id',
+                    }).then((transferResponse) => {
+                        expect(transferResponse.status).to.eq(200);
+                        expect(transferResponse.body.success).to.eq(true);
+                        expect(transferResponse.body.data.amount).to.eq(amount);
+                        expect(transferResponse.body.data.sender_wallet.balance).to.eq(
+                            senderBalanceBefore - amount
+                        );
+                        expect(transferResponse.body.data.recipient.wallet_id).to.eq(recipientWalletId);
+                        expect(transferResponse.body.data.transaction.type).to.eq('transfer');
+                        expect(transferResponse.body.data.transaction.direction).to.eq('debit');
+                    });
 
-                cy.apiWalletDashboard(recipientToken).then((afterRecipient) => {
-                    expect(afterRecipient.body.data.last_transaction.type).to.eq('transfer');
-                    expect(afterRecipient.body.data.last_transaction.direction).to.eq('credit');
-                    expect(afterRecipient.body.data.last_transaction.amount).to.eq(amount);
+                    cy.apiWalletDashboard(recipientToken).then((afterRecipient) => {
+                        expect(afterRecipient.body.data.last_transaction.type).to.eq('transfer');
+                        expect(afterRecipient.body.data.last_transaction.direction).to.eq('credit');
+                        expect(afterRecipient.body.data.last_transaction.amount).to.eq(amount);
+                    });
+
+                    cy.assertAccountingReflectsOperation({
+                        before,
+                        adminToken,
+                        operation: 'transfer',
+                        amount,
+                        context: 'transfer by wallet id',
+                    });
                 });
             });
         });
@@ -87,15 +101,25 @@ describe('Customer wallet workflow (real backend)', () => {
     it('transfers money by phone number', () => {
         const amount = 15;
 
-        cy.apiWalletTransferByPhone({
-            token: senderToken,
-            recipientPhone,
-            amount,
-            description: 'Cypress transfer by phone',
-        }).then((response) => {
-            expect(response.status).to.eq(200);
-            expect(response.body.data.amount).to.eq(amount);
-            expect(response.body.data.recipient.name).to.be.a('string');
+        cy.captureAccountingSnapshot({ adminToken, label: 'before transfer by phone' }).then((before) => {
+            cy.apiWalletTransferByPhone({
+                token: senderToken,
+                recipientPhone,
+                amount,
+                description: 'Cypress transfer by phone',
+            }).then((response) => {
+                expect(response.status).to.eq(200);
+                expect(response.body.data.amount).to.eq(amount);
+                expect(response.body.data.recipient.name).to.be.a('string');
+            });
+
+            cy.assertAccountingReflectsOperation({
+                before,
+                adminToken,
+                operation: 'transfer',
+                amount,
+                context: 'transfer by phone',
+            });
         });
     });
 
@@ -147,30 +171,40 @@ describe('Customer wallet workflow (real backend)', () => {
         const idempotencyKey = `cypress-idem-${Date.now()}`;
         const amount = 5;
 
-        cy.apiWalletDashboard(recipientToken).then((recipientDashboard) => {
-            recipientWalletId = recipientDashboard.body.data.wallet.wallet_id;
+        cy.captureAccountingSnapshot({ adminToken, label: 'before idempotent transfer' }).then((before) => {
+            cy.apiWalletDashboard(recipientToken).then((recipientDashboard) => {
+                recipientWalletId = recipientDashboard.body.data.wallet.wallet_id;
 
-            cy.apiWalletDashboard(senderToken).then((before) => {
-                const balanceBefore = before.body.data.wallet.balance;
+                cy.apiWalletDashboard(senderToken).then((dashBefore) => {
+                    const balanceBefore = dashBefore.body.data.wallet.balance;
 
-                cy.apiWalletTransferByWalletId({
-                    token: senderToken,
-                    recipientWalletId,
-                    amount,
-                    idempotencyKey,
-                    description: 'Idempotent transfer',
-                }).then((first) => {
                     cy.apiWalletTransferByWalletId({
                         token: senderToken,
                         recipientWalletId,
                         amount,
                         idempotencyKey,
                         description: 'Idempotent transfer',
-                    }).then((second) => {
-                        expect(first.body.data).to.deep.eq(second.body.data);
+                    }).then((first) => {
+                        cy.apiWalletTransferByWalletId({
+                            token: senderToken,
+                            recipientWalletId,
+                            amount,
+                            idempotencyKey,
+                            description: 'Idempotent transfer',
+                        }).then((second) => {
+                            expect(first.body.data).to.deep.eq(second.body.data);
 
-                        cy.apiWalletDashboard(senderToken).then((after) => {
-                            expect(after.body.data.wallet.balance).to.eq(balanceBefore - amount);
+                            cy.apiWalletDashboard(senderToken).then((after) => {
+                                expect(after.body.data.wallet.balance).to.eq(balanceBefore - amount);
+                            });
+
+                            cy.assertAccountingReflectsOperation({
+                                before,
+                                adminToken,
+                                operation: 'transfer',
+                                amount,
+                                context: 'idempotent transfer',
+                            });
                         });
                     });
                 });

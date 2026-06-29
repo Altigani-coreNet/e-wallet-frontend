@@ -2,8 +2,14 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
-import { createNotification, getMerchantOptions, getNotification, getUsersByMerchant, updateNotification } from '../../../services/adminNotificationsService';
-import { useToolbar } from '../../../contexts/ToolbarContext';
+import {
+    createNotification,
+    getCustomerOptions,
+    getMerchantOptions,
+    getNotification,
+    getUsersByMerchant,
+    updateNotification,
+} from '../../../services/adminNotificationsService';import { useToolbar } from '../../../contexts/ToolbarContext';
 
 const AdminNotificationForm = ({ isEdit = false }) => {
     const { t, i18n } = useTranslation();
@@ -26,6 +32,7 @@ const AdminNotificationForm = ({ isEdit = false }) => {
             { value: 'public', label: t('admin.notificationsIndex.targetPublic') },
             { value: 'merchant', label: t('admin.notificationsIndex.targetMerchant') },
             { value: 'user', label: t('admin.notificationsIndex.targetUser') },
+            { value: 'customer', label: t('admin.notificationsIndex.targetCustomer') },
         ],
         [t],
     );
@@ -36,20 +43,26 @@ const AdminNotificationForm = ({ isEdit = false }) => {
 
     const [merchantOptions, setMerchantOptions] = useState([]);
     const [userOptions, setUserOptions] = useState([]);
+    const [customerOptions, setCustomerOptions] = useState([]);
     const [merchantSearch, setMerchantSearch] = useState('');
     const [userSearch, setUserSearch] = useState('');
+    const [customerSearch, setCustomerSearch] = useState('');
     const [loadingMerchants, setLoadingMerchants] = useState(false);
     const [loadingUsers, setLoadingUsers] = useState(false);
+    const [loadingCustomers, setLoadingCustomers] = useState(false);
     const [showMerchantList, setShowMerchantList] = useState(false);
     const [showUserList, setShowUserList] = useState(false);
+    const [showCustomerList, setShowCustomerList] = useState(false);
     const [selectedMerchant, setSelectedMerchant] = useState(null);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [selectedCustomer, setSelectedCustomer] = useState(null);
 
     const [form, setForm] = useState({
         topic: 'payments',
         target_type: 'public',
         merchant_id: '',
         user_id: '',
+        customer_id: '',
         title: '',
         description: '',
         image: null,
@@ -85,6 +98,16 @@ const AdminNotificationForm = ({ isEdit = false }) => {
         }
     };
 
+    const loadCustomers = async (search = '') => {
+        setLoadingCustomers(true);
+        try {
+            const response = await getCustomerOptions(search);
+            setCustomerOptions(response?.data?.data || []);
+        } finally {
+            setLoadingCustomers(false);
+        }
+    };
+
     useEffect(() => {
         const timeout = setTimeout(() => {
             loadMerchants(merchantSearch).catch(() => {});
@@ -104,6 +127,19 @@ const AdminNotificationForm = ({ isEdit = false }) => {
     }, [form.target_type, form.merchant_id, userSearch]);
 
     useEffect(() => {
+        if (form.target_type !== 'customer') {
+            setCustomerOptions([]);
+            return undefined;
+        }
+
+        const timeout = setTimeout(() => {
+            loadCustomers(customerSearch).catch(() => {});
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [form.target_type, customerSearch]);
+
+    useEffect(() => {
         if (!isEdit || !id) return;
 
         (async () => {
@@ -116,6 +152,7 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                     target_type: item.target_type || 'public',
                     merchant_id: item.merchant_id || '',
                     user_id: item.user_id || '',
+                    customer_id: item.customer_id || '',
                     title: item.title || '',
                     description: item.description || '',
                     image: null,
@@ -146,6 +183,15 @@ const AdminNotificationForm = ({ isEdit = false }) => {
         if (user) setSelectedUser(user);
     }, [form.user_id, userOptions]);
 
+    useEffect(() => {
+        if (!form.customer_id) {
+            setSelectedCustomer(null);
+            return;
+        }
+        const customer = customerOptions.find((item) => String(item.id) === String(form.customer_id));
+        if (customer) setSelectedCustomer(customer);
+    }, [form.customer_id, customerOptions]);
+
     const shouldShowMerchant = useMemo(
         () => form.target_type === 'merchant' || form.target_type === 'user',
         [form.target_type],
@@ -153,6 +199,11 @@ const AdminNotificationForm = ({ isEdit = false }) => {
 
     const shouldShowUser = useMemo(
         () => form.target_type === 'user',
+        [form.target_type],
+    );
+
+    const shouldShowCustomer = useMemo(
+        () => form.target_type === 'customer',
         [form.target_type],
     );
 
@@ -196,6 +247,20 @@ const AdminNotificationForm = ({ isEdit = false }) => {
         onChange('user_id', '');
     };
 
+    const handleCustomerSelect = (customer) => {
+        setSelectedCustomer(customer);
+        setShowCustomerList(false);
+        onChange('customer_id', customer.id);
+        setCustomerSearch('');
+    };
+
+    const handleRemoveCustomer = () => {
+        setSelectedCustomer(null);
+        setShowCustomerList(false);
+        setCustomerSearch('');
+        onChange('customer_id', '');
+    };
+
     const buildPayload = () => {
         const payload = new FormData();
         payload.append('topic', form.topic);
@@ -204,6 +269,7 @@ const AdminNotificationForm = ({ isEdit = false }) => {
         payload.append('description', form.description);
         if (shouldShowMerchant) payload.append('merchant_id', form.merchant_id);
         if (shouldShowUser) payload.append('user_id', form.user_id);
+        if (shouldShowCustomer) payload.append('customer_id', form.customer_id);
         if (form.image) payload.append('image', form.image);
         if (isEdit) payload.append('_method', 'PUT');
         return payload;
@@ -279,17 +345,32 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                                     setForm((prev) => ({
                                         ...prev,
                                         target_type: value,
-                                        merchant_id: value === 'public' ? '' : prev.merchant_id,
-                                        user_id: value !== 'user' ? '' : prev.user_id,
+                                        merchant_id: value === 'public' || value === 'customer' ? '' : prev.merchant_id,
+                                        user_id: value === 'user' ? prev.user_id : '',
+                                        customer_id: value === 'customer' ? prev.customer_id : '',
                                     }));
                                     if (value === 'public') {
                                         setSelectedMerchant(null);
                                         setSelectedUser(null);
+                                        setSelectedCustomer(null);
                                         setShowMerchantList(false);
                                         setShowUserList(false);
+                                        setShowCustomerList(false);
                                     }
                                     if (value === 'merchant') {
                                         setSelectedUser(null);
+                                        setSelectedCustomer(null);
+                                        setShowUserList(false);
+                                        setShowCustomerList(false);
+                                    }
+                                    if (value === 'user') {
+                                        setSelectedCustomer(null);
+                                        setShowCustomerList(false);
+                                    }
+                                    if (value === 'customer') {
+                                        setSelectedMerchant(null);
+                                        setSelectedUser(null);
+                                        setShowMerchantList(false);
                                         setShowUserList(false);
                                     }
                                 }}
@@ -468,6 +549,88 @@ const AdminNotificationForm = ({ isEdit = false }) => {
                                     )}
                                 </div>
                                 {errors.user_id && <div className="invalid-feedback d-block">{errors.user_id}</div>}
+                            </div>
+                        )}
+
+                        {shouldShowCustomer && (
+                            <div className="col-md-3 mb-7">
+                                <label className="form-label fw-bold required">{t('admin.notificationForm.customer')}</label>
+                                <div className="position-relative">
+                                    <div
+                                        className={`form-control h-50px d-flex align-items-center justify-content-between ${errors.customer_id ? 'is-invalid' : ''}`}
+                                        onClick={() => setShowCustomerList((prev) => !prev)}
+                                        style={{ cursor: 'pointer' }}
+                                    >
+                                        <div className="d-flex align-items-center">
+                                            {selectedCustomer ? (
+                                                <span className="text-gray-800">{selectedCustomer.text || selectedCustomer.name || selectedCustomer.email}</span>
+                                            ) : (
+                                                <span className="text-muted">{t('admin.notificationForm.selectCustomer')}</span>
+                                            )}
+                                        </div>
+                                        <div className="d-flex align-items-center">
+                                            {selectedCustomer && (
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-icon btn-sm btn-light-danger me-2"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleRemoveCustomer();
+                                                    }}
+                                                >
+                                                    <i className="ki-duotone ki-cross fs-2">
+                                                        <span className="path1"></span>
+                                                        <span className="path2"></span>
+                                                    </i>
+                                                </button>
+                                            )}
+                                            <i className={`ki-duotone ki-down fs-2 ${showCustomerList ? 'rotate-180' : ''}`}>
+                                                <span className="path1"></span>
+                                                <span className="path2"></span>
+                                            </i>
+                                        </div>
+                                    </div>
+
+                                    {showCustomerList && (
+                                        <div className="position-absolute top-100 start-0 w-100 bg-white border rounded-3 shadow-sm mt-1" style={{ zIndex: 1000, maxHeight: '250px', overflowY: 'auto' }}>
+                                            <div className="p-2">
+                                                <input
+                                                    type="text"
+                                                    className="form-control form-control-sm mb-2"
+                                                    placeholder={t('admin.notificationForm.searchCustomers')}
+                                                    value={customerSearch}
+                                                    onChange={(e) => setCustomerSearch(e.target.value)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    autoFocus
+                                                />
+                                            </div>
+                                            {loadingCustomers ? (
+                                                <div className="p-3">
+                                                    <div className="placeholder-glow mb-2"><span className="placeholder col-12 h-20px rounded"></span></div>
+                                                    <div className="placeholder-glow mb-2"><span className="placeholder col-10 h-20px rounded"></span></div>
+                                                    <div className="placeholder-glow"><span className="placeholder col-11 h-20px rounded"></span></div>
+                                                </div>
+                                            ) : customerOptions.length > 0 ? (
+                                                customerOptions.map((customer) => (
+                                                    <div
+                                                        key={customer.id}
+                                                        className="p-3 border-bottom cursor-pointer hover-bg-light"
+                                                        onMouseDown={(e) => {
+                                                            e.preventDefault();
+                                                            handleCustomerSelect(customer);
+                                                        }}
+                                                        style={{ cursor: 'pointer' }}
+                                                    >
+                                                        <div className="text-gray-800">{customer.text || customer.name || customer.email}</div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="p-3 text-muted text-center">{t('admin.notificationForm.noCustomersFound')}</div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                {errors.customer_id && <div className="invalid-feedback d-block">{errors.customer_id}</div>}
                             </div>
                         )}
 

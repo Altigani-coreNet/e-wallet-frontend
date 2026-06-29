@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../../contexts/ToolbarContext';
 import { createAdvertisement } from '../../../../services/adminAdvertisementsService';
 import { AUTH_ENDPOINTS } from '../../../../utils/constants';
-import { openNativeDatePicker } from '../../../../utils/advertisementFormUtils';
+import { openNativeDatePicker, validateAdvertisementImage } from '../../../../utils/advertisementFormUtils';
 
 const AdminAdvertisementCreate = () => {
 	const { t, i18n } = useTranslation();
@@ -100,18 +100,49 @@ const AdminAdvertisementCreate = () => {
 
 	const handleImageChange = (e) => {
 		const file = e.target.files[0];
-		if (file) {
-			setFormData({ ...formData, image: file });
-			const reader = new FileReader();
-			reader.onloadend = () => setImagePreview(reader.result);
-			reader.readAsDataURL(file);
+		if (!file) return;
+
+		const validation = validateAdvertisementImage(file);
+		if (!validation.valid) {
+			e.target.value = '';
+			const msg = t(`admin.settings.advertisements.${validation.errorKey}`);
+			setErrors((prev) => ({ ...prev, image: [msg] }));
+			toast.error(msg);
+			return;
 		}
+
+		setErrors((prev) => {
+			const next = { ...prev };
+			delete next.image;
+			return next;
+		});
+		setFormData({ ...formData, image: file });
+		const reader = new FileReader();
+		reader.onloadend = () => setImagePreview(reader.result);
+		reader.readAsDataURL(file);
 	};
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 		setLoading(true);
 		setErrors({});
+
+		if (!formData.image) {
+			const msg = t('admin.settings.advertisements.imageRequired');
+			setErrors({ image: [msg] });
+			toast.error(msg);
+			setLoading(false);
+			return;
+		}
+
+		const imageValidation = validateAdvertisementImage(formData.image);
+		if (!imageValidation.valid) {
+			const msg = t(`admin.settings.advertisements.${imageValidation.errorKey}`);
+			setErrors({ image: [msg] });
+			toast.error(msg);
+			setLoading(false);
+			return;
+		}
 
 		try {
 			const response = await createAdvertisement(formData);
@@ -226,7 +257,8 @@ const AdminAdvertisementCreate = () => {
 
 						<div className="col-md-6 mb-5">
 							<label className="form-label required">{t('admin.settings.advertisements.labelImage')}</label>
-							<input type="file" className={`form-control ${errors.image ? 'is-invalid' : ''}`} accept="image/*" onChange={handleImageChange} />
+							<input type="file" className={`form-control ${errors.image ? 'is-invalid' : ''}`} accept="image/jpeg,image/png,image/gif" onChange={handleImageChange} />
+							<div className="form-text">{t('admin.settings.advertisements.imageHint')}</div>
 							{errors.image && <div className="invalid-feedback">{errors.image[0]}</div>}
 							{imagePreview && (
 								<div className="mt-3">

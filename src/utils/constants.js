@@ -1,5 +1,5 @@
 // API Base URLs
-export const BASE_DOMAIN = import.meta.env.VITE_API_BASE || 'http://193.123.83.134:91';
+export const BASE_DOMAIN = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
 export const SOFTPOS_API_BASE = `${BASE_DOMAIN}/api`;
 export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api`;
 export const PAYTABS_API_BASE = `${BASE_DOMAIN}/api/paytabs`;
@@ -543,17 +543,32 @@ export const ADMIN_ENDPOINTS = {
     
     // Customers (SoftPos admin)
     CUSTOMERS: `${AUTH_SERVICE_BASE}/v2/admin/customers`,
-    CUSTOMER_DETAILS: (uuid) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${uuid}`,
+    CUSTOMER_DETAILS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${id}`,
     CUSTOMER_STATISTICS: `${AUTH_SERVICE_BASE}/v2/admin/customers/statistics`,
     CUSTOMER_EXPORT: `${AUTH_SERVICE_BASE}/v2/admin/customers/export`,
     CUSTOMER_EXPORT_TEMPLATE: `${AUTH_SERVICE_BASE}/v2/admin/customers/export-template`,
     CUSTOMER_IMPORT_PREVIEW: `${AUTH_SERVICE_BASE}/v2/admin/customers/import-preview`,
     CUSTOMER_IMPORT: `${AUTH_SERVICE_BASE}/v2/admin/customers/import`,
     CUSTOMER_BULK_DELETE: `${AUTH_SERVICE_BASE}/v2/admin/customers/bulk-delete`,
-    CUSTOMER_TOGGLE_STATUS: (uuid) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${uuid}/toggle-status`,
-    CUSTOMER_UPDATE_STATUS: (uuid) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${uuid}/status`,
-    CUSTOMER_WALLET: (uuid) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${uuid}/wallet`,
-    CUSTOMER_TRANSACTIONS: (uuid) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${uuid}/transactions`,
+    CUSTOMER_TOGGLE_STATUS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${id}/toggle-status`,
+    CUSTOMER_UPDATE_STATUS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${id}/status`,
+    CUSTOMER_WALLET: (id) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${id}/wallet`,
+    CUSTOMER_TRANSACTIONS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/customers/${id}/transactions`,
+
+    // Wallets (admin)
+    WALLETS: `${AUTH_SERVICE_BASE}/v2/admin/wallets`,
+    WALLETS_EXPORT: `${AUTH_SERVICE_BASE}/v2/admin/wallets/export`,
+    WALLET_DETAILS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/wallets/${id}`,
+    WALLET_TRANSACTIONS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/wallets/${id}/transactions`,
+    WALLET_SUSPEND: (id) => `${AUTH_SERVICE_BASE}/v2/admin/wallets/${id}/suspend`,
+    WALLET_ACTIVATE: (id) => `${AUTH_SERVICE_BASE}/v2/admin/wallets/${id}/activate`,
+    WALLET_DELETE: (id) => `${AUTH_SERVICE_BASE}/v2/admin/wallets/${id}`,
+    WALLET_TRANSACTIONS_ALL: `${AUTH_SERVICE_BASE}/v2/admin/wallets/transactions`,
+    WALLET_TRANSACTION_DETAILS: (id) => `${AUTH_SERVICE_BASE}/v2/admin/wallets/transactions/${id}`,
+    WALLET_TRANSACTIONS_ALL_EXPORT: `${AUTH_SERVICE_BASE}/v2/admin/wallets/transactions/export`,
+    WALLET_CASH_IN: (id) => `${AUTH_SERVICE_BASE}/v2/admin/wallets/${id}/cash-in`,
+    WALLET_CASH_OUT: (id) => `${AUTH_SERVICE_BASE}/v2/admin/wallets/${id}/cash-out`,
+    WALLET_OPENING_CAPITAL: `${AUTH_SERVICE_BASE}/v2/admin/wallets/opening-capital`,
     
     // Products Management (Pos)
     // Tags
@@ -742,6 +757,22 @@ export const ADMIN_ENDPOINTS = {
     SUBSCRIPTIONS_EXPORT: `${AUTH_SERVICE_BASE}/v2/admin/subscriptions/export`,
     SUBSCRIPTIONS_MSISDN_SELECT: `${AUTH_SERVICE_BASE}/v2/admin/subscriptions/msisdn/select`,
     SUBSCRIPTIONS_REPORT: `${AUTH_SERVICE_BASE}/v2/admin/subscriptions/report`,
+
+    // Accounting (SoftPOS admin)
+    ACCOUNTING_ACCOUNT_TYPES: `${SOFTPOS_API_BASE}/v2/admin/accounting/account-types`,
+    ACCOUNTING_CHART_OF_ACCOUNTS: `${SOFTPOS_API_BASE}/v2/admin/accounting/chart-of-accounts`,
+    ACCOUNTING_CHART_OF_ACCOUNT_DETAILS: (id) => `${SOFTPOS_API_BASE}/v2/admin/accounting/chart-of-accounts/${id}`,
+    ACCOUNTING_CHART_OF_ACCOUNTS_NEXT_CODE: `${SOFTPOS_API_BASE}/v2/admin/accounting/chart-of-accounts/next-code`,
+    ACCOUNTING_CHART_OF_ACCOUNTS_EXPORT: `${SOFTPOS_API_BASE}/v2/admin/accounting/chart-of-accounts/export`,
+    ACCOUNTING_CHART_OF_ACCOUNTS_SAMPLE: `${SOFTPOS_API_BASE}/v2/admin/accounting/chart-of-accounts/sample`,
+    ACCOUNTING_CHART_OF_ACCOUNTS_IMPORT: `${SOFTPOS_API_BASE}/v2/admin/accounting/chart-of-accounts/import`,
+    ACCOUNTING_LEDGER: `${SOFTPOS_API_BASE}/v2/admin/accounting/ledger`,
+    ACCOUNTING_LEDGER_EXPORT: `${SOFTPOS_API_BASE}/v2/admin/accounting/ledger/export`,
+    ACCOUNTING_LEDGER_CUSTOMERS: `${SOFTPOS_API_BASE}/v2/admin/accounting/ledger/customers`,
+    ACCOUNTING_BALANCE_SHEET: `${SOFTPOS_API_BASE}/v2/admin/accounting/reports/balance-sheet`,
+    ACCOUNTING_BALANCE_SHEET_EXPORT: `${SOFTPOS_API_BASE}/v2/admin/accounting/reports/balance-sheet/export`,
+    ACCOUNTING_PROFIT_LOSS: `${SOFTPOS_API_BASE}/v2/admin/accounting/reports/profit-loss`,
+    ACCOUNTING_TRIAL_BALANCE: `${SOFTPOS_API_BASE}/v2/admin/accounting/reports/trial-balance`,
 };
 
 // Admin System Administration Endpoints (AuthService)
@@ -811,6 +842,7 @@ export const ADMIN_SYSTEM_ENDPOINTS = {
     NOTIFICATION_RESEND: (id) => `${AUTH_SERVICE_BASE}/v2/admin/notifications/${id}/resend`,
     NOTIFICATION_MERCHANTS_SELECT: `${AUTH_SERVICE_BASE}/v2/admin/notifications/lookups/merchants/select`,
     NOTIFICATION_USERS_BY_MERCHANT: `${AUTH_SERVICE_BASE}/v2/admin/notifications/lookups/users`,
+    NOTIFICATION_CUSTOMERS_SELECT: `${AUTH_SERVICE_BASE}/v2/admin/notifications/lookups/customers/select`,
 };
 
 // Default Configuration

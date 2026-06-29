@@ -2,7 +2,7 @@ import React from 'react';
 import { Route, Navigate } from 'react-router-dom';
 import AdminProtectedRoute from '../components/common/AdminProtectedRoute';
 import PermissionRoute from '../components/common/PermissionRoute';
-import { USER_GROUP_EDIT_PERMISSIONS } from '../utils/permissions';
+import { USER_GROUP_EDIT_PERMISSIONS, WALLET_VIEW_PERMISSIONS } from '../utils/permissions';
 import { ToolbarProvider } from '../contexts/ToolbarContext';
 import { AdminNavigationProvider } from '../contexts/AdminNavigationContext';
 import AdminLayout from '../components/admin/layout/AdminLayout';
@@ -44,6 +44,14 @@ import AdminCustomersIndex from '../components/admin/customers/AdminCustomersInd
 import AdminCustomerCreate from '../components/admin/customers/AdminCustomerCreate';
 import AdminCustomerView from '../components/admin/customers/AdminCustomerView';
 import AdminCustomerEdit from '../components/admin/customers/AdminCustomerEdit';
+import AdminWalletsIndex from '../components/admin/wallets/AdminWalletsIndex';
+import AdminWalletShow from '../components/admin/wallets/AdminWalletShow';
+import AdminWalletTransactionsIndex from '../components/admin/wallets/AdminWalletTransactionsIndex';
+import AdminWalletTransactionShow from '../components/admin/wallets/AdminWalletTransactionShow';
+import AdminChartOfAccountsIndex from '../components/admin/accounting/AdminChartOfAccountsIndex';
+import AdminLedgerSummary from '../components/admin/accounting/AdminLedgerSummary';
+import AdminBalanceSheet from '../components/admin/accounting/AdminBalanceSheet';
+import AdminProfitAndLoss from '../components/admin/accounting/AdminProfitAndLoss';
 import AdminTransactionsIndex from '../components/admin/transactions/AdminTransactionsIndex';
 import AdminTransactionDetail from '../components/admin/transactions/AdminTransactionDetail';
 import AdminServiceTransactionsIndex from '../components/admin/service-transactions/AdminServiceTransactionsIndex';
@@ -394,14 +402,70 @@ export const ADMIN_NESTED_ROUTES = (
                     <AdminCustomerCreate />
                 </PermissionRoute>
             } />
-            <Route path="customers/:uuid" element={
+            <Route path="customers/:id" element={
                 <PermissionRoute required="sales.customers.view_customers">
                     <AdminCustomerView />
                 </PermissionRoute>
             } />
-            <Route path="customers/:uuid/edit" element={
+            <Route path="customers/:id/edit" element={
                 <PermissionRoute required="sales.customers.edit_customers">
                     <AdminCustomerEdit />
+                </PermissionRoute>
+            } />
+
+            {/* Wallet Management */}
+            <Route path="wallets/transactions/:transactionId" element={
+                <PermissionRoute anyOf={WALLET_VIEW_PERMISSIONS}>
+                    <AdminWalletTransactionShow />
+                </PermissionRoute>
+            } />
+            <Route path="wallets/transactions" element={
+                <PermissionRoute anyOf={WALLET_VIEW_PERMISSIONS}>
+                    <AdminWalletTransactionsIndex />
+                </PermissionRoute>
+            } />
+            <Route path="wallets/:id" element={
+                <PermissionRoute anyOf={WALLET_VIEW_PERMISSIONS}>
+                    <AdminWalletShow />
+                </PermissionRoute>
+            } />
+            <Route path="wallets" element={
+                <PermissionRoute anyOf={WALLET_VIEW_PERMISSIONS}>
+                    <AdminWalletsIndex />
+                </PermissionRoute>
+            } />
+
+            {/* Accounting */}
+            <Route path="accounting/chart-of-accounts" element={
+                <PermissionRoute anyOf={[
+                    'accounting.chart_of_accounts.view_chart_of_accounts',
+                    'view_chart_of_accounts',
+                ]}>
+                    <AdminChartOfAccountsIndex />
+                </PermissionRoute>
+            } />
+            <Route path="accounting/ledger-summary" element={
+                <PermissionRoute anyOf={[
+                    'accounting.ledger.view_ledger',
+                    'view_ledger',
+                ]}>
+                    <AdminLedgerSummary />
+                </PermissionRoute>
+            } />
+            <Route path="accounting/balance-sheet" element={
+                <PermissionRoute anyOf={[
+                    'accounting.reports.view_accounting_reports',
+                    'view_accounting_reports',
+                ]}>
+                    <AdminBalanceSheet />
+                </PermissionRoute>
+            } />
+            <Route path="accounting/profit-and-loss" element={
+                <PermissionRoute anyOf={[
+                    'accounting.reports.view_accounting_reports',
+                    'view_accounting_reports',
+                ]}>
+                    <AdminProfitAndLoss />
                 </PermissionRoute>
             } />
             

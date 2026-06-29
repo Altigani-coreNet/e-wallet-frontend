@@ -1,3 +1,5 @@
+import { keepPreviousData } from '@tanstack/react-query';
+
 const ONE_MINUTE = 60 * 1000;
 const FIVE_MINUTES = 5 * ONE_MINUTE;
 const TEN_MINUTES = 10 * ONE_MINUTE;
@@ -6,7 +8,7 @@ const THIRTY_MINUTES = 30 * ONE_MINUTE;
 export const LIST_QUERY_DEFAULTS = Object.freeze({
     staleTime: ONE_MINUTE,
     gcTime: FIVE_MINUTES,
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
 });
 
 export const DETAIL_QUERY_DEFAULTS = Object.freeze({
@@ -17,7 +19,7 @@ export const DETAIL_QUERY_DEFAULTS = Object.freeze({
 export const REPORT_QUERY_DEFAULTS = Object.freeze({
     staleTime: ONE_MINUTE,
     gcTime: TEN_MINUTES,
-    keepPreviousData: true,
+    placeholderData: keepPreviousData,
 });
 
 

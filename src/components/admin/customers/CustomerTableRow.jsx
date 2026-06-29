@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCan } from '../../../utils/permissions';
-import { getCustomerUuid, getCustomerCityName, getCustomerCountryName, getCustomerStatusBadgeClass, getCustomerStatusLabelKey } from '../../../utils/customerUtils';
+import { getCustomerId, getCustomerCityName, getCustomerStatusBadgeClass, getCustomerStatusLabelKey } from '../../../utils/customerUtils';
 
 const CustomerTableRow = ({
     customer,
@@ -10,6 +11,7 @@ const CustomerTableRow = ({
     isSelected,
     onSelect,
     onDelete,
+    onStatusChange,
 }) => {
     const { t } = useTranslation();
     const canEditCustomer = useCan(['sales.customers.edit_customers', 'edit_customers']);
@@ -18,21 +20,172 @@ const CustomerTableRow = ({
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 });
     const buttonRef = useRef(null);
 
-    const customerUuid = getCustomerUuid(customer);
+    const customerId = getCustomerId(customer);
     const customerStatus = customer.status || 'pending';
+
+    const handleStatusAction = (status) => {
+        setShowActions(false);
+        if (onStatusChange) {
+            onStatusChange(customerId, status);
+        }
+    };
+
+    const statusActions = [];
+    if (canEditCustomer && onStatusChange) {
+        if (customerStatus === 'pending' || customerStatus === 'suspended' || customerStatus === 'inactive') {
+            statusActions.push({
+                key: 'activate',
+                label: t('customers.activate'),
+                className: 'text-success',
+                status: 'active',
+            });
+        }
+        if (customerStatus === 'active') {
+            statusActions.push({
+                key: 'suspend',
+                label: t('customers.suspend'),
+                className: 'text-warning',
+                status: 'suspended',
+            });
+            statusActions.push({
+                key: 'deactivate',
+                label: t('common.deactivate'),
+                className: 'text-danger',
+                status: 'inactive',
+            });
+        }
+    }
 
     const profileImage = customer.profile_image_url || customer.profile_image;
     const cityName = getCustomerCityName(customer);
 
-    useEffect(() => {
-        if (showActions && buttonRef.current) {
-            const rect = buttonRef.current.getBoundingClientRect();
-            setDropdownPosition({
-                top: rect.bottom + window.scrollY,
-                right: window.innerWidth - rect.right + window.scrollX,
-            });
+    const updateDropdownPosition = () => {
+        if (!buttonRef.current) return;
+        const rect = buttonRef.current.getBoundingClientRect();
+        setDropdownPosition({
+            top: rect.bottom + 4,
+            right: window.innerWidth - rect.right,
+        });
+    };
+
+    useLayoutEffect(() => {
+        if (showActions) {
+            updateDropdownPosition();
         }
     }, [showActions]);
+
+    useEffect(() => {
+        if (!showActions) return undefined;
+
+        const onReposition = () => updateDropdownPosition();
+        window.addEventListener('resize', onReposition);
+        window.addEventListener('scroll', onReposition, true);
+
+        return () => {
+            window.removeEventListener('resize', onReposition);
+            window.removeEventListener('scroll', onReposition, true);
+        };
+    }, [showActions]);
+
+    const actionsMenu = showActions ? createPortal(
+        <>
+            <div
+                className="position-fixed top-0 start-0 w-100 h-100"
+                style={{ zIndex: 1055 }}
+                onClick={() => setShowActions(false)}
+            />
+            <div
+                className="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4 show"
+                style={{
+                    position: 'fixed',
+                    zIndex: 1060,
+                    top: dropdownPosition.top,
+                    right: dropdownPosition.right,
+                    left: 'auto',
+                    transform: 'none',
+                    animation: 'none',
+                }}
+            >
+                <div className="menu-item px-3">
+                    <Link
+                        to={`/admin/customers/${customerId}`}
+                        className="menu-link px-3"
+                        onClick={() => setShowActions(false)}
+                    >
+                        <i className="ki-duotone ki-eye fs-4 me-2">
+                            <span className="path1"></span>
+                            <span className="path2"></span>
+                            <span className="path3"></span>
+                        </i>
+                        {t('customers.view')}
+                    </Link>
+                </div>
+
+                {canEditCustomer && (
+                    <div className="menu-item px-3">
+                        <Link
+                            to={`/admin/customers/${customerId}/edit`}
+                            className="menu-link px-3"
+                            onClick={() => setShowActions(false)}
+                        >
+                            <i className="ki-duotone ki-pencil fs-4 me-2">
+                                <span className="path1"></span>
+                                <span className="path2"></span>
+                            </i>
+                            {t('common.edit')}
+                        </Link>
+                    </div>
+                )}
+
+                {statusActions.length > 0 && (
+                    <>
+                        <div className="separator my-2"></div>
+                        {statusActions.map((action) => (
+                            <div key={action.key} className="menu-item px-3">
+                                <a
+                                    href="#"
+                                    className={`menu-link px-3 ${action.className}`}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        handleStatusAction(action.status);
+                                    }}
+                                >
+                                    {action.label}
+                                </a>
+                            </div>
+                        ))}
+                    </>
+                )}
+
+                {canDeleteCustomer && (
+                    <>
+                        <div className="separator my-2"></div>
+                        <div className="menu-item px-3">
+                            <a
+                                href="#"
+                                className="menu-link px-3 text-danger"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    setShowActions(false);
+                                    onDelete(customerId);
+                                }}
+                            >
+                                <i className="ki-duotone ki-trash fs-4 me-2">
+                                    <span className="path1"></span>
+                                    <span className="path2"></span>
+                                    <span className="path3"></span>
+                                    <span className="path4"></span>
+                                    <span className="path5"></span>
+                                </i>
+                                {t('common.delete')}
+                            </a>
+                        </div>
+                    </>
+                )}
+            </div>
+        </>,
+        document.body
+    ) : null;
 
     return (
         <tr>
@@ -42,7 +195,7 @@ const CustomerTableRow = ({
                         className="form-check-input"
                         type="checkbox"
                         checked={isSelected}
-                        onChange={(e) => onSelect(customerUuid, e.target.checked)}
+                        onChange={(e) => onSelect(customerId, e.target.checked)}
                     />
                 </div>
             </td>
@@ -63,7 +216,7 @@ const CustomerTableRow = ({
                         )}
                     </div>
                     <div className="d-flex flex-column">
-                        <Link to={`/admin/customers/${customerUuid}`} className="text-gray-800 text-hover-primary fw-bold">
+                        <Link to={`/admin/customers/${customerId}`} className="text-gray-800 text-hover-primary fw-bold">
                             {customer.name}
                         </Link>
                         <span className="text-muted fw-semibold d-block fs-7">{customer.email}</span>
@@ -89,12 +242,6 @@ const CustomerTableRow = ({
             </td>
 
             <td>
-                <span className="text-gray-600">
-                    {getCustomerCountryName(customer) || t('customers.na')}
-                </span>
-            </td>
-
-            <td>
                 <span className="text-gray-800 fw-semibold">
                     {customer.balance != null ? Number(customer.balance).toFixed(2) : '0.00'}
                 </span>
@@ -116,89 +263,15 @@ const CustomerTableRow = ({
                 <div className="position-relative">
                     <button
                         ref={buttonRef}
+                        type="button"
                         className="btn btn-sm btn-light btn-active-light-primary"
                         onClick={() => setShowActions(!showActions)}
                     >
                         {t('common.actions')}
                         <i className="ki-duotone ki-down fs-5 ms-1"></i>
                     </button>
-
-                    {showActions && (
-                        <>
-                            <div
-                                className="position-fixed top-0 start-0 w-100 h-100"
-                                style={{ zIndex: 99 }}
-                                onClick={() => setShowActions(false)}
-                            ></div>
-                            <div
-                                className="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4 show"
-                                style={{
-                                    position: 'fixed',
-                                    zIndex: 100,
-                                    top: `${dropdownPosition.top}px`,
-                                    right: `${dropdownPosition.right}px`,
-                                }}
-                            >
-                                <div className="menu-item px-3">
-                                    <Link
-                                        to={`/admin/customers/${customerUuid}`}
-                                        className="menu-link px-3"
-                                        onClick={() => setShowActions(false)}
-                                    >
-                                        <i className="ki-duotone ki-eye fs-4 me-2">
-                                            <span className="path1"></span>
-                                            <span className="path2"></span>
-                                            <span className="path3"></span>
-                                        </i>
-                                        {t('customers.view')}
-                                    </Link>
-                                </div>
-
-                                {canEditCustomer && (
-                                    <div className="menu-item px-3">
-                                        <Link
-                                            to={`/admin/customers/${customerUuid}/edit`}
-                                            className="menu-link px-3"
-                                            onClick={() => setShowActions(false)}
-                                        >
-                                            <i className="ki-duotone ki-pencil fs-4 me-2">
-                                                <span className="path1"></span>
-                                                <span className="path2"></span>
-                                            </i>
-                                            {t('common.edit')}
-                                        </Link>
-                                    </div>
-                                )}
-
-                                {canDeleteCustomer && (
-                                    <>
-                                        <div className="separator my-2"></div>
-                                        <div className="menu-item px-3">
-                                            <a
-                                                href="#"
-                                                className="menu-link px-3 text-danger"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    setShowActions(false);
-                                                    onDelete(customerUuid);
-                                                }}
-                                            >
-                                                <i className="ki-duotone ki-trash fs-4 me-2">
-                                                    <span className="path1"></span>
-                                                    <span className="path2"></span>
-                                                    <span className="path3"></span>
-                                                    <span className="path4"></span>
-                                                    <span className="path5"></span>
-                                                </i>
-                                                {t('common.delete')}
-                                            </a>
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        </>
-                    )}
                 </div>
+                {actionsMenu}
             </td>
         </tr>
     );

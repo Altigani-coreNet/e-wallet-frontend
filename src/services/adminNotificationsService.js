@@ -61,3 +61,10 @@ export const getUsersByMerchant = async (merchantId, search = '') => {
         params: { merchant_id: merchantId, search },
     });
 };
+
+export const getCustomerOptions = async (search = '') => {
+    return axios.get(ADMIN_SYSTEM_ENDPOINTS.NOTIFICATION_CUSTOMERS_SELECT, {
+        ...withAuth(),
+        params: { search },
+    });
+};

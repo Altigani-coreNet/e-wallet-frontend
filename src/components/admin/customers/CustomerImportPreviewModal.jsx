@@ -25,8 +25,10 @@ const CustomerImportPreviewModal = ({ isOpen, onClose, previewData, onImportSucc
 
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
-                const { imported_count, skipped_count } = response.data.data;
-                toast.success(`Successfully imported ${imported_count} customers. ${skipped_count} rows skipped.`);
+                const payload = response.data.data || response.data;
+                const importedCount = payload.imported_count ?? response.data.imported_count ?? 0;
+                const skippedCount = payload.skipped_count ?? response.data.skipped_count ?? 0;
+                toast.success(`Successfully imported ${importedCount} customers. ${skippedCount} rows skipped.`);
                 onImportSuccess();
             }
         } catch (error) {

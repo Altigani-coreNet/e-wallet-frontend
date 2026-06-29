@@ -1,4 +1,4 @@
-import { getCustomerUuid } from '../../../utils/customerUtils';
+import { getCustomerId } from '../../../utils/customerUtils';
 import { useTranslation } from 'react-i18next';
 import CustomerTableRow from './CustomerTableRow';
 
@@ -7,6 +7,7 @@ const AdminCustomersTable = ({
     selectedIds,
     onSelectChange,
     onDelete,
+    onStatusChange,
     pagination,
     onPageChange,
     isFetching,
@@ -15,7 +16,7 @@ const AdminCustomersTable = ({
 
     const handleSelectAll = (e) => {
         if (e.target.checked) {
-            onSelectChange(customers.map((customer) => getCustomerUuid(customer)).filter(Boolean));
+            onSelectChange(customers.map((customer) => getCustomerId(customer)).filter(Boolean));
         } else {
             onSelectChange([]);
         }
@@ -82,7 +83,6 @@ const AdminCustomersTable = ({
                             <th className="min-w-200px">{t('customers.customer')}</th>
                             <th className="min-w-120px">{t('common.phone')}</th>
                             <th className="min-w-125px">{t('customers.streetAddress')}</th>
-                            <th className="min-w-100px">{t('common.country')}</th>
                             <th className="min-w-100px">{t('customers.walletBalance')}</th>
                             <th className="min-w-80px">{t('common.status')}</th>
                             <th className="min-w-100px">{t('customers.createdDate')}</th>
@@ -92,7 +92,7 @@ const AdminCustomersTable = ({
                     <tbody>
                         {customers.length === 0 ? (
                             <tr>
-                                <td colSpan="10" className="text-center py-10">
+                                <td colSpan="9" className="text-center py-10">
                                     <div className="d-flex flex-column align-items-center">
                                         <i className="ki-duotone ki-file-deleted fs-3x text-gray-400 mb-3">
                                             <span className="path1"></span>
@@ -105,12 +105,13 @@ const AdminCustomersTable = ({
                         ) : (
                             customers.map((customer, index) => (
                                 <CustomerTableRow
-                                    key={customer.uuid}
+                                    key={customer.id}
                                     customer={customer}
                                     rowNumber={(currentPage - 1) * perPage + index + 1}
-                                    isSelected={selectedIds.includes(customer.uuid)}
+                                    isSelected={selectedIds.includes(customer.id)}
                                     onSelect={handleSelectRow}
                                     onDelete={onDelete}
+                                    onStatusChange={onStatusChange}
                                 />
                             ))
                         )}

@@ -9,7 +9,7 @@ import { ADMIN_ENDPOINTS } from '../../../utils/constants';
 import { getToken } from '../../../utils/api';
 
 const AdminCustomerEdit = () => {
-    const { uuid } = useParams();
+    const { id } = useParams();
     const navigate = useNavigate();
     const { setTitle, setActions } = useToolbar();
     
@@ -24,7 +24,7 @@ const AdminCustomerEdit = () => {
             setFetchLoading(true);
 
             try {
-                const response = await fetchAdminCustomer(uuid);
+                const response = await fetchAdminCustomer(id);
                 const isSuccess = response?.success || response?.status;
 
                 if (isSuccess && response.data) {
@@ -43,7 +43,7 @@ const AdminCustomerEdit = () => {
         };
 
         fetchCustomerData();
-    }, [uuid, navigate]);
+    }, [id, navigate]);
 
     // Set toolbar
     useEffect(() => {
@@ -82,7 +82,7 @@ const AdminCustomerEdit = () => {
             // PHP does not parse multipart bodies on PUT; spoof POST + _method=PUT (Laravel).
             formData.append('_method', 'PUT');
             const response = await axios.post(
-                ADMIN_ENDPOINTS.CUSTOMER_DETAILS(uuid),
+                ADMIN_ENDPOINTS.CUSTOMER_DETAILS(id),
                 formData,
                 {
                     headers: {
@@ -95,7 +95,7 @@ const AdminCustomerEdit = () => {
             const isSuccess = response.data.success || response.data.status;
             if (isSuccess) {
                 toast.success('Customer updated successfully');
-                navigate(`/admin/customers/${uuid}`);
+                navigate(`/admin/customers/${id}`);
             } else {
                 if (response.data.errors) {
                     setErrors(response.data.errors);

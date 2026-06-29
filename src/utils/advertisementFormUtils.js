@@ -22,6 +22,32 @@ export function advertisementAssetUrl(path) {
     return `${base}/${p.replace(/^\//, '')}`;
 }
 
+export const ADVERTISEMENT_IMAGE_MAX_BYTES = 2 * 1024 * 1024;
+
+export const ADVERTISEMENT_IMAGE_ALLOWED_TYPES = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+];
+
+/** Client-side validation for advertisement banner uploads. */
+export function validateAdvertisementImage(file) {
+    if (!file) {
+        return { valid: false, errorKey: 'imageRequired' };
+    }
+
+    if (file.size > ADVERTISEMENT_IMAGE_MAX_BYTES) {
+        return { valid: false, errorKey: 'imageSizeError' };
+    }
+
+    if (!ADVERTISEMENT_IMAGE_ALLOWED_TYPES.includes(file.type)) {
+        return { valid: false, errorKey: 'imageTypeError' };
+    }
+
+    return { valid: true, errorKey: null };
+}
+
 /** Open the native date picker when supported (Chrome/Edge). */
 export function openNativeDatePicker(input) {
     if (!input) return;

@@ -33,7 +33,7 @@ describe('Admin Customer Create Flow (Real API)', () => {
         address: `Khartoum, Sudan - UPDATED ${runId}`,
     };
 
-    let customerUuid;
+    let customerId;
 
     beforeEach(() => {
         // Aliases only (no stubbing): all calls continue to real backend.
@@ -55,7 +55,7 @@ describe('Admin Customer Create Flow (Real API)', () => {
     });
 
     afterEach(function () {
-        if (!customerUuid) {
+        if (!customerId) {
             return;
         }
 
@@ -66,7 +66,7 @@ describe('Admin Customer Create Flow (Real API)', () => {
 
         cy.request({
             method: 'DELETE',
-            url: `${apiUrl}/api/v2/admin/customers/${customerUuid}`,
+            url: `${apiUrl}/api/v2/admin/customers/${customerId}`,
             headers: {
                 Authorization: `Bearer ${token}`,
                 Accept: 'application/json',
@@ -154,18 +154,18 @@ describe('Admin Customer Create Flow (Real API)', () => {
         cy.contains('button', 'Save Customer').click();
         cy.wait('@createCustomer', { timeout: 60000 }).then(({ response }) => {
             expect(response.statusCode).to.be.oneOf([200, 201]);
-            customerUuid =
-                response.body?.data?.uuid ||
-                response.body?.data?.data?.uuid ||
-                customerUuid;
+            customerId =
+                response.body?.data?.id ||
+                response.body?.data?.data?.id ||
+                customerId;
         });
 
         cy.contains('Customer created successfully', { timeout: 30000 }).should('be.visible');
-        cy.url({ timeout: 60000 }).should('match', /\/admin\/customers\/[0-9a-f-]+$/i);
+        cy.url({ timeout: 60000 }).should('match', /\/admin\/customers\/\d+$/);
 
         cy.url().then((url) => {
-            if (!customerUuid) {
-                customerUuid = url.split('/').pop();
+            if (!customerId) {
+                customerId = url.split('/').pop();
             }
         });
 

@@ -73,19 +73,21 @@ export function getJsonFetchHeaders(options = {}) {
 }
 
 export function isAuthEndpoint(url) {
-    if (!url) return false;
-    return AUTH_ENDPOINT_PATHS.some((endpoint) => url.includes(endpoint));
+    const safeUrl = url || '';
+    if (!safeUrl) return false;
+    return AUTH_ENDPOINT_PATHS.some((endpoint) => safeUrl.includes(endpoint));
 }
 
 export function isMerchantEndpoint(url) {
-    if (!url) return false;
-    if (isSoftPosAdminJwtRoute(url)) {
+    const safeUrl = url || '';
+    if (!safeUrl) return false;
+    if (isSoftPosAdminJwtRoute(safeUrl)) {
         return false;
     }
-    if (ADMIN_ENDPOINT_MARKERS.some((endpoint) => url.includes(endpoint))) {
+    if (ADMIN_ENDPOINT_MARKERS.some((endpoint) => safeUrl.includes(endpoint))) {
         return false;
     }
-    return MERCHANT_ENDPOINT_MARKERS.some((endpoint) => url.includes(endpoint));
+    return MERCHANT_ENDPOINT_MARKERS.some((endpoint) => safeUrl.includes(endpoint));
 }
 
 function applyHeaders(config, headers) {
@@ -197,7 +199,7 @@ export function attachApiInterceptors(instance, { getToken }) {
     instance.interceptors.request.use(
         (config) => {
             const token = getToken();
-            applyHeaders(config, buildContextHeaders(config.url, token));
+            applyHeaders(config, buildContextHeaders(config.url || '', token));
             return config;
         },
         (error) => Promise.reject(error)

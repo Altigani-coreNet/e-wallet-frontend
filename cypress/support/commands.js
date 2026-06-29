@@ -1,3 +1,11 @@
+import {
+    assertAccountingDelta,
+    buildAccountingSnapshot,
+    currentMonthDateRange,
+    expectedWalletOperationDelta,
+    zeroAccountingDelta,
+} from './walletAccountingHelpers';
+
 const DEFAULT_PERMISSIONS = [
     'view_customers',
     'create_customers',
@@ -152,6 +160,145 @@ function getApiUrl() {
     return Cypress.env('apiUrl') || 'http://localhost:8000';
 }
 
+function getApiRequestDelayMs() {
+    const configured = Cypress.env('apiRequestDelayMs');
+    if (configured === undefined || configured === null || configured === '') {
+        return 0;
+    }
+
+    return Math.max(0, Number(configured) || 0);
+}
+
+function shouldLogAllApiCalls() {
+    return Cypress.env('logAllApiCalls') === true;
+}
+
+function sanitizeHeadersForLog(headers = {}) {
+    const copy = { ...headers };
+
+    if (copy.Authorization) {
+        const token = String(copy.Authorization).replace(/^Bearer\s+/i, '');
+        copy.Authorization = token.length > 12 ? `Bearer ${token.slice(0, 8)}…` : 'Bearer [set]';
+    }
+
+    return copy;
+}
+
+function buildRequestUrl(options = {}) {
+    const baseUrl = options.url || '';
+    const qs = options.qs;
+
+    if (!qs || typeof qs !== 'object' || Object.keys(qs).length === 0) {
+        return baseUrl;
+    }
+
+    const query = new URLSearchParams(
+        Object.fromEntries(Object.entries(qs).map(([key, value]) => [key, String(value)]))
+    ).toString();
+
+    return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${query}`;
+}
+
+function logApiToConsole(phase, payload) {
+    if (!shouldLogAllApiCalls()) {
+        return;
+    }
+
+    const method = payload.method || 'GET';
+    const url = payload.url || '(unknown url)';
+
+    console.log(`\n========== API ${phase}: ${method} ${url} ==========`);
+    console.log(JSON.stringify(payload, null, 2));
+}
+
+function delayBeforeNextApiCall(response) {
+    const delayMs = getApiRequestDelayMs();
+
+    if (delayMs <= 0) {
+        return cy.wrap(response, { log: false });
+    }
+
+    cy.log(`API pause ${delayMs}ms before next request`);
+    return cy.wait(delayMs, { log: false }).then(() => response);
+}
+
+/**
+ * Laravel often returns JSON with Content-Type text/html; normalize so .body is always parsed.
+ */
+function parseResponseBody(body) {
+    if (typeof body === 'string') {
+        try {
+            return JSON.parse(body);
+        } catch {
+            return body;
+        }
+    }
+
+    return body;
+}
+
+function apiRequest(options = {}) {
+    const headers = {
+        Accept: 'application/json',
+        ...(options.headers || {}),
+    };
+    const method = (options.method || 'GET').toUpperCase();
+    const url = buildRequestUrl(options);
+
+    logApiToConsole('REQUEST', {
+        method,
+        url,
+        headers: sanitizeHeadersForLog(headers),
+        body: options.body ?? null,
+        qs: options.qs ?? null,
+        failOnStatusCode: options.failOnStatusCode ?? true,
+    });
+
+    Cypress.log({
+        name: 'API →',
+        displayName: `${method} ${url}`,
+        message: 'request',
+        consoleProps() {
+            return {
+                method,
+                url,
+                requestHeaders: sanitizeHeadersForLog(headers),
+                requestBody: options.body ?? null,
+            };
+        },
+    });
+
+    return cy.request({ ...options, headers }).then((response) => {
+        const normalized = {
+            ...response,
+            body: parseResponseBody(response.body),
+        };
+
+        logApiToConsole('RESPONSE', {
+            method,
+            url,
+            status: normalized.status,
+            body: normalized.body,
+        });
+
+        Cypress.log({
+            name: 'API ←',
+            displayName: `${method} ${url}`,
+            message: `${normalized.status}`,
+            consoleProps() {
+                return {
+                    method,
+                    url,
+                    status: normalized.status,
+                    responseBody: normalized.body,
+                };
+            },
+        });
+
+        return delayBeforeNextApiCall(normalized);
+    });
+}
+
 function applyAdminAuthToWindow(win, loginPayload) {
     const token = loginPayload.token || loginPayload.access_token;
     const admin = loginPayload.admin || loginPayload.user || {};
@@ -192,8 +339,7 @@ function applyAdminAuthToWindow(win, loginPayload) {
 Cypress.Commands.add('apiSendAndVerifyOtp', (phone) => {
     const apiUrl = getApiUrl();
 
-    return cy
-        .request({
+    return apiRequest({
             method: 'POST',
             url: `${apiUrl}/api/v1/customer/otp/sms`,
             body: { phone },
@@ -202,8 +348,7 @@ Cypress.Commands.add('apiSendAndVerifyOtp', (phone) => {
         .then((smsResponse) => {
             const rawToken = smsResponse.body.data.token;
 
-            return cy
-                .request({
+            return apiRequest({
                     method: 'POST',
                     url: `${apiUrl}/api/v1/customer/otp/verify`,
                     body: { token: rawToken, code: 111111 },
@@ -220,8 +365,7 @@ Cypress.Commands.add('apiOnboardCustomer', ({ phone, password }) => {
     const apiUrl = getApiUrl();
 
     return cy.apiSendAndVerifyOtp(phone).then((otpToken) => {
-        return cy
-            .request({
+        return apiRequest({
                 method: 'POST',
                 url: `${apiUrl}/api/v1/customer/auth/register`,
                 body: {
@@ -235,6 +379,7 @@ Cypress.Commands.add('apiOnboardCustomer', ({ phone, password }) => {
             .then((registerResponse) => ({
                 customer: registerResponse.body.data.customer,
                 token: registerResponse.body.data.token,
+                refreshToken: registerResponse.body.data.refresh_token,
                 response: registerResponse,
             }));
     });
@@ -246,7 +391,7 @@ Cypress.Commands.add('apiOnboardCustomer', ({ phone, password }) => {
 Cypress.Commands.add('apiCustomerLogin', ({ phone, password, failOnStatusCode = true }) => {
     const apiUrl = getApiUrl();
 
-    return cy.request({
+    return apiRequest({
         method: 'POST',
         url: `${apiUrl}/api/v1/customer/auth/login`,
         body: { phone, password },
@@ -255,12 +400,85 @@ Cypress.Commands.add('apiCustomerLogin', ({ phone, password, failOnStatusCode = 
 });
 
 /**
+ * Login as a Wallet E2E fixture customer with clear failures when seed/API is misconfigured.
+ * Defaults match WalletE2eSeeder (+249977700001 sender, +249977700002 recipient, WalletE2e1!).
+ */
+Cypress.Commands.add('apiWalletE2eLogin', ({ phone, password, role = 'customer' } = {}) => {
+    const apiUrl = getApiUrl();
+    const resolvedPhone = phone
+        ?? (role === 'recipient' ? Cypress.env('walletE2eRecipientPhone') : Cypress.env('walletE2eSenderPhone'))
+        ?? (role === 'recipient' ? '+249977700002' : '+249977700001');
+    const resolvedPassword = password ?? Cypress.env('walletE2ePassword') ?? 'WalletE2e1!';
+
+    return cy.apiCustomerLogin({
+        phone: resolvedPhone,
+        password: resolvedPassword,
+        failOnStatusCode: false,
+    }).then((response) => {
+        const hint = [
+            `apiUrl=${apiUrl}`,
+            'Run: php artisan db:seed --class=WalletE2eSeeder',
+            'Or set CYPRESS_seedWalletLocally=true for auto-seed in development',
+        ].join(' | ');
+
+        expect(response.status, `${role} login HTTP (${hint})`).to.eq(200);
+        expect(response.body, `${role} login JSON body (${hint})`).to.be.an('object').and.not.be.a('string');
+        expect(response.body.success, `${role} login success (${hint})`).to.eq(true);
+        expect(
+            response.body.data?.token,
+            `${role} login token (${hint})`
+        ).to.be.a('string').and.not.be.empty;
+
+        return cy.wrap(response.body.data.token, { log: false });
+    });
+});
+
+/**
+ * Refresh customer access token using a refresh_token.
+ */
+Cypress.Commands.add('apiCustomerRefreshToken', (refreshToken, { failOnStatusCode = true } = {}) => {
+    const apiUrl = getApiUrl();
+
+    return apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v1/customer/auth/refresh-token`,
+        body: { refresh_token: refreshToken },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * Change password for the authenticated customer.
+ */
+Cypress.Commands.add(
+    'apiCustomerChangePassword',
+    ({ token, currentPassword, newPassword, failOnStatusCode = true }) => {
+        const apiUrl = getApiUrl();
+
+        return apiRequest({
+            method: 'POST',
+            url: `${apiUrl}/api/v1/customer/password/change`,
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json',
+            },
+            body: {
+                current_password: currentPassword,
+                password: newPassword,
+                password_confirmation: newPassword,
+            },
+            failOnStatusCode,
+        });
+    }
+);
+
+/**
  * GET /api/v1/customer/profile for the authenticated customer.
  */
 Cypress.Commands.add('apiCustomerProfile', (token) => {
     const apiUrl = getApiUrl();
 
-    return cy.request({
+    return apiRequest({
         method: 'GET',
         url: `${apiUrl}/api/v1/customer/profile`,
         headers: {
@@ -272,95 +490,147 @@ Cypress.Commands.add('apiCustomerProfile', (token) => {
 });
 
 function unwrapApiList(response) {
-    const body = response.body;
+    const body = parseResponseBody(response.body);
     if (Array.isArray(body)) {
         return body;
     }
     if (Array.isArray(body?.data)) {
         return body.data;
     }
+    if (Array.isArray(body?.data?.data)) {
+        return body.data.data;
+    }
 
     return [];
 }
 
+function pickPreferredCountry(countries, preferredCode = '249') {
+    if (!countries.length) {
+        return null;
+    }
+
+    return (
+        countries.find((c) => String(c.code) === preferredCode) ||
+        countries.find((c) => c.shortName === 'SD' || c.short_name === 'SD') ||
+        countries[0]
+    );
+}
+
+function filterCountriesBySearch(countries, search) {
+    const term = String(search).toLowerCase();
+
+    return countries.filter(
+        (c) =>
+            String(c.name || '')
+                .toLowerCase()
+                .includes(term) ||
+            String(c.code || '').includes(term) ||
+            String(c.shortName || c.short_name || '')
+                .toLowerCase()
+                .includes(term)
+    );
+}
+
+function getPreferredCountryCode(options = {}) {
+    return options.preferredCode || Cypress.env('defaultCountryCode') || '249';
+}
+
 /**
- * Lookup a country from GET /api/countries/select (search defaults to Sudan for +249 phones).
+ * cy.intercept alias only — request continues to the real backend (no stubbed response).
+ */
+function aliasRealRequest(method, urlPattern, alias) {
+    cy.intercept(method, urlPattern, (req) => req.continue()).as(alias);
+}
+
+/**
+ * GET /api/v1/countries — real API only; no synthetic fallbacks.
  */
 Cypress.Commands.add('apiLookupCountry', (options = {}) => {
     const apiUrl = getApiUrl();
-    const search = options.search || 'Sudan';
+    const preferredCode = getPreferredCountryCode(options);
 
-    return cy
-        .request({
+    return apiRequest({
             method: 'GET',
-            url: `${apiUrl}/api/countries/select`,
-            qs: { lang: 'en', search },
+            url: `${apiUrl}/api/v1/countries`,
             failOnStatusCode: true,
         })
-        .then((countriesResponse) => {
-            const countries = unwrapApiList(countriesResponse);
-            expect(countries.length, `countries matching "${search}" from /api/countries/select`).to.be.greaterThan(0);
+        .then((response) => {
+            const countries = unwrapApiList(response);
+            expect(countries.length, 'GET /api/v1/countries').to.be.greaterThan(0);
 
-            const country = countries[0];
-            expect(country.id, 'country id').to.exist;
-            expect(country.code, 'country code').to.exist;
+            if (options.countryId) {
+                const byId = countries.find((c) => c.id === options.countryId);
+                expect(byId, `country ${options.countryId} from GET /api/v1/countries`).to.exist;
+                return byId;
+            }
 
-            return country;
+            if (options.search) {
+                const matched = filterCountriesBySearch(countries, options.search);
+                if (matched.length) {
+                    const picked = pickPreferredCountry(matched, preferredCode);
+                    expect(picked, `country matching "${options.search}"`).to.exist;
+                    return picked;
+                }
+            }
+
+            const picked = pickPreferredCountry(countries, preferredCode);
+            expect(picked, `country with dial code ${preferredCode} from GET /api/v1/countries`).to.exist;
+            return picked;
         });
 });
 
 /**
- * Lookup the first city from GET /api/cities/select (real cities API).
- * Pass countryId so the city belongs to the same country used in profile complete.
+ * GET /api/v1/countries/{dialCode}/cities — real API only; no synthetic fallbacks.
  */
 Cypress.Commands.add('apiLookupCity', (options = {}) => {
     const apiUrl = getApiUrl();
-    const qs = { lang: 'en' };
+    const dialCode = String(
+        options.dialCode || options.countryCode || getPreferredCountryCode(options)
+    ).replace(/^\+/, '');
 
-    expect(options.countryId, 'countryId is required for city lookup').to.exist;
-    qs.country_id = options.countryId;
-
-    return cy
-        .request({
+    return apiRequest({
             method: 'GET',
-            url: `${apiUrl}/api/cities/select`,
-            qs,
+            url: `${apiUrl}/api/v1/countries/${encodeURIComponent(dialCode)}/cities`,
             failOnStatusCode: true,
         })
         .then((citiesResponse) => {
             const cities = unwrapApiList(citiesResponse);
-            expect(
-                cities.length,
-                `cities for country ${options.countryId} from /api/cities/select`
-            ).to.be.greaterThan(0);
+            expect(cities.length, `GET /api/v1/countries/${dialCode}/cities`).to.be.greaterThan(0);
+
+            if (options.cityId) {
+                const byId = cities.find((c) => c.id === options.cityId);
+                expect(byId, `city ${options.cityId} from GET /api/v1/countries/${dialCode}/cities`).to.exist;
+                return byId;
+            }
 
             const city = cities[0];
-            expect(city.id, 'city id').to.exist;
-            expect(city.country_id, 'city country_id').to.eq(options.countryId);
+            if (options.countryId) {
+                const cityCountryId = city.countryId ?? city.country_id;
+                expect(
+                    cityCountryId,
+                    `city belongs to country ${options.countryId}`
+                ).to.eq(options.countryId);
+            }
 
             return city;
         });
 });
 
 /**
- * Resolve country `code` from country UUID via GET /api/countries (full list).
- * Note: /api/countries/select is limited to 20 rows and must not be used for id lookup.
+ * Resolve country dial code from UUID via GET /api/v1/countries.
  */
 Cypress.Commands.add('apiResolveCountryCode', (countryId) => {
     const apiUrl = getApiUrl();
 
-    return cy
-        .request({
+    return apiRequest({
             method: 'GET',
-            url: `${apiUrl}/api/countries`,
+            url: `${apiUrl}/api/v1/countries`,
             failOnStatusCode: true,
         })
         .then((countriesResponse) => {
             const countries = unwrapApiList(countriesResponse);
             const country = countries.find((item) => item.id === countryId);
-            expect(country, `country for id ${countryId} from /api/countries`).to.exist;
-            expect(country.code, 'country code').to.exist;
-
+            expect(country?.code, `dial code for country ${countryId}`).to.exist;
             return country.code;
         });
 });
@@ -370,6 +640,17 @@ Cypress.Commands.add('apiResolveCountryCode', (countryId) => {
  */
 function apiCustomerProfileMultipartPost({ path, token, fields, pictureFixture = 'corenet.png' }) {
     const apiUrl = getApiUrl();
+    const fullUrl = `${apiUrl}${path}`;
+
+    logApiToConsole('REQUEST', {
+        method: 'POST',
+        url: fullUrl,
+        headers: sanitizeHeadersForLog({
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        }),
+        body: { ...fields, picture: `[file: ${pictureFixture}]` },
+    });
 
     return cy.fixture(pictureFixture, 'binary').then((fileBinary) => {
         const blob = Cypress.Blob.binaryStringToBlob(fileBinary, 'image/png');
@@ -383,7 +664,7 @@ function apiCustomerProfileMultipartPost({ path, token, fields, pictureFixture =
         return cy.wrap(
             new Cypress.Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
-                xhr.open('POST', `${apiUrl}${path}`);
+                xhr.open('POST', fullUrl);
                 xhr.setRequestHeader('Authorization', `Bearer ${token}`);
                 xhr.setRequestHeader('Accept', 'application/json');
                 xhr.onload = () => {
@@ -403,9 +684,17 @@ function apiCustomerProfileMultipartPost({ path, token, fields, pictureFixture =
             }),
             { timeout: 30000 }
         ).then((response) => {
+            logApiToConsole('RESPONSE', {
+                method: 'POST',
+                url: fullUrl,
+                status: response.status,
+                body: response.body,
+            });
+
             expect(response.status, `multipart ${path} status`).to.be.oneOf([200, 201]);
             expect(response.body?.success, `multipart ${path} success flag`).to.eq(true);
-            return response;
+
+            return delayBeforeNextApiCall(response);
         });
     });
 }
@@ -418,6 +707,7 @@ Cypress.Commands.add('apiCompleteCustomerProfileMultipart', ({
     firstName,
     email,
     cityId,
+    nationalId,
     countryCode = '249',
     birthDate = '1990-05-15',
     gender = 'male',
@@ -429,6 +719,7 @@ Cypress.Commands.add('apiCompleteCustomerProfileMultipart', ({
         pictureFixture,
         fields: {
             firstName,
+            nationalId,
             email,
             birthDate,
             gender,
@@ -445,32 +736,39 @@ Cypress.Commands.add('apiUpdateCustomerProfileMultipart', ({
     token,
     firstName,
     cityId,
+    nationalId,
     countryCode = '249',
     birthDate = '1992-03-20',
     gender = 'female',
     pictureFixture = 'corenet.png',
-}) =>
-    apiCustomerProfileMultipartPost({
+}) => {
+    const fields = {
+        firstName,
+        birthDate,
+        gender,
+        cityId,
+        country_code: countryCode,
+    };
+
+    if (nationalId !== undefined) {
+        fields.nationalId = nationalId;
+    }
+
+    return apiCustomerProfileMultipartPost({
         path: '/api/v1/customer/profile/update',
         token,
         pictureFixture,
-        fields: {
-            firstName,
-            birthDate,
-            gender,
-            cityId,
-            country_code: countryCode,
-        },
-    })
-);
+        fields,
+    });
+});
 
 /**
  * POST /api/v1/customer/profile/complete — fill customer profile after registration.
  */
-Cypress.Commands.add('apiCompleteCustomerProfile', ({ token, firstName, email, cityId, countryCode = '249' }) => {
+Cypress.Commands.add('apiCompleteCustomerProfile', ({ token, firstName, email, cityId, nationalId, countryCode = '249' }) => {
     const apiUrl = getApiUrl();
 
-    return cy.request({
+    return apiRequest({
         method: 'POST',
         url: `${apiUrl}/api/v1/customer/profile/complete`,
         headers: {
@@ -479,6 +777,7 @@ Cypress.Commands.add('apiCompleteCustomerProfile', ({ token, firstName, email, c
         },
         body: {
             firstName,
+            nationalId,
             email,
             birthDate: '1990-05-15',
             gender: 'male',
@@ -490,19 +789,37 @@ Cypress.Commands.add('apiCompleteCustomerProfile', ({ token, firstName, email, c
 });
 
 /**
- * Lookup country + city from APIs, then complete profile.
- * 1. GET /api/countries/select?search=Sudan
- * 2. GET /api/cities/select?country_id=...
+ * Lookup country + city from v1 onboarding APIs, then complete profile.
+ * 1. GET /api/v1/countries
+ * 2. GET /api/v1/countries/{dialCode}/cities
  * 3. POST /api/v1/customer/profile/complete
  */
-Cypress.Commands.add('apiCompleteCustomerProfileWithCityLookup', ({ token, firstName, email, countrySearch = 'Sudan' }) => {
-    return cy.apiLookupCountry({ search: countrySearch }).then((country) => {
-        return cy.apiLookupCity({ countryId: country.id }).then((city) => {
+Cypress.Commands.add('apiCompleteCustomerProfileWithCityLookup', ({
+    token,
+    firstName,
+    email,
+    nationalId,
+    countryId,
+    countrySearch,
+}) => {
+    const lookupOptions = {};
+    if (countryId) {
+        lookupOptions.countryId = countryId;
+    }
+    if (countrySearch) {
+        lookupOptions.search = countrySearch;
+    }
+
+    return cy.apiLookupCountry(lookupOptions).then((country) => {
+        return cy
+            .apiLookupCity({ dialCode: country.code, countryId: country.id })
+            .then((city) => {
             return cy
                 .apiCompleteCustomerProfile({
                     token,
                     firstName,
                     email,
+                    nationalId,
                     cityId: city.id,
                     countryCode: country.code,
                 })
@@ -521,8 +838,7 @@ Cypress.Commands.add('apiCompleteCustomerProfileWithCityLookup', ({ token, first
 Cypress.Commands.add('apiChangePassword', ({ phone, newPassword }) => {
     const apiUrl = getApiUrl();
 
-    return cy
-        .request({
+    return apiRequest({
             method: 'POST',
             url: `${apiUrl}/api/v1/customer/password/forgot`,
             body: { phone },
@@ -531,8 +847,7 @@ Cypress.Commands.add('apiChangePassword', ({ phone, newPassword }) => {
         .then((forgotResponse) => {
             const rawToken = forgotResponse.body.data.token;
 
-            return cy
-                .request({
+            return apiRequest({
                     method: 'POST',
                     url: `${apiUrl}/api/v1/customer/otp/verify`,
                     body: { token: rawToken, code: 111111 },
@@ -541,7 +856,7 @@ Cypress.Commands.add('apiChangePassword', ({ phone, newPassword }) => {
                 .then((verifyResponse) => {
                     const otpToken = verifyResponse.body.data.otp_token;
 
-                    return cy.request({
+                    return apiRequest({
                         method: 'POST',
                         url: `${apiUrl}/api/v1/customer/password/reset`,
                         body: {
@@ -570,8 +885,7 @@ Cypress.Commands.add('loginAdmin', (overrides = {}) => {
         );
     }
 
-    return cy
-        .request({
+    return apiRequest({
             method: 'POST',
             url: `${apiUrl}/api/v2/admin/auth/login`,
             body: { email, password },
@@ -603,12 +917,806 @@ Cypress.Commands.add('seedWalletE2eFixtures', () => {
 /**
  * GET /api/v1/customer/wallet/dashboard
  */
-Cypress.Commands.add('apiWalletDashboard', (token) => {
+Cypress.Commands.add('apiWalletDashboard', (token, options = {}) => {
     const apiUrl = getApiUrl();
 
-    return cy.request({
+    return apiRequest({
         method: 'GET',
         url: `${apiUrl}/api/v1/customer/wallet/dashboard`,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode: options.failOnStatusCode !== false,
+    });
+});
+
+/**
+ * GET /api/v1/customer/wallet/transactions
+ */
+Cypress.Commands.add('apiWalletTransactions', ({
+    token,
+    page,
+    per_page: perPage,
+    search,
+    date_from: dateFrom,
+    date_to: dateTo,
+    type,
+    direction,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const qs = {};
+
+    if (page !== undefined) qs.page = page;
+    if (perPage !== undefined) qs.per_page = perPage;
+    if (search !== undefined) qs.search = search;
+    if (dateFrom !== undefined) qs.date_from = dateFrom;
+    if (dateTo !== undefined) qs.date_to = dateTo;
+    if (type !== undefined) qs.type = type;
+    if (direction !== undefined) qs.direction = direction;
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v1/customer/wallet/transactions`,
+        qs,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * GET /api/v1/customer/wallet/query?identifier=
+ */
+Cypress.Commands.add('apiWalletQuery', ({ token, identifier, failOnStatusCode = true }) => {
+    const apiUrl = getApiUrl();
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v1/customer/wallet/query`,
+        qs: { identifier },
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * GET /api/v1/customer/wallet/resolve-recipient?identifier=
+ */
+Cypress.Commands.add('apiWalletResolveRecipient', ({ token, identifier, failOnStatusCode = true }) => {
+    const apiUrl = getApiUrl();
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v1/customer/wallet/resolve-recipient`,
+        qs: { identifier },
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * POST /api/v1/customer/wallet/transfer
+ */
+Cypress.Commands.add('apiWalletTransfer', ({
+    token,
+    recipientWalletId,
+    amount,
+    fee,
+    description,
+    note,
+    idempotencyKey,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+    };
+
+    if (idempotencyKey) {
+        headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    return apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v1/customer/wallet/transfer`,
+        headers,
+        body: {
+            recipient_wallet_id: recipientWalletId,
+            amount,
+            fee,
+            description,
+            note,
+        },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * @deprecated Use apiWalletTransfer after apiWalletResolveRecipient
+ */
+Cypress.Commands.add('apiWalletTransferByWalletId', ({
+    token,
+    recipientWalletId,
+    amount,
+    description,
+    idempotencyKey,
+    failOnStatusCode = true,
+}) => cy.apiWalletTransfer({
+    token,
+    recipientWalletId,
+    amount,
+    description,
+    idempotencyKey,
+    failOnStatusCode,
+}));
+
+/**
+ * GET /api/v1/customer/notifications
+ */
+Cypress.Commands.add('apiCustomerNotifications', ({
+    token,
+    page,
+    per_page: perPage,
+    failOnStatusCode = true,
+} = {}) => {
+    const apiUrl = getApiUrl();
+    const qs = {};
+
+    if (page !== undefined) qs.page = page;
+    if (perPage !== undefined) qs.per_page = perPage;
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v1/customer/notifications`,
+        qs,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * GET /api/v1/customer/notifications/unread-count
+ */
+Cypress.Commands.add('apiCustomerNotificationsUnreadCount', ({ token, failOnStatusCode = true } = {}) => {
+    const apiUrl = getApiUrl();
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v1/customer/notifications/unread-count`,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode,
+    });
+});
+
+function unwrapCustomerNotificationTitles(response) {
+    const body = parseResponseBody(response.body);
+    const rows = body?.data?.data || body?.data || [];
+
+    return Array.isArray(rows) ? rows.map((row) => row.title).filter(Boolean) : [];
+}
+
+/**
+ * Assert customer inbox total and that expected notification titles are present.
+ */
+Cypress.Commands.add('assertCustomerNotificationsInclude', ({
+    token,
+    total,
+    titles = [],
+    descriptions = [],
+}) => {
+    return cy.apiCustomerNotifications({ token }).then((response) => {
+        expect(response.status, 'notifications list status').to.eq(200);
+        expect(response.body.success, 'notifications success flag').to.eq(true);
+
+        if (total !== undefined) {
+            expect(response.body.data.total, 'notifications total').to.eq(total);
+        }
+
+        const actualTitles = unwrapCustomerNotificationTitles(response);
+        titles.forEach((title) => {
+            expect(actualTitles, `notification titles (got: ${actualTitles.join(', ')})`).to.include(title);
+        });
+
+        const serialized = JSON.stringify(response.body.data?.data || response.body.data || []);
+        descriptions.forEach((fragment) => {
+            expect(serialized, `notification descriptions contain "${fragment}"`).to.include(fragment);
+        });
+
+        return cy.wrap(response, { log: false });
+    });
+});
+
+/**
+ * POST /api/v2/admin/auth/login — returns token only (no UI visit).
+ */
+Cypress.Commands.add('apiAdminLogin', (overrides = {}) => {
+    const apiUrl = getApiUrl();
+    const email = overrides.email || Cypress.env('adminEmail');
+    const password = overrides.password || Cypress.env('adminPassword');
+
+    if (!email || !password) {
+        throw new Error('Admin credentials missing. Set adminEmail and adminPassword in cypress.config.js.');
+    }
+
+    return apiRequest({
+            method: 'POST',
+            url: `${apiUrl}/api/v2/admin/auth/login`,
+            body: { email, password },
+            failOnStatusCode: true,
+        })
+        .then((loginResponse) => {
+            const payload = loginResponse.body.data || loginResponse.body;
+            const token = payload.token || payload.access_token;
+            Cypress.env('adminToken', token);
+
+            return cy.wrap({ token, payload });
+        });
+});
+
+/**
+ * POST /api/v2/admin/customers/{id}/status — activate / suspend customer account.
+ */
+Cypress.Commands.add('apiAdminUpdateCustomerStatus', ({ adminToken, customerId, status, failOnStatusCode = true }) => {
+    const apiUrl = getApiUrl();
+    const token = adminToken || Cypress.env('adminToken');
+
+    return apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v2/admin/customers/${customerId}/status`,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+        },
+        body: { status },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * GET /api/v2/admin/customers/{id}
+ */
+Cypress.Commands.add('apiAdminGetCustomer', ({ adminToken, customerId, failOnStatusCode = true }) => {
+    const apiUrl = getApiUrl();
+    const token = adminToken || Cypress.env('adminToken');
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v2/admin/customers/${customerId}`,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * Activate a pending customer — tries POST /status, falls back to PUT /customers/{id}.
+ */
+Cypress.Commands.add('apiAdminActivateCustomer', ({ adminToken, customerId }) => {
+    const apiUrl = getApiUrl();
+    const token = adminToken || Cypress.env('adminToken');
+
+    return cy
+        .apiAdminUpdateCustomerStatus({
+            adminToken: token,
+            customerId,
+            status: 'active',
+            failOnStatusCode: false,
+        })
+        .then((statusResponse) => {
+            if (statusResponse.status >= 200 && statusResponse.status < 300) {
+                return cy.wrap(statusResponse);
+            }
+
+            return cy.apiAdminGetCustomer({ adminToken: token, customerId }).then((showResponse) => {
+                const customer = showResponse.body.data;
+
+                return apiRequest({
+                    method: 'PUT',
+                    url: `${apiUrl}/api/v2/admin/customers/${customerId}`,
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: {
+                        name: customer.name || 'E2E Wallet Customer',
+                        email: customer.email,
+                        phone: customer.phone,
+                        status: 'active',
+                    },
+                    failOnStatusCode: true,
+                });
+            });
+        });
+});
+
+/**
+ * GET /api/v2/admin/wallets — find first wallet matching search query.
+ */
+Cypress.Commands.add('apiAdminFindWallet', ({
+    adminToken,
+    search,
+    walletType,
+    customerId,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const token = adminToken || Cypress.env('adminToken');
+    const qs = { per_page: 15 };
+
+    if (search) {
+        qs.search = search;
+    }
+    if (walletType) {
+        qs.wallet_type = walletType;
+    }
+    if (customerId) {
+        qs.customer_id = customerId;
+    }
+
+    return apiRequest({
+            method: 'GET',
+            url: `${apiUrl}/api/v2/admin/wallets`,
+            qs,
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/json',
+            },
+            failOnStatusCode,
+        })
+        .then((response) => {
+            const rows = response.body?.data?.data || response.body?.data || [];
+            const wallet = Array.isArray(rows) ? rows[0] : null;
+
+            if (failOnStatusCode) {
+                expect(
+                    wallet,
+                    `wallet search="${search || ''}" customer_id="${customerId || ''}" type="${walletType || ''}"`
+                ).to.exist;
+            }
+
+            return cy.wrap({ response, wallet });
+        });
+});
+
+/**
+ * Resolve a customer's wallet UUID via admin customer show, customer_id filter, or search.
+ */
+Cypress.Commands.add('apiResolveCustomerWallet', ({ adminToken, customerToken, customerId: explicitCustomerId }) => {
+    return cy.apiCustomerProfile(customerToken).then((profileResponse) => {
+        const customer = profileResponse.body?.data?.customer;
+        const publicWalletId = customer?.walletId;
+        const customerId = explicitCustomerId || customer?.id;
+        const phone = customer?.phone;
+
+        expect(publicWalletId, 'customer profile walletId').to.be.a('string').and.not.be.empty;
+        expect(customerId, 'customer id').to.exist;
+
+        const wrapWallet = (wallet) =>
+            cy.wrap({
+                walletUuid: wallet.id,
+                walletPublicId: wallet.wallet_id || publicWalletId,
+                customerId,
+            });
+
+        return cy.apiAdminGetCustomer({ adminToken, customerId }).then((showResponse) => {
+            const adminCustomer = showResponse.body?.data;
+            const walletUuid = adminCustomer?.wallet_uuid;
+            const walletPublicId = adminCustomer?.wallet_public_id || publicWalletId;
+
+            if (walletUuid) {
+                return cy.wrap({
+                    walletUuid,
+                    walletPublicId,
+                    customerId,
+                });
+            }
+
+            return cy
+                .apiAdminFindWallet({
+                    adminToken,
+                    customerId,
+                    failOnStatusCode: false,
+                })
+                .then(({ wallet }) => {
+                    if (wallet) {
+                        return wrapWallet(wallet);
+                    }
+
+                    return cy
+                        .apiAdminFindWallet({
+                            adminToken,
+                            search: phone || publicWalletId,
+                            failOnStatusCode: false,
+                        })
+                        .then(({ wallet: bySearch }) => {
+                            expect(bySearch, `wallet for customer ${customerId} (${phone})`).to.exist;
+                            return wrapWallet(bySearch);
+                        });
+                });
+        });
+    });
+});
+
+/**
+ * Ensure the master float wallet has enough balance for customer cash-ins.
+ */
+Cypress.Commands.add('apiEnsureMasterFloat', (adminToken, amount = 1000000) => {
+    return cy.apiAdminGetMasterWallet(adminToken).then((master) =>
+        cy
+            .apiAdminWalletCashIn({
+                adminToken,
+                walletUuid: master.id,
+                amount,
+                description: 'Workflow master float',
+                idempotencyKey: `master-float-${Date.now()}`,
+                failOnStatusCode: false,
+            })
+            .then(() => cy.wrap(master))
+    );
+});
+
+/**
+ * GET /api/v2/admin/wallets/{uuid}
+ */
+Cypress.Commands.add('apiAdminWalletShow', ({ adminToken, walletUuid, failOnStatusCode = true }) => {
+    const apiUrl = getApiUrl();
+    const token = adminToken || Cypress.env('adminToken');
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v2/admin/wallets/${walletUuid}`,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * POST /api/v2/admin/wallets/opening-capital
+ */
+Cypress.Commands.add('apiAdminOpeningCapital', ({
+    adminToken,
+    amount,
+    description,
+    idempotencyKey,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const token = adminToken || Cypress.env('adminToken');
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+    };
+
+    if (idempotencyKey) {
+        headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    return apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v2/admin/wallets/opening-capital`,
+        headers,
+        body: { amount, description },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * POST /api/v2/admin/wallets/{uuid}/cash-in
+ */
+Cypress.Commands.add('apiAdminWalletCashIn', ({
+    adminToken,
+    walletUuid,
+    amount,
+    description,
+    idempotencyKey,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const token = adminToken || Cypress.env('adminToken');
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+    };
+
+    if (idempotencyKey) {
+        headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    return apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v2/admin/wallets/${walletUuid}/cash-in`,
+        headers,
+        body: { amount, description },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * POST /api/v2/admin/wallets/{uuid}/cash-out
+ */
+Cypress.Commands.add('apiAdminWalletCashOut', ({
+    adminToken,
+    walletUuid,
+    amount,
+    description,
+    idempotencyKey,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const token = adminToken || Cypress.env('adminToken');
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+    };
+
+    if (idempotencyKey) {
+        headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    return apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v2/admin/wallets/${walletUuid}/cash-out`,
+        headers,
+        body: { amount, description },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * GET /api/v2/admin/accounting/chart-of-accounts
+ */
+Cypress.Commands.add('apiAdminChartOfAccounts', ({
+    adminToken,
+    startDate,
+    endDate,
+    failOnStatusCode = true,
+} = {}) => {
+    const apiUrl = getApiUrl();
+    const token = adminToken || Cypress.env('adminToken');
+    const { startDate: defaultStart, endDate: defaultEnd } = currentMonthDateRange();
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v2/admin/accounting/chart-of-accounts`,
+        qs: {
+            start_date: startDate || defaultStart,
+            end_date: endDate || defaultEnd,
+        },
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * GET /api/v2/admin/accounting/reports/balance-sheet
+ */
+Cypress.Commands.add('apiAdminBalanceSheet', ({
+    adminToken,
+    startDate,
+    endDate,
+    failOnStatusCode = true,
+} = {}) => {
+    const apiUrl = getApiUrl();
+    const token = adminToken || Cypress.env('adminToken');
+    const { startDate: defaultStart, endDate: defaultEnd } = currentMonthDateRange();
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v2/admin/accounting/reports/balance-sheet`,
+        qs: {
+            start_date: startDate || defaultStart,
+            end_date: endDate || defaultEnd,
+        },
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * Capture chart-of-accounts + balance-sheet totals before or after an operation.
+ */
+Cypress.Commands.add('captureAccountingSnapshot', ({
+    adminToken,
+    startDate,
+    endDate,
+    label,
+} = {}) => {
+    const { startDate: defaultStart, endDate: defaultEnd } = currentMonthDateRange();
+
+    return cy
+        .apiAdminChartOfAccounts({
+            adminToken,
+            startDate: startDate || defaultStart,
+            endDate: endDate || defaultEnd,
+        })
+        .then((chartResponse) =>
+            cy
+                .apiAdminBalanceSheet({
+                    adminToken,
+                    startDate: startDate || defaultStart,
+                    endDate: endDate || defaultEnd,
+                })
+                .then((balanceSheetResponse) => {
+                    const snapshot = buildAccountingSnapshot({
+                        chartOfAccountsPayload: chartResponse.body,
+                        balanceSheetPayload: balanceSheetResponse.body,
+                        label,
+                    });
+
+                    Cypress.log({
+                        name: 'Accounting snapshot',
+                        displayName: label || 'snapshot',
+                        message: `assets ${snapshot.summary.total_assets}, liabilities ${snapshot.summary.total_liabilities}, equity ${snapshot.summary.total_equity}`,
+                        consoleProps() {
+                            return snapshot;
+                        },
+                    });
+
+                    return cy.wrap(snapshot, { log: false });
+                })
+        );
+});
+
+/**
+ * Re-fetch accounting totals and assert the operation moved balances as expected.
+ */
+Cypress.Commands.add('assertAccountingReflectsOperation', ({
+    before,
+    adminToken,
+    expected,
+    operation,
+    amount,
+    fee = 0,
+    context,
+    startDate,
+    endDate,
+} = {}) => {
+    const resolvedExpected = expected
+        ?? (operation ? expectedWalletOperationDelta(operation, { amount, fee }) : null);
+
+    if (!before || !resolvedExpected) {
+        throw new Error('assertAccountingReflectsOperation requires before snapshot and expected or operation');
+    }
+
+    return cy
+        .captureAccountingSnapshot({
+            adminToken,
+            startDate,
+            endDate,
+            label: context ? `${context} after` : 'after operation',
+        })
+        .then((after) => {
+            assertAccountingDelta(before, after, resolvedExpected, context);
+            return cy.wrap(after, { log: false });
+        });
+});
+
+/**
+ * Re-fetch accounting totals and assert nothing changed (rejected operations).
+ */
+Cypress.Commands.add('assertAccountingUnchanged', ({
+    before,
+    adminToken,
+    context,
+    startDate,
+    endDate,
+} = {}) => {
+    if (!before) {
+        throw new Error('assertAccountingUnchanged requires before snapshot');
+    }
+
+    return cy
+        .captureAccountingSnapshot({
+            adminToken,
+            startDate,
+            endDate,
+            label: context ? `${context} unchanged check` : 'unchanged check',
+        })
+        .then((after) => {
+            assertAccountingDelta(before, after, zeroAccountingDelta(), context);
+            return cy.wrap(after, { log: false });
+        });
+});
+
+/**
+ * POST transfer with arbitrary body (chaos / validation tests).
+ */
+Cypress.Commands.add('apiWalletTransferRaw', ({
+    token,
+    body,
+    idempotencyKey,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+    };
+
+    if (idempotencyKey) {
+        headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    return apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v1/customer/wallet/transfer`,
+        headers,
+        body,
+        failOnStatusCode,
+    });
+});
+
+/**
+ * Assert the admin balance sheet is balanced after wallet money operations.
+ */
+Cypress.Commands.add('assertBalanceSheetBalanced', ({
+    adminToken,
+    startDate,
+    endDate,
+    context,
+} = {}) => {
+    return cy.captureAccountingSnapshot({
+        adminToken,
+        startDate,
+        endDate,
+        label: context ? `${context} balance check` : 'balance check',
+    }).then((snapshot) => {
+        const label = context ? `[${context}] ` : '';
+
+        expect(snapshot.balanceSheet.is_balanced, `${label}balance sheet is_balanced`).to.eq(true);
+        expect(snapshot.summary.is_balanced, `${label}chart of accounts is_balanced`).to.eq(true);
+        expect(
+            snapshot.balanceSheet.total_assets,
+            `${label}assets = liabilities + equity`
+        ).to.be.closeTo(snapshot.balanceSheet.total_liabilities_and_equity, 0.01);
+
+        return cy.wrap(snapshot, { log: false });
+    });
+});
+
+/**
+ * POST /api/v2/admin/wallets/{uuid}/suspend|activate
+ */
+Cypress.Commands.add('apiAdminWalletSetStatus', ({ adminToken, walletUuid, action }) => {
+    const apiUrl = getApiUrl();
+    const token = adminToken || Cypress.env('adminToken');
+
+    return apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v2/admin/wallets/${walletUuid}/${action}`,
         headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',
@@ -618,11 +1726,10 @@ Cypress.Commands.add('apiWalletDashboard', (token) => {
 });
 
 /**
- * POST /api/v1/customer/wallet/transfer/by-wallet-id
+ * POST /api/v1/customer/wallet/withdraw
  */
-Cypress.Commands.add('apiWalletTransferByWalletId', ({
+Cypress.Commands.add('apiWalletWithdraw', ({
     token,
-    recipientWalletId,
     amount,
     description,
     idempotencyKey,
@@ -639,50 +1746,250 @@ Cypress.Commands.add('apiWalletTransferByWalletId', ({
         headers['Idempotency-Key'] = idempotencyKey;
     }
 
-    return cy.request({
+    return apiRequest({
         method: 'POST',
-        url: `${apiUrl}/api/v1/customer/wallet/transfer/by-wallet-id`,
+        url: `${apiUrl}/api/v1/customer/wallet/withdraw`,
         headers,
-        body: {
-            recipient_wallet_id: recipientWalletId,
-            amount,
-            description,
-        },
+        body: { amount, description },
         failOnStatusCode,
     });
 });
 
+function formatBalanceForAdminUi(amount) {
+    return Number(amount).toFixed(2);
+}
+
+function visitAdminCustomersAuthenticated(adminPayload) {
+    const paymentBaseUrl =
+        Cypress.env('PAYMENT_BASE_URL') || Cypress.config('baseUrl') || 'http://localhost:5173';
+
+    return cy.visit(`${paymentBaseUrl}/en/admin/customers`, {
+        onBeforeLoad(win) {
+            applyAdminAuthToWindow(win, adminPayload);
+        },
+    });
+}
+
+function openAdminCustomerSearchIfNeeded() {
+    cy.get('body').then(($body) => {
+        if ($body.find('input[name="search"]:visible').length === 0) {
+            cy.contains('button', 'Filter').click({ force: true });
+        }
+    });
+}
+
 /**
- * POST /api/v1/customer/wallet/transfer/by-phone
+ * Assert GET /v2/admin/customers/{id} balance matches wallet show balance.
+ */
+Cypress.Commands.add('assertAdminCustomerBalanceMatchesWallet', ({
+    adminToken,
+    customerId,
+    walletUuid,
+    expectedBalance,
+}) => {
+    const formatted = formatBalanceForAdminUi(expectedBalance);
+
+    return cy.apiAdminGetCustomer({ adminToken, customerId }).then((customerResponse) => {
+        expect(Number(customerResponse.body.data.balance), 'admin customer API balance').to.eq(
+            Number(formatted)
+        );
+
+        return cy.apiAdminWalletShow({ adminToken, walletUuid }).then((walletResponse) => {
+            expect(Number(walletResponse.body.data.balance), 'wallet API balance').to.eq(Number(formatted));
+            expect(Number(customerResponse.body.data.balance), 'customer balance equals wallet balance').to.eq(
+                Number(walletResponse.body.data.balance)
+            );
+        });
+    });
+});
+
+/**
+ * Admin customers list: search by phone and assert wallet balance column.
+ */
+Cypress.Commands.add('assertAdminCustomerBalanceInList', ({
+    phone,
+    expectedBalance,
+    adminPayload,
+    skipVisit = false,
+}) => {
+    aliasRealRequest('GET', '**/v2/admin/customers*', 'customersList');
+
+    const chain = skipVisit ? cy.wrap(null) : visitAdminCustomersAuthenticated(adminPayload);
+
+    return chain.then(() => {
+        openAdminCustomerSearchIfNeeded();
+        cy.get('input[name="search"]', { timeout: 15000 }).clear().type(phone);
+        cy.wait('@customersList', { timeout: 30000 });
+
+        return cy
+            .contains('tr', phone, { timeout: 20000 })
+            .should('contain.text', formatBalanceForAdminUi(expectedBalance));
+    });
+});
+
+/**
+ * Admin customer detail page: assert displayed wallet balance.
+ */
+Cypress.Commands.add('assertAdminCustomerBalanceInDetail', ({
+    customerId,
+    expectedBalance,
+    adminPayload,
+}) => {
+    aliasRealRequest('GET', '**/v2/admin/customers/*', 'customerDetails');
+
+    const paymentBaseUrl =
+        Cypress.env('PAYMENT_BASE_URL') || Cypress.config('baseUrl') || 'http://localhost:5173';
+
+    return cy
+        .visit(`${paymentBaseUrl}/en/admin/customers/${customerId}`, {
+            onBeforeLoad(win) {
+                applyAdminAuthToWindow(win, adminPayload);
+            },
+        })
+        .then(() => {
+            cy.wait('@customerDetails', { timeout: 30000 });
+            return cy
+                .contains(formatBalanceForAdminUi(expectedBalance), { timeout: 20000 })
+                .should('be.visible');
+        });
+});
+
+/**
+ * Admin panel: search customer by phone → Actions → Activate → confirm.
+ */
+Cypress.Commands.add('adminActivateCustomerInPanel', ({ phone, skipLogin = false }) => {
+    aliasRealRequest('POST', '**/v2/admin/customers/*/status', 'customerStatusUpdate');
+    aliasRealRequest('GET', '**/v2/admin/customers*', 'customersList');
+
+    const activateInList = () => {
+        cy.get('input[placeholder="Search customers..."]', { timeout: 15000 })
+            .clear()
+            .type(phone);
+        cy.wait('@customersList', { timeout: 30000 });
+
+        cy.contains('tr', phone, { timeout: 20000 }).within(() => {
+            cy.contains('button', 'Actions').click();
+        });
+        cy.contains('a', 'Activate', { timeout: 10000 }).click();
+        cy.confirmSwal();
+
+        return cy.wait('@customerStatusUpdate', { timeout: 30000 }).then(({ response }) => {
+            expect(response.statusCode).to.be.oneOf([200, 201]);
+            const body = parseResponseBody(response.body);
+            expect(body?.data?.status || body?.data?.customer?.status).to.eq('active');
+            return cy.wrap(Cypress.env('adminToken'));
+        });
+    };
+
+    if (skipLogin) {
+        return activateInList();
+    }
+
+    return cy.loginAdmin().then(() => {
+        cy.wait('@customersList', { timeout: 60000 });
+        return activateInList();
+    });
+});
+
+/**
+ * Integrated onboarding: register → profile → admin panel activate → wallet ready.
+ */
+Cypress.Commands.add('setupWalletAccountingCustomer', (options = {}) => {
+    const runId = options.runId || Date.now();
+    const password = options.password || 'WalletAcct1!';
+    const phone = options.phone || `+2499${String(runId).slice(-7)}${Math.floor(Math.random() * 10)}`;
+    const label = options.label || 'WalletAcct';
+    const useAdminPanel = options.useAdminPanel !== false;
+    const skipLogin = options.skipLogin === true;
+
+    return cy.apiOnboardCustomer({ phone, password }).then(({ customer, token: pendingToken }) =>
+        cy
+            .apiCompleteCustomerProfileWithCityLookup({
+                token: pendingToken,
+                firstName: `${label} ${runId}`,
+                email: `wallet.acct.${runId}@example.com`,
+                nationalId: `WA-${runId}`,
+            })
+            .then(() => {
+                const activateStep = useAdminPanel
+                    ? cy.adminActivateCustomerInPanel({ phone, skipLogin })
+                    : cy.apiAdminLogin().then(({ token: adminToken }) =>
+                          cy.apiAdminActivateCustomer({ adminToken, customerId: customer.id }).then(() =>
+                              cy.wrap(adminToken)
+                          )
+                      );
+
+                return activateStep.then((adminToken) =>
+                    cy.apiAdminFindWallet({ adminToken, search: phone }).then(({ wallet }) =>
+                        cy.apiCustomerLogin({ phone, password }).then((loginResponse) => {
+                            const activeToken = loginResponse.body.data.token;
+
+                            return cy.apiWalletDashboard(activeToken).then((dashResponse) => {
+                                expect(dashResponse.status).to.eq(200);
+                                expect(dashResponse.body.data.wallet.wallet_id).to.eq(wallet.wallet_id);
+
+                                return {
+                                    phone,
+                                    password,
+                                    email: `wallet.acct.${runId}@example.com`,
+                                    customerId: customer.id,
+                                    token: activeToken,
+                                    walletUuid: wallet.id,
+                                    walletId: wallet.wallet_id,
+                                    balance: dashResponse.body.data.wallet.balance,
+                                    adminToken,
+                                };
+                            });
+                        })
+                    )
+                );
+            })
+    );
+});
+
+/**
+ * Two activated customers (sender + recipient) for transfer scenarios.
+ */
+Cypress.Commands.add('setupWalletAccountingPair', (runId = Date.now()) => {
+    return cy
+        .setupWalletAccountingCustomer({ runId, label: 'Sender' })
+        .then((sender) =>
+            cy
+                .setupWalletAccountingCustomer({ runId: runId + 1, label: 'Recipient', skipLogin: true })
+                .then((recipient) => ({ sender, recipient }))
+        );
+});
+
+/**
+ * Resolve master float wallet via admin API.
+ */
+Cypress.Commands.add('apiAdminGetMasterWallet', (adminToken) => {
+    return cy
+        .apiAdminFindWallet({ adminToken, walletType: 'master' })
+        .then(({ wallet }) => cy.wrap(wallet));
+});
+
+/**
+ * @deprecated Use apiWalletQuery + apiWalletTransfer
  */
 Cypress.Commands.add('apiWalletTransferByPhone', ({
     token,
     recipientPhone,
     amount,
     description,
+    note,
     idempotencyKey,
     failOnStatusCode = true,
 }) => {
-    const apiUrl = getApiUrl();
-    const headers = {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-    };
-
-    if (idempotencyKey) {
-        headers['Idempotency-Key'] = idempotencyKey;
-    }
-
-    return cy.request({
-        method: 'POST',
-        url: `${apiUrl}/api/v1/customer/wallet/transfer/by-phone`,
-        headers,
-        body: {
-            recipient_phone: recipientPhone,
+    return cy.apiWalletQuery({ token, identifier: recipientPhone, failOnStatusCode }).then((resolveResponse) => {
+        return cy.apiWalletTransfer({
+            token,
+            recipientWalletId: resolveResponse.body.data.wallet_id,
             amount,
             description,
-        },
-        failOnStatusCode,
+            note,
+            idempotencyKey,
+            failOnStatusCode,
+        });
     });
 });

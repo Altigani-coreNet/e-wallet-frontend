@@ -21,8 +21,8 @@ import {
 
 const AdminCustomerView = () => {
     const { formatCurrency } = useAuthStore();
-    const { uuid } = useParams();
-    const customerUuid = uuid;
+    const { id } = useParams();
+    const customerId = id;
     const navigate = useNavigate();
     const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
@@ -39,7 +39,7 @@ const AdminCustomerView = () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetchAdminCustomer(customerUuid);
+            const response = await fetchAdminCustomer(customerId);
             const isSuccess = response?.success || response?.status;
             if (isSuccess) {
                 setCustomer(response.data);
@@ -52,7 +52,7 @@ const AdminCustomerView = () => {
         } finally {
             setLoading(false);
         }
-    }, [customerUuid, t]);
+    }, [customerId, t]);
 
     useEffect(() => {
         loadCustomer();
@@ -73,7 +73,7 @@ const AdminCustomerView = () => {
         if (!result.isConfirmed) return;
 
         try {
-            const response = await deleteAdminCustomer(customerUuid);
+            const response = await deleteAdminCustomer(customerId);
             if (response.success) {
                 toast.success(t('customers.customerDeletedSuccessfully'));
                 navigate('/admin/customers');
@@ -92,14 +92,14 @@ const AdminCustomerView = () => {
             setBreadcrumbs([
                 { label: t('admin.sidebar.dashboard'), path: '/admin/dashboard' },
                 { label: t('customers.customers'), path: '/admin/customers' },
-                { label: customer.name, path: `/admin/customers/${customerUuid}`, active: true },
+                { label: customer.name, path: `/admin/customers/${customerId}`, active: true },
             ]);
         }
 
         setActions(
             <>
                 {canEdit && (
-                    <Link to={`/admin/customers/${customerUuid}/edit`} className="btn btn-sm fw-bold btn-primary me-2">
+                    <Link to={`/admin/customers/${customerId}/edit`} className="btn btn-sm fw-bold btn-primary me-2">
                         <i className="ki-duotone ki-pencil fs-3">
                             <span className="path1"></span>
                             <span className="path2"></span>
@@ -125,7 +125,7 @@ const AdminCustomerView = () => {
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [customer, customerUuid, canEdit, setTitle, setBreadcrumbs, setActions, t]);
+    }, [customer, customerId, canEdit, setTitle, setBreadcrumbs, setActions, t]);
 
     const formatDate = (dateString) => {
         if (!dateString) return t('customers.na');
@@ -232,8 +232,8 @@ const AdminCustomerView = () => {
                                 <div className="separator separator-dashed my-3"></div>
 
                                 <div className="pb-5 fs-6">
-                                    <div className="fw-bold mt-5">{t('customers.customerUuidLabel')}</div>
-                                    <div className="text-gray-600 text-break">{customer.uuid}</div>
+                                    <div className="fw-bold mt-5">{t('customers.customerIdLabel')}</div>
+                                    <div className="text-gray-600 text-break">{customer.id}</div>
 
                                     <div className="fw-bold mt-5">{t('common.email')}</div>
                                     <div className="text-gray-600">
@@ -251,6 +251,11 @@ const AdminCustomerView = () => {
                                         ) : (
                                             t('customers.noPhoneProvided')
                                         )}
+                                    </div>
+
+                                    <div className="fw-bold mt-5">{t('customers.nationalId')}</div>
+                                    <div className="text-gray-600">
+                                        {customer.national_id || t('customers.na')}
                                     </div>
 
                                     <div className="fw-bold mt-5">{t('common.address')}</div>
@@ -368,7 +373,7 @@ const AdminCustomerView = () => {
                                             {canEdit && (
                                                 <div className="card-toolbar">
                                                     <Link
-                                                        to={`/admin/customers/${customerUuid}/edit`}
+                                                        to={`/admin/customers/${customerId}/edit`}
                                                         className="btn btn-sm btn-light-primary"
                                                     >
                                                         <i className="ki-duotone ki-pencil fs-3">
@@ -386,9 +391,9 @@ const AdminCustomerView = () => {
                                                     <tbody className="fs-6 fw-semibold text-gray-600">
                                                         <tr>
                                                             <td className="text-muted min-w-125px w-125px">
-                                                                {t('customers.customerUuidLabel')}
+                                                                {t('customers.customerIdLabel')}
                                                             </td>
-                                                            <td className="text-gray-800 text-break">{customer.uuid}</td>
+                                                            <td className="text-gray-800 text-break">{customer.id}</td>
                                                         </tr>
                                                         <tr>
                                                             <td className="text-muted min-w-125px w-125px">{t('common.name')}</td>
@@ -483,7 +488,7 @@ const AdminCustomerView = () => {
                                         <div className="card-body pt-0">
                                             <div className="d-flex flex-wrap gap-3">
                                                 {canEdit && (
-                                                    <Link to={`/admin/customers/${customerUuid}/edit`} className="btn btn-light-primary">
+                                                    <Link to={`/admin/customers/${customerId}/edit`} className="btn btn-light-primary">
                                                         <i className="ki-duotone ki-pencil fs-3">
                                                             <span className="path1"></span>
                                                             <span className="path2"></span>
@@ -493,7 +498,7 @@ const AdminCustomerView = () => {
                                                 )}
                                                 {canEdit && customerStatus !== 'deleted' && (
                                                     <Link
-                                                        to={`/admin/customers/${customerUuid}/edit`}
+                                                        to={`/admin/customers/${customerId}/edit`}
                                                         className="btn btn-light-warning"
                                                     >
                                                         <i className="ki-duotone ki-setting-2 fs-3">
@@ -536,7 +541,7 @@ const AdminCustomerView = () => {
                                             {canEdit && (
                                                 <div className="card-toolbar">
                                                     <Link
-                                                        to={`/admin/customers/${customerUuid}/edit`}
+                                                        to={`/admin/customers/${customerId}/edit`}
                                                         className="btn btn-sm btn-light-primary"
                                                     >
                                                         <i className="ki-duotone ki-pencil fs-3">
@@ -614,7 +619,7 @@ const AdminCustomerView = () => {
                                                             <td className="text-end">
                                                                 {canEdit && (
                                                                     <Link
-                                                                        to={`/admin/customers/${customerUuid}/edit`}
+                                                                        to={`/admin/customers/${customerId}/edit`}
                                                                         className="btn btn-icon btn-active-light-primary w-30px h-30px ms-auto"
                                                                     >
                                                                         <i className="ki-duotone ki-pencil fs-3">
@@ -635,7 +640,7 @@ const AdminCustomerView = () => {
                                                             <td className="text-end">
                                                                 {canEdit && customerStatus !== 'deleted' && (
                                                                     <Link
-                                                                        to={`/admin/customers/${customerUuid}/edit`}
+                                                                        to={`/admin/customers/${customerId}/edit`}
                                                                         className="btn btn-icon btn-active-light-primary w-30px h-30px ms-auto"
                                                                     >
                                                                         <i className="ki-duotone ki-pencil fs-3">
@@ -673,7 +678,7 @@ const AdminCustomerView = () => {
                                             {canEdit && customerStatus !== 'deleted' && (
                                                 <div className="card-toolbar">
                                                     <Link
-                                                        to={`/admin/customers/${customerUuid}/edit`}
+                                                        to={`/admin/customers/${customerId}/edit`}
                                                         className="btn btn-sm btn-light-primary"
                                                     >
                                                         {t('customers.changeStatus')}

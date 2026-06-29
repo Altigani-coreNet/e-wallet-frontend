@@ -4,7 +4,7 @@
  * Flow:
  * 1. Register customer via public API (pending, empty name/email)
  * 2. API login + profile — confirm missing name/email
- * 3. Lookup country (Sudan), then city from GET /api/cities/select, then complete profile
+ * 3. Lookup country from GET /api/v1/countries, then cities from GET /api/v1/countries/{dialCode}/cities, then complete profile
  * 4. API login + profile — confirm completed data
  * 5. Admin dashboard — verify data visible, then update name/email
  * 6. API login + profile — confirm admin update reflected
@@ -28,6 +28,7 @@ describe('Customer registration lifecycle (real backend)', () => {
     let phone;
     let profileName;
     let profileEmail;
+    let nationalId;
     let updatedName;
     let updatedEmail;
 
@@ -35,6 +36,7 @@ describe('Customer registration lifecycle (real backend)', () => {
         phone = `+2499${runId.toString().slice(-7)}${Math.floor(Math.random() * 10)}`;
         profileName = `Profile Customer ${runId}`;
         profileEmail = `profile.${runId}@example.com`;
+        nationalId = `NID-LC-${runId}`;
         updatedName = `Lifecycle Customer ${runId}`;
         updatedEmail = `lifecycle.${runId}@example.com`;
         cy.on('window:confirm', () => true);
@@ -81,11 +83,12 @@ describe('Customer registration lifecycle (real backend)', () => {
 
             // 1) Country for +249 phone → 2) First city in that country → 3) Complete profile
             cy.apiLookupCountry({ search: 'Sudan' }).then((country) => {
-                cy.apiLookupCity({ countryId: country.id }).then((city) => {
+                cy.apiLookupCity({ dialCode: country.code, countryId: country.id }).then((city) => {
                     cy.apiCompleteCustomerProfile({
                         token: authToken,
                         firstName: profileName,
                         email: profileEmail,
+                        nationalId,
                         cityId: city.id,
                         countryCode: country.code,
                     }).then((completeResponse) => {
@@ -93,6 +96,7 @@ describe('Customer registration lifecycle (real backend)', () => {
                         expect(completeResponse.body.data.profile_completed).to.eq(true);
                         expect(completeResponse.body.data.customer.name).to.eq(profileName);
                         expect(completeResponse.body.data.customer.email).to.eq(profileEmail);
+                        expect(completeResponse.body.data.customer.nationalId).to.eq(nationalId);
                         expect(completeResponse.body.data.customer.cityId).to.eq(city.id);
                         expect(completeResponse.body.data.customer.countryId).to.eq(country.id);
                     });
@@ -107,6 +111,7 @@ describe('Customer registration lifecycle (real backend)', () => {
                 const profile = profileResponse.body.data.customer;
                 expect(profile.name).to.eq(profileName);
                 expect(profile.email).to.eq(profileEmail);
+                expect(profile.nationalId).to.eq(nationalId);
                 expect(profile.profileCompleted).to.eq(true);
             });
         });

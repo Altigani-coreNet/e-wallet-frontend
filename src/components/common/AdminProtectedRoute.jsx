@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { getToken, getUser, removeToken } from '../../utils/api';
 import { resolveAdminPath } from '../../i18n/localePaths';
+import useAuthStore from '../../stores/authStore';
 
 const AdminProtectedRoute = ({ children }) => {
     const location = useLocation();
@@ -20,6 +21,24 @@ const AdminProtectedRoute = ({ children }) => {
         });
         
         setAuthData({ token, user });
+
+        if (token && user) {
+            try {
+                useAuthStore.getState().syncProfileData(
+                    {
+                        ...user,
+                        is_admin: user.is_admin ?? true,
+                        permissions:
+                            user.permissions ||
+                            user.scopes ||
+                            [],
+                    },
+                    null
+                );
+            } catch {
+                /* store unavailable */
+            }
+        }
         
         // Clear any stale auth state if no valid token
         if (!token || !user) {

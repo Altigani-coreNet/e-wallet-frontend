@@ -35,7 +35,6 @@ const CustomersIndex = () => {
     const [filters, setFilters] = useState({
         search: '',
         customer_group_id: '',
-        country: '',
         date_from: '',
         date_to: '',
     });
@@ -234,7 +233,6 @@ const CustomersIndex = () => {
         setFilters({
             search: '',
             customer_group_id: '',
-            country: '',
             date_from: '',
             date_to: '',
         });

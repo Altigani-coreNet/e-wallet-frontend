@@ -59,7 +59,7 @@ const AdminCustomerCreate = () => {
             if (isSuccess) {
                 toast.success('Customer created successfully');
                 const createdCustomer = AdminCustomerModel.fromApi(response.data?.data);
-                navigate(createdCustomer?.uuid ? `/admin/customers/${createdCustomer.uuid}` : '/admin/customers');
+                navigate(createdCustomer?.id ? `/admin/customers/${createdCustomer.id}` : '/admin/customers');
             } else {
                 if (response.data.errors) {
                     setErrors(response.data.errors);

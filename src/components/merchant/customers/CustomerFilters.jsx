@@ -34,7 +34,7 @@ const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
         <div className="card mb-5">
             <div className="card-body">
                 <div className="row g-3">
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                         <label className="form-label fw-bold fs-6">{t('customers.search')}</label>
                         <input
                             type="text"
@@ -46,7 +46,7 @@ const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
                         />
                     </div>
 
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                         <label className="form-label fw-bold fs-6">{t('customers.customerGroup')}</label>
                         <select
                             name="customer_group_id"
@@ -64,19 +64,7 @@ const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
                         </select>
                     </div>
 
-                    <div className="col-md-4">
-                        <label className="form-label fw-bold fs-6">{t('common.country')}</label>
-                        <input
-                            type="text"
-                            name="country"
-                            className="form-control form-control-solid"
-                            placeholder={t('customers.filterByCountry')}
-                            value={filters.country || ''}
-                            onChange={handleInputChange}
-                        />
-                    </div>
-
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                         <label className="form-label fw-bold fs-6">{t('customers.dateFrom')}</label>
                         <input
                             type="date"
@@ -87,7 +75,7 @@ const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
                         />
                     </div>
 
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                         <label className="form-label fw-bold fs-6">{t('customers.dateTo')}</label>
                         <input
                             type="date"
@@ -98,7 +86,7 @@ const CustomerFilters = ({ filters, onFilterChange, onClearFilters }) => {
                         />
                     </div>
 
-                    <div className="col-md-4 d-flex align-items-end">
+                    <div className="col-md-3 d-flex align-items-end">
                         <button
                             type="button"
                             className="btn btn-light btn-active-light-primary me-2"

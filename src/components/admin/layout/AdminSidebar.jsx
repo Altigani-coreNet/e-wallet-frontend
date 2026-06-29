@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { NavLink, useLocation } from 'react-router-dom';
 import { get } from '../../../utils/api';
 import { ADMIN_ENDPOINTS } from '../../../utils/constants';
-import { useCan } from '../../../utils/permissions';
+import { useCan, WALLET_VIEW_PERMISSIONS } from '../../../utils/permissions';
 
 /** Defaults when no dynamic branding store is wired (see optional useSettingsStore). */
 const defaultBranding = {
@@ -74,6 +74,11 @@ const AdminSidebar = () => {
     const canCreateRole = useCan('pos.roles.create_roles');
     const canViewCustomers = useCan(['sales.customers.view_customers', 'view_customers']);
     const canCreateCustomer = useCan(['sales.customers.create_customers', 'create_customers']);
+    const canViewWallets = useCan(WALLET_VIEW_PERMISSIONS);
+    const canViewChartOfAccounts = useCan(['accounting.chart_of_accounts.view_chart_of_accounts', 'view_chart_of_accounts']);
+    const canViewLedger = useCan(['accounting.ledger.view_ledger', 'view_ledger']);
+    const canViewAccountingReports = useCan(['accounting.reports.view_accounting_reports', 'view_accounting_reports']);
+    const hasAccountingMenu = canViewChartOfAccounts || canViewLedger || canViewAccountingReports;
 
     // const canViewDashboard = useCan('pos.dashboard.view_dashboard');
     const canViewTransactions = useCan('pos.transactions.view_transactions');
@@ -317,6 +322,119 @@ const AdminSidebar = () => {
                                             <span className="menu-title">{t('admin.sidebar.addCustomer')}</span>
                                         </NavLink>
                                     </div>
+                                    )}
+                                </div>
+                            </div>
+                            )}
+
+                            {canViewWallets && (
+                            <div data-kt-menu-trigger="click" className={`menu-item menu-accordion ${isActive('/admin/wallets') ? 'hover show' : ''}`}>
+                                <span className={`menu-link ${isActive('/admin/wallets') ? 'active' : ''}`}>
+                                    <span className="menu-icon">
+                                        <i className="ki-duotone ki-wallet fs-2">
+                                            <span className="path1"></span>
+                                            <span className="path2"></span>
+                                            <span className="path3"></span>
+                                            <span className="path4"></span>
+                                        </i>
+                                    </span>
+                                    <span className="menu-title">{t('admin.sidebar.wallets')}</span>
+                                    <span className="menu-arrow"></span>
+                                </span>
+                                <div className={`menu-sub menu-sub-accordion ${isActive('/admin/wallets') ? 'show' : ''}`}>
+                                    <div className="menu-item">
+                                        <NavLink
+                                            className={({ isActive: routeActive }) => `menu-link ${routeActive ? 'active' : ''}`}
+                                            to="/admin/wallets"
+                                            end
+                                        >
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('admin.sidebar.walletList')}</span>
+                                        </NavLink>
+                                    </div>
+                                    <div className="menu-item">
+                                        <NavLink
+                                            className={({ isActive: routeActive }) => `menu-link ${routeActive ? 'active' : ''}`}
+                                            to="/admin/wallets/transactions"
+                                        >
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('admin.sidebar.walletTransactions')}</span>
+                                        </NavLink>
+                                    </div>
+                                </div>
+                            </div>
+                            )}
+
+                            {hasAccountingMenu && (
+                            <div data-kt-menu-trigger="click" className={`menu-item menu-accordion ${isActive('/admin/accounting') ? 'hover show' : ''}`}>
+                                <span className={`menu-link ${isActive('/admin/accounting') ? 'active' : ''}`}>
+                                    <span className="menu-icon">
+                                        <i className="ki-duotone ki-chart fs-2">
+                                            <span className="path1"></span>
+                                            <span className="path2"></span>
+                                            <span className="path3"></span>
+                                        </i>
+                                    </span>
+                                    <span className="menu-title">{t('admin.sidebar.accounting')}</span>
+                                    <span className="menu-arrow"></span>
+                                </span>
+                                <div className={`menu-sub menu-sub-accordion ${isActive('/admin/accounting') ? 'show' : ''}`}>
+                                    {canViewChartOfAccounts && (
+                                    <div className="menu-item">
+                                        <NavLink
+                                            className={({ isActive: routeActive }) => `menu-link ${routeActive ? 'active' : ''}`}
+                                            to="/admin/accounting/chart-of-accounts"
+                                            end
+                                        >
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('admin.sidebar.chartOfAccounts')}</span>
+                                        </NavLink>
+                                    </div>
+                                    )}
+                                    {canViewLedger && (
+                                    <div className="menu-item">
+                                        <NavLink
+                                            className={({ isActive: routeActive }) => `menu-link ${routeActive ? 'active' : ''}`}
+                                            to="/admin/accounting/ledger-summary"
+                                        >
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('admin.sidebar.ledgerSummary')}</span>
+                                        </NavLink>
+                                    </div>
+                                    )}
+                                    {canViewAccountingReports && (
+                                    <>
+                                    <div className="menu-item">
+                                        <NavLink
+                                            className={({ isActive: routeActive }) => `menu-link ${routeActive ? 'active' : ''}`}
+                                            to="/admin/accounting/balance-sheet"
+                                        >
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('admin.sidebar.balanceSheet')}</span>
+                                        </NavLink>
+                                    </div>
+                                    <div className="menu-item">
+                                        <NavLink
+                                            className={({ isActive: routeActive }) => `menu-link ${routeActive ? 'active' : ''}`}
+                                            to="/admin/accounting/profit-and-loss"
+                                        >
+                                            <span className="menu-bullet">
+                                                <span className="bullet bullet-dot"></span>
+                                            </span>
+                                            <span className="menu-title">{t('admin.sidebar.profitAndLoss')}</span>
+                                        </NavLink>
+                                    </div>
+                                    </>
                                     )}
                                 </div>
                             </div>

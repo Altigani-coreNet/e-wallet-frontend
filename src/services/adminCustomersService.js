@@ -33,8 +33,8 @@ export const fetchAdminCustomers = async (params = {}) => {
 /**
  * Fetch a single admin customer by UUID.
  */
-export const fetchAdminCustomer = async (customerUuid) => {
-    const response = await axios.get(ADMIN_ENDPOINTS.CUSTOMER_DETAILS(customerUuid), {
+export const fetchAdminCustomer = async (customerId) => {
+    const response = await axios.get(ADMIN_ENDPOINTS.CUSTOMER_DETAILS(customerId), {
         headers: authHeaders(),
     });
 
@@ -51,9 +51,9 @@ export const fetchAdminCustomer = async (customerUuid) => {
  * @param {string|number} customerId - Customer ID
  * @returns {Promise<Object>} - Normalized API response
  */
-export const deleteAdminCustomer = async (customerUuid) => {
+export const deleteAdminCustomer = async (customerId) => {
     try {
-        const response = await axios.delete(ADMIN_ENDPOINTS.CUSTOMER_DETAILS(customerUuid), {
+        const response = await axios.delete(ADMIN_ENDPOINTS.CUSTOMER_DETAILS(customerId), {
             headers: authHeaders(),
         });
         return {
@@ -94,10 +94,10 @@ export const bulkDeleteAdminCustomers = async (ids = []) => {
     }
 };
 
-export const updateAdminCustomerStatus = async (customerUuid, status) => {
+export const updateAdminCustomerStatus = async (customerId, status) => {
     try {
         const response = await axios.post(
-            ADMIN_ENDPOINTS.CUSTOMER_UPDATE_STATUS(customerUuid),
+            ADMIN_ENDPOINTS.CUSTOMER_UPDATE_STATUS(customerId),
             { status },
             { headers: authHeaders() }
         );
@@ -118,10 +118,10 @@ export const updateAdminCustomerStatus = async (customerUuid, status) => {
 /**
  * Toggle an admin customer's status (legacy active/suspended shortcut).
  */
-export const toggleAdminCustomerStatus = async (customerUuid) => {
+export const toggleAdminCustomerStatus = async (customerId) => {
     try {
         const response = await axios.post(
-            ADMIN_ENDPOINTS.CUSTOMER_TOGGLE_STATUS(customerUuid),
+            ADMIN_ENDPOINTS.CUSTOMER_TOGGLE_STATUS(customerId),
             {},
             { headers: authHeaders() }
         );
@@ -139,9 +139,42 @@ export const toggleAdminCustomerStatus = async (customerUuid) => {
 };
 
 /**
+ * Fetch admin customers export as CSV blob.
+ */
+export const downloadAdminCustomersExport = async (filters = {}) => {
+    const response = await axios.get(ADMIN_ENDPOINTS.CUSTOMER_EXPORT, {
+        params: filters,
+        headers: authHeaders('text/csv'),
+        responseType: 'blob',
+    });
+    return response.data;
+};
+
+/**
+ * Download admin customer import template as CSV blob.
+ */
+export const downloadAdminCustomersTemplate = async () => {
+    const response = await axios.get(ADMIN_ENDPOINTS.CUSTOMER_EXPORT_TEMPLATE, {
+        headers: authHeaders('text/csv'),
+        responseType: 'blob',
+    });
+    return response.data;
+};
+
+export const triggerBlobDownload = (blob, filename) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+};
+
+/**
  * Fetch admin customers export payload (JSON rows that the caller converts to CSV).
- * @param {Object} filters - Filter parameters
- * @returns {Promise<Object>} - API response data
+ * @deprecated Use downloadAdminCustomersExport for CSV blob export.
  */
 export const exportAdminCustomers = async (filters = {}) => {
     const response = await axios.get(ADMIN_ENDPOINTS.CUSTOMER_EXPORT, {
@@ -156,7 +189,7 @@ export const exportAdminCustomers = async (filters = {}) => {
 export const adminCustomersKeys = {
     all: ['admin', 'customers'],
     list: (params) => ['admin', 'customers', 'list', params],
-    detail: (uuid) => ['admin', 'customers', 'detail', uuid],
+    detail: (id) => ['admin', 'customers', 'detail', id],
 };
 
 /**

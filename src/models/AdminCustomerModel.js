@@ -20,10 +20,11 @@ const normalizePlace = (place) => {
  */
 export class AdminCustomerModel {
     constructor(data = {}) {
-        this.uuid = data.uuid ?? '';
+        this.id = data.id ?? null;
         this.name = resolveLocaleText(data.name);
         this.email = data.email ?? '';
         this.phone = data.phone ?? data.phone_number ?? '';
+        this.national_id = data.national_id ?? null;
         this.address = data.address ?? '';
         this.country_id = data.country_id ?? null;
         this.city_id = data.city_id ?? null;

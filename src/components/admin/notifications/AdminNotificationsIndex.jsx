@@ -8,6 +8,7 @@ import { deleteNotification, getNotifications, resendNotification } from '../../
 const targetBadgeClass = (targetType) => {
     if (targetType === 'public') return 'badge badge-light-primary';
     if (targetType === 'merchant') return 'badge badge-light-success';
+    if (targetType === 'customer') return 'badge badge-light-info';
     return 'badge badge-light-warning';
 };
 
@@ -98,6 +99,7 @@ const AdminNotificationsIndex = () => {
             { value: 'public', label: t('admin.notificationsIndex.targetPublic') },
             { value: 'merchant', label: t('admin.notificationsIndex.targetMerchant') },
             { value: 'user', label: t('admin.notificationsIndex.targetUser') },
+            { value: 'customer', label: t('admin.notificationsIndex.targetCustomer') },
         ],
         [t],
     );
@@ -143,6 +145,10 @@ const AdminNotificationsIndex = () => {
 
         if (item.target_type === 'user') {
             return item.user?.name || item.notifiable?.name || item.notifiable?.email || item.user_name || '-';
+        }
+
+        if (item.target_type === 'customer') {
+            return item.notifiable?.name || item.notifiable?.email || item.notifiable?.phone || '-';
         }
 
         return '-';

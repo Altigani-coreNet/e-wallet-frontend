@@ -664,6 +664,7 @@ const useAuthStore = create(
                     custom_region: state.custom_region,
                     regions: state.regions,
                     isAuthenticated: state.isAuthenticated,
+                    profileLoaded: state.profileLoaded,
                     testMode: state.testMode,
                 }),
             }

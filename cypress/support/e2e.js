@@ -1,4 +1,6 @@
 import './commands';
+import './walletAccountingHelpers';
+import './environment';
 
 Cypress.on('uncaught:exception', (err) => {
     if (
