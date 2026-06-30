@@ -13,6 +13,8 @@ const sharedWalletFixtures = {
     walletE2ePassword: 'WalletE2e1!',
     /** Must match Fast_Pay_Soft_Pos WALLET_TRANSFER_FEE / config services.wallet.transfer_fee */
     walletTransferFee: 2,
+    /** Must match Fast_Pay_Soft_Pos OTP_MOCK_CODE — used for auth + wallet transfer OTP */
+    otpMockCode: 111111,
 };
 
 /** Preferred dial code when picking country/city from real GET /api/v1/countries APIs. */

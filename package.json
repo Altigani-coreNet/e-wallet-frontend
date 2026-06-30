@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:wallet": "vitest run src/utils/__tests__/walletTransferFee.test.js src/utils/__tests__/walletAccounting.test.js",
     "cy:open": "node cypress/scripts/run.mjs development open",
     "cy:open:dev": "node cypress/scripts/run.mjs development open",
     "cy:open:staging": "node cypress/scripts/run.mjs staging open",

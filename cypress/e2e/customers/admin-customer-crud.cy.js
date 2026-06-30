@@ -159,7 +159,7 @@ describe('Admin Customer Create Flow (Real API)', () => {
         });
 
         cy.contains('Customer created successfully', { timeout: 30000 }).should('be.visible');
-        cy.url({ timeout: 60000 }).should('match', /\/admin\/customers\/\d+$/);
+        cy.url({ timeout: 60000 }).should('match', /\/admin\/customers\/[0-9a-f-]{36}$/i);
 
         cy.url().then((url) => {
             if (!customerId) {

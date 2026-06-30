@@ -1,9 +1,8 @@
 /**
  * Customer wallet transactions list E2E (real backend — no API mocking)
  *
- * Prerequisites:
- * - Laravel backend running on port 8000 (see cypress.config.js apiUrl)
- * - Wallet E2E fixture customers (+249977700001 / +249977700002) must exist in the database
+ * Creates sender + recipient via API onboarding (no fixture seeders).
+ * Transfers use OTP step + mock code 111111 via cy.apiWalletTransfer().
  *
  * Run:
  *   npm run cy:run:e2e -- --spec cypress/e2e/customers/customer-wallet-transactions.cy.js
@@ -13,17 +12,34 @@ describe('Customer wallet transactions list (real backend)', () => {
     let senderToken;
     let recipientToken;
     let recipientWalletId;
+    let adminToken;
     const transferAmount = 5;
     const transferCount = 10;
     const runId = Date.now();
 
     before(() => {
-        cy.apiWalletE2eLogin({ role: 'sender' }).then((token) => {
-            senderToken = token;
-        });
+        cy.setupWalletAccountingPair(runId).then((pair) => {
+            senderToken = pair.sender.token;
+            recipientToken = pair.recipient.token;
+            adminToken = pair.sender.adminToken;
 
-        cy.apiWalletE2eLogin({ role: 'recipient' }).then((token) => {
-            recipientToken = token;
+            cy.apiAdminGetMasterWallet(adminToken).then((master) => {
+                cy.apiAdminWalletCashIn({
+                    adminToken,
+                    walletUuid: master.id,
+                    amount: 500,
+                    description: 'E2E seed master for tx list',
+                    idempotencyKey: `seed-tx-list-master-${runId}`,
+                });
+
+                cy.apiAdminWalletCashIn({
+                    adminToken,
+                    walletUuid: pair.sender.walletUuid,
+                    amount: transferAmount * transferCount + 50,
+                    description: 'Fund sender for tx list',
+                    idempotencyKey: `fund-sender-tx-list-${runId}`,
+                });
+            });
         });
     });
 

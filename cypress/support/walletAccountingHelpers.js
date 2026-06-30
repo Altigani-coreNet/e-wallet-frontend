@@ -2,33 +2,44 @@
  * Shared helpers for wallet accounting E2E specs (ACCOUNTING_WORKFLOW_PRD.md).
  */
 
-export const WALLET_ACCOUNTING_PASSWORD = 'WalletAcct1!';
+import {
+    DEFAULT_TRANSFER_FEE,
+    resolveTransferFee,
+    transferRecipientNet as transferRecipientNetShared,
+    roundMoney,
+} from '../../src/utils/walletTransferFee';
+import {
+    ACCOUNT_CODE,
+    expectedWalletOperationDelta,
+    zeroAccountingDelta,
+} from '../../src/utils/walletAccounting';
 
-/** System chart-of-account codes (see Fast_Pay_Soft_Pos AccountCode). */
-export const ACCOUNT_CODE = {
-    BANK: 1000,
-    CUSTOMER_LIABILITY: 2000,
-    MASTER_LIABILITY: 2050,
-    FEE_INCOME: 4000,
-};
+export { ACCOUNT_CODE, expectedWalletOperationDelta, zeroAccountingDelta };
+
+export const WALLET_ACCOUNTING_PASSWORD = 'WalletAcct1!';
 
 export function uniqueWalletPhone(runId = Date.now()) {
     return `+2499${String(runId).slice(-7)}${Math.floor(Math.random() * 10)}`;
 }
 
+/** Dev OTP code — must match Fast_Pay_Soft_Pos OTP_MOCK_CODE / config services.otp.mock_code */
+export const MOCK_OTP_CODE = 111111;
+
+/** Resolve mock OTP from Cypress env (default 111111). */
+export function mockOtpCode() {
+    const fromEnv = Cypress.env('otpMockCode');
+
+    return fromEnv === undefined || fromEnv === '' ? MOCK_OTP_CODE : Number(fromEnv);
+}
+
 /** Configured transfer fee (SDG) — mirrors WALLET_TRANSFER_FEE on the API. */
 export function configuredTransferFee() {
-    const fee = Cypress.env('walletTransferFee');
-    if (fee === undefined || fee === null || fee === '') {
-        return 0;
-    }
-
-    return Math.max(0, roundMoney(fee));
+    return resolveTransferFee(Cypress.env('walletTransferFee'), DEFAULT_TRANSFER_FEE);
 }
 
 /** Net amount credited to recipient after the platform transfer fee. */
 export function transferRecipientNet(grossAmount) {
-    return roundMoney(grossAmount - configuredTransferFee());
+    return transferRecipientNetShared(grossAmount, configuredTransferFee());
 }
 
 /** Default balance-sheet filter: first day of current month through today (UTC). */
@@ -60,8 +71,136 @@ export function unwrapAdminPayload(response) {
     return response.body?.data ?? response.body;
 }
 
-function roundMoney(value) {
-    return Math.round(Number(value || 0) * 100) / 100;
+/**
+ * True when the API rejected the operation.
+ * Admin routes may return HTTP 200 with `{ status: false }`; customer routes use `{ success: false }` or 4xx.
+ */
+export function isApiErrorResponse(response) {
+    const httpStatus = response?.status ?? response?.statusCode ?? 0;
+
+    if (httpStatus >= 400 && httpStatus < 500) {
+        return true;
+    }
+
+    const body = response?.body ?? response;
+
+    return body?.status === false || body?.success === false;
+}
+
+/**
+ * Assert a wallet/accounting API call was rejected (422 or semantic error body on HTTP 200).
+ */
+export function assertApiRejects(response, options = {}) {
+    const label = options.label || 'API should reject';
+    const body = response?.body ?? {};
+
+    expect(isApiErrorResponse(response), label).to.eq(true);
+
+    if (options.messageIncludes != null) {
+        expect(String(body.message || '')).to.include(options.messageIncludes);
+    }
+
+    if (options.message != null) {
+        expect(body.message).to.eq(options.message);
+    }
+}
+
+/** Normalize cy.request / intercept bodies (may be JSON strings). */
+export function parseApiBody(body) {
+    if (typeof body === 'string') {
+        try {
+            return JSON.parse(body);
+        } catch {
+            return {};
+        }
+    }
+
+    return body ?? {};
+}
+
+/**
+ * Assert customer login/auth failed — HTTP 401 or HTTP 200 with success:false.
+ */
+export function assertApiAuthFailure(response, options = {}) {
+    const httpStatus = response?.status ?? response?.statusCode ?? 0;
+    const body = parseApiBody(response?.body ?? response);
+
+    if (httpStatus === 401) {
+        if (options.messageIncludes != null) {
+            expect(String(body.message || '')).to.include(options.messageIncludes);
+        }
+        return;
+    }
+
+    expect(body.success, options.label || 'login should fail').to.eq(false);
+
+    if (options.messageIncludes != null) {
+        expect(String(body.message || '')).to.include(options.messageIncludes);
+    }
+}
+
+/** Assert admin DELETE intercept succeeded (success or status flag in body). */
+export function assertAdminDeleteSuccess(interceptResponse) {
+    const httpStatus = interceptResponse?.statusCode ?? interceptResponse?.status ?? 0;
+    const body = parseApiBody(interceptResponse?.body);
+
+    expect(httpStatus).to.be.oneOf([200, 204]);
+    expect(body.success ?? body.status, 'delete should succeed').to.eq(true);
+}
+
+/** Assert customer self-delete account succeeded. */
+export function assertCustomerDeleteAccountSuccess(response, options = {}) {
+    const httpStatus = response?.status ?? response?.statusCode ?? 0;
+    const body = parseApiBody(response?.body ?? response);
+
+    expect(httpStatus, options.label || 'delete account HTTP status').to.eq(200);
+    expect(body.success, options.label || 'delete account success flag').to.eq(true);
+    expect(String(body.message || '')).to.match(/account deleted successfully/i);
+    expect(String(body.data?.message || '')).to.match(/account deleted successfully/i);
+}
+
+/** Assert customer self-delete was rejected (wrong password, validation, etc.). */
+export function assertCustomerDeleteAccountRejected(response, options = {}) {
+    const httpStatus = response?.status ?? response?.statusCode ?? 0;
+    const body = parseApiBody(response?.body ?? response);
+
+    if (httpStatus === 401) {
+        if (options.messageIncludes != null) {
+            expect(String(body.message || '')).to.include(options.messageIncludes);
+        }
+        return;
+    }
+
+    if (isApiErrorResponse(response)) {
+        if (options.messageIncludes != null) {
+            expect(String(body.message || '')).to.include(options.messageIncludes);
+        }
+        return;
+    }
+
+    expect(httpStatus, options.label || 'delete account should be rejected').to.be.oneOf([400, 401, 422]);
+    expect(body.success, options.label || 'delete account success flag').to.eq(false);
+
+    if (options.messageIncludes != null) {
+        expect(String(body.message || '')).to.include(options.messageIncludes);
+    }
+}
+
+/**
+ * Assert idempotent admin money-operation replay (cash-in / cash-out).
+ * Compares stable fields only — ignores updated_at and nested owner hydration drift.
+ */
+export function assertIdempotentMoneyOperationReplay(firstResponse, secondResponse) {
+    const first = unwrapAdminPayload(firstResponse);
+    const second = unwrapAdminPayload(secondResponse);
+
+    expect(second.amount, 'replay amount').to.eq(first.amount);
+    expect(second.posting_reference, 'replay posting_reference').to.eq(first.posting_reference);
+    expect(second.wallet?.id, 'replay wallet id').to.eq(first.wallet?.id);
+    expect(second.wallet?.balance, 'replay wallet balance').to.eq(first.wallet?.balance);
+    expect(second.transaction?.id, 'replay transaction id').to.eq(first.transaction?.id);
+    expect(second.transaction?.amount, 'replay transaction amount').to.eq(first.transaction?.amount);
+    expect(second.transaction?.type, 'replay transaction type').to.eq(first.transaction?.type);
 }
 
 function indexAccountsByCode(groups = []) {
@@ -114,144 +253,6 @@ const DELTA_TOLERANCE = 0.01;
 
 function assertDelta(actual, expected, message) {
     expect(actual, message).to.be.closeTo(expected, DELTA_TOLERANCE);
-}
-
-/**
- * Expected ledger / report deltas for a wallet money operation.
- */
-export function expectedWalletOperationDelta(operation, { amount, fee = 0 }) {
-    const value = roundMoney(amount);
-    const feeValue = roundMoney(fee);
-
-    switch (operation) {
-        case 'masterCashIn':
-            return {
-                accounts: {
-                    [ACCOUNT_CODE.BANK]: value,
-                    [ACCOUNT_CODE.MASTER_LIABILITY]: value,
-                },
-                summary: {
-                    total_assets: value,
-                    total_liabilities: value,
-                    total_equity: 0,
-                },
-                balanceSheet: {
-                    total_assets: value,
-                    total_liabilities: value,
-                    total_equity: 0,
-                    total_liabilities_and_equity: value,
-                },
-            };
-        case 'masterCashOut':
-            return {
-                accounts: {
-                    [ACCOUNT_CODE.BANK]: -value,
-                    [ACCOUNT_CODE.MASTER_LIABILITY]: -value,
-                },
-                summary: {
-                    total_assets: -value,
-                    total_liabilities: -value,
-                    total_equity: 0,
-                },
-                balanceSheet: {
-                    total_assets: -value,
-                    total_liabilities: -value,
-                    total_equity: 0,
-                    total_liabilities_and_equity: -value,
-                },
-            };
-        case 'customerCashIn':
-            return {
-                accounts: {
-                    [ACCOUNT_CODE.MASTER_LIABILITY]: -value,
-                    [ACCOUNT_CODE.CUSTOMER_LIABILITY]: value,
-                },
-                summary: {
-                    total_assets: 0,
-                    total_liabilities: 0,
-                    total_equity: 0,
-                },
-                balanceSheet: {
-                    total_assets: 0,
-                    total_liabilities: 0,
-                    total_equity: 0,
-                    total_liabilities_and_equity: 0,
-                },
-            };
-        case 'customerCashOut':
-            return {
-                accounts: {
-                    [ACCOUNT_CODE.CUSTOMER_LIABILITY]: -value,
-                    [ACCOUNT_CODE.MASTER_LIABILITY]: value,
-                },
-                summary: {
-                    total_assets: 0,
-                    total_liabilities: 0,
-                    total_equity: 0,
-                },
-                balanceSheet: {
-                    total_assets: 0,
-                    total_liabilities: 0,
-                    total_equity: 0,
-                    total_liabilities_and_equity: 0,
-                },
-            };
-        case 'transfer':
-            if (feeValue > 0) {
-                return {
-                    accounts: {
-                        [ACCOUNT_CODE.CUSTOMER_LIABILITY]: -feeValue,
-                        [ACCOUNT_CODE.FEE_INCOME]: feeValue,
-                    },
-                    summary: {
-                        total_assets: 0,
-                        total_liabilities: -feeValue,
-                        total_equity: feeValue,
-                    },
-                    balanceSheet: {
-                        total_assets: 0,
-                        total_liabilities: -feeValue,
-                        total_equity: feeValue,
-                        total_liabilities_and_equity: 0,
-                    },
-                };
-            }
-
-            return {
-                accounts: {},
-                summary: {
-                    total_assets: 0,
-                    total_liabilities: 0,
-                    total_equity: 0,
-                },
-                balanceSheet: {
-                    total_assets: 0,
-                    total_liabilities: 0,
-                    total_equity: 0,
-                    total_liabilities_and_equity: 0,
-                },
-            };
-        default:
-            throw new Error(`Unknown wallet operation: ${operation}`);
-    }
-}
-
-/** Expected zero delta — rejected ops must not move the balance sheet. */
-export function zeroAccountingDelta() {
-    return {
-        accounts: {},
-        summary: {
-            total_assets: 0,
-            total_liabilities: 0,
-            total_equity: 0,
-        },
-        balanceSheet: {
-            total_assets: 0,
-            total_liabilities: 0,
-            total_equity: 0,
-            total_liabilities_and_equity: 0,
-        },
-    };
 }
 
 /**
@@ -312,6 +313,19 @@ export function buildInvalidTransferPayload(rng, ctx) {
         () => ({
             label: 'self-transfer to own wallet',
             body: { recipient_wallet_id: ctx.senderWalletId, amount: 5 },
+        }),
+        () => ({
+            label: 'missing otp_token and otp',
+            body: { recipient_wallet_id: ctx.recipientWalletId, amount: 5 },
+        }),
+        () => ({
+            label: 'invalid otp_token',
+            body: {
+                recipient_wallet_id: ctx.recipientWalletId,
+                amount: 5,
+                otp_token: 'not-a-valid-transfer-otp-token',
+                otp: 111111,
+            },
         }),
     ];
 
@@ -404,3 +418,15 @@ export function logServerResponse(label, response) {
 }
 
 Cypress.Commands.add('logServerResponse', logServerResponse);
+Cypress.Commands.add('assertApiRejects', (response, options = {}) => {
+    assertApiRejects(response, options);
+});
+Cypress.Commands.add('assertApiAuthFailure', (response, options = {}) => {
+    assertApiAuthFailure(response, options);
+});
+Cypress.Commands.add('assertAdminDeleteSuccess', (interceptResponse) => {
+    assertAdminDeleteSuccess(interceptResponse);
+});
+Cypress.Commands.add('assertIdempotentMoneyOperationReplay', (firstResponse, secondResponse) => {
+    assertIdempotentMoneyOperationReplay(firstResponse, secondResponse);
+});

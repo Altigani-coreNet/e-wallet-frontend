@@ -21,6 +21,8 @@
  *   npm run cy:run:e2e -- --spec cypress/e2e/customers/customer-registration-lifecycle.cy.js
  */
 
+import { assertAdminDeleteSuccess, assertApiAuthFailure } from '../../support/walletAccountingHelpers';
+
 describe('Customer registration lifecycle (real backend)', () => {
     const password = 'Lifecycle1!';
     const runId = Date.now();
@@ -130,8 +132,14 @@ describe('Customer registration lifecycle (real backend)', () => {
         cy.url({ timeout: 30000 }).should('match', /\/admin\/customers\/[^/]+\/edit$/);
 
         cy.get('#kt_content_container form', { timeout: 30000 }).should('be.visible').within(() => {
-            cy.get('input[name="name"]').should('have.value', profileName).clear().type(updatedName);
-            cy.get('input[name="email"]').should('have.value', profileEmail).clear().type(updatedEmail);
+            cy.get('input[name="name"]')
+                .should('have.value', profileName)
+                .setReactInputValue(updatedName)
+                .should('have.value', updatedName);
+            cy.get('input[name="email"]')
+                .should('have.value', profileEmail)
+                .setReactInputValue(updatedEmail)
+                .should('have.value', updatedEmail);
             cy.get('input[name="phone"]').should('have.value', phone);
             cy.contains('button', 'Save Customer').click();
         });
@@ -160,12 +168,13 @@ describe('Customer registration lifecycle (real backend)', () => {
         cy.contains('a', 'Delete').click();
         cy.confirmSwal();
         cy.wait('@deleteCustomer', { timeout: 30000 }).then(({ response }) => {
-            expect(response.statusCode).to.be.oneOf([200, 204]);
-            expect(response.body?.success).to.eq(true);
+            assertAdminDeleteSuccess(response);
         });
         cy.wait('@customersList', { timeout: 60000 });
         cy.contains(phone).should('not.exist');
 
-        cy.apiCustomerLogin({ phone, password, failOnStatusCode: false }).its('status').should('eq', 401);
+        cy.apiCustomerLogin({ phone, password, failOnStatusCode: false }).then((response) => {
+            assertApiAuthFailure(response);
+        });
     });
 });

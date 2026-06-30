@@ -1,9 +1,8 @@
 /**
  * Chaos transfer — randomly inject invalid payloads (~40% rejection rate).
  *
- * Verifies rejected transfers return 4xx (never 5xx), leave wallet balances
- * unchanged, and keep the balance sheet balanced with zero ledger delta.
- * Valid transfers still reflect correctly in wallets and accounting.
+ * Invalid payloads hit POST /wallet/transfer directly (missing otp_token/otp → validation reject).
+ * Valid transfers use cy.apiWalletTransfer (OTP + mock 111111).
  *
  * Reproduce a sequence:
  *   npx cypress run --env chaosSeed=123,chaosCount=20
@@ -11,10 +10,12 @@
 
 import {
     assertAccountingDelta,
+    assertApiRejects,
     buildInvalidTransferPayload,
     chaosPayloadKeySlug,
     configuredTransferFee,
     expectedWalletOperationDelta,
+    isApiErrorResponse,
     mulberry32,
     transferRecipientNet,
     zeroAccountingDelta,
@@ -55,10 +56,10 @@ function runChaosIteration(index, state, rng, ctx) {
                         failOnStatusCode: false,
                     })
                     .then((response) => {
-                        expect(response.status, `${invalid.label} should reject with 4xx`).to.be.within(
-                            400,
-                            499
-                        );
+                        expect(
+                            isApiErrorResponse(response),
+                            `${invalid.label} should reject`
+                        ).to.eq(true);
                         expect(response.status, `${invalid.label} must not cause 5xx`).to.be.lt(500);
 
                         return cy

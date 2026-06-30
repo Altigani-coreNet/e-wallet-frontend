@@ -2,6 +2,8 @@
  * PRD Gherkin: Cash-out exceeding balance is rejected
  */
 
+import { assertApiRejects } from '../../support/walletAccountingHelpers';
+
 describe('Wallet accounting — cash-out insufficient balance', () => {
     let adminToken;
     let customer;
@@ -40,7 +42,7 @@ describe('Wallet accounting — cash-out insufficient balance', () => {
                 description: 'Should fail',
                 failOnStatusCode: false,
             }).then((response) => {
-                expect(response.status).to.eq(422);
+                assertApiRejects(response, { messageIncludes: 'Insufficient wallet balance' });
             });
 
             cy.apiAdminWalletShow({ adminToken, walletUuid: customer.walletUuid }).then((show) => {

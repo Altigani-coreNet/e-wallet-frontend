@@ -145,7 +145,10 @@ describe('Customers CRUD', () => {
                 body: { success: true, message: 'Customer deleted successfully' },
             }).as('deleteRow');
 
-            cy.get('tbody tr').first().find('button[title="Delete"]').click({ force: true });
+            cy.get('tbody tr').first().within(() => {
+                cy.contains('button', 'Actions').click();
+            });
+            cy.contains('button', 'Delete').click({ force: true });
             cy.confirmSwal();
             cy.wait('@deleteRow');
             cy.contains('Customer deleted successfully').should('be.visible');

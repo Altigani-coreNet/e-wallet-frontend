@@ -12,6 +12,8 @@
  *   npm run cy:run:e2e -- --spec cypress/e2e/customers/admin-customer-lifecycle.cy.js
  */
 
+import { assertAdminDeleteSuccess, assertApiAuthFailure } from '../../support/walletAccountingHelpers';
+
 describe('Admin customer lifecycle (real backend)', () => {
     const initialPassword = 'Lifecycle1!';
     const updatedPassword = 'UpdatedPass1!';
@@ -41,7 +43,11 @@ describe('Admin customer lifecycle (real backend)', () => {
 
         cy.apiChangePassword({ phone, newPassword: updatedPassword }).its('status').should('eq', 200);
         cy.apiCustomerLogin({ phone, password: updatedPassword }).its('status').should('eq', 200);
-        cy.apiCustomerLogin({ phone, password: initialPassword, failOnStatusCode: false }).its('status').should('eq', 401);
+        cy.apiCustomerLogin({ phone, password: initialPassword, failOnStatusCode: false }).then(
+            (response) => {
+                assertApiAuthFailure(response, { messageIncludes: 'Invalid credentials' });
+            }
+        );
 
         cy.contains('tr', phone).within(() => {
             cy.contains('button', 'Actions').click();
@@ -49,13 +55,16 @@ describe('Admin customer lifecycle (real backend)', () => {
         cy.contains('a', 'Delete').click();
         cy.confirmSwal();
         cy.wait('@deleteCustomer', { timeout: 30000 }).then(({ response }) => {
-            expect(response.statusCode).to.be.oneOf([200, 204]);
-            expect(response.body?.success).to.eq(true);
+            assertAdminDeleteSuccess(response);
         });
         cy.wait('@customersList', { timeout: 60000 });
         cy.contains(phone).should('not.exist');
 
-        cy.apiCustomerLogin({ phone, password: updatedPassword, failOnStatusCode: false }).its('status').should('eq', 401);
+        cy.apiCustomerLogin({ phone, password: updatedPassword, failOnStatusCode: false }).then(
+            (response) => {
+                assertApiAuthFailure(response);
+            }
+        );
 
         cy.apiOnboardCustomer({ phone, password: 'ReRegister1!' }).then(({ customer }) => {
             expect(customer.phone).to.eq(phone);

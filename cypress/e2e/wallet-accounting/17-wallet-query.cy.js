@@ -2,6 +2,8 @@
  * PRD: Wallet query by phone or wallet_id returns recipient basics
  */
 
+import { assertApiRejects } from '../../support/walletAccountingHelpers';
+
 describe('Wallet accounting — wallet query', () => {
     let sender;
     let recipient;
@@ -44,10 +46,10 @@ describe('Wallet accounting — wallet query', () => {
             identifier: sender.phone,
             failOnStatusCode: false,
         }).then((response) => {
-            expect(response.status).to.eq(422);
-            expect(response.body.message).to.eq(
-                'You cannot use your own wallet or phone number as the recipient.'
-            );
+            assertApiRejects(response, {
+                message:
+                    'You cannot use your own wallet or phone number as the recipient.',
+            });
         });
     });
 
@@ -57,10 +59,10 @@ describe('Wallet accounting — wallet query', () => {
             identifier: sender.walletId,
             failOnStatusCode: false,
         }).then((response) => {
-            expect(response.status).to.eq(422);
-            expect(response.body.message).to.eq(
-                'You cannot use your own wallet or phone number as the recipient.'
-            );
+            assertApiRejects(response, {
+                message:
+                    'You cannot use your own wallet or phone number as the recipient.',
+            });
         });
     });
 });

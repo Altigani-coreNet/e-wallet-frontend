@@ -4,6 +4,7 @@ import {
     configuredTransferFee,
     currentMonthDateRange,
     expectedWalletOperationDelta,
+    mockOtpCode,
     zeroAccountingDelta,
 } from './walletAccountingHelpers';
 import { buildProfitLossSnapshot } from './accountingHelpers';
@@ -239,6 +240,28 @@ function parseResponseBody(body) {
     return body;
 }
 
+/**
+ * Set value on a React-controlled <input> (plain .clear().type() often appends).
+ */
+Cypress.Commands.add('setReactInputValue', { prevSubject: 'element' }, (subject, value) => {
+    const input = subject[0];
+    const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value'
+    )?.set;
+
+    if (nativeSetter) {
+        nativeSetter.call(input, value);
+    } else {
+        input.value = value;
+    }
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+
+    return cy.wrap(subject);
+});
+
 function apiRequest(options = {}) {
     const headers = {
         Accept: 'application/json',
@@ -468,6 +491,24 @@ Cypress.Commands.add(
         });
     }
 );
+
+/**
+ * DELETE /api/v1/customer/account — soft-delete with identifier corruption.
+ */
+Cypress.Commands.add('apiCustomerDeleteAccount', ({ token, password, failOnStatusCode = true }) => {
+    const apiUrl = getApiUrl();
+
+    return apiRequest({
+        method: 'DELETE',
+        url: `${apiUrl}/api/v1/customer/account`,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        body: { password },
+        failOnStatusCode,
+    });
+});
 
 /**
  * GET /api/v1/customer/profile for the authenticated customer.
@@ -994,14 +1035,21 @@ Cypress.Commands.add('apiWalletResolveRecipient', ({ token, identifier, failOnSt
     });
 });
 
+function isTransferOtpSuccess(response) {
+    return [200, 201].includes(response.status)
+        && response.body?.success === true
+        && typeof response.body?.data?.otp_token === 'string'
+        && response.body.data.otp_token.length > 0;
+}
+
 /**
- * POST /api/v1/customer/wallet/transfer
+ * POST /api/v1/customer/wallet/transfer/otp
+ * Issues a transfer OTP bound to the payload. Use before apiWalletTransfer.
  */
-Cypress.Commands.add('apiWalletTransfer', ({
+Cypress.Commands.add('apiWalletTransferOtp', ({
     token,
     recipientWalletId,
     amount,
-    fee,
     description,
     note,
     idempotencyKey,
@@ -1020,17 +1068,98 @@ Cypress.Commands.add('apiWalletTransfer', ({
 
     return apiRequest({
         method: 'POST',
-        url: `${apiUrl}/api/v1/customer/wallet/transfer`,
+        url: `${apiUrl}/api/v1/customer/wallet/transfer/otp`,
         headers,
         body: {
             recipient_wallet_id: recipientWalletId,
             amount,
-            fee,
             description,
             note,
         },
         failOnStatusCode,
     });
+});
+
+/**
+ * POST /api/v1/customer/wallet/transfer
+ * Requests transfer OTP first, then completes transfer with mock OTP (111111 by default).
+ */
+Cypress.Commands.add('apiWalletTransfer', ({
+    token,
+    recipientWalletId,
+    amount,
+    fee,
+    description,
+    note,
+    idempotencyKey,
+    otpToken,
+    otp,
+    skipOtp = false,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+    };
+
+    if (idempotencyKey) {
+        headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    const transferBody = {
+        recipient_wallet_id: recipientWalletId,
+        amount,
+        description,
+        note,
+        otp: otp ?? mockOtpCode(),
+    };
+
+    if (fee !== undefined) {
+        transferBody.fee = fee;
+    }
+
+    const postTransfer = (resolvedOtpToken) => apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v1/customer/wallet/transfer`,
+        headers,
+        body: {
+            ...transferBody,
+            otp_token: resolvedOtpToken,
+        },
+        failOnStatusCode,
+    });
+
+    if (skipOtp) {
+        return postTransfer(otpToken);
+    }
+
+    if (otpToken) {
+        return postTransfer(otpToken);
+    }
+
+    return cy
+        .apiWalletTransferOtp({
+            token,
+            recipientWalletId,
+            amount,
+            description,
+            note,
+            idempotencyKey,
+            failOnStatusCode,
+        })
+        .then((otpResponse) => {
+            if (!isTransferOtpSuccess(otpResponse)) {
+                if (!failOnStatusCode) {
+                    return cy.wrap(otpResponse, { log: false });
+                }
+
+                expect(isTransferOtpSuccess(otpResponse), 'transfer OTP issued').to.eq(true);
+            }
+
+            return postTransfer(otpResponse.body.data.otp_token);
+        });
 });
 
 /**
@@ -1664,6 +1793,7 @@ Cypress.Commands.add('assertAccountingReflectsOperation', ({
     operation,
     amount,
     fee,
+    providerPayableCode,
     context,
     startDate,
     endDate,
@@ -1672,7 +1802,11 @@ Cypress.Commands.add('assertAccountingReflectsOperation', ({
         ? fee
         : (operation === 'transfer' ? configuredTransferFee() : 0);
     const resolvedExpected = expected
-        ?? (operation ? expectedWalletOperationDelta(operation, { amount, fee: resolvedFee }) : null);
+        ?? (operation ? expectedWalletOperationDelta(operation, {
+            amount,
+            fee: resolvedFee,
+            providerPayableCode,
+        }) : null);
 
     if (!before || !resolvedExpected) {
         throw new Error('assertAccountingReflectsOperation requires before snapshot and expected or operation');
@@ -1967,7 +2101,7 @@ Cypress.Commands.add('setupWalletAccountingCustomer', (options = {}) => {
     const password = options.password || 'WalletAcct1!';
     const phone = options.phone || `+2499${String(runId).slice(-7)}${Math.floor(Math.random() * 10)}`;
     const label = options.label || 'WalletAcct';
-    const useAdminPanel = options.useAdminPanel !== false;
+    const useAdminPanel = options.useAdminPanel === true;
     const skipLogin = options.skipLogin === true;
 
     return cy.apiOnboardCustomer({ phone, password }).then(({ customer, token: pendingToken }) =>
@@ -2059,5 +2193,129 @@ Cypress.Commands.add('apiWalletTransferByPhone', ({
             idempotencyKey,
             failOnStatusCode,
         });
+    });
+});
+
+Cypress.Commands.add('apiWalletBillPaymentOtp', ({
+    token,
+    serviceId,
+    productId,
+    amount,
+    servicePayload,
+    description,
+    idempotencyKey,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+    };
+
+    if (idempotencyKey) {
+        headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    return apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v1/customer/wallet/bill-payment/otp`,
+        headers,
+        body: {
+            service_id: serviceId,
+            product_id: productId,
+            amount,
+            service_payload: servicePayload,
+            description,
+        },
+        failOnStatusCode,
+    });
+});
+
+Cypress.Commands.add('apiWalletBillPayment', ({
+    token,
+    serviceId,
+    productId,
+    amount,
+    servicePayload,
+    description,
+    idempotencyKey,
+    otpToken,
+    otp,
+    skipOtp = false,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const headers = {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+    };
+
+    if (idempotencyKey) {
+        headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    const postBillPayment = (resolvedOtpToken) => apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v1/customer/wallet/bill-payment`,
+        headers,
+        body: {
+            service_id: serviceId,
+            product_id: productId,
+            amount,
+            service_payload: servicePayload,
+            description,
+            otp_token: resolvedOtpToken,
+            otp: otp ?? mockOtpCode(),
+        },
+        failOnStatusCode,
+    });
+
+    if (skipOtp || otpToken) {
+        return postBillPayment(otpToken);
+    }
+
+    return cy.apiWalletBillPaymentOtp({
+        token,
+        serviceId,
+        productId,
+        amount,
+        servicePayload,
+        description,
+        idempotencyKey,
+        failOnStatusCode,
+    }).then((otpResponse) => postBillPayment(otpResponse.body.data.otp_token));
+});
+
+Cypress.Commands.add('apiAdminProviderSettlement', ({
+    adminToken,
+    partnerId,
+    amount,
+    description,
+    idempotencyKey,
+    failOnStatusCode = true,
+}) => {
+    const apiUrl = getApiUrl();
+    const headers = {
+        Authorization: `Bearer ${adminToken}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+    };
+
+    if (idempotencyKey) {
+        headers['Idempotency-Key'] = idempotencyKey;
+    }
+
+    return apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v2/admin/provider-settlements`,
+        headers,
+        body: {
+            partner_id: partnerId,
+            amount,
+            description,
+        },
+        failOnStatusCode,
     });
 });

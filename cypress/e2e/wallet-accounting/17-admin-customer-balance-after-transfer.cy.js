@@ -3,7 +3,7 @@
  *
  * Flow:
  * 1. Fund sender wallet via admin API
- * 2. Transfer between two customer wallets
+ * 2. Transfer OTP + confirm (mock 111111) between two customer wallets
  * 3. Assert admin customer API balance matches wallet balance
  * 4. Assert admin dashboard list + detail pages show the same balances
  *

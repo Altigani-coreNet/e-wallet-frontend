@@ -2,6 +2,8 @@
  * PRD Gherkin: Resolve recipient not found
  */
 
+import { assertApiRejects } from '../../support/walletAccountingHelpers';
+
 describe('Wallet accounting — resolve recipient not found', () => {
     let sender;
 
@@ -17,8 +19,7 @@ describe('Wallet accounting — resolve recipient not found', () => {
             identifier: 'does-not-exist-99999',
             failOnStatusCode: false,
         }).then((response) => {
-            expect(response.status).to.eq(422);
-            expect(response.body.message).to.include('not found');
+            assertApiRejects(response, { messageIncludes: 'not found' });
         });
     });
 });

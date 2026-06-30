@@ -9,10 +9,10 @@
  */
 describe('Customer WebSocket broadcast', () => {
     const apiUrl = Cypress.env('apiUrl');
-    const phone = Cypress.env('walletE2eSenderPhone');
-    const password = Cypress.env('walletE2ePassword');
     const providedToken = Cypress.env('customerToken');
     const listenTimeoutMs = Number(Cypress.env('wsListenTimeoutMs') || 120000);
+    let customerToken;
+    let customerId;
 
     const buildWsUrl = () => {
         const host = Cypress.env('reverbHost');
@@ -22,14 +22,23 @@ describe('Customer WebSocket broadcast', () => {
         return `${scheme}://${host}:${port}/app/${key}?protocol=7&client=js&version=8.4.0`;
     };
 
+    before(() => {
+        if (providedToken) {
+            return;
+        }
+
+        cy.setupWalletAccountingCustomer({ runId: Date.now(), label: 'WsBroadcast' }).then((ctx) => {
+            customerToken = ctx.token;
+            customerId = ctx.customerId;
+        });
+    });
+
     const resolveCustomerToken = () => {
         if (providedToken) {
             return cy.wrap(providedToken, { log: false });
         }
-        return cy.apiCustomerLogin({ phone, password }).then((loginResponse) => {
-            expect(loginResponse.status, 'customer login status').to.eq(200);
-            return loginResponse.body.data.token;
-        });
+
+        return cy.wrap(customerToken, { log: false });
     };
 
     const customerChannel = (customerId) => `customer-notifications.${customerId}`;

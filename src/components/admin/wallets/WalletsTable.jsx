@@ -49,10 +49,9 @@ const WalletsTable = ({
                     <thead>
                         <tr className="fw-bold text-muted">
                             <th className="min-w-50px">#</th>
+                            <th className="min-w-180px">{t('admin.wallets.owner')}</th>
                             <th className="min-w-150px">{t('admin.wallets.walletId')}</th>
                             <th className="min-w-100px">{t('admin.wallets.walletType')}</th>
-                            <th className="min-w-180px">{t('admin.wallets.owner')}</th>
-                            <th className="min-w-120px">{t('admin.wallets.merchant')}</th>
                             <th className="min-w-120px text-end">{t('admin.wallets.balance')}</th>
                             <th className="min-w-80px">{t('common.status')}</th>
                             <th className="min-w-100px">{t('common.createdAt')}</th>
@@ -62,7 +61,7 @@ const WalletsTable = ({
                     <tbody>
                         {wallets.length === 0 ? (
                             <tr>
-                                <td colSpan="9" className="text-center py-10">
+                                <td colSpan="8" className="text-center py-10">
                                     <span className="text-muted fs-5">{t('admin.wallets.noWalletsFound')}</span>
                                 </td>
                             </tr>

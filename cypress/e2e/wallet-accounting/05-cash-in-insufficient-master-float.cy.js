@@ -2,6 +2,8 @@
  * PRD Gherkin: Cash-in rejected when master float is insufficient
  */
 
+import { assertApiRejects } from '../../support/walletAccountingHelpers';
+
 describe('Wallet accounting — customer cash-in insufficient master float', () => {
     let adminToken;
     let masterUuid;
@@ -21,7 +23,7 @@ describe('Wallet accounting — customer cash-in insufficient master float', () 
     it('rejects customer cash-in when master float is too low', () => {
         cy.captureAccountingSnapshot({ adminToken, label: 'before failed customer cash-in' }).then((before) => {
             cy.apiAdminWalletShow({ adminToken, walletUuid: masterUuid }).then((masterBefore) => {
-                const masterBalance = masterBefore.body.data.balance;
+                const masterBalance = Number(masterBefore.body.data.balance);
                 const attemptAmount = masterBalance + 500;
 
                 cy.apiAdminWalletCashIn({
@@ -31,7 +33,7 @@ describe('Wallet accounting — customer cash-in insufficient master float', () 
                     description: 'Should fail — master float too low',
                     failOnStatusCode: false,
                 }).then((response) => {
-                    expect(response.status).to.eq(422);
+                    assertApiRejects(response, { messageIncludes: 'insufficient' });
                 });
 
                 cy.apiAdminWalletShow({ adminToken, walletUuid: customer.walletUuid }).then((walletShow) => {

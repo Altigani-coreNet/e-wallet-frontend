@@ -23,7 +23,10 @@ describe('Customers i18n (Arabic / RTL)', () => {
             body: { success: true, message: 'تم حذف العميل بنجاح' },
         }).as('deleteCustomer');
 
-        cy.get('tbody tr').first().find('button[title="حذف"]').click({ force: true });
+        cy.get('tbody tr').first().within(() => {
+            cy.contains('button', 'الإجراءات').click();
+        });
+        cy.contains('button', 'حذف').click({ force: true });
         cy.get('.swal2-popup').should('be.visible');
         cy.contains('هل أنت متأكد؟').should('be.visible');
         cy.get('.swal2-confirm').click();

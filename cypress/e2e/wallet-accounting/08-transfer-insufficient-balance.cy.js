@@ -1,6 +1,9 @@
 /**
  * PRD Gherkin: Transfer rejected for insufficient balance
+ * Rejection happens at transfer OTP step (balance check before code is sent).
  */
+
+import { assertApiRejects } from '../../support/walletAccountingHelpers';
 
 describe('Wallet accounting — transfer insufficient balance', () => {
     let adminToken;
@@ -33,7 +36,7 @@ describe('Wallet accounting — transfer insufficient balance', () => {
         });
     });
 
-    it('rejects transfer above balance with 422 and no balance change', () => {
+    it('rejects transfer above balance and leaves balances unchanged', () => {
         cy.captureAccountingSnapshot({ adminToken, label: 'before insufficient transfer' }).then((before) => {
             cy.apiWalletResolveRecipient({
                 token: sender.token,
@@ -48,7 +51,7 @@ describe('Wallet accounting — transfer insufficient balance', () => {
                     description: 'Should fail',
                     failOnStatusCode: false,
                 }).then((response) => {
-                    expect(response.status).to.eq(422);
+                    assertApiRejects(response, { messageIncludes: 'Insufficient wallet balance' });
                 });
 
                 cy.apiAdminWalletShow({ adminToken, walletUuid: sender.walletUuid }).then((senderShow) => {

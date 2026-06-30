@@ -38,7 +38,7 @@ describe('Customers List', () => {
         cy.contains('button', 'Filter').click();
         cy.contains('label', 'Customer Group').should('be.visible');
         cy.contains('label', 'Date From').should('be.visible');
-        cy.get('input[name="country"]').should('be.visible');
+        cy.get('select[name="customer_group_id"]').should('be.visible');
     });
 
     it('changes per-page selector', () => {

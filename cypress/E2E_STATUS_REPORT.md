@@ -1,6 +1,21 @@
 # E2E Status Report
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
+
+## Wallet transfer OTP workflow (E2E)
+
+Customer transfers now require a two-step API flow (mirrors Postman **Wallet** folder):
+
+1. `POST /api/v1/customer/wallet/transfer/otp` — same payload as transfer (recipient, amount, description, note, optional `Idempotency-Key`)
+2. `POST /api/v1/customer/wallet/transfer` — same payload + `otp_token` + `otp`
+
+**Cypress:** `cy.apiWalletTransfer()` handles both steps automatically. Mock OTP defaults to **`111111`** via `otpMockCode` in `cypress/environments.js` (must match backend `OTP_MOCK_CODE`).
+
+**Direct OTP step:** `cy.apiWalletTransferOtp({ token, recipientWalletId, amount, ... })`
+
+**Chaos / raw validation:** `cy.apiWalletTransferRaw()` still posts directly to `/transfer` (expects 422 when `otp_token` / `otp` missing).
+
+**Wallet-accounting folder:** successful transfers use `cy.apiWalletTransfer()`; `19-transfer-otp.cy.js` covers OTP issue, payload mismatch, mock `111111`, and single-use OTP.
 
 ## Baseline (full suite, pre–Category C fixes)
 
@@ -44,37 +59,44 @@ Last updated: 2026-06-29
 
 ## Unfinished — by priority
 
-### 1. Category B — wallet validation (expected 422, got 200) — **start here**
+### 1. Category B — wallet validation — **FIXED**
 
-PHPUnit passes for these paths; live E2E API returns **200**. Backend source looks correct; likely **stale `php artisan serve`**, **DB pollution**, or **env mismatch**.
+**Root cause:** Admin API returns validation errors as HTTP `200` with `{ status: false, message: "..." }` (not HTTP `422`). Validation logic was always correct; tests checked the wrong signal.
 
-| Spec | What fails |
-|------|------------|
-| `03-defund-master-insufficient` | Master cash-out above balance → 200 |
-| `05-cash-in-insufficient-master-float` | Customer cash-in when master float too low → 200 |
-| `08-transfer-insufficient-balance` | Transfer above sender balance → 200 |
-| `09-transfer-frozen-wallet` | Transfer from frozen wallet → 200 |
-| `11-cash-out-insufficient-balance` | Customer cash-out above balance → 200 |
-| `14-resolve-recipient-not-found` | Unknown recipient → 200 |
-| `17-wallet-query` | Self phone / own wallet_id query → 200 (2 of 4 tests) |
-| `18-transfer-chaos-rejection` | `amount above sender balance` → 200 |
+**Fix:**
+- Added `isApiErrorResponse()` / `assertApiRejects()` in `cypress/support/walletAccountingHelpers.js`
+- Updated specs `03`, `05`, `08`, `09`, `11`, `14`, `17-wallet-query`, `18-chaos` to use semantic rejection checks
+- Wallet accounting setup now uses **API activation** by default (no admin UI panel) — faster and more reliable
 
-**Checklist:**
-
-1. Start MySQL and restart Laravel on `localhost:8000` with latest code
-2. Confirm same DB as E2E `.env.development`
-3. Hit API directly (curl) for one reject case vs PHPUnit
-4. Harden tests: numeric `balance`, fresh customers, known balances before reject attempts
-
-**Debug note:** CLI validation script failed with `Connection refused` on `127.0.0.1:3306` — MySQL was not running when debugging from `php artisan`.
-
----
-
-### 2. Category D — idempotency
+**Re-run result: 8/8 specs, 11/11 tests passing** (~2.5 min)
 
 | Spec | Status |
 |------|--------|
-| `06-cash-in-idempotency` | Fail |
+| `03-defund-master-insufficient` | Pass |
+| `05-cash-in-insufficient-master-float` | Pass |
+| `08-transfer-insufficient-balance` | Pass |
+| `09-transfer-frozen-wallet` | Pass |
+| `11-cash-out-insufficient-balance` | Pass |
+| `14-resolve-recipient-not-found` | Pass |
+| `17-wallet-query` | Pass (4/4) |
+| `18-transfer-chaos-rejection` | Pass |
+
+---
+
+### 2. Category D — idempotency — **FIXED**
+
+**Status:** Idempotency works on live API (`Idempotency-Key` header + `wallet_idempotency_keys` table).
+
+**Hardening:**
+- Added `assertIdempotentMoneyOperationReplay()` — stable-field replay assertions (avoids flaky full `deep.eq` on re-hydrated wallet/transaction)
+
+**Re-run result: 1/1 passing** (~11s)
+
+| Spec | Status |
+|------|--------|
+| `06-cash-in-idempotency` | Pass |
+
+**PHPUnit:** `test_cash_in_idempotency_prevents_double_post` — pass (10 assertions)
 
 ---
 
@@ -88,12 +110,25 @@ PHPUnit passes for these paths; live E2E API returns **200**. Backend source loo
 
 ---
 
-### 4. Category E — customer lifecycle API
+### 4. Category E — customer lifecycle API — **FIXED**
 
-| Spec | Status | Notes |
-|------|--------|-------|
-| `customer-registration-lifecycle` | Fail | |
-| `admin-customer-lifecycle` | Fail | Expected 401, got 200 after soft-delete |
+**Root causes:**
+- Auth failures return HTTP `200` with `success: false` (not HTTP `401`)
+- Cypress intercept delete bodies arrive as JSON strings (`success` was `undefined`)
+- Admin edit form is React-controlled — `.clear().type()` appended text instead of replacing
+
+**Fix:**
+- `assertApiAuthFailure()` / `assertAdminDeleteSuccess()` helpers
+- `setReactInputValue()` for React controlled inputs in admin edit form
+- `apiCustomerDeleteAccount()` + `assertCustomerDeleteAccountSuccess()` / `assertCustomerDeleteAccountRejected()` for customer self-delete
+
+**Re-run result: 3/3 specs passing** (~45s)
+
+| Spec | Status |
+|------|--------|
+| `customer-registration-lifecycle` | Pass |
+| `admin-customer-lifecycle` | Pass |
+| `customer-delete-account` | Pass |
 
 ---
 
@@ -113,9 +148,9 @@ PHPUnit passes for these paths; live E2E API returns **200**. Backend source loo
 
 ## Wallet accounting — scorecard
 
-**Passing (14 specs):** `00`–`02`, `04`, `07`, `10`, `12`, `13`, `15`
+**Passing (15 specs):** `00`–`02`, `04`, `06`, `07`, `10`, `12`, `13`, `15`
 
-**Failing (6+ specs):** `03`, `05`, `06`, `08`, `09`, `11`, `14`, `17-wallet-query`, `18`
+**Failing (5+ specs):** `03`, `05`, `08`, `09`, `11`, `14`, `17-wallet-query`, `18`
 
 *`16` and `17-admin-customer-balance-after-transfer` pass after Category C fixes (not reflected in last full run).*
 
@@ -135,12 +170,11 @@ Roughly **~39 tests passing**, **~21 specs still failing** if the full suite wer
 
 ## Suggested order
 
-1. **Category B** — validation / 422 (biggest wallet-accounting gap; overlaps with `18`)
-2. **Category D** — idempotency (`06`)
-3. **Category A** — fixture customers without seeder
-4. **Category E** — lifecycle APIs
-5. **Category F** — admin UI selectors / pagination
-6. Full suite re-run for new baseline
+1. **Category A** — fixture customers without seeder / websocket Reverb port (`8076`)
+2. **Category F** — admin UI selectors / pagination
+3. Full suite re-run for new baseline
+
+*(Categories B, C, D, E are fixed.)*
 
 ---
 

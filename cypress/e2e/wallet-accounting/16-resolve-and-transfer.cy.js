@@ -1,5 +1,6 @@
 /**
- * PRD UC-C3: Query recipient then unified transfer (fee deducted per WALLET_TRANSFER_FEE)
+ * PRD UC-C3: Query recipient → request transfer OTP → transfer (fee deducted per WALLET_TRANSFER_FEE)
+ * OTP mock: 111111 (otpMockCode / OTP_MOCK_CODE)
  */
 
 import { configuredTransferFee, transferRecipientNet } from '../../support/walletAccountingHelpers';

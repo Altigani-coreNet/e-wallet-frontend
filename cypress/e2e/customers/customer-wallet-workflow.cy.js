@@ -1,40 +1,48 @@
 /**
  * Customer wallet transfer E2E (real backend — no API mocking)
  *
- * Prerequisites:
- * - Laravel backend running on port 8000 (see cypress.config.js apiUrl)
- * - Wallet E2E fixture customers (+249977700001 / +249977700002) must exist in the database
+ * Transfer flow: POST /wallet/transfer/otp → POST /wallet/transfer with otp_token + OTP mock 111111.
  *
  * Run:
  *   npm run cy:run:e2e -- --spec cypress/e2e/customers/customer-wallet-workflow.cy.js
  */
 
-import { configuredTransferFee, transferRecipientNet } from '../../support/walletAccountingHelpers';
+import { assertApiAuthFailure, assertApiRejects, transferRecipientNet } from '../../support/walletAccountingHelpers';
 
 describe('Customer wallet workflow (real backend)', () => {
-    const senderPhone = Cypress.env('walletE2eSenderPhone');
-    const recipientPhone = Cypress.env('walletE2eRecipientPhone');
-    const password = Cypress.env('walletE2ePassword');
-
+    let sender;
+    let recipient;
     let senderToken;
     let recipientToken;
     let recipientWalletId;
     let adminToken;
+    const runId = Date.now();
 
     before(() => {
-        cy.apiAdminLogin().then(({ token }) => {
-            adminToken = token;
-        });
-    });
+        cy.setupWalletAccountingPair(runId).then((pair) => {
+            sender = pair.sender;
+            recipient = pair.recipient;
+            senderToken = pair.sender.token;
+            recipientToken = pair.recipient.token;
+            adminToken = pair.sender.adminToken;
 
-    beforeEach(() => {
-        cy.apiCustomerLogin({ phone: senderPhone, password }).then((response) => {
-            senderToken = response.body.data.token;
-        });
+            cy.apiAdminGetMasterWallet(adminToken).then((master) => {
+                cy.apiAdminWalletCashIn({
+                    adminToken,
+                    walletUuid: master.id,
+                    amount: 500,
+                    description: 'E2E seed master for wallet workflow',
+                    idempotencyKey: `seed-workflow-master-${runId}`,
+                });
 
-        cy.apiCustomerLogin({ phone: recipientPhone, password }).then((response) => {
-            recipientToken = response.body.data.token;
-            recipientWalletId = null;
+                cy.apiAdminWalletCashIn({
+                    adminToken,
+                    walletUuid: sender.walletUuid,
+                    amount: 500,
+                    description: 'Fund sender for wallet workflow',
+                    idempotencyKey: `fund-sender-workflow-${runId}`,
+                });
+            });
         });
     });
 
@@ -106,7 +114,7 @@ describe('Customer wallet workflow (real backend)', () => {
         cy.captureAccountingSnapshot({ adminToken, label: 'before transfer by phone' }).then((before) => {
             cy.apiWalletTransferByPhone({
                 token: senderToken,
-                recipientPhone,
+                recipientPhone: recipient.phone,
                 amount,
                 description: 'Cypress transfer by phone',
             }).then((response) => {
@@ -136,9 +144,7 @@ describe('Customer wallet workflow (real backend)', () => {
                 description: 'Should fail',
                 failOnStatusCode: false,
             }).then((response) => {
-                expect(response.status).to.eq(422);
-                expect(response.body.success).to.eq(false);
-                expect(response.body.message).to.eq('Insufficient wallet balance for this transfer.');
+                assertApiRejects(response, { messageIncludes: 'Insufficient wallet balance' });
             });
         });
     });
@@ -153,8 +159,9 @@ describe('Customer wallet workflow (real backend)', () => {
                 amount: 10,
                 failOnStatusCode: false,
             }).then((response) => {
-                expect(response.status).to.eq(422);
-                expect(response.body.message).to.eq('You cannot transfer money to your own wallet.');
+                assertApiRejects(response, {
+                    messageIncludes: 'You cannot use your own wallet or phone number as the recipient.',
+                });
             });
         });
     });
@@ -165,12 +172,12 @@ describe('Customer wallet workflow (real backend)', () => {
             url: `${Cypress.env('apiUrl')}/api/v1/customer/wallet/dashboard`,
             failOnStatusCode: false,
         }).then((response) => {
-            expect(response.status).to.eq(401);
+            assertApiAuthFailure(response);
         });
     });
 
     it('honours idempotency key and does not double-spend', () => {
-        const idempotencyKey = `cypress-idem-${Date.now()}`;
+        const idempotencyKey = `cypress-idem-${runId}`;
         const amount = 5;
 
         cy.captureAccountingSnapshot({ adminToken, label: 'before idempotent transfer' }).then((before) => {

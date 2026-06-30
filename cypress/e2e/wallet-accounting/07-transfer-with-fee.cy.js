@@ -1,5 +1,6 @@
 /**
  * PRD Gherkin: Transfer with fee (money correctness)
+ * Transfer flow: OTP request → confirm with mock OTP 111111 (cy.apiWalletTransfer).
  */
 
 import { configuredTransferFee } from '../../support/walletAccountingHelpers';

@@ -1,6 +1,9 @@
 /**
  * PRD Gherkin: Transfer to frozen wallet is rejected
+ * Rejection at transfer OTP step when recipient wallet is frozen.
  */
+
+import { assertApiRejects } from '../../support/walletAccountingHelpers';
 
 describe('Wallet accounting — transfer to frozen wallet', () => {
     let adminToken;
@@ -48,7 +51,7 @@ describe('Wallet accounting — transfer to frozen wallet', () => {
                 identifier: recipient.phone,
                 failOnStatusCode: false,
             }).then((resolveResponse) => {
-                expect(resolveResponse.status).to.eq(422);
+                assertApiRejects(resolveResponse);
             });
 
             cy.apiWalletTransfer({
@@ -58,7 +61,7 @@ describe('Wallet accounting — transfer to frozen wallet', () => {
                 description: 'Should fail — frozen recipient',
                 failOnStatusCode: false,
             }).then((response) => {
-                expect(response.status).to.eq(422);
+                assertApiRejects(response);
             });
 
             cy.apiAdminWalletShow({ adminToken, walletUuid: sender.walletUuid }).then((senderShow) => {

@@ -2,6 +2,8 @@
  * PRD Gherkin: Defund rejected when float is insufficient
  */
 
+import { assertApiRejects } from '../../support/walletAccountingHelpers';
+
 describe('Wallet accounting — defund master insufficient float', () => {
     let adminToken;
     let masterUuid;
@@ -17,7 +19,7 @@ describe('Wallet accounting — defund master insufficient float', () => {
 
     it('rejects master cash-out above available float with 422 and no balance change', () => {
         cy.apiAdminWalletShow({ adminToken, walletUuid: masterUuid }).then((before) => {
-            const balanceBefore = before.body.data.balance;
+            const balanceBefore = Number(before.body.data.balance);
             const attemptAmount = balanceBefore + 5000;
 
             cy.apiAdminWalletCashOut({
@@ -27,7 +29,7 @@ describe('Wallet accounting — defund master insufficient float', () => {
                 description: 'Should fail — insufficient float',
                 failOnStatusCode: false,
             }).then((response) => {
-                expect(response.status).to.eq(422);
+                assertApiRejects(response, { messageIncludes: 'insufficient' });
             });
 
             cy.apiAdminWalletShow({ adminToken, walletUuid: masterUuid }).then((after) => {

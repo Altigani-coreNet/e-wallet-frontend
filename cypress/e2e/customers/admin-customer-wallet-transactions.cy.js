@@ -3,7 +3,7 @@
  *
  * Flow:
  * 1. Create funded sender + recipient via wallet accounting helpers
- * 2. Seed multiple transfers on sender wallet
+ * 2. Seed multiple transfers on sender wallet (OTP + mock 111111 via cy.apiWalletTransfer)
  * 3. Visit admin customer detail — Overview shows latest 5 transactions
  * 4. Transactions tab shows paginated list + direction filter
  *
@@ -118,9 +118,9 @@ describe('Admin customer wallet transaction history (real backend)', () => {
         cy.wait('@customerTransactions', { timeout: 30000 });
         cy.get('[data-testid="customer-tx-row"]', { timeout: 20000 }).should('have.length.at.least', 8);
 
-        cy.get('[data-testid="customer-tx-per-page"]').select('5');
+        cy.get('[data-testid="customer-tx-per-page"]').select('10');
         cy.wait('@customerTransactions', { timeout: 30000 });
-        cy.get('[data-testid="customer-tx-row"]').should('have.length', 5);
+        cy.get('[data-testid="customer-tx-row"]').should('have.length', 10);
 
         cy.get('[data-testid="customer-tx-next"]').should('not.be.disabled').click();
         cy.wait('@customerTransactions', { timeout: 30000 });
