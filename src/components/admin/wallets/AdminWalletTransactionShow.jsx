@@ -206,7 +206,7 @@ const AdminWalletTransactionShow = () => {
                 </div>
             </div>
 
-            <div className="card">
+            {/* <div className="card">
                 <div className="card-header">
                     <h3 className="card-title fw-bold">{t('admin.wallets.relatedEntries')}</h3>
                     {operation.entry_count > 0 && (
@@ -292,7 +292,7 @@ const AdminWalletTransactionShow = () => {
                         </div>
                     )}
                 </div>
-            </div>
+            </div> */}
         </>
     );
 };

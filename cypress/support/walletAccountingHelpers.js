@@ -433,6 +433,10 @@ export function pickFirstCatalogBillProduct(categories, {
     fallbackPartnerUrl = null,
     requirePartnerPayable = true,
 } = {}) {
+    if (requirePartnerPayable && payableRows.length === 0) {
+        // Caller may approve partner first; still allow scan when explicitly not required.
+    }
+
     const partnerIdsToTry = payableRows.length > 0
         ? payableRows.map((row) => row.partner_id).filter(Boolean)
         : null;
@@ -443,7 +447,7 @@ export function pickFirstCatalogBillProduct(categories, {
         }
 
         if (partnerIdsToTry == null) {
-            return true;
+            return !requirePartnerPayable;
         }
 
         const normalized = String(partnerId).toLowerCase();
@@ -484,11 +488,15 @@ export function pickFirstCatalogBillProduct(categories, {
         }
     }
 
-    if (requirePartnerPayable && payableRows.length === 0) {
-        return null;
-    }
-
     return null;
+}
+
+export function pickFirstHomeBillProduct(categories, { fallbackPartnerUrl = null } = {}) {
+    return pickFirstCatalogBillProduct(categories, {
+        payableRows: [],
+        fallbackPartnerUrl: fallbackPartnerUrl ?? Cypress.env('billPaymentMockUrl') ?? null,
+        requirePartnerPayable: false,
+    });
 }
 
 /**

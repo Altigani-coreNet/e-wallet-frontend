@@ -3,6 +3,9 @@ import {
     billPaymentInterceptPattern,
     buildAccountingSnapshot,
     buildBillPaymentContextFromCatalog,
+    pickFirstHomeBillProduct,
+    unwrapCustomerCatalog,
+    buildServicePayloadFromFormFields,
     configuredBillPaymentFee,
     configuredTransferFee,
     currentMonthDateRange,
@@ -2211,6 +2214,7 @@ Cypress.Commands.add('setupOneBillPayment', ({
     label = 'BillPayOne',
     customerAmount = 200,
     billAmount = 100,
+    skipFunding = false,
 } = {}) => {
     const normalizePayableRows = (body) => {
         const raw = body?.data?.data ?? body?.data ?? [];
@@ -2219,27 +2223,52 @@ Cypress.Commands.add('setupOneBillPayment', ({
     };
 
     return cy.setupWalletAccountingCustomer({ runId, label }).then((customer) => {
-        cy.fundWalletAccountingCustomerForBillPay({
-            adminToken: customer.adminToken,
-            walletUuid: customer.walletUuid,
-            customerAmount,
-            runId,
-        });
+        const fundingStep = skipFunding
+            ? cy.wrap(null)
+            : cy.fundWalletAccountingCustomerForBillPay({
+                adminToken: customer.adminToken,
+                walletUuid: customer.walletUuid,
+                customerAmount,
+                runId,
+            });
 
-        return cy.apiAdminListProviderPayables({ adminToken: customer.adminToken }).then((payablesRes) => {
-            const payableRows = normalizePayableRows(payablesRes.body);
+        return fundingStep.then(() => cy.apiCustomerServicesHome({ token: customer.token }).then((homeRes) => {
+            const picked = pickFirstHomeBillProduct(unwrapCustomerCatalog(homeRes.body));
 
-                return cy.apiCustomerServicesHome({ token: customer.token }).then((homeRes) => cy.wrap(
-                    buildBillPaymentContextFromCatalog({
-                        catalogBody: homeRes.body,
-                        payableRows,
+            if (!picked) {
+                throw new Error(
+                    'services/home has no product. Add a service to the home screen in admin.'
+                );
+            }
+
+            return cy.apiAdminApprovePartner({
+                adminToken: customer.adminToken,
+                partnerId: picked.partnerId,
+            }).then(() => cy.apiAdminListProviderPayables({ adminToken: customer.adminToken }).then((payablesRes) => {
+                const payableRows = normalizePayableRows(payablesRes.body);
+                const partnerPayableCode = payableRows.find(
+                    (row) => String(row.partner_id).toLowerCase() === String(picked.partnerId).toLowerCase()
+                )?.account_code;
+
+                const billContext = {
+                    serviceId: picked.serviceId,
+                    productId: picked.productId,
+                    partnerId: picked.partnerId,
+                    partnerPayableCode: partnerPayableCode != null ? Number(partnerPayableCode) : null,
+                    formUrl: picked.formUrl,
+                    servicePayload: buildServicePayloadFromFormFields(picked.product, {
                         phone: customer.phone,
                         amount: billAmount,
-                        requirePartnerPayable: true,
                     }),
-                    { log: false }
-                ).then((billContext) => cy.wrap({ customer, billContext }, { log: false })));
-        });
+                    description: 'Bill payment E2E',
+                    amount: billAmount,
+                    product: picked.product,
+                    form: picked.form,
+                };
+
+                return cy.wrap({ customer, billContext }, { log: false });
+            }));
+        }));
     });
 });
 
@@ -2352,6 +2381,20 @@ Cypress.Commands.add('apiCustomerServiceDetails', ({ token, serviceId, failOnSta
         url: `${apiUrl}/api/v1/customer/services/${serviceId}`,
         headers: {
             Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode,
+    });
+});
+
+Cypress.Commands.add('apiAdminApprovePartner', ({ adminToken, partnerId, failOnStatusCode = true } = {}) => {
+    const apiUrl = getApiUrl();
+
+    return apiRequest({
+        method: 'POST',
+        url: `${apiUrl}/api/v1/admin/partners/${partnerId}/approve`,
+        headers: {
+            Authorization: `Bearer ${adminToken}`,
             Accept: 'application/json',
         },
         failOnStatusCode,
