@@ -37,6 +37,13 @@ export function configuredTransferFee() {
     return resolveTransferFee(Cypress.env('walletTransferFee'), DEFAULT_TRANSFER_FEE);
 }
 
+/** Configured bill payment fee (SDG) — mirrors WALLET_BILL_PAYMENT_FEE on the API. */
+export function configuredBillPaymentFee() {
+    const fromEnv = Cypress.env('walletBillPaymentFee');
+
+    return fromEnv === undefined || fromEnv === '' ? 0 : Number(fromEnv);
+}
+
 /** Net amount credited to recipient after the platform transfer fee. */
 export function transferRecipientNet(grossAmount) {
     return transferRecipientNetShared(grossAmount, configuredTransferFee());
@@ -394,6 +401,207 @@ export function assertAccountingDelta(before, after, expected, context = '') {
     }
 }
 
+/** Categories array from customer services/home or services/catalog. */
+export function unwrapCustomerCatalog(body) {
+    return body?.data?.categories ?? body?.categories ?? [];
+}
+
+/** Partner POST URL: form_url, then product service_url / prepay_url. */
+export function resolveBillPartnerUrl(product, form, fallbackUrl = null) {
+    const candidates = [
+        form?.form_url,
+        product?.service_url,
+        product?.prepay_url,
+        fallbackUrl,
+    ];
+
+    for (const url of candidates) {
+        if (url != null && String(url).trim() !== '') {
+            return String(url).trim();
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Pick the first bill-payable service/product from home or catalog listing.
+ * When payableRows is provided, only partners with a payable COA are considered.
+ */
+export function pickFirstCatalogBillProduct(categories, {
+    payableRows = [],
+    fallbackPartnerUrl = null,
+    requirePartnerPayable = true,
+} = {}) {
+    const partnerIdsToTry = payableRows.length > 0
+        ? payableRows.map((row) => row.partner_id).filter(Boolean)
+        : null;
+
+    const partnerMatches = (partnerId) => {
+        if (!partnerId) {
+            return false;
+        }
+
+        if (partnerIdsToTry == null) {
+            return true;
+        }
+
+        const normalized = String(partnerId).toLowerCase();
+
+        return partnerIdsToTry.some((id) => String(id).toLowerCase() === normalized);
+    };
+
+    for (const category of categories ?? []) {
+        for (const service of category.services ?? []) {
+            if (!service?.id || !partnerMatches(service.partner_id)) {
+                continue;
+            }
+
+            const partnerId = service.partner_id;
+
+            for (const product of service.products ?? []) {
+                if (!product?.id) {
+                    continue;
+                }
+
+                const form = product.product_forms?.[0] ?? null;
+                const partnerUrl = resolveBillPartnerUrl(product, form, fallbackPartnerUrl);
+
+                if (!partnerUrl) {
+                    continue;
+                }
+
+                return {
+                    serviceId: service.id,
+                    productId: product.id,
+                    partnerId,
+                    serviceName: service.service_name?.en ?? service.service_name ?? 'Bill payment',
+                    product,
+                    form,
+                    formUrl: partnerUrl,
+                };
+            }
+        }
+    }
+
+    if (requirePartnerPayable && payableRows.length === 0) {
+        return null;
+    }
+
+    return null;
+}
+
+/**
+ * Build service_payload from the first product form fields in the catalog.
+ */
+export function buildServicePayloadFromFormFields(product, { phone, amount } = {}) {
+    const form = product?.product_forms?.[0];
+    const fields = form?.product_form_fields ?? [];
+    const payload = {};
+
+    for (const field of fields) {
+        const key = field?.key;
+        if (!key) {
+            continue;
+        }
+
+        const inputType = String(field.input_type || field.form_type || 'text').toLowerCase();
+        const normalizedKey = String(key).toLowerCase();
+
+        if (inputType.includes('phone') || normalizedKey.includes('phone')) {
+            payload[key] = phone || '+249912345678';
+        } else if (
+            inputType.includes('number')
+            || inputType.includes('amount')
+            || normalizedKey.includes('amount')
+        ) {
+            payload[key] = String(amount ?? 100);
+        } else if (inputType.includes('email') || normalizedKey.includes('email')) {
+            payload[key] = 'bill.test@example.com';
+        } else if (inputType.includes('date')) {
+            payload[key] = new Date().toISOString().slice(0, 10);
+        } else {
+            payload[key] = `test-${normalizedKey.replace(/[^a-z0-9]+/g, '-')}`;
+        }
+    }
+
+    if (Object.keys(payload).length === 0) {
+        payload.account_number = '1234567890';
+        if (phone) {
+            payload.phone_number = phone;
+        }
+    }
+
+    return payload;
+}
+
+export function partnerPayableCodeForPartner(payableRows, partnerId) {
+    const normalizedId = String(partnerId ?? '').toLowerCase();
+    const row = (payableRows ?? []).find(
+        (entry) => String(entry.partner_id ?? '').toLowerCase() === normalizedId
+    );
+
+    return row?.account_code != null ? Number(row.account_code) : null;
+}
+
+/**
+ * Turn catalog + admin payables into a bill-payment test context.
+ */
+export function buildBillPaymentContextFromCatalog({
+    catalogBody,
+    payableRows,
+    phone,
+    amount = 100,
+    description = 'Bill payment E2E',
+    fallbackPartnerUrl = Cypress.env('billPaymentMockUrl') ?? null,
+    requirePartnerPayable = true,
+}) {
+    const picked = pickFirstCatalogBillProduct(unwrapCustomerCatalog(catalogBody), {
+        payableRows,
+        fallbackPartnerUrl,
+        requirePartnerPayable,
+    });
+
+    if (!picked) {
+        if (payableRows.length === 0) {
+            throw new Error(
+                'No provider payable accounts found. Assign account_id (21xx COA) to the service partner in admin, then re-run.'
+            );
+        }
+
+        throw new Error(
+            'services/home has no product for a partner with a payable account. Add that partner\'s service to the home screen.'
+        );
+    }
+
+    if (!picked.partnerId) {
+        throw new Error('Home service is missing partner_id.');
+    }
+
+    const partnerPayableCode = partnerPayableCodeForPartner(payableRows, picked.partnerId);
+
+    if (requirePartnerPayable && partnerPayableCode == null) {
+        throw new Error(
+            `Partner ${picked.partnerId} has no payable account. Run PartnerPayableAccountSeeder or approve the partner with a 21xx COA.`
+        );
+    }
+
+    const servicePayload = buildServicePayloadFromFormFields(picked.product, { phone, amount });
+
+    return {
+        serviceId: picked.serviceId,
+        productId: picked.productId,
+        partnerId: picked.partnerId,
+        partnerPayableCode,
+        formUrl: picked.formUrl,
+        servicePayload,
+        description,
+        amount,
+        product: picked.product,
+        form: picked.form,
+    };
+}
+
 /** Pretty-print an apiRequest / cy.request response in the Cypress command log. */
 export function logServerResponse(label, response) {
     const status = response?.status ?? '(unknown)';
@@ -415,6 +623,20 @@ export function logServerResponse(label, response) {
     });
 
     cy.log(`${label} (HTTP ${status}):\n${pretty}`);
+}
+
+export function billPaymentInterceptPattern(formUrl) {
+    if (!formUrl) {
+        return '**/bill-mock.test/pay';
+    }
+
+    try {
+        const parsed = new URL(formUrl);
+
+        return `**/${parsed.hostname}${parsed.pathname}`;
+    } catch {
+        return `**/${String(formUrl).replace(/^https?:\/\//, '')}`;
+    }
 }
 
 Cypress.Commands.add('logServerResponse', logServerResponse);

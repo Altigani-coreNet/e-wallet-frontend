@@ -2284,6 +2284,10 @@
       "filters": {
         "startDate": "تاريخ البداية",
         "endDate": "تاريخ النهاية",
+        "startTime": "وقت البداية",
+        "endTime": "وقت النهاية",
+        "startDateTime": "تاريخ ووقت البداية",
+        "endDateTime": "تاريخ ووقت النهاية",
         "allTypes": "كل الأنواع",
         "allStatus": "كل الحالات"
       },

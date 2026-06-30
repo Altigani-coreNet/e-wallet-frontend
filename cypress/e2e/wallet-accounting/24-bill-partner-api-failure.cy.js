@@ -1,54 +1,36 @@
 /**
- * Partner API failure — zero accounting delta.
+ * Partner API failure — catalog payload sent, partner returns 500, zero accounting delta.
  */
 
 import { mockOtpCode, zeroAccountingDelta } from '../../support/walletAccountingHelpers';
 
 describe('Wallet accounting — bill partner API failure', () => {
     let customer;
-    let catalog;
+    let billContext;
 
     before(() => {
-        catalog = Cypress.env('billPaymentCatalog');
-        if (!catalog?.serviceId) {
-            return;
-        }
-
-        cy.intercept('POST', '**/bill-mock.test/pay', {
-            statusCode: 500,
-            body: { error: 'partner down' },
-        });
-
-        cy.setupWalletAccountingCustomer({ runId: Date.now(), label: 'BillFail' }).then((ctx) => {
-            customer = ctx;
-            cy.apiAdminGetMasterWallet(ctx.adminToken).then((master) => {
-                cy.apiAdminWalletCashIn({
-                    adminToken: ctx.adminToken,
-                    walletUuid: master.id,
-                    amount: 200,
-                    idempotencyKey: `seed-fail-${Date.now()}`,
-                });
-                cy.apiAdminWalletCashIn({
-                    adminToken: ctx.adminToken,
-                    walletUuid: customer.walletUuid,
-                    amount: 150,
-                    idempotencyKey: `fund-fail-${Date.now()}`,
-                });
-            });
+        cy.setupBillPaymentTestContext({
+            runId: Date.now(),
+            label: 'BillFail',
+            customerAmount: 150,
+            billAmount: 60,
+            partnerStatusCode: 500,
+            partnerResponseBody: { error: 'partner down' },
+        }).then((ctx) => {
+            customer = ctx.customer;
+            billContext = ctx.billContext;
         });
     });
 
-    it('does not move ledger when partner API fails', function () {
-        if (!catalog?.serviceId) {
-            this.skip();
-        }
-
+    it('does not move ledger when partner API fails', () => {
         cy.captureAccountingSnapshot({ adminToken: customer.adminToken, label: 'before partner fail' }).then((before) => {
             cy.apiWalletBillPayment({
                 token: customer.token,
-                serviceId: catalog.serviceId,
-                productId: catalog.productId,
-                amount: 60,
+                serviceId: billContext.serviceId,
+                productId: billContext.productId,
+                amount: billContext.amount,
+                servicePayload: billContext.servicePayload,
+                description: billContext.description,
                 idempotencyKey: `bill-fail-${Date.now()}`,
                 otp: mockOtpCode(),
                 failOnStatusCode: false,

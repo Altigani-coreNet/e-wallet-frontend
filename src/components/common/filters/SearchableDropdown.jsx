@@ -25,7 +25,12 @@ const SearchableDropdown = ({
     filterFn = defaultFilter,
     onOpen,
     onSearchChange,
+    size = 'md',
 }) => {
+    const isSmall = size === 'sm';
+    const labelClass = isSmall ? 'form-label fs-7 fw-semibold text-gray-700' : 'form-label fw-bold';
+    const controlClass = isSmall ? 'form-control form-control-sm' : 'form-control';
+    const controlMinHeight = isSmall ? 31 : 42;
     const containerRef = useRef(null);
     const searchInputRef = useRef(null);
     const [isOpen, setIsOpen] = useState(false);
@@ -97,12 +102,12 @@ const SearchableDropdown = ({
     return (
         <div className={`searchable-dropdown ${className}`} ref={containerRef}>
             {label && (
-                <label className="form-label fw-bold" htmlFor={id || name}>
+                <label className={labelClass} htmlFor={id || name}>
                     {label}
                 </label>
             )}
             <div
-                className={`form-control d-flex align-items-center justify-content-between ${
+                className={`${controlClass} d-flex align-items-center justify-content-between ${
                     disabled ? 'bg-light text-muted' : ''
                 } ${required && !selectedOption ? 'border-danger' : ''}`}
                 onClick={handleToggle}
@@ -110,19 +115,19 @@ const SearchableDropdown = ({
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
                 tabIndex={disabled ? -1 : 0}
-                style={{ minHeight: 42, paddingTop: 6, paddingBottom: 6 }}
+                style={{ minHeight: controlMinHeight, paddingTop: isSmall ? 2 : 6, paddingBottom: isSmall ? 2 : 6 }}
             >
                 <div className="d-flex align-items-center gap-2">
                     {selectedOption ? (
                         renderSelected ? (
                             renderSelected(selectedOption)
                         ) : (
-                            <span className="text-gray-800">{selectedOption.label}</span>
+                            <span className={isSmall ? 'text-gray-800 fs-7' : 'text-gray-800'}>{selectedOption.label}</span>
                         )
                     ) : loading ? (
                         <span className="spinner-border spinner-border-sm text-primary" role="status" />
                     ) : (
-                        <span className="text-muted">{placeholder}</span>
+                        <span className={isSmall ? 'text-muted fs-7' : 'text-muted'}>{placeholder}</span>
                     )}
                 </div>
                 <div className="d-flex align-items-center">

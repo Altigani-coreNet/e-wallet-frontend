@@ -15,6 +15,10 @@ const sharedWalletFixtures = {
     walletTransferFee: 2,
     /** Must match Fast_Pay_Soft_Pos OTP_MOCK_CODE — used for auth + wallet transfer OTP */
     otpMockCode: 111111,
+    /** Must match Fast_Pay_Soft_Pos WALLET_BILL_PAYMENT_FEE / config services.wallet.bill_payment_fee */
+    walletBillPaymentFee: 0,
+    /** Partner bill-pay URL stubbed in Cypress (must match product form form_url in admin) */
+    billPaymentMockUrl: 'https://bill-mock.test/pay',
 };
 
 /** Preferred dial code when picking country/city from real GET /api/v1/countries APIs. */

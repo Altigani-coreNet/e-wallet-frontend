@@ -1,6 +1,9 @@
 import {
     assertAccountingDelta,
+    billPaymentInterceptPattern,
     buildAccountingSnapshot,
+    buildBillPaymentContextFromCatalog,
+    configuredBillPaymentFee,
     configuredTransferFee,
     currentMonthDateRange,
     expectedWalletOperationDelta,
@@ -1800,7 +1803,11 @@ Cypress.Commands.add('assertAccountingReflectsOperation', ({
 } = {}) => {
     const resolvedFee = fee !== undefined
         ? fee
-        : (operation === 'transfer' ? configuredTransferFee() : 0);
+        : (operation === 'transfer'
+            ? configuredTransferFee()
+            : operation === 'billPayment'
+                ? configuredBillPaymentFee()
+                : 0);
     const resolvedExpected = expected
         ?? (operation ? expectedWalletOperationDelta(operation, {
             amount,
@@ -2196,6 +2203,200 @@ Cypress.Commands.add('apiWalletTransferByPhone', ({
     });
 });
 
+/**
+ * Minimal bill-payment setup: partner payables + customer + services/home.
+ */
+Cypress.Commands.add('setupOneBillPayment', ({
+    runId = Date.now(),
+    label = 'BillPayOne',
+    customerAmount = 200,
+    billAmount = 100,
+} = {}) => {
+    const normalizePayableRows = (body) => {
+        const raw = body?.data?.data ?? body?.data ?? [];
+
+        return Array.isArray(raw) ? raw : [];
+    };
+
+    return cy.setupWalletAccountingCustomer({ runId, label }).then((customer) => {
+        cy.fundWalletAccountingCustomerForBillPay({
+            adminToken: customer.adminToken,
+            walletUuid: customer.walletUuid,
+            customerAmount,
+            runId,
+        });
+
+        return cy.apiAdminListProviderPayables({ adminToken: customer.adminToken }).then((payablesRes) => {
+            const payableRows = normalizePayableRows(payablesRes.body);
+
+                return cy.apiCustomerServicesHome({ token: customer.token }).then((homeRes) => cy.wrap(
+                    buildBillPaymentContextFromCatalog({
+                        catalogBody: homeRes.body,
+                        payableRows,
+                        phone: customer.phone,
+                        amount: billAmount,
+                        requirePartnerPayable: true,
+                    }),
+                    { log: false }
+                ).then((billContext) => cy.wrap({ customer, billContext }, { log: false })));
+        });
+    });
+});
+
+/**
+ * Step 2–4: customer services/home → first product form fields → bill-payment context.
+ */
+Cypress.Commands.add('prepareBillPaymentFromCatalog', ({
+    token,
+    adminToken,
+    phone,
+    amount = 100,
+    description = 'Bill payment E2E',
+} = {}) => {
+    return cy.apiAdminListProviderPayables({ adminToken }).then((payablesRes) => {
+        const payableRows = payablesRes.body?.data?.data ?? payablesRes.body?.data ?? [];
+
+        return cy.apiCustomerServicesHome({ token }).then((homeRes) => cy.wrap(
+            buildBillPaymentContextFromCatalog({
+                catalogBody: homeRes.body,
+                payableRows,
+                phone,
+                amount,
+                description,
+            }),
+            { log: false }
+        ));
+    });
+});
+
+/**
+ * Full bill-payment test setup:
+ * 1) customer credentials + funded wallet
+ * 2) services/home
+ * 3) first product form fields → service_payload
+ * 4) partner payable code for accounting assertions
+ */
+Cypress.Commands.add('setupBillPaymentTestContext', ({
+    runId = Date.now(),
+    label = 'BillPay',
+    customerAmount = 200,
+    billAmount = 100,
+    partnerStatusCode = 200,
+    partnerResponseBody = { success: true, reference: 'MOCK-E2E' },
+} = {}) => {
+    return cy.setupWalletAccountingCustomer({ runId, label }).then((customer) => {
+        cy.fundWalletAccountingCustomerForBillPay({
+            adminToken: customer.adminToken,
+            walletUuid: customer.walletUuid,
+            customerAmount,
+            runId,
+        });
+
+        return cy.prepareBillPaymentFromCatalog({
+            token: customer.token,
+            adminToken: customer.adminToken,
+            phone: customer.phone,
+            amount: billAmount,
+        }).then((billContext) => {
+            cy.intercept('POST', billPaymentInterceptPattern(billContext.formUrl), {
+                statusCode: partnerStatusCode,
+                body: partnerResponseBody,
+            }).as('partnerBillPay');
+
+            return cy.wrap({
+                customer,
+                billContext,
+            }, { log: false });
+        });
+    });
+});
+
+/** @deprecated use prepareBillPaymentFromCatalog */
+Cypress.Commands.add('resolveBillPaymentCatalog', ({ token, adminToken, phone, amount = 100 } = {}) => {
+    return cy.prepareBillPaymentFromCatalog({ token, adminToken, phone, amount });
+});
+
+Cypress.Commands.add('apiCustomerServicesCatalog', ({ token, failOnStatusCode = true } = {}) => {
+    const apiUrl = getApiUrl();
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v1/customer/services/catalog`,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode,
+    });
+});
+
+Cypress.Commands.add('apiCustomerServicesHome', ({ token, limit = 50, failOnStatusCode = true } = {}) => {
+    const apiUrl = getApiUrl();
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v1/customer/services/home?limit=${limit}`,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode,
+    });
+});
+
+Cypress.Commands.add('apiCustomerServiceDetails', ({ token, serviceId, failOnStatusCode = true }) => {
+    const apiUrl = getApiUrl();
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v1/customer/services/${serviceId}`,
+        headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode,
+    });
+});
+
+Cypress.Commands.add('apiAdminListProviderPayables', ({ adminToken, search, failOnStatusCode = true } = {}) => {
+    const apiUrl = getApiUrl();
+    const query = search ? `?search=${encodeURIComponent(search)}` : '';
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v2/admin/provider-settlements${query}`,
+        headers: {
+            Authorization: `Bearer ${adminToken}`,
+            Accept: 'application/json',
+        },
+        failOnStatusCode,
+    });
+});
+
+Cypress.Commands.add('fundWalletAccountingCustomerForBillPay', ({
+    adminToken,
+    walletUuid,
+    masterAmount = 300,
+    customerAmount = 200,
+    runId = Date.now(),
+} = {}) => {
+    return cy.apiAdminGetMasterWallet(adminToken).then((master) => {
+        cy.apiAdminWalletCashIn({
+            adminToken,
+            walletUuid: master.id,
+            amount: masterAmount,
+            idempotencyKey: `seed-bill-${runId}`,
+        });
+
+        return cy.apiAdminWalletCashIn({
+            adminToken,
+            walletUuid,
+            amount: customerAmount,
+            idempotencyKey: `fund-bill-${runId}`,
+        });
+    });
+});
+
 Cypress.Commands.add('apiWalletBillPaymentOtp', ({
     token,
     serviceId,
@@ -2285,7 +2486,16 @@ Cypress.Commands.add('apiWalletBillPayment', ({
         description,
         idempotencyKey,
         failOnStatusCode,
-    }).then((otpResponse) => postBillPayment(otpResponse.body.data.otp_token));
+    }).then((otpResponse) => {
+        const otpToken = otpResponse.body?.data?.otp_token;
+        if (!otpToken) {
+            throw new Error(
+                `Bill payment OTP failed (${otpResponse.status}): ${JSON.stringify(otpResponse.body)}`
+            );
+        }
+
+        return postBillPayment(otpToken);
+    });
 });
 
 Cypress.Commands.add('apiAdminProviderSettlement', ({

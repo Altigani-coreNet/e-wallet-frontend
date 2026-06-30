@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
-import SearchableDropdown from '../../common/filters/SearchableDropdown';
 import {
     downloadLedgerExport,
     fmtMoney,
@@ -13,22 +12,33 @@ import {
     useLedgerCustomers,
     useLedgerSummary,
 } from '../../../services/adminAccountingService';
+import AccountingReportToolbar from './shared/AccountingReportToolbar';
+import LedgerSummaryFiltersCard from './shared/LedgerSummaryFiltersCard';
+
+const toDatetimeLocal = (date) => {
+    const pad = (value) => String(value).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
 
 const defaultFilters = () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 0, 0);
+
     return {
         account_id: '',
         customer_id: '',
-        start_date: `${today.slice(0, 7)}-01`,
-        end_date: today,
+        start_datetime: toDatetimeLocal(startOfMonth),
+        end_datetime: toDatetimeLocal(endOfDay),
     };
 };
 
 const AdminLedgerSummary = () => {
-    const { t } = useTranslation();
-    const { setTitle, setBreadcrumbs } = useToolbar();
+    const { t, i18n } = useTranslation();
+    const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const [searchParams] = useSearchParams();
 
+    const [showFilters, setShowFilters] = useState(true);
     const [draftFilters, setDraftFilters] = useState(() => ({
         ...defaultFilters(),
         account_id: searchParams.get('account_id') || '',
@@ -45,12 +55,17 @@ const AdminLedgerSummary = () => {
         ]);
     }, [setTitle, setBreadcrumbs, t]);
 
-    const { data: coaData } = useChartOfAccounts({
-        start_date: appliedFilters.start_date,
-        end_date: appliedFilters.end_date,
-    });
+    const coaDateRange = useMemo(
+        () => ({
+            start_date: appliedFilters.start_datetime.slice(0, 10),
+            end_date: appliedFilters.end_datetime.slice(0, 10),
+        }),
+        [appliedFilters.start_datetime, appliedFilters.end_datetime]
+    );
 
-    const { data: customersData } = useLedgerCustomers();
+    const { data: coaData } = useChartOfAccounts(coaDateRange);
+
+    const { data: customersData, isLoading: customersLoading } = useLedgerCustomers();
 
     const accountOptions = useMemo(() => {
         const options = [];
@@ -70,7 +85,7 @@ const AdminLedgerSummary = () => {
     const customerOptions = useMemo(
         () => (customersData?.customers || []).map((customer) => ({
             value: String(customer.id),
-            label: customer.name,
+            label: customer.name || String(customer.id),
         })),
         [customersData]
     );
@@ -87,8 +102,8 @@ const AdminLedgerSummary = () => {
 
     const queryParams = useMemo(
         () => ({
-            start_date: appliedFilters.start_date,
-            end_date: appliedFilters.end_date,
+            start_datetime: appliedFilters.start_datetime,
+            end_datetime: appliedFilters.end_datetime,
             account_id: appliedFilters.account_id || undefined,
             customer_id: appliedFilters.customer_id || undefined,
         }),
@@ -96,6 +111,10 @@ const AdminLedgerSummary = () => {
     );
 
     const { data, isLoading, isError, error, refetch, isFetching } = useLedgerSummary(queryParams);
+
+    const handleFilterChange = useCallback((patch) => {
+        setDraftFilters((prev) => ({ ...prev, ...patch }));
+    }, []);
 
     const handleApply = () => {
         setAppliedFilters({ ...draftFilters });
@@ -107,125 +126,78 @@ const AdminLedgerSummary = () => {
         setAppliedFilters(reset);
     };
 
-    const handleExport = async () => {
+    const handleExport = useCallback(async () => {
         try {
             setExporting(true);
             const blob = await downloadLedgerExport(queryParams);
-            triggerBlobDownload(blob, `ledger_summary_${appliedFilters.end_date}.xlsx`);
+            const stamp = appliedFilters.end_datetime.slice(0, 10);
+            triggerBlobDownload(blob, `ledger_summary_${stamp}.xlsx`);
         } catch (exportError) {
             console.error(exportError);
         } finally {
             setExporting(false);
         }
-    };
+    }, [queryParams, appliedFilters.end_datetime]);
+
+    useEffect(() => {
+        setActions(
+            <div className="d-flex align-items-center gap-2 gap-lg-3">
+                <button
+                    type="button"
+                    className="btn btn-sm btn-flex btn-secondary fw-bold"
+                    onClick={() => setShowFilters((prev) => !prev)}
+                    aria-label={showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}
+                >
+                    <i className="ki-duotone ki-filter fs-6 text-muted me-0 me-lg-1">
+                        <span className="path1" />
+                        <span className="path2" />
+                    </i>
+                    <span className="d-none d-lg-inline ms-lg-1">
+                        {showFilters ? t('admin.common.hideFilters') : t('admin.common.showFilters')}
+                    </span>
+                </button>
+                <AccountingReportToolbar
+                    onExport={handleExport}
+                    exporting={exporting}
+                    exportLabel={t('admin.accounting.ledger.export')}
+                />
+            </div>
+        );
+
+        return () => setActions(null);
+    }, [setActions, showFilters, handleExport, exporting, t, i18n.language]);
+
+    const periodLabel = data?.filter
+        ? `${data.filter.start_datetime || data.filter.start_date} – ${data.filter.end_datetime || data.filter.end_date}`
+        : '';
 
     return (
         <div className="post d-flex flex-column-fluid" id="kt_post">
             <div className="container-xxl">
+                {showFilters ? (
+                    <LedgerSummaryFiltersCard
+                        draftFilters={draftFilters}
+                        onFilterChange={handleFilterChange}
+                        onApply={handleApply}
+                        onReset={handleReset}
+                        accountOptions={accountOptions}
+                        customerOptions={customerOptions}
+                        selectedAccountOption={selectedAccountOption}
+                        selectedCustomerOption={selectedCustomerOption}
+                        customersLoading={customersLoading}
+                    />
+                ) : null}
+
                 <div className="card mb-5 mb-xl-8">
                     <div className="card-header border-0 pt-6">
-                        <div className="card-title w-100">
-                            <div className="row g-3 w-100 align-items-end">
-                                <div className="col-lg-2 col-md-4">
-                                    <label className="form-label fs-7 fw-semibold text-gray-700">
-                                        {t('admin.accounting.filters.startDate')}
-                                    </label>
-                                    <input
-                                        type="date"
-                                        className="form-control form-control-sm"
-                                        value={draftFilters.start_date}
-                                        onChange={(e) => setDraftFilters((prev) => ({
-                                            ...prev,
-                                            start_date: e.target.value,
-                                        }))}
-                                    />
-                                </div>
-                                <div className="col-lg-2 col-md-4">
-                                    <label className="form-label fs-7 fw-semibold text-gray-700">
-                                        {t('admin.accounting.filters.endDate')}
-                                    </label>
-                                    <input
-                                        type="date"
-                                        className="form-control form-control-sm"
-                                        value={draftFilters.end_date}
-                                        onChange={(e) => setDraftFilters((prev) => ({
-                                            ...prev,
-                                            end_date: e.target.value,
-                                        }))}
-                                    />
-                                </div>
-                                <div className="col-lg-3 col-md-4">
-                                    <SearchableDropdown
-                                        label={t('admin.accounting.ledger.account')}
-                                        placeholder={t('admin.accounting.ledger.allAccounts')}
-                                        searchPlaceholder={t('admin.accounting.ledger.searchAccount')}
-                                        options={accountOptions}
-                                        selected={selectedAccountOption}
-                                        onSelect={(option) => setDraftFilters((prev) => ({
-                                            ...prev,
-                                            account_id: option.value,
-                                        }))}
-                                        onClear={() => setDraftFilters((prev) => ({
-                                            ...prev,
-                                            account_id: '',
-                                        }))}
-                                        emptyText={t('admin.accounting.ledger.noAccountResults')}
-                                    />
-                                </div>
-                                <div className="col-lg-3 col-md-4">
-                                    <SearchableDropdown
-                                        label={t('admin.accounting.ledger.customer')}
-                                        placeholder={t('admin.accounting.ledger.selectCustomer')}
-                                        searchPlaceholder={t('admin.accounting.ledger.searchCustomer')}
-                                        options={customerOptions}
-                                        selected={selectedCustomerOption}
-                                        onSelect={(option) => setDraftFilters((prev) => ({
-                                            ...prev,
-                                            customer_id: option.value,
-                                        }))}
-                                        onClear={() => setDraftFilters((prev) => ({
-                                            ...prev,
-                                            customer_id: '',
-                                        }))}
-                                        emptyText={t('admin.accounting.ledger.noCustomerResults')}
-                                    />
-                                </div>
-                                <div className="col-lg-2 col-md-12">
-                                    <div className="d-flex flex-wrap gap-2">
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-primary"
-                                            onClick={handleApply}
-                                        >
-                                            <i className="ki-duotone ki-magnifier fs-5 me-1">
-                                                <span className="path1" />
-                                                <span className="path2" />
-                                            </i>
-                                            {t('admin.accounting.ledger.apply')}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-light"
-                                            onClick={handleReset}
-                                        >
-                                            {t('admin.accounting.ledger.reset')}
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="btn btn-sm btn-light-primary"
-                                            onClick={handleExport}
-                                            disabled={exporting}
-                                        >
-                                            <i className="ki-duotone ki-file-down fs-5 me-1">
-                                                <span className="path1" />
-                                                <span className="path2" />
-                                            </i>
-                                            {exporting ? t('common.loading') : t('admin.accounting.ledger.export')}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <h3 className="card-title align-items-start flex-column">
+                            <span className="card-label fw-bold fs-3 mb-1">
+                                {t('admin.accounting.ledger.title')}
+                            </span>
+                            {periodLabel ? (
+                                <span className="text-muted fs-7 fw-semibold">{periodLabel}</span>
+                            ) : null}
+                        </h3>
                     </div>
 
                     <div className="card-body pt-0">
@@ -238,11 +210,11 @@ const AdminLedgerSummary = () => {
                             <LoadingSpinner />
                         ) : (
                             <div className="table-responsive">
-                                <table className="table align-middle table-row-dashed fs-6 gy-5 mb-0">
+                                <table className="table align-middle table-row-dashed fs-7 gy-4 mb-0">
                                     <thead>
-                                        <tr className="text-start text-gray-400 fw-bold fs-7 text-uppercase gs-0">
+                                        <tr className="text-start text-gray-500 fw-semibold text-uppercase gs-0">
                                             <th>{t('admin.accounting.ledger.accountName')}</th>
-                                            <th>{t('admin.accounting.ledger.name')}</th>
+                                            <th>{t('admin.accounting.ledger.customer')}</th>
                                             <th>{t('admin.accounting.ledger.transactionType')}</th>
                                             <th>{t('admin.accounting.ledger.transactionDate')}</th>
                                             <th className="text-end">{t('admin.accounting.ledger.debit')}</th>
@@ -250,30 +222,30 @@ const AdminLedgerSummary = () => {
                                             <th className="text-end">{t('admin.accounting.ledger.balance')}</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="text-gray-600 fw-semibold">
+                                    <tbody className="text-gray-700 fw-normal">
                                         {(data?.rows || []).length === 0 ? (
                                             <tr>
-                                                <td colSpan={7} className="text-center py-10 text-muted">
+                                                <td colSpan={7} className="text-center py-10 text-muted fs-7">
                                                     {t('admin.accounting.ledger.noRows')}
                                                 </td>
                                             </tr>
                                         ) : (
                                             data.rows.map((row) => (
                                                 <tr key={row.id}>
-                                                    <td>{row.account_name}</td>
-                                                    <td>{row.name || '-'}</td>
+                                                    <td className="text-gray-800">{row.account_name}</td>
+                                                    <td className="text-gray-800">{row.name || '-'}</td>
                                                     <td>{row.transaction_type}</td>
-                                                    <td>{row.date}</td>
+                                                    <td className="text-nowrap">{row.date}</td>
                                                     <td className="text-end">{fmtMoney(row.debit)}</td>
                                                     <td className="text-end">{fmtMoney(row.credit)}</td>
-                                                    <td className="text-end">{fmtMoney(row.balance)}</td>
+                                                    <td className="text-end fw-semibold">{fmtMoney(row.balance)}</td>
                                                 </tr>
                                             ))
                                         )}
                                     </tbody>
                                     {(data?.rows || []).length > 0 && data?.totals ? (
                                         <tfoot>
-                                            <tr className="fw-bold text-gray-800 border-top">
+                                            <tr className="fw-semibold text-gray-800 border-top fs-7">
                                                 <td colSpan={4} className="text-end">
                                                     {t('admin.accounting.ledger.totals')}
                                                 </td>

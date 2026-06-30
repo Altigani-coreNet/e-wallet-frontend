@@ -20,6 +20,7 @@
     "cy:run:e2e": "node cypress/scripts/run.mjs development run --e2e",
     "cy:run:wallet": "node cypress/scripts/run.mjs development run --e2e --spec cypress/e2e/customers/customer-wallet-workflow.cy.js",
     "cy:run:wallet-accounting": "node cypress/scripts/run.mjs development run --e2e --spec cypress/e2e/wallet-accounting/**/*.cy.js",
+    "cy:run:wallet-bill": "node cypress/scripts/run.mjs development run --e2e --spec cypress/e2e/wallet-accounting/20-bill-payment-happy.cy.js",
     "cy:run:wallet-accounting:staging": "node cypress/scripts/run.mjs staging run --e2e --spec cypress/e2e/wallet-accounting/**/*.cy.js",
     "cy:run:accounting": "node cypress/scripts/run.mjs development run --e2e --spec cypress/e2e/accounting/**/*.cy.js",
     "cy:run:component": "cypress run --component"

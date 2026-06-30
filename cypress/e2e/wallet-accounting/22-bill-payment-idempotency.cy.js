@@ -1,54 +1,34 @@
 /**
- * Bill payment idempotency — single debit on retry.
+ * Bill payment idempotency — same catalog payload + Idempotency-Key returns cached response.
  */
 
 import { mockOtpCode } from '../../support/walletAccountingHelpers';
 
 describe('Wallet accounting — bill payment idempotency', () => {
     let customer;
-    let catalog;
+    let billContext;
 
     before(() => {
-        catalog = Cypress.env('billPaymentCatalog');
-        if (!catalog?.serviceId) {
-            return;
-        }
-
-        cy.intercept('POST', '**/bill-mock.test/pay', {
-            statusCode: 200,
-            body: { success: true, reference: 'MOCK-IDEM' },
-        });
-
-        cy.setupWalletAccountingCustomer({ runId: Date.now(), label: 'BillIdem' }).then((ctx) => {
-            customer = ctx;
-            cy.apiAdminGetMasterWallet(ctx.adminToken).then((master) => {
-                cy.apiAdminWalletCashIn({
-                    adminToken: ctx.adminToken,
-                    walletUuid: master.id,
-                    amount: 200,
-                    idempotencyKey: `seed-idem-${Date.now()}`,
-                });
-                cy.apiAdminWalletCashIn({
-                    adminToken: ctx.adminToken,
-                    walletUuid: customer.walletUuid,
-                    amount: 150,
-                    idempotencyKey: `fund-idem-${Date.now()}`,
-                });
-            });
+        cy.setupBillPaymentTestContext({
+            runId: Date.now(),
+            label: 'BillIdem',
+            customerAmount: 150,
+            billAmount: 50,
+        }).then((ctx) => {
+            customer = ctx.customer;
+            billContext = ctx.billContext;
         });
     });
 
-    it('returns cached response on duplicate Idempotency-Key', function () {
-        if (!catalog?.serviceId) {
-            this.skip();
-        }
-
+    it('returns cached response on duplicate Idempotency-Key', () => {
         const idempotencyKey = `bill-idem-${Date.now()}`;
         const payload = {
             token: customer.token,
-            serviceId: catalog.serviceId,
-            productId: catalog.productId,
-            amount: 50,
+            serviceId: billContext.serviceId,
+            productId: billContext.productId,
+            amount: billContext.amount,
+            servicePayload: billContext.servicePayload,
+            description: billContext.description,
             idempotencyKey,
             otp: mockOtpCode(),
         };

@@ -1,5 +1,5 @@
 // API Base URLs
-export const BASE_DOMAIN = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+export const BASE_DOMAIN = import.meta.env.VITE_API_BASE || 'http://193.123.83.134:91';
 export const SOFTPOS_API_BASE = `${BASE_DOMAIN}/api`;
 export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api`;
 export const PAYTABS_API_BASE = `${BASE_DOMAIN}/api/paytabs`;

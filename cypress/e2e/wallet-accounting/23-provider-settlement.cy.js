@@ -1,58 +1,37 @@
 /**
- * Provider settlement lifecycle — bill accrual then admin settle.
+ * Provider settlement — bill pay from catalog payload, then admin settle payable.
  */
 
-import { expectedWalletOperationDelta, mockOtpCode } from '../../support/walletAccountingHelpers';
+import { mockOtpCode } from '../../support/walletAccountingHelpers';
 
 describe('Wallet accounting — provider settlement', () => {
     let adminToken;
     let customer;
-    let catalog;
+    let billContext;
 
     before(() => {
-        catalog = Cypress.env('billPaymentCatalog');
-        if (!catalog?.serviceId || !catalog?.partnerId) {
-            return;
-        }
-
-        cy.intercept('POST', '**/bill-mock.test/pay', {
-            statusCode: 200,
-            body: { success: true, reference: 'MOCK-SETTLE' },
-        });
-
-        cy.setupWalletAccountingCustomer({ runId: Date.now(), label: 'Settle' }).then((ctx) => {
-            customer = ctx;
-            adminToken = ctx.adminToken;
-
-            cy.apiAdminGetMasterWallet(adminToken).then((master) => {
-                cy.apiAdminWalletCashIn({
-                    adminToken,
-                    walletUuid: master.id,
-                    amount: 300,
-                    idempotencyKey: `seed-settle-${Date.now()}`,
-                });
-                cy.apiAdminWalletCashIn({
-                    adminToken,
-                    walletUuid: customer.walletUuid,
-                    amount: 200,
-                    idempotencyKey: `fund-settle-${Date.now()}`,
-                });
-            });
+        cy.setupBillPaymentTestContext({
+            runId: Date.now(),
+            label: 'BillSettle',
+            customerAmount: 200,
+            billAmount: 80,
+        }).then((ctx) => {
+            customer = ctx.customer;
+            adminToken = ctx.customer.adminToken;
+            billContext = ctx.billContext;
         });
     });
 
-    it('settles provider payable after customer bill payment', function () {
-        if (!catalog?.serviceId) {
-            this.skip();
-        }
-
-        const amount = 80;
+    it('settles provider payable after customer bill payment', () => {
+        const { amount, servicePayload, description, partnerId } = billContext;
 
         cy.apiWalletBillPayment({
             token: customer.token,
-            serviceId: catalog.serviceId,
-            productId: catalog.productId,
+            serviceId: billContext.serviceId,
+            productId: billContext.productId,
             amount,
+            servicePayload,
+            description,
             idempotencyKey: `bill-settle-${Date.now()}`,
             otp: mockOtpCode(),
         }).then((pay) => {
@@ -62,7 +41,7 @@ describe('Wallet accounting — provider settlement', () => {
         cy.captureAccountingSnapshot({ adminToken, label: 'before settlement' }).then((before) => {
             cy.apiAdminProviderSettlement({
                 adminToken,
-                partnerId: catalog.partnerId,
+                partnerId,
                 amount,
                 idempotencyKey: `settle-${Date.now()}`,
             }).then((response) => {
@@ -75,7 +54,7 @@ describe('Wallet accounting — provider settlement', () => {
                 adminToken,
                 operation: 'providerSettlement',
                 amount,
-                providerPayableCode: catalog.partnerPayableCode,
+                providerPayableCode: billContext.partnerPayableCode,
                 context: 'provider settlement',
             });
         });
