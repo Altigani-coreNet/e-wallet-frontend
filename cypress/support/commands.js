@@ -1,10 +1,12 @@
 import {
     assertAccountingDelta,
     buildAccountingSnapshot,
+    configuredTransferFee,
     currentMonthDateRange,
     expectedWalletOperationDelta,
     zeroAccountingDelta,
 } from './walletAccountingHelpers';
+import { buildProfitLossSnapshot } from './accountingHelpers';
 
 const DEFAULT_PERMISSIONS = [
     'view_customers',
@@ -400,8 +402,7 @@ Cypress.Commands.add('apiCustomerLogin', ({ phone, password, failOnStatusCode = 
 });
 
 /**
- * Login as a Wallet E2E fixture customer with clear failures when seed/API is misconfigured.
- * Defaults match WalletE2eSeeder (+249977700001 sender, +249977700002 recipient, WalletE2e1!).
+ * Login as a Wallet E2E fixture customer (+249977700001 sender, +249977700002 recipient).
  */
 Cypress.Commands.add('apiWalletE2eLogin', ({ phone, password, role = 'customer' } = {}) => {
     const apiUrl = getApiUrl();
@@ -415,11 +416,7 @@ Cypress.Commands.add('apiWalletE2eLogin', ({ phone, password, role = 'customer' 
         password: resolvedPassword,
         failOnStatusCode: false,
     }).then((response) => {
-        const hint = [
-            `apiUrl=${apiUrl}`,
-            'Run: php artisan db:seed --class=WalletE2eSeeder',
-            'Or set CYPRESS_seedWalletLocally=true for auto-seed in development',
-        ].join(' | ');
+        const hint = `apiUrl=${apiUrl}`;
 
         expect(response.status, `${role} login HTTP (${hint})`).to.eq(200);
         expect(response.body, `${role} login JSON body (${hint})`).to.be.an('object').and.not.be.a('string');
@@ -905,13 +902,6 @@ Cypress.Commands.add('loginAdmin', (overrides = {}) => {
 
             return cy.wrap(payload).as('adminLoginPayload');
         });
-});
-
-/**
- * Seed deterministic wallet E2E customers via Laravel (WalletE2eSeeder).
- */
-Cypress.Commands.add('seedWalletE2eFixtures', () => {
-    return cy.task('seedWalletE2e');
 });
 
 /**
@@ -1545,6 +1535,81 @@ Cypress.Commands.add('apiAdminBalanceSheet', ({
 });
 
 /**
+ * GET /api/v2/admin/accounting/reports/profit-loss
+ */
+Cypress.Commands.add('apiAdminProfitAndLoss', ({
+    adminToken,
+    startDate,
+    endDate,
+    failOnStatusCode = true,
+} = {}) => {
+    const apiUrl = getApiUrl();
+    const token = adminToken || Cypress.env('adminToken');
+    const { startDate: defaultStart, endDate: defaultEnd } = currentMonthDateRange();
+
+    return apiRequest({
+        method: 'GET',
+        url: `${apiUrl}/api/v2/admin/accounting/reports/profit-loss`,
+        qs: {
+            start_date: startDate || defaultStart,
+            end_date: endDate || defaultEnd,
+        },
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+        failOnStatusCode,
+    });
+});
+
+/**
+ * Capture profit & loss totals for the current month date range.
+ */
+Cypress.Commands.add('captureProfitLossSnapshot', ({
+    adminToken,
+    startDate,
+    endDate,
+    label,
+} = {}) => {
+    const { startDate: defaultStart, endDate: defaultEnd } = currentMonthDateRange();
+
+    return cy
+        .apiAdminProfitAndLoss({
+            adminToken,
+            startDate: startDate || defaultStart,
+            endDate: endDate || defaultEnd,
+        })
+        .then((response) => {
+            const snapshot = buildProfitLossSnapshot(response.body, label);
+
+            Cypress.log({
+                name: 'P&L snapshot',
+                displayName: label || 'profit-loss',
+                message: `net ${snapshot.netProfit}, gross ${snapshot.grossProfit}, income ${snapshot.incomeTotal}`,
+                consoleProps() {
+                    return snapshot;
+                },
+            });
+
+            return cy.wrap(snapshot, { log: false });
+        });
+});
+
+/**
+ * Visit an admin route with auth seeded in localStorage.
+ */
+Cypress.Commands.add('visitAdminAuthenticated', (path, adminPayload) => {
+    const paymentBaseUrl =
+        Cypress.env('PAYMENT_BASE_URL') || Cypress.config('baseUrl') || 'http://localhost:5173';
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+    return cy.visit(`${paymentBaseUrl}/en${normalizedPath}`, {
+        onBeforeLoad(win) {
+            applyAdminAuthToWindow(win, adminPayload);
+        },
+    });
+});
+
+/**
  * Capture chart-of-accounts + balance-sheet totals before or after an operation.
  */
 Cypress.Commands.add('captureAccountingSnapshot', ({
@@ -1598,13 +1663,16 @@ Cypress.Commands.add('assertAccountingReflectsOperation', ({
     expected,
     operation,
     amount,
-    fee = 0,
+    fee,
     context,
     startDate,
     endDate,
 } = {}) => {
+    const resolvedFee = fee !== undefined
+        ? fee
+        : (operation === 'transfer' ? configuredTransferFee() : 0);
     const resolvedExpected = expected
-        ?? (operation ? expectedWalletOperationDelta(operation, { amount, fee }) : null);
+        ?? (operation ? expectedWalletOperationDelta(operation, { amount, fee: resolvedFee }) : null);
 
     if (!before || !resolvedExpected) {
         throw new Error('assertAccountingReflectsOperation requires before snapshot and expected or operation');

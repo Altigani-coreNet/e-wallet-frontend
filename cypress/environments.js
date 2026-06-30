@@ -11,6 +11,8 @@ const sharedWalletFixtures = {
     walletE2eSenderPhone: '+249977700001',
     walletE2eRecipientPhone: '+249977700002',
     walletE2ePassword: 'WalletE2e1!',
+    /** Must match Fast_Pay_Soft_Pos WALLET_TRANSFER_FEE / config services.wallet.transfer_fee */
+    walletTransferFee: 2,
 };
 
 /** Preferred dial code when picking country/city from real GET /api/v1/countries APIs. */
@@ -35,8 +37,6 @@ export const environments = {
         reverbPort: 8080,
         reverbScheme: 'ws',
         reverbAppKey: 'cp_live_v1_9f4a2d1b7c8e3f6a',
-        seedWalletLocally: true,
-        laravelRoot: '../Fast_Pay_Soft_Pos',
         /** Pause between cy.request API calls (ms) — set CYPRESS_apiRequestDelayMs to override */
         apiRequestDelayMs: 0,
         logAllApiCalls: true,
@@ -59,8 +59,6 @@ export const environments = {
         reverbPort: 91,
         reverbScheme: 'ws',
         reverbAppKey: 'cp_live_v1_9f4a2d1b7c8e3f6a',
-        seedWalletLocally: false,
-        laravelRoot: '../Fast_Pay_Soft_Pos',
         apiRequestDelayMs: 0,
         logAllApiCalls: false,
         ...sharedWalletFixtures,

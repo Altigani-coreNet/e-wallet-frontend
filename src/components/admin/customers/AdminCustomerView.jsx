@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
@@ -11,7 +11,10 @@ import ErrorAlert from '../../common/ErrorAlert';
 import {
     fetchAdminCustomer,
     deleteAdminCustomer,
+    useAdminCustomerTransactions,
 } from '../../../services/adminCustomersService';
+import CustomerLatestTransactions from './CustomerLatestTransactions';
+import CustomerTransactionsTab from './CustomerTransactionsTab';
 import {
     getCustomerCityName,
     getCustomerCountryName,
@@ -24,6 +27,7 @@ const AdminCustomerView = () => {
     const { id } = useParams();
     const customerId = id;
     const navigate = useNavigate();
+    const location = useLocation();
     const { t, i18n } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
     const canEdit = useCan(['sales.customers.edit_customers', 'edit_customers']);
@@ -31,7 +35,20 @@ const AdminCustomerView = () => {
     const [customer, setCustomer] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'overview');
+
+    useEffect(() => {
+        if (location.state?.activeTab) {
+            setActiveTab(location.state.activeTab);
+        }
+    }, [location.state?.activeTab]);
+
+    const {
+        data: latestTxResponse,
+        isLoading: latestTxLoading,
+    } = useAdminCustomerTransactions(customerId, { per_page: 5 }, { enabled: Boolean(customerId) });
+
+    const latestTransactions = latestTxResponse?.data || [];
 
     const locale = i18n.language?.startsWith('ar') ? 'ar-SA' : 'en-US';
 
@@ -58,7 +75,7 @@ const AdminCustomerView = () => {
         loadCustomer();
     }, [loadCustomer]);
 
-    const handleDelete = async () => {
+    const handleDelete = useCallback(async () => {
         const result = await Swal.fire({
             title: t('common.areYouSure'),
             text: t('customers.confirmDeleteCustomer', { name: customer?.name }),
@@ -84,7 +101,7 @@ const AdminCustomerView = () => {
             console.error('Error deleting customer:', err);
             toast.error(t('common.unexpectedErrorOccurred'));
         }
-    };
+    }, [customer?.name, customerId, navigate, t]);
 
     useEffect(() => {
         if (customer) {
@@ -97,14 +114,30 @@ const AdminCustomerView = () => {
         }
 
         setActions(
-            <>
+            <div className="d-flex flex-wrap align-items-center gap-2">
+                <Link to="/admin/customers" className="btn btn-sm fw-bold btn-light">
+                    <i className="ki-duotone ki-arrow-left fs-3">
+                        <span className="path1"></span>
+                        <span className="path2"></span>
+                    </i>
+                    {t('customers.backToCustomers')}
+                </Link>
                 {canEdit && (
-                    <Link to={`/admin/customers/${customerId}/edit`} className="btn btn-sm fw-bold btn-primary me-2">
+                    <Link to={`/admin/customers/${customerId}/edit`} className="btn btn-sm fw-bold btn-primary">
                         <i className="ki-duotone ki-pencil fs-3">
                             <span className="path1"></span>
                             <span className="path2"></span>
                         </i>
                         {t('customers.editCustomerBtn')}
+                    </Link>
+                )}
+                {canEdit && customer?.status !== 'deleted' && (
+                    <Link to={`/admin/customers/${customerId}/edit`} className="btn btn-sm fw-bold btn-warning">
+                        <i className="ki-duotone ki-setting-2 fs-3">
+                            <span className="path1"></span>
+                            <span className="path2"></span>
+                        </i>
+                        {t('customers.changeStatus')}
                     </Link>
                 )}
                 <button className="btn btn-sm fw-bold btn-danger" onClick={handleDelete} disabled={!customer}>
@@ -115,9 +148,9 @@ const AdminCustomerView = () => {
                         <span className="path4"></span>
                         <span className="path5"></span>
                     </i>
-                    {t('common.delete')}
+                    {t('customers.deleteCustomer')}
                 </button>
-            </>
+            </div>
         );
 
         return () => {
@@ -125,7 +158,7 @@ const AdminCustomerView = () => {
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [customer, customerId, canEdit, setTitle, setBreadcrumbs, setActions, t]);
+    }, [customer, customerId, canEdit, handleDelete, setTitle, setBreadcrumbs, setActions, t]);
 
     const formatDate = (dateString) => {
         if (!dateString) return t('customers.na');
@@ -302,6 +335,17 @@ const AdminCustomerView = () => {
                             </li>
                             <li className="nav-item" role="presentation">
                                 <a
+                                    className={`nav-link text-active-primary pb-4 ${activeTab === 'transactions' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('transactions')}
+                                    role="tab"
+                                    style={{ cursor: 'pointer' }}
+                                    data-testid="customer-transactions-tab-link"
+                                >
+                                    {t('customers.transactions')}
+                                </a>
+                            </li>
+                            <li className="nav-item" role="presentation">
+                                <a
                                     className={`nav-link text-active-primary pb-4 ${activeTab === 'advanced' ? 'active' : ''}`}
                                     onClick={() => setActiveTab('advanced')}
                                     role="tab"
@@ -450,84 +494,14 @@ const AdminCustomerView = () => {
                                         </div>
                                     </div>
 
-                                    <div className="card pt-4 mb-6 mb-xl-9">
-                                        <div className="card-header border-0">
-                                            <div className="card-title">
-                                                <h2>{t('customers.transactionHistory')}</h2>
-                                            </div>
-                                        </div>
-                                        <div className="card-body pt-0 pb-5">
-                                            <div className="table-responsive">
-                                                <table className="table align-middle table-row-dashed gy-5">
-                                                    <thead className="border-bottom border-gray-200 fs-7 fw-bold">
-                                                        <tr className="text-start text-muted text-uppercase gs-0">
-                                                            <th className="min-w-100px">{t('common.id')}</th>
-                                                            <th>{t('common.status')}</th>
-                                                            <th>{t('customers.transactionAmount')}</th>
-                                                            <th className="min-w-100px">{t('common.date')}</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="fs-6 fw-semibold text-gray-600">
-                                                        <tr>
-                                                            <td colSpan={4} className="text-center text-muted py-10">
-                                                                {t('customers.noTransactionHistory')}
-                                                            </td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <CustomerLatestTransactions
+                                        customerId={customerId}
+                                        transactions={latestTransactions}
+                                        isLoading={latestTxLoading}
+                                        currencyCode={customer.currency_code || 'SDG'}
+                                        onViewAll={() => setActiveTab('transactions')}
+                                    />
 
-                                    <div className="card pt-4 mb-6 mb-xl-9">
-                                        <div className="card-header border-0">
-                                            <div className="card-title">
-                                                <h2 className="fw-bold mb-0">{t('customers.quickActions')}</h2>
-                                            </div>
-                                        </div>
-                                        <div className="card-body pt-0">
-                                            <div className="d-flex flex-wrap gap-3">
-                                                {canEdit && (
-                                                    <Link to={`/admin/customers/${customerId}/edit`} className="btn btn-light-primary">
-                                                        <i className="ki-duotone ki-pencil fs-3">
-                                                            <span className="path1"></span>
-                                                            <span className="path2"></span>
-                                                        </i>
-                                                        {t('customers.editCustomerBtn')}
-                                                    </Link>
-                                                )}
-                                                {canEdit && customerStatus !== 'deleted' && (
-                                                    <Link
-                                                        to={`/admin/customers/${customerId}/edit`}
-                                                        className="btn btn-light-warning"
-                                                    >
-                                                        <i className="ki-duotone ki-setting-2 fs-3">
-                                                            <span className="path1"></span>
-                                                            <span className="path2"></span>
-                                                        </i>
-                                                        {t('customers.changeStatus')}
-                                                    </Link>
-                                                )}
-                                                <button onClick={handleDelete} className="btn btn-light-danger">
-                                                    <i className="ki-duotone ki-trash fs-3">
-                                                        <span className="path1"></span>
-                                                        <span className="path2"></span>
-                                                        <span className="path3"></span>
-                                                        <span className="path4"></span>
-                                                        <span className="path5"></span>
-                                                    </i>
-                                                    {t('customers.deleteCustomer')}
-                                                </button>
-                                                <Link to="/admin/customers" className="btn btn-light-secondary">
-                                                    <i className="ki-duotone ki-arrow-left fs-3">
-                                                        <span className="path1"></span>
-                                                        <span className="path2"></span>
-                                                    </i>
-                                                    {t('customers.backToCustomers')}
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </div>
                                 </div>
                             )}
 
@@ -596,6 +570,15 @@ const AdminCustomerView = () => {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            )}
+
+                            {activeTab === 'transactions' && (
+                                <div className="tab-pane fade show active">
+                                    <CustomerTransactionsTab
+                                        customerId={customerId}
+                                        currencyCode={customer.currency_code || 'SDG'}
+                                    />
                                 </div>
                             )}
 

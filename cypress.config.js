@@ -1,15 +1,10 @@
 import { defineConfig } from 'cypress';
 import viteConfig from './vite.config.js';
-import { execSync } from 'node:child_process';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import WebSocket from 'ws';
 import { resolveCypressEnvironment } from './cypress/environments.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const targetEnv = process.env.CYPRESS_TARGET_ENV || 'development';
 const { baseUrl, env: environmentEnv } = resolveCypressEnvironment(targetEnv);
-const laravelRoot = path.resolve(__dirname, environmentEnv.laravelRoot || '../Fast_Pay_Soft_Pos');
 
 console.log(`[cypress.config] CYPRESS_TARGET_ENV=${targetEnv} apiUrl=${environmentEnv.apiUrl}`);
 
@@ -27,21 +22,6 @@ export default defineConfig({
         env: environmentEnv,
         setupNodeEvents(on, config) {
             on('task', {
-                seedWalletE2e() {
-                    if (!config.env.seedWalletLocally) {
-                        console.warn(
-                            `[seedWalletE2e] skipped — seedWalletLocally=false (${config.env.environmentName})`
-                        );
-                        return false;
-                    }
-
-                    execSync('php artisan db:seed --class=WalletE2eSeeder --force', {
-                        cwd: laravelRoot,
-                        stdio: 'inherit',
-                    });
-
-                    return true;
-                },
                 /**
                  * Connect to Reverb, authorize with customer JWT, subscribe, then listen
                  * for a broadcast event. No admin API trigger — send from admin dashboard manually.

@@ -3,12 +3,13 @@
  *
  * Prerequisites:
  * - Laravel backend running on port 8000 (see cypress.config.js apiUrl)
- * - Migrations applied (wallets, wallet_transactions, wallet_idempotency_keys)
- * - Chart of accounts seeded (WalletE2eSeeder runs this automatically via cy.task)
+ * - Wallet E2E fixture customers (+249977700001 / +249977700002) must exist in the database
  *
  * Run:
  *   npm run cy:run:e2e -- --spec cypress/e2e/customers/customer-wallet-workflow.cy.js
  */
+
+import { configuredTransferFee, transferRecipientNet } from '../../support/walletAccountingHelpers';
 
 describe('Customer wallet workflow (real backend)', () => {
     const senderPhone = Cypress.env('walletE2eSenderPhone');
@@ -21,7 +22,6 @@ describe('Customer wallet workflow (real backend)', () => {
     let adminToken;
 
     before(() => {
-        cy.task('seedWalletE2e');
         cy.apiAdminLogin().then(({ token }) => {
             adminToken = token;
         });
@@ -83,7 +83,9 @@ describe('Customer wallet workflow (real backend)', () => {
                     cy.apiWalletDashboard(recipientToken).then((afterRecipient) => {
                         expect(afterRecipient.body.data.last_transaction.type).to.eq('transfer');
                         expect(afterRecipient.body.data.last_transaction.direction).to.eq('credit');
-                        expect(afterRecipient.body.data.last_transaction.amount).to.eq(amount);
+                        expect(afterRecipient.body.data.last_transaction.amount).to.eq(
+                            transferRecipientNet(amount)
+                        );
                     });
 
                     cy.assertAccountingReflectsOperation({

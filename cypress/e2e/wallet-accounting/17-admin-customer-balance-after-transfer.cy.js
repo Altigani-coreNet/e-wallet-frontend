@@ -12,6 +12,8 @@
  *   → wallet-accounting/17-admin-customer-balance-after-transfer.cy.js
  */
 
+import { configuredTransferFee, transferRecipientNet } from '../../support/walletAccountingHelpers';
+
 describe('Wallet accounting — admin customer balance after transfer', () => {
     let adminToken;
     let adminPayload;
@@ -49,7 +51,7 @@ describe('Wallet accounting — admin customer balance after transfer', () => {
 
     it('shows updated wallet balances in admin customer management after transfer', () => {
         const senderBalanceAfter = senderFundAmount - transferAmount;
-        const recipientBalanceAfter = transferAmount;
+        const recipientBalanceAfter = transferRecipientNet(transferAmount);
 
         cy.captureAccountingSnapshot({ adminToken, label: 'before admin balance transfer' }).then((before) => {
             cy.apiWalletResolveRecipient({

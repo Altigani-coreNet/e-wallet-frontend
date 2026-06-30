@@ -127,8 +127,7 @@ describe('Admin Customer Create Flow (Real API)', () => {
         cy.get('input[placeholder="Search countries..."]', { timeout: 30000 })
             .should('be.visible')
             .clear()
-            .type('Sudan', { delay: 30 });
-        cy.wait(3000);
+            .type('Sudan');
         cy.wait('@countriesSelect', { timeout: 30000 });
         cy.get('input[placeholder="Search countries..."]')
             .closest('.position-absolute')
@@ -136,7 +135,6 @@ describe('Admin Customer Create Flow (Real API)', () => {
             .first()
             .click({ force: true });
         cy.wait('@citiesSelect', { timeout: 30000 });
-        cy.wait(3000);
 
         cy.contains('label', 'City')
             .parent()

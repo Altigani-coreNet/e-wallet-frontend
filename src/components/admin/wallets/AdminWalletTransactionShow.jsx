@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useToolbar } from '../../../contexts/ToolbarContext';
 import { fmtMoney } from '../../../utils/walletMoney';
 import { useWalletTransaction } from '../../../services/adminWalletsService';
+import { fetchAdminCustomer } from '../../../services/adminCustomersService';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ErrorAlert from '../../common/ErrorAlert';
 
@@ -33,16 +34,52 @@ const WalletCell = ({ walletMeta, owner, t }) => {
 };
 
 const AdminWalletTransactionShow = () => {
-    const { transactionId } = useParams();
+    const { transactionId, customerId } = useParams();
     const navigate = useNavigate();
     const { t } = useTranslation();
     const { setTitle, setBreadcrumbs, setActions } = useToolbar();
+    const [customerName, setCustomerName] = useState(null);
 
     const { data: detail, isLoading, error, refetch } = useWalletTransaction(transactionId);
 
     const tx = detail?.transaction;
     const related = detail?.related_transactions ?? [];
     const operation = detail?.operation ?? {};
+    const fromCustomerContext = Boolean(customerId);
+
+    useEffect(() => {
+        if (!customerId) {
+            setCustomerName(null);
+            return;
+        }
+
+        let cancelled = false;
+
+        fetchAdminCustomer(customerId)
+            .then((response) => {
+                if (!cancelled && (response?.success || response?.status)) {
+                    setCustomerName(response.data?.name || null);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setCustomerName(null);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [customerId]);
+
+    const handleBack = useCallback(() => {
+        if (fromCustomerContext) {
+            navigate(`/admin/customers/${customerId}`, { state: { activeTab: 'transactions' } });
+            return;
+        }
+
+        navigate('/admin/wallets/transactions');
+    }, [fromCustomerContext, customerId, navigate]);
 
     useEffect(() => {
         const title = tx
@@ -50,23 +87,40 @@ const AdminWalletTransactionShow = () => {
             : t('admin.wallets.transactionDetails');
 
         setTitle(title);
-        setBreadcrumbs([
-            { title: t('admin.sidebar.dashboard'), path: '/admin/dashboard' },
-            { title: t('admin.wallets.title'), path: '/admin/wallets' },
-            { title: t('admin.wallets.allTransactions'), path: '/admin/wallets/transactions' },
-            { title: tx?.id?.slice(0, 8) || transactionId, path: `/admin/wallets/transactions/${transactionId}` },
-        ]);
+
+        if (fromCustomerContext) {
+            setBreadcrumbs([
+                { title: t('admin.sidebar.dashboard'), path: '/admin/dashboard' },
+                { title: t('customers.customers'), path: '/admin/customers' },
+                {
+                    title: customerName || t('customers.customerNamed', { name: customerId }),
+                    path: `/admin/customers/${customerId}`,
+                },
+                {
+                    title: t('customers.transactions'),
+                    path: `/admin/customers/${customerId}`,
+                },
+                {
+                    title: tx?.id?.slice(0, 8) || transactionId,
+                    path: `/admin/customers/${customerId}/transactions/${transactionId}`,
+                },
+            ]);
+        } else {
+            setBreadcrumbs([
+                { title: t('admin.sidebar.dashboard'), path: '/admin/dashboard' },
+                { title: t('admin.wallets.title'), path: '/admin/wallets' },
+                { title: t('admin.wallets.allTransactions'), path: '/admin/wallets/transactions' },
+                { title: tx?.id?.slice(0, 8) || transactionId, path: `/admin/wallets/transactions/${transactionId}` },
+            ]);
+        }
+
         setActions(
             <div className="d-flex gap-2">
                 <button type="button" className="btn btn-sm btn-light" onClick={() => refetch()}>
                     {t('common.refresh')}
                 </button>
-                <button
-                    type="button"
-                    className="btn btn-sm btn-light"
-                    onClick={() => navigate('/admin/wallets/transactions')}
-                >
-                    {t('admin.wallets.backToTransactions')}
+                <button type="button" className="btn btn-sm btn-light" onClick={handleBack}>
+                    {fromCustomerContext ? t('customers.backToCustomer') : t('admin.wallets.backToTransactions')}
                 </button>
             </div>
         );
@@ -76,7 +130,19 @@ const AdminWalletTransactionShow = () => {
             setBreadcrumbs([]);
             setActions(null);
         };
-    }, [setTitle, setBreadcrumbs, setActions, t, tx, transactionId, navigate, refetch]);
+    }, [
+        setTitle,
+        setBreadcrumbs,
+        setActions,
+        t,
+        tx,
+        transactionId,
+        customerId,
+        customerName,
+        fromCustomerContext,
+        refetch,
+        handleBack,
+    ]);
 
     if (isLoading) {
         return <LoadingSpinner />;
@@ -207,7 +273,11 @@ const AdminWalletTransactionShow = () => {
                                                         <span className="badge badge-light-primary">{t('admin.wallets.currentEntry')}</span>
                                                     ) : (
                                                         <Link
-                                                            to={`/admin/wallets/transactions/${entry.id}`}
+                                                            to={
+                                                                fromCustomerContext
+                                                                    ? `/admin/customers/${customerId}/transactions/${entry.id}`
+                                                                    : `/admin/wallets/transactions/${entry.id}`
+                                                            }
                                                             className="btn btn-sm btn-light-primary"
                                                         >
                                                             {t('common.viewDetails')}

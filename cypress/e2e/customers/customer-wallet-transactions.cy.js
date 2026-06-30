@@ -3,9 +3,7 @@
  *
  * Prerequisites:
  * - Laravel backend running on port 8000 (see cypress.config.js apiUrl)
- * - Wallet E2E customers seeded:
- *     php artisan db:seed --class=WalletE2eSeeder
- *   Or set CYPRESS_seedWalletLocally=true in cypress/.env.development
+ * - Wallet E2E fixture customers (+249977700001 / +249977700002) must exist in the database
  *
  * Run:
  *   npm run cy:run:e2e -- --spec cypress/e2e/customers/customer-wallet-transactions.cy.js
@@ -20,14 +18,6 @@ describe('Customer wallet transactions list (real backend)', () => {
     const runId = Date.now();
 
     before(() => {
-        cy.task('seedWalletE2e').then((seeded) => {
-            if (!seeded) {
-                cy.log(
-                    'seedWalletLocally=false — ensure WalletE2eSeeder was run manually before this spec'
-                );
-            }
-        });
-
         cy.apiWalletE2eLogin({ role: 'sender' }).then((token) => {
             senderToken = token;
         });

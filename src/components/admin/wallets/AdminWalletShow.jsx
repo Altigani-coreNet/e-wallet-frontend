@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 import { useTranslation } from 'react-i18next';
 
@@ -34,6 +34,18 @@ import LoadingSpinner from '../../common/LoadingSpinner';
 
 import ErrorAlert from '../../common/ErrorAlert';
 
+import WalletTransactionsPanel from './WalletTransactionsPanel';
+
+const EMPTY_TX_FILTERS = {
+    search: '',
+    direction: '',
+    type: '',
+    date_from: '',
+    date_to: '',
+    min_amount: '',
+    max_amount: '',
+};
+
 
 
 const AdminWalletShow = () => {
@@ -58,6 +70,10 @@ const AdminWalletShow = () => {
 
 
 
+    const [txFilters, setTxFilters] = useState(EMPTY_TX_FILTERS);
+
+    const [debouncedTxFilters, setDebouncedTxFilters] = useState(EMPTY_TX_FILTERS);
+
     const [txPagination, setTxPagination] = useState({
 
         current_page: 1,
@@ -70,7 +86,19 @@ const AdminWalletShow = () => {
 
     });
 
+    useEffect(() => {
 
+        const timer = setTimeout(() => {
+
+            setDebouncedTxFilters(txFilters);
+
+            setTxPagination((prev) => ({ ...prev, current_page: 1 }));
+
+        }, 500);
+
+        return () => clearTimeout(timer);
+
+    }, [txFilters]);
 
     const txParams = useMemo(
 
@@ -80,9 +108,11 @@ const AdminWalletShow = () => {
 
             per_page: txPagination.per_page,
 
+            ...debouncedTxFilters,
+
         }),
 
-        [txPagination.current_page, txPagination.per_page]
+        [txPagination.current_page, txPagination.per_page, debouncedTxFilters]
 
     );
 
@@ -660,216 +690,25 @@ const AdminWalletShow = () => {
 
 
 
-            <div className="card">
-
-                <div className="card-header">
-
-                    <h3 className="card-title fw-bold">{t('admin.wallets.transactionsForWallet')}</h3>
-
-                </div>
-
-                <div className="card-body pt-0">
-
-                    {txLoading ? (
-
-                        <LoadingSpinner />
-
-                    ) : (
-
-                        <div className="table-responsive" style={{ opacity: txFetching ? 0.7 : 1 }}>
-
-                            <table className="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
-
-                                <thead>
-
-                                    <tr className="fw-bold text-muted">
-
-                                        <th>{t('common.date')}</th>
-
-                                        <th>{t('admin.wallets.type')}</th>
-
-                                        <th>{t('admin.wallets.direction')}</th>
-
-                                        <th className="text-end">{t('admin.wallets.amount')}</th>
-
-                                        <th className="text-end">{t('admin.wallets.balanceAfter')}</th>
-
-                                        <th>{t('admin.wallets.counterparty')}</th>
-
-                                        <th>{t('common.description')}</th>
-
-                                        <th>{t('common.actions')}</th>
-
-                                    </tr>
-
-                                </thead>
-
-                                <tbody>
-
-                                    {transactions.length === 0 ? (
-
-                                        <tr>
-
-                                            <td colSpan="8" className="text-center py-10 text-muted">
-
-                                                {t('admin.wallets.noTransactionsFound')}
-
-                                            </td>
-
-                                        </tr>
-
-                                    ) : (
-
-                                        transactions.map((tx) => {
-
-                                            const signed = tx.signedDisplay(wallet.currency_code);
-
-                                            const counterparty = tx.counterparty;
-
-                                            return (
-
-                                                <tr key={tx.id}>
-
-                                                    <td>{tx.created_at ? new Date(tx.created_at).toLocaleString() : '-'}</td>
-
-                                                    <td>
-
-                                                        <span className="badge badge-light-primary text-capitalize">{tx.type}</span>
-
-                                                    </td>
-
-                                                    <td>
-
-                                                        <span className={`badge ${tx.direction === 'debit' ? 'badge-light-danger' : 'badge-light-success'}`}>
-
-                                                            {tx.direction}
-
-                                                        </span>
-
-                                                    </td>
-
-                                                    <td className={`text-end ${signed.className}`}>{signed.text}</td>
-
-                                                    <td className="text-end">{fmtMoney(tx.balance_after)}</td>
-
-                                                    <td>
-
-                                                        {counterparty ? (
-
-                                                            <div>
-
-                                                                {counterparty.wallet_uuid ? (
-
-                                                                    <Link to={`/admin/wallets/${counterparty.wallet_uuid}`} className="fw-bold">
-
-                                                                        {counterparty.wallet_id}
-
-                                                                    </Link>
-
-                                                                ) : (
-
-                                                                    <span className="fw-bold">{counterparty.wallet_id}</span>
-
-                                                                )}
-
-                                                                <div className="text-muted fs-7">{counterparty.owner_name}</div>
-
-                                                            </div>
-
-                                                        ) : (
-
-                                                            '-'
-
-                                                        )}
-
-                                                    </td>
-
-                                                    <td>{tx.description || tx.reference || '-'}</td>
-
-                                                    <td>
-                                                        <Link
-                                                            to={`/admin/wallets/transactions/${tx.id}`}
-                                                            className="btn btn-sm btn-light-primary"
-                                                        >
-                                                            {t('common.viewDetails')}
-                                                        </Link>
-                                                    </td>
-
-                                                </tr>
-
-                                            );
-
-                                        })
-
-                                    )}
-
-                                </tbody>
-
-                            </table>
-
-                        </div>
-
-                    )}
-
-
-
-                    {txPagination.total > txPagination.per_page && (
-
-                        <div className="d-flex justify-content-end pt-4">
-
-                            <ul className="pagination">
-
-                                <li className={`page-item ${txPagination.current_page <= 1 ? 'disabled' : ''}`}>
-
-                                    <button
-
-                                        type="button"
-
-                                        className="page-link"
-
-                                        onClick={() => setTxPagination((p) => ({ ...p, current_page: p.current_page - 1 }))}
-
-                                    >
-
-                                        {t('common.previous')}
-
-                                    </button>
-
-                                </li>
-
-                                <li className="page-item active">
-
-                                    <span className="page-link">{txPagination.current_page}</span>
-
-                                </li>
-
-                                <li className={`page-item ${txPagination.current_page >= txPagination.last_page ? 'disabled' : ''}`}>
-
-                                    <button
-
-                                        type="button"
-
-                                        className="page-link"
-
-                                        onClick={() => setTxPagination((p) => ({ ...p, current_page: p.current_page + 1 }))}
-
-                                    >
-
-                                        {t('common.next')}
-
-                                    </button>
-
-                                </li>
-
-                            </ul>
-
-                        </div>
-
-                    )}
-
-                </div>
-
-            </div>
+            <WalletTransactionsPanel
+                cardTitle={t('admin.wallets.transactionsForWallet')}
+                transactions={transactions}
+                isLoading={txLoading}
+                isFetching={txFetching}
+                pagination={txPagination}
+                onPaginationChange={setTxPagination}
+                filters={txFilters}
+                onFiltersChange={setTxFilters}
+                onClearFilters={() => setTxFilters(EMPTY_TX_FILTERS)}
+                onRefetch={refetchTx}
+                currencyCode={wallet.currency_code}
+                getTransactionLink={(tx) =>
+                    wallet.customer_id
+                        ? `/admin/customers/${wallet.customer_id}/transactions/${tx.id}`
+                        : `/admin/wallets/transactions/${tx.id}`
+                }
+                testIdPrefix="wallet"
+            />
 
         </>
 

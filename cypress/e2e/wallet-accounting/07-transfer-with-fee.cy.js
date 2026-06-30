@@ -2,6 +2,8 @@
  * PRD Gherkin: Transfer with fee (money correctness)
  */
 
+import { configuredTransferFee } from '../../support/walletAccountingHelpers';
+
 describe('Wallet accounting — transfer with fee', () => {
     let adminToken;
     let sender;
@@ -35,7 +37,7 @@ describe('Wallet accounting — transfer with fee', () => {
 
     it('queries recipient then transfers with fee and note', () => {
         const amount = 50;
-        const fee = 2;
+        const fee = configuredTransferFee();
         const note = 'E2E fee transfer note';
 
         cy.captureAccountingSnapshot({ adminToken, label: 'before transfer with fee' }).then((before) => {
@@ -49,7 +51,6 @@ describe('Wallet accounting — transfer with fee', () => {
                     token: sender.token,
                     recipientWalletId,
                     amount,
-                    fee,
                     description: 'E2E transfer with fee',
                     note,
                     idempotencyKey: `fee-transfer-${Date.now()}`,

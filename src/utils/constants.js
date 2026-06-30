@@ -1,5 +1,5 @@
 // API Base URLs
-export const BASE_DOMAIN = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+export const BASE_DOMAIN = import.meta.env.VITE_API_BASE || 'http://193.123.83.134:91';
 export const SOFTPOS_API_BASE = `${BASE_DOMAIN}/api`;
 export const AUTH_SERVICE_BASE = `${BASE_DOMAIN}/api`;
 export const PAYTABS_API_BASE = `${BASE_DOMAIN}/api/paytabs`;
@@ -772,6 +772,7 @@ export const ADMIN_ENDPOINTS = {
     ACCOUNTING_BALANCE_SHEET: `${SOFTPOS_API_BASE}/v2/admin/accounting/reports/balance-sheet`,
     ACCOUNTING_BALANCE_SHEET_EXPORT: `${SOFTPOS_API_BASE}/v2/admin/accounting/reports/balance-sheet/export`,
     ACCOUNTING_PROFIT_LOSS: `${SOFTPOS_API_BASE}/v2/admin/accounting/reports/profit-loss`,
+    ACCOUNTING_PROFIT_LOSS_EXPORT: `${SOFTPOS_API_BASE}/v2/admin/accounting/reports/profit-loss/export`,
     ACCOUNTING_TRIAL_BALANCE: `${SOFTPOS_API_BASE}/v2/admin/accounting/reports/trial-balance`,
 };
 

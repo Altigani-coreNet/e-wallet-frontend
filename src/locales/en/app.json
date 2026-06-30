@@ -2414,7 +2414,8 @@
         "code": "Code",
         "amount": "Amount",
         "totalAssets": "Total Assets",
-        "totalLiabilitiesAndEquity": "Total Liabilities & Equity"
+        "totalLiabilitiesAndEquity": "Total Liabilities & Equity",
+        "print": "Print"
       },
       "profitLoss": {
         "title": "Profit & Loss",
@@ -2423,10 +2424,24 @@
         "cogs": "Costs of Goods Sold",
         "expenses": "Expenses",
         "grossProfit": "Gross Profit",
-        "netProfit": "Net Profit"
+        "netProfit": "Net Profit",
+        "netLoss": "Net Loss",
+        "account": "Account",
+        "amount": "Amount",
+        "total": "Total",
+        "vertical": "Vertical",
+        "horizontal": "Horizontal",
+        "expandAll": "Expand All",
+        "collapseAll": "Collapse All",
+        "export": "Export",
+        "print": "Print",
+        "costsAndExpenses": "Costs & Expenses"
       },
       "reports": {
-        "noAccounts": "No accounts with activity"
+        "noAccounts": "No accounts with activity",
+        "filtersTitle": "Filters",
+        "reportTitle": "Report",
+        "layout": "Layout"
       }
     },
     "common": {
@@ -6442,6 +6457,10 @@
     "profileImageHint": "JPG, PNG or GIF. Max 2MB.",
     "walletBalance": "Wallet Balance",
     "transactionHistory": "Transaction History",
+    "latestTransactions": "Latest Transactions",
+    "transactions": "Transactions",
+    "viewAllTransactions": "View all transactions",
+    "failedToLoadTransactions": "Failed to load customer transactions",
     "transactionAmount": "Amount",
     "noTransactionHistory": "No transactions recorded for this customer yet.",
     "accountSuspendedDescription": "This customer is suspended and cannot access the wallet.",

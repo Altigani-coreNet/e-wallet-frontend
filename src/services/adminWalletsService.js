@@ -122,30 +122,35 @@ export const downloadWalletTransactionsExport = async (params = {}) => {
     return response.data;
 };
 
+const withIdempotencyBody = (payload, idempotencyKey) => {
+    if (!idempotencyKey) return payload;
+    return { ...payload, idempotency_key: idempotencyKey };
+};
+
 export const cashInWallet = async (walletId, payload, idempotencyKey) => {
-    const headers = authHeaders();
-    if (idempotencyKey) {
-        headers['Idempotency-Key'] = idempotencyKey;
-    }
-    const response = await axios.post(ADMIN_ENDPOINTS.WALLET_CASH_IN(walletId), payload, { headers });
+    const response = await axios.post(
+        ADMIN_ENDPOINTS.WALLET_CASH_IN(walletId),
+        withIdempotencyBody(payload, idempotencyKey),
+        { headers: authHeaders() }
+    );
     return AdminWalletMoneyOperationModel.fromApi(unwrap(response));
 };
 
 export const cashOutWallet = async (walletId, payload, idempotencyKey) => {
-    const headers = authHeaders();
-    if (idempotencyKey) {
-        headers['Idempotency-Key'] = idempotencyKey;
-    }
-    const response = await axios.post(ADMIN_ENDPOINTS.WALLET_CASH_OUT(walletId), payload, { headers });
+    const response = await axios.post(
+        ADMIN_ENDPOINTS.WALLET_CASH_OUT(walletId),
+        withIdempotencyBody(payload, idempotencyKey),
+        { headers: authHeaders() }
+    );
     return AdminWalletMoneyOperationModel.fromApi(unwrap(response));
 };
 
 export const recordOpeningCapital = async (payload, idempotencyKey) => {
-    const headers = authHeaders();
-    if (idempotencyKey) {
-        headers['Idempotency-Key'] = idempotencyKey;
-    }
-    const response = await axios.post(ADMIN_ENDPOINTS.WALLET_OPENING_CAPITAL, payload, { headers });
+    const response = await axios.post(
+        ADMIN_ENDPOINTS.WALLET_OPENING_CAPITAL,
+        withIdempotencyBody(payload, idempotencyKey),
+        { headers: authHeaders() }
+    );
     return AdminOpeningCapitalModel.fromApi(unwrap(response));
 };
 

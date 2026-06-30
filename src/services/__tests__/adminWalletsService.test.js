@@ -148,9 +148,16 @@ describe('adminWalletsService', () => {
                 },
             });
 
-            const result = await cashInWallet('w1', { amount: 100 });
+            const result = await cashInWallet('w1', { amount: 100 }, 'idem-1');
             expect(result).toBeInstanceOf(AdminWalletMoneyOperationModel);
             expect(result.amount).toBe(100);
+            expect(axios.post).toHaveBeenCalledWith(
+                expect.stringContaining('/v2/admin/wallets/w1/cash-in'),
+                { amount: 100, idempotency_key: 'idem-1' },
+                expect.objectContaining({
+                    headers: expect.not.objectContaining({ 'Idempotency-Key': expect.anything() }),
+                })
+            );
         });
     });
 });

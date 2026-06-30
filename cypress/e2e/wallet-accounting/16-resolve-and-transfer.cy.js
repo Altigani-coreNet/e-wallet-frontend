@@ -1,6 +1,8 @@
 /**
- * PRD UC-C3: Query recipient then unified transfer (no fee)
+ * PRD UC-C3: Query recipient then unified transfer (fee deducted per WALLET_TRANSFER_FEE)
  */
+
+import { configuredTransferFee, transferRecipientNet } from '../../support/walletAccountingHelpers';
 
 describe('Wallet accounting — query and transfer', () => {
     let adminToken;
@@ -35,6 +37,8 @@ describe('Wallet accounting — query and transfer', () => {
 
     it('queries recipient by phone then transfers by wallet_id with note', () => {
         const amount = 15;
+        const fee = configuredTransferFee();
+        const recipientNet = transferRecipientNet(amount);
         const note = 'E2E unified transfer note';
 
         cy.captureAccountingSnapshot({ adminToken, label: 'before query and transfer' }).then((before) => {
@@ -58,6 +62,8 @@ describe('Wallet accounting — query and transfer', () => {
                     }).then((transferResponse) => {
                         expect(transferResponse.status).to.eq(200);
                         expect(transferResponse.body.data.amount).to.eq(amount);
+                        expect(transferResponse.body.data.fee).to.eq(fee);
+                        expect(transferResponse.body.data.recipient_amount).to.eq(recipientNet);
                         expect(transferResponse.body.data.note).to.eq(note);
                         expect(transferResponse.body.data.sender_wallet.balance).to.eq(balanceBefore - amount);
                     });
@@ -67,11 +73,11 @@ describe('Wallet accounting — query and transfer', () => {
                     });
 
                     cy.apiAdminWalletShow({ adminToken, walletUuid: recipient.walletUuid }).then((recipientShow) => {
-                        expect(recipientShow.body.data.balance).to.eq(amount);
+                        expect(recipientShow.body.data.balance).to.eq(recipientNet);
                     });
 
                     cy.apiWalletDashboard(recipient.token).then((recipientDash) => {
-                        expect(recipientDash.body.data.wallet.balance).to.eq(amount);
+                        expect(recipientDash.body.data.wallet.balance).to.eq(recipientNet);
                         expect(recipientDash.body.data.recent_transactions).to.be.an('array');
                         expect(recipientDash.body.data.recent_transactions.length).to.be.lte(5);
                         expect(recipientDash.body.data.recent_transactions[0].type).to.eq('transfer');

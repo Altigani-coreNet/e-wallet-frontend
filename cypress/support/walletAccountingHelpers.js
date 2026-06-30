@@ -16,6 +16,21 @@ export function uniqueWalletPhone(runId = Date.now()) {
     return `+2499${String(runId).slice(-7)}${Math.floor(Math.random() * 10)}`;
 }
 
+/** Configured transfer fee (SDG) — mirrors WALLET_TRANSFER_FEE on the API. */
+export function configuredTransferFee() {
+    const fee = Cypress.env('walletTransferFee');
+    if (fee === undefined || fee === null || fee === '') {
+        return 0;
+    }
+
+    return Math.max(0, roundMoney(fee));
+}
+
+/** Net amount credited to recipient after the platform transfer fee. */
+export function transferRecipientNet(grossAmount) {
+    return roundMoney(grossAmount - configuredTransferFee());
+}
+
 /** Default balance-sheet filter: first day of current month through today (UTC). */
 export function currentMonthDateRange(referenceDate = new Date()) {
     const iso = referenceDate.toISOString().slice(0, 10);
@@ -295,14 +310,6 @@ export function buildInvalidTransferPayload(rng, ctx) {
             },
         }),
         () => ({
-            label: 'negative fee',
-            body: { recipient_wallet_id: ctx.recipientWalletId, amount: 5, fee: -1 },
-        }),
-        () => ({
-            label: 'fee greater than amount',
-            body: { recipient_wallet_id: ctx.recipientWalletId, amount: 5, fee: 10 },
-        }),
-        () => ({
             label: 'self-transfer to own wallet',
             body: { recipient_wallet_id: ctx.senderWalletId, amount: 5 },
         }),
@@ -311,6 +318,11 @@ export function buildInvalidTransferPayload(rng, ctx) {
     const index = Math.floor(rng() * variants.length);
 
     return variants[index]();
+}
+
+/** Stable slug for idempotency keys in chaos tests (avoids replay across payload types). */
+export function chaosPayloadKeySlug(label = '') {
+    return String(label).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
 /**

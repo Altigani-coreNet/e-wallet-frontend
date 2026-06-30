@@ -2415,7 +2415,8 @@
         "code": "الرمز",
         "amount": "المبلغ",
         "totalAssets": "إجمالي الأصول",
-        "totalLiabilitiesAndEquity": "إجمالي الخصوم وحقوق الملكية"
+        "totalLiabilitiesAndEquity": "إجمالي الخصوم وحقوق الملكية",
+        "print": "طباعة"
       },
       "profitLoss": {
         "title": "الأرباح والخسائر",
@@ -2424,10 +2425,24 @@
         "cogs": "تكلفة البضاعة المباعة",
         "expenses": "المصروفات",
         "grossProfit": "إجمالي الربح",
-        "netProfit": "صافي الربح"
+        "netProfit": "صافي الربح",
+        "netLoss": "صافي الخسارة",
+        "account": "الحساب",
+        "amount": "المبلغ",
+        "total": "الإجمالي",
+        "vertical": "عمودي",
+        "horizontal": "أفقي",
+        "expandAll": "توسيع الكل",
+        "collapseAll": "طي الكل",
+        "export": "تصدير",
+        "print": "طباعة",
+        "costsAndExpenses": "التكاليف والمصروفات"
       },
       "reports": {
-        "noAccounts": "لا توجد حسابات بنشاط"
+        "noAccounts": "لا توجد حسابات بنشاط",
+        "filtersTitle": "الفلاتر",
+        "reportTitle": "التقرير",
+        "layout": "التخطيط"
       }
     },
     "common": {
@@ -6454,6 +6469,10 @@
     "profileImageHint": "JPG أو PNG أو GIF. الحد الأقصى 2 ميجابايت.",
     "walletBalance": "رصيد المحفظة",
     "transactionHistory": "سجل المعاملات",
+    "latestTransactions": "أحدث المعاملات",
+    "transactions": "المعاملات",
+    "viewAllTransactions": "عرض جميع المعاملات",
+    "failedToLoadTransactions": "فشل تحميل معاملات العميل",
     "transactionAmount": "المبلغ",
     "noTransactionHistory": "لا توجد معاملات مسجلة لهذا العميل بعد.",
     "accountSuspendedDescription": "هذا العميل موقوف ولا يمكنه الوصول إلى المحفظة.",

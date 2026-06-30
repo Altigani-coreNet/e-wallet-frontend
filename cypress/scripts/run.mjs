@@ -58,7 +58,7 @@ const child = spawn(process.execPath, [cypressBin, cypressCommand, ...cypressArg
     cwd: paymentRoot,
     stdio: 'inherit',
     env: process.env,
-    shell: process.platform === 'win32',
+    shell: false,
 });
 
 child.on('exit', (code) => {

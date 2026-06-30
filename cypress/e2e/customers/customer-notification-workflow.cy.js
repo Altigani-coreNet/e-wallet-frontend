@@ -9,6 +9,8 @@
  *   cypress/e2e/customers/customer-notification-workflow.cy.js
  */
 
+import { configuredTransferFee, transferRecipientNet } from '../../support/walletAccountingHelpers';
+
 describe('Customer notification workflow (real backend)', () => {
     const initialPassword = 'NotifFlow1!';
     const newPassword = 'NotifFlow2!';
@@ -217,6 +219,7 @@ describe('Customer notification workflow (real backend)', () => {
                     .then((transferResponse) => {
                         expect(transferResponse.status).to.eq(200);
                         expect(transferResponse.body.data.amount).to.eq(100);
+                        expect(transferResponse.body.data.fee).to.eq(configuredTransferFee());
 
                         return cy.assertCustomerNotificationsInclude({
                             token: ctx.token,
@@ -234,16 +237,20 @@ describe('Customer notification workflow (real backend)', () => {
 
             .then((ctx) =>
                 cy.apiCustomerLogin({ phone: ctx.run.recipientPhone, password: initialPassword }).then(
-                    (recipientLogin) =>
-                        cy.assertCustomerNotificationsInclude({
+                    (recipientLogin) => {
+                        const transferAmount = 100;
+                        const recipientNet = transferRecipientNet(transferAmount);
+
+                        return cy.assertCustomerNotificationsInclude({
                             token: recipientLogin.body.data.token,
                             total: 2,
                             titles: [
                                 'Money received',
                                 'Application received - we\'re on it',
                             ],
-                            descriptions: [`You received 100.00 SDG from ${ctx.run.profileName}.`],
-                        })
+                            descriptions: [`You received ${recipientNet.toFixed(2)} SDG from ${ctx.run.profileName}.`],
+                        });
+                    }
                 )
             );
     });

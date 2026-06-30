@@ -26,7 +26,6 @@ describe('Customer WebSocket broadcast', () => {
         if (providedToken) {
             return cy.wrap(providedToken, { log: false });
         }
-        cy.task('seedWalletE2e');
         return cy.apiCustomerLogin({ phone, password }).then((loginResponse) => {
             expect(loginResponse.status, 'customer login status').to.eq(200);
             return loginResponse.body.data.token;

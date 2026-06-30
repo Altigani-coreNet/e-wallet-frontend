@@ -4,11 +4,17 @@ import { ADMIN_ENDPOINTS } from '../utils/constants';
 import { getToken } from '../utils/api';
 import { LIST_QUERY_DEFAULTS } from '../utils/reactQueryDefaults';
 import AdminCustomerModel, { mapAdminCustomersPaginated } from '../models/AdminCustomerModel';
+import { mapAdminWalletTransactionsPaginated } from '../models/AdminWalletTransactionModel';
 
 const authHeaders = (accept = 'application/json') => ({
     Authorization: `Bearer ${getToken()}`,
     Accept: accept,
 });
+
+const cleanQueryParams = (params = {}) =>
+    Object.fromEntries(
+        Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    );
 
 /**
  * Fetch admin customers (for React Query). Returns the raw API payload so the
@@ -44,6 +50,43 @@ export const fetchAdminCustomer = async (customerId) => {
         ...body,
         data: AdminCustomerModel.fromApi(body.data),
     };
+};
+
+/**
+ * Fetch admin customer wallet snapshot with summary and recent transactions.
+ */
+export const fetchAdminCustomerWallet = async (customerId) => {
+    const response = await axios.get(ADMIN_ENDPOINTS.CUSTOMER_WALLET(customerId), {
+        headers: authHeaders(),
+    });
+
+    const body = response.data ?? {};
+    const payload = body.data ?? body;
+
+    return {
+        ...body,
+        data: {
+            ...payload,
+            recent_transactions: mapAdminWalletTransactionsPaginated({
+                data: payload.recent_transactions || [],
+            }).data,
+        },
+    };
+};
+
+/**
+ * Fetch paginated wallet transactions for an admin customer.
+ */
+export const fetchAdminCustomerTransactions = async (customerId, params = {}) => {
+    const response = await axios.get(ADMIN_ENDPOINTS.CUSTOMER_TRANSACTIONS(customerId), {
+        params: cleanQueryParams(params),
+        headers: authHeaders(),
+    });
+
+    const body = response.data ?? {};
+    const payload = body.data ?? body;
+
+    return mapAdminWalletTransactionsPaginated(payload);
 };
 
 /**
@@ -190,6 +233,8 @@ export const adminCustomersKeys = {
     all: ['admin', 'customers'],
     list: (params) => ['admin', 'customers', 'list', params],
     detail: (id) => ['admin', 'customers', 'detail', id],
+    wallet: (id) => ['admin', 'customers', 'wallet', id],
+    transactions: (id, params) => ['admin', 'customers', 'transactions', id, params],
 };
 
 /**
@@ -199,6 +244,32 @@ export const useAdminCustomers = (params = {}, options = {}) => {
     return useQuery({
         queryKey: adminCustomersKeys.list(params),
         queryFn: () => fetchAdminCustomers(params),
+        ...LIST_QUERY_DEFAULTS,
+        ...options,
+    });
+};
+
+/**
+ * React Query hook for admin customer wallet snapshot.
+ */
+export const useAdminCustomerWallet = (customerId, options = {}) => {
+    return useQuery({
+        queryKey: adminCustomersKeys.wallet(customerId),
+        queryFn: () => fetchAdminCustomerWallet(customerId),
+        enabled: Boolean(customerId),
+        ...LIST_QUERY_DEFAULTS,
+        ...options,
+    });
+};
+
+/**
+ * React Query hook for admin customer wallet transactions.
+ */
+export const useAdminCustomerTransactions = (customerId, params = {}, options = {}) => {
+    return useQuery({
+        queryKey: adminCustomersKeys.transactions(customerId, params),
+        queryFn: () => fetchAdminCustomerTransactions(customerId, params),
+        enabled: Boolean(customerId),
         ...LIST_QUERY_DEFAULTS,
         ...options,
     });

@@ -164,10 +164,19 @@ export const downloadBalanceSheetExport = async (params = {}) => {
 
 export const fetchProfitAndLoss = async (params = {}) => {
     const response = await axios.get(ADMIN_ENDPOINTS.ACCOUNTING_PROFIT_LOSS, {
-        params,
+        params: cleanQueryParams(params),
         headers: authHeaders(),
     });
     return unwrap(response);
+};
+
+export const downloadProfitAndLossExport = async (params = {}) => {
+    const response = await axios.get(ADMIN_ENDPOINTS.ACCOUNTING_PROFIT_LOSS_EXPORT, {
+        params: cleanQueryParams(params),
+        headers: authHeaders('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+        responseType: 'blob',
+    });
+    return response.data;
 };
 
 export const fetchTrialBalance = async (params = {}) => {
@@ -248,13 +257,19 @@ export const useBalanceSheet = (params = {}, options = {}) => {
     });
 };
 
-export const useProfitAndLoss = (params = {}, options = {}) =>
-    useQuery({
-        queryKey: adminAccountingKeys.profitLoss(params),
-        queryFn: () => fetchProfitAndLoss(params),
+export const useProfitAndLoss = (params = {}, options = {}) => {
+    const cleanedParams = cleanQueryParams(params);
+    const hasToken = Boolean(getToken());
+    const { enabled: enabledOption, ...restOptions } = options;
+
+    return useQuery({
+        queryKey: adminAccountingKeys.profitLoss(cleanedParams),
+        queryFn: () => fetchProfitAndLoss(cleanedParams),
         ...REPORT_QUERY_DEFAULTS,
-        ...options,
+        ...restOptions,
+        enabled: hasToken && (enabledOption !== undefined ? enabledOption : true),
     });
+};
 
 export const useChartOfAccountMutations = () => {
     const queryClient = useQueryClient();

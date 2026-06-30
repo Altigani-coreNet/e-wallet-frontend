@@ -12,8 +12,11 @@
 import {
     assertAccountingDelta,
     buildInvalidTransferPayload,
+    chaosPayloadKeySlug,
+    configuredTransferFee,
     expectedWalletOperationDelta,
     mulberry32,
+    transferRecipientNet,
     zeroAccountingDelta,
 } from '../../support/walletAccountingHelpers';
 
@@ -48,7 +51,7 @@ function runChaosIteration(index, state, rng, ctx) {
                     .apiWalletTransferRaw({
                         token: ctx.sender.token,
                         body: invalid.body,
-                        idempotencyKey: `chaos-reject-${ctx.runId}-${index}`,
+                        idempotencyKey: `chaos-reject-${ctx.runId}-${index}-${chaosPayloadKeySlug(invalid.label)}`,
                         failOnStatusCode: false,
                     })
                     .then((response) => {
@@ -112,8 +115,8 @@ function runChaosIteration(index, state, rng, ctx) {
 
                     const newState = {
                         senderBalance: state.senderBalance - VALID_TRANSFER_AMOUNT,
-                        recipientBalance: state.recipientBalance + VALID_TRANSFER_AMOUNT,
-                        totalFees: state.totalFees,
+                        recipientBalance: state.recipientBalance + transferRecipientNet(VALID_TRANSFER_AMOUNT),
+                        totalFees: state.totalFees + configuredTransferFee(),
                         successCount: state.successCount + 1,
                         rejectCount: state.rejectCount,
                     };

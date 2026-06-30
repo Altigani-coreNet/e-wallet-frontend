@@ -402,6 +402,11 @@ export const ADMIN_NESTED_ROUTES = (
                     <AdminCustomerCreate />
                 </PermissionRoute>
             } />
+            <Route path="customers/:customerId/transactions/:transactionId" element={
+                <PermissionRoute required="sales.customers.view_customers">
+                    <AdminWalletTransactionShow />
+                </PermissionRoute>
+            } />
             <Route path="customers/:id" element={
                 <PermissionRoute required="sales.customers.view_customers">
                     <AdminCustomerView />
